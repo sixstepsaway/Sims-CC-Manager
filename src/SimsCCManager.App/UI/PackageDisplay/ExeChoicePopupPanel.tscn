@@ -1,0 +1,100 @@
+[gd_scene load_steps=9 format=3 uid="uid://wsoegap3c8q2"]
+
+[ext_resource type="Script" uid="uid://baexpjfxeqxw5" path="res://UI/PackageDisplay/ExeChoicePopupPanel.cs" id="1_huijd"]
+[ext_resource type="PackedScene" uid="uid://ryrvwl0ec34b" path="res://UI/Buttons/TopbarButton.tscn" id="2_b3bfr"]
+[ext_resource type="Texture2D" uid="uid://cr0iyclc7hnb5" path="res://assets/icons/materialicons/twotone_add_box_black_48dp.png" id="3_phc0r"]
+[ext_resource type="Texture2D" uid="uid://ix2qv8gcj7gc" path="res://addons/CustomDataGrid/assets/twotone_indeterminate_check_box_black_48dp.png" id="4_iyx4f"]
+[ext_resource type="Texture2D" uid="uid://dwy6vrnug6a5c" path="res://assets/icons/materialicons/twotone_help_center_black_48dp.png" id="5_2hoyf"]
+[ext_resource type="PackedScene" uid="uid://cvd7b36hwtfmf" path="res://UI/PackageDisplay/ExeOption.tscn" id="6_kr86g"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_xcqqp"]
+bg_color = Color(0.223529, 0.2, 0.211765, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.52549, 0.533333, 0.662745, 1)
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+
+[sub_resource type="Theme" id="Theme_q5bql"]
+Panel/styles/panel = SubResource("StyleBoxFlat_xcqqp")
+
+[node name="ExeChoice_PopupPanel" type="Control" node_paths=PackedStringArray("ClickyClock", "ExeOptionHolder", "AddExe", "EditExe", "RemoveExe")]
+custom_minimum_size = Vector2(250, 75)
+layout_mode = 3
+anchor_right = 1.0
+offset_left = 381.0
+offset_right = -369.0
+offset_bottom = 75.0
+grow_horizontal = 2
+script = ExtResource("1_huijd")
+ExeOptionItemPS = ExtResource("6_kr86g")
+ClickyClock = NodePath("Control")
+ExeOptionHolder = NodePath("Control/MarginContainer/ScrollContainer/VBoxContainer")
+AddExe = NodePath("Control/MarginContainer2/HBoxContainer/AddExe")
+EditExe = NodePath("Control/MarginContainer2/HBoxContainer/EditExe")
+RemoveExe = NodePath("Control/MarginContainer2/HBoxContainer/RemoveExe")
+
+[node name="Control" type="Control" parent="."]
+layout_mode = 1
+anchor_left = 0.37800002
+anchor_right = 0.37800002
+offset_left = -8.500008
+offset_top = 59.0
+offset_right = 393.5
+offset_bottom = 224.0
+
+[node name="MarginContainer" type="MarginContainer" parent="Control"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -201.0
+offset_top = 32.0
+offset_right = 199.0
+offset_bottom = 157.0
+grow_horizontal = 2
+
+[node name="Panel" type="Panel" parent="Control/MarginContainer"]
+layout_mode = 2
+theme = SubResource("Theme_q5bql")
+
+[node name="ScrollContainer" type="ScrollContainer" parent="Control/MarginContainer"]
+layout_mode = 2
+horizontal_scroll_mode = 0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Control/MarginContainer/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="MarginContainer2" type="MarginContainer" parent="Control"]
+custom_minimum_size = Vector2(0, 25)
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -183.0
+offset_right = 191.0
+offset_bottom = 40.0
+grow_horizontal = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="Control/MarginContainer2"]
+layout_mode = 2
+alignment = 2
+
+[node name="AddExe" parent="Control/MarginContainer2/HBoxContainer" instance=ExtResource("2_b3bfr")]
+layout_mode = 2
+Texture = ExtResource("3_phc0r")
+ToolTipText = "Add New Exe"
+
+[node name="EditExe" parent="Control/MarginContainer2/HBoxContainer" instance=ExtResource("2_b3bfr")]
+layout_mode = 2
+Texture = ExtResource("5_2hoyf")
+ToolTipText = "Change Exe"
+
+[node name="RemoveExe" parent="Control/MarginContainer2/HBoxContainer" instance=ExtResource("2_b3bfr")]
+layout_mode = 2
+Texture = ExtResource("4_iyx4f")
+ToolTipText = "Delete Selected Exe"

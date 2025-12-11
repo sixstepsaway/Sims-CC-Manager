@@ -1,15 +1,9 @@
-[gd_scene load_steps=13 format=3 uid="uid://dvu8c7e1vxgeg"]
+[gd_scene load_steps=7 format=3 uid="uid://3s6va7go8cvl"]
 
 [ext_resource type="Theme" uid="uid://elq77dslte5a" path="res://themes/ManageCategories_buttons.tres" id="1_hn8sr"]
 [ext_resource type="FontFile" uid="uid://rj6fcxmqe8tx" path="res://assets/fonts/Accidental_Presidency/AccidentalPresidency.ttf" id="2_bte8h"]
 [ext_resource type="Theme" uid="uid://blowbhtn7n10r" path="res://themes/footer_buttons_text.tres" id="3_wdqyu"]
-[ext_resource type="PackedScene" uid="uid://ce1n3devdsmfh" path="res://UI/PackageDisplay_Elements/socials_button.tscn" id="4_j4hnj"]
-[ext_resource type="Texture2D" uid="uid://bihfoehitjlro" path="res://assets/images/twittericon.png" id="5_40rry"]
-[ext_resource type="Texture2D" uid="uid://clq1s4vbr6p0k" path="res://assets/images/kofiicon.png" id="6_uvj0x"]
-[ext_resource type="Texture2D" uid="uid://dpix7pk4gs1c2" path="res://assets/images/githubicon.png" id="7_j3vjh"]
-[ext_resource type="Texture2D" uid="uid://c5hnr6jv0wxfx" path="res://assets/images/discordicon.png" id="8_6nm4e"]
-[ext_resource type="Texture2D" uid="uid://b7hf23rkhnbcp" path="res://assets/images/tumblricon_w.png" id="9_q3rpg"]
-[ext_resource type="Texture2D" uid="uid://bchdaw51l2qxm" path="res://assets/images/itch-io-icon-md-2372909491.png" id="10_n84jl"]
+[ext_resource type="PackedScene" uid="uid://ce1n3devdsmfh" path="res://UI/Buttons/SocialsButton.tscn" id="4_j4hnj"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_hr4f6"]
 bg_color = Color(0.12549, 0.282353, 0.352941, 1)
@@ -59,7 +53,7 @@ layout_mode = 2
 
 [node name="Version_Label" type="Label" parent="FooterInternalMargins/FooterHbox"]
 layout_mode = 2
-text = "Sims CC Manager | Alpha 1.0"
+text = "Sims CC Manager | Version 0.1"
 label_settings = SubResource("LabelSettings_ujvjr")
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -93,25 +87,19 @@ alignment = 2
 
 [node name="Twitter_SocialsButton" parent="FooterInternalMargins/SocialsButtons" instance=ExtResource("4_j4hnj")]
 layout_mode = 2
-buttonImage = ExtResource("5_40rry")
 
 [node name="Kofi_SocialsButton" parent="FooterInternalMargins/SocialsButtons" instance=ExtResource("4_j4hnj")]
 layout_mode = 2
-buttonImage = ExtResource("6_uvj0x")
 
 [node name="Github_SocialsButton" parent="FooterInternalMargins/SocialsButtons" instance=ExtResource("4_j4hnj")]
 layout_mode = 2
-buttonImage = ExtResource("7_j3vjh")
 
 [node name="Discord_SocialsButton" parent="FooterInternalMargins/SocialsButtons" instance=ExtResource("4_j4hnj")]
 visible = false
 layout_mode = 2
-buttonImage = ExtResource("8_6nm4e")
 
 [node name="Tumblr_SocialsButton" parent="FooterInternalMargins/SocialsButtons" instance=ExtResource("4_j4hnj")]
 layout_mode = 2
-buttonImage = ExtResource("9_q3rpg")
 
 [node name="Itch_SocialsButton" parent="FooterInternalMargins/SocialsButtons" instance=ExtResource("4_j4hnj")]
 layout_mode = 2
-buttonImage = ExtResource("10_n84jl")

@@ -1,221 +1,429 @@
 using Godot;
+using MoreLinq;
+using SimsCCManager.Containers;
 using SimsCCManager.Debugging;
 using SimsCCManager.Globals;
-using SimsCCManager.Settings.Loaded;
-using SimsCCManager.UI.Themes;
-using SimsCCManager.UI.Utilities;
+using SimsCCManager.SettingsSystem;
 using System;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
+using System.Reflection.PortableExecutable;
+using System.Threading;
+using System.Xml.Serialization;
 
 public partial class MainWindow : MarginContainer
 {
-	PackedScene Splash = GD.Load<PackedScene>("res://windows/SplashScreen.tscn");
-	PackedScene MainMenu = GD.Load<PackedScene>("res://UI/MainMenu.tscn");
-	PackedScene PackageDisplay = GD.Load<PackedScene>("res://UI/PackageDisplay.tscn");
-	PackedScene LoadingScreen = GD.Load<PackedScene>("res://UI/loading_instance.tscn");
-	// Called when the node enters the scene tree for the first time.
-	Node splashinsance;
-	MarginContainer footerpbar;
-	ProgressBar footerpbarbar;
-	Guid currentinstance = Guid.Empty;
-	MainMenu mainmenu; 
-	PackageDisplay packageDisplay;
-	LoadingInstance loadingscreen;
-	HolderNode holdernode;
+    /// <summary>
+    /// The main program window. 
+    /// </summary>
+    [Export]
+    PackedScene SplashPS;
+    [Export]
+    PackedScene MainMenuPS;
+    [Export]
+    PackedScene PackageDisplayPS;
+    [Export]
+    PackedScene LoadingScreenPS;
+    [Export]
+    PackedScene TooltipPS;
+    public delegate void ThemeChangedEvent();
+    public ThemeChangedEvent SCCMThemeChanged;
+    [Export]
+    SocialsButton[] SocialsButtons;
+    [Export]
+    Label[] Labels;
+    [Export]
+    ColorRect[] MainColors;
 
-	bool loadingPD = false;
-	public override void _Ready()
-	{
-		footerpbar = GetNode<MarginContainer>("Footer/FooterInternalMargins/FooterHbox/FooterProgressBar");
-		footerpbarbar = GetNode<ProgressBar>("Footer/FooterInternalMargins/FooterHbox/FooterProgressBar/VBoxContainer/HBoxContainer/MarginContainer/ProgressBar");
-		if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Hiding footer."));
-		GetNode<MarginContainer>("Footer").Visible = false;
-		if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Instantiating splash."));		
-		SplashScreen splash = Splash.Instantiate() as SplashScreen;
-		splash.Connect("FinishedLoading", Callable.From(FinishedLoading));
-		if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Connected loading call."));
-		if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Making splash permanent."));
-		AddChild(splash);
-		if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Loaded splash."));
-		ChildEnteredTree += (x) => WhenChildEnteredTree(x);
-		holdernode = GetNode<HolderNode>("HolderNode");
-	}
+    [Export]
+    MarginContainer Footer;
 
-    private void WhenChildEnteredTree(Node x)
+    [ExportCategory("Files Detected Window")]
+    [Export]
+    Window FDPopupWindow;
+    [Export]
+    Button FDMoreInfoButton;
+    [Export]
+    Button FDYesButton;
+    
+    [Export]
+    Button FDNoButton;
+
+
+
+    bool WaitingPopupWindow = false;
+
+
+
+
+
+
+
+    SplashScreen splash;
+    MainMenu mainMenu;
+    LoadingInstance loadingInstance;
+    PackageDisplay packageDisplay;
+
+    Stopwatch stopwatch = new();
+    Godot.Timer tooltipTimer = new();
+
+    public string TooltipMessage = "";
+
+    ToolTip tooltip;
+
+    bool tooltipVisible = false;
+
+    public override void _Ready()
     {
-		//UIUtilities.UpdateTheme(GetTree());
-		holdernode.UpdateTheme(GetTree());
+        GlobalVariables.mainWindow = this;
+        stopwatch.Start();
+        Footer.Visible = false;
+        splash = SplashPS.Instantiate() as SplashScreen;
+        splash.SplashScreenLoadingFinished += () => FinishedLoading();
+        AddChild(splash);
+        RunProgressBar();
+        AddChild(tooltipTimer);
+        tooltipTimer.WaitTime = 0.5f;
+        tooltipTimer.Timeout += () => SpawnTooltip();
+
+        FDYesButton.Pressed += () => RemoveResidualFiles(true);
+        FDNoButton.Pressed += () => RemoveResidualFiles(false);
+        
+    }
+
+    private void RemoveResidualFiles(bool Delete)
+    {
+        FDPopupWindow.Visible = false;
+        if (Delete)
+        {
+            InstanceControllers.ClearInstance();
+        } else
+        {
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Not removing the residual files!"));
+            string movedfile = string.Format("{0}__backup", GlobalVariables.MovedItemsFile);
+            if (File.Exists(movedfile))
+            {
+                File.Delete(movedfile);
+            }
+            File.Move(GlobalVariables.MovedItemsFile, movedfile);
+        }
+        WaitingPopupWindow = false;
+    }
+
+    public void PopupRemoveFilesWindow()
+    {
+        FDPopupWindow.Visible = true;
     }
 
 
-    private void FinishedLoading(){
-		if (GlobalVariables.DebugMode) Logging.WriteDebugLog(LoadedSettings.SetSettings.LoadedTheme.ThemeName);
-		if (GlobalVariables.DebugMode) Logging.WriteDebugLog(LoadedSettings.SetSettings.LoadedTheme.Identifier.ToString());
-		var sc = GetChild((GetChildren().Count) - 1);
-		if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Making footer visible."));
-		GetNode<MarginContainer>("Footer").Visible = true;
-		
-		if (LoadedSettings.SetSettings.InstanceLoaded && LoadedSettings.SetSettings.LoadLatestInstance){
-			/*if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Instantiating package manager."));
-			var pd = PackageDisplay.Instantiate();
-			pd.Connect("SetPbarMax", new Callable(this, "SetPbarMax"));
-			pd.Connect("IncrementPbar", Callable.From(IncrementPbar));
-			pd.Connect("ResetPbarValue", Callable.From(ResetPbarValue));
-			pd.Connect("ShowPbar", Callable.From(ShowPbar));
-			pd.Connect("HidePbar", Callable.From(HidePbar));
-			if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Adding package manager."));
-			AddChild(pd);
-			if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Moving package manager."));
-			MoveChild(pd, 0);*/
-			StartInstance(LoadedSettings.SetSettings.Instances.Where(x => x.InstanceLocation == LoadedSettings.SetSettings.LastInstanceLoaded).First().Identifier);
-		} else {
-			ShowMainMenu();
-		}
-		//UIUtilities.UpdateTheme(GetTree());
-		if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Disabling transparency."));
-		GetTree().Root.TransparentBg = false;
-		if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Disabling borderless."));
-		GetTree().Root.Borderless = false;
-		if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Showing window."));
-		Show();
-		if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Removing splash."));
-		sc.QueueFree();
-		holdernode.UpdateTheme(GetTree());
-		//UIUtilities.UpdateTheme(GetTree());
-	}
-
-	public void ShowMainMenu(){
-		if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Instantiating main menu."));
-		mainmenu = MainMenu.Instantiate() as MainMenu;
-		if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Debug line ;~;"));
-		mainmenu.MainMenuStartInstance += (instance) => StartInstance(instance);
-		if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Debug line ;~;"));
-		//mainmenu.Connect("MainMenuStartInstance", new Callable(this, "StartInstance"));
-		if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Adding main menu."));
-		AddChild(mainmenu);
-		if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Moving main menu."));
-		MoveChild(mainmenu, 0);
-	}
-
-	private void StartInstance(Guid instance){
-		if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Debug line ;~;"));
-		if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Heard the signal to load instance on the main window!"));
-		loadingscreen = LoadingScreen.Instantiate() as LoadingInstance;
-		if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Debug line ;~;"));
-		loadingscreen.ReadyLoad += () => ReadyLoad();
-		if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Debug line ;~;"));
-		loadingscreen.message = "Loading instance. Please wait.";		
-		if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Debug line ;~;"));
-		mainmenu.QueueFree();
-		if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Debug line ;~;"));
-		AddChild(loadingscreen);
-		if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Debug line ;~;"));
-		MoveChild(loadingscreen, 0);
-		if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Debug line ;~;"));
-		currentinstance = instance;		
-	}
-
-	private void ReadyLoad(){
-		packageDisplay = PackageDisplay.Instantiate() as PackageDisplay;
-		if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Debug line ;~;"));
-		packageDisplay.SetPbarMax += (value) => SetPbarMax(value);
-		if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Debug line ;~;"));
-		//pd.Connect("SetPbarMax", new Callable(this, "SetPbarMax"));
-		packageDisplay.IncrementPbar += () => IncrementPbar();
-		if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Debug line ;~;"));
-		//pd.Connect("IncrementPbar", Callable.From(IncrementPbar));
-		packageDisplay.ResetPbarValue += () => ResetPbarValue();
-		if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Debug line ;~;"));
-		//pd.Connect("ResetPbarValue", Callable.From(ResetPbarValue));
-
-		packageDisplay.DoneLoading += () => PDDoneLoading();
-		if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Debug line ;~;"));
-		packageDisplay.ShowPbar += () => ShowPbar();
-		if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Debug line ;~;"));
-		packageDisplay.HidePbar += () => HidePbar();
-		if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Debug line ;~;"));
-
-		//pd.Connect("ShowPbar", Callable.From(ShowPbar));
-		//pd.Connect("HidePbar", Callable.From(HidePbar));
-		packageDisplay.ThisInstance = LoadedSettings.SetSettings.Instances.Where(x => x.Identifier == currentinstance).First();	
-		if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Debug line ;~;"));
-		LoadedSettings.SetSettings.InstanceLoaded = true;
-		if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Debug line ;~;"));
-		LoadedSettings.SetSettings.CurrentInstance = packageDisplay.ThisInstance;
-		if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Debug line ;~;"));
-		LoadedSettings.SetSettings.LastInstanceLoaded = packageDisplay.ThisInstance.InstanceLocation;
-		if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Adding package manager."));		
-		AddChild(packageDisplay);		
-		if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Moving package manager."));
-		MoveChild(packageDisplay, 0);	
-		loadingPD = true;
-		holdernode.UpdateTheme(GetTree());
-		//UIUtilities.UpdateTheme(GetTree());
-	}
-
-    private void PDDoneLoading()
+    public void AnnounceChangedTheme()
     {
-        holdernode.UpdateTheme(GetTree());
-		//UIUtilities.UpdateTheme(GetTree());
-		loadingscreen.QueueFree();
+        SCCMThemeChanged.Invoke();
+        UpdateColors();
     }
 
-    private void _on_twitter_socials_button_clicked(){
-		Process.Start(new ProcessStartInfo("http://x.com/sinfulsimming") { UseShellExecute = true });
-	}
-	private void _on_kofi_socials_button_clicked(){
-		Process.Start(new ProcessStartInfo("http://kofi.com/sinfulsimming") { UseShellExecute = true });
-	}
-	private void _on_tumblr_socials_button_clicked(){
-		Process.Start(new ProcessStartInfo("http://tumblr.com/sinfulsimming") { UseShellExecute = true });
-	}
-	private void _on_github_socials_button_clicked(){
-		Process.Start(new ProcessStartInfo("https://github.com/sixstepsaway/Sims-CC-Manager") { UseShellExecute = true });
-	}
-	private void _on_discord_socials_button_clicked(){
-		//Process.Start(new ProcessStartInfo("http://x.com/sinfulsimming") { UseShellExecute = true });
-	}
-	private void _on_itch_socials_button_clicked(){
-		Process.Start(new ProcessStartInfo("https://sixstepsaway.itch.io/") { UseShellExecute = true });
-	}
+    private void UpdateColors()
+    {
+        foreach (ColorRect colorRect in MainColors)
+        {
+            colorRect.Color = GlobalVariables.LoadedTheme.AccentColor;
+        }
+        foreach (Label l in Labels)
+        {
+            l.AddThemeColorOverride("font_color", GlobalVariables.LoadedTheme.MainTextColor);
+        }
+        foreach (SocialsButton socialsButton in SocialsButtons)
+        {
+            socialsButton.UpdateColors();
+        }
 
-	
+        SCCMTheme theme = GlobalVariables.LoadedTheme;
+        bool textLight = false;
+        StyleBoxFlat normalbox = FDYesButton.GetThemeStylebox("normal") as StyleBoxFlat;
+        StyleBoxFlat hoverbox = FDYesButton.GetThemeStylebox("hover") as StyleBoxFlat;
+        StyleBoxFlat clickedbox = FDYesButton.GetThemeStylebox("pressed") as StyleBoxFlat;
+        
+        if (theme.ButtonMain.V > 0.5)
+        {
+            textLight = true;
+        }
 
-	public void ShowPbar(){
-		CallDeferred(nameof(_Showpbar));
-	}
-	private void _Showpbar(){
-		footerpbar.Visible = true;
-	}
-	public void HidePbar(){
-		CallDeferred(nameof(_HidePbar));
-	}
-	private void _HidePbar(){
-		footerpbar.Visible = false;
-	}
+        normalbox.BorderColor = theme.AccentColor;
 
-	private void SetPbarMax(int max){
-		CallDeferred(nameof(_SetPbarMax), max);
-	}
+        if (theme.AccentColor.V > 0.5)
+        {
+            hoverbox.BorderColor = theme.AccentColor.Darkened(0.2f);
+            clickedbox.BorderColor = theme.AccentColor.Darkened(0.2f);
+        } else
+        {
+            hoverbox.BorderColor = theme.AccentColor.Lightened(0.2f);
+            clickedbox.BorderColor = theme.AccentColor.Darkened(0.2f);
+        }
 
-	private void _SetPbarMax(int max){
-		footerpbarbar.MaxValue = max;
-	}
+        
+        normalbox.BgColor = theme.BackgroundColor;
+        hoverbox.BgColor = theme.BackgroundColor.Darkened(0.2f);
+        clickedbox.BgColor = theme.BackgroundColor.Darkened(0.2f);
 
-	private void IncrementPbar(){
-		CallDeferred(nameof(_IncrementPbar));
-	}
+        List<Button> buttons = new() { FDYesButton, FDNoButton };
 
-	private void _IncrementPbar(){
-		footerpbarbar.Value++;
-	}
-	private void _ResetPbarValue(){
-		footerpbarbar.Value = 0;
-	}
-	private void ResetPbarValue(){
-		CallDeferred(nameof(_ResetPbarValue));
-	}
+        foreach (Button button in buttons)
+        {
+            button.AddThemeColorOverride("font_color", theme.ButtonMain);
+            button.AddThemeColorOverride("font_hover_color", theme.ButtonHover);
+            button.AddThemeColorOverride("font_hover_pressed", theme.ButtonClick);
+            button.AddThemeStyleboxOverride("normal", normalbox);
+            button.AddThemeStyleboxOverride("hover", hoverbox);
+            button.AddThemeStyleboxOverride("pressed", clickedbox);
+        }
+
+    }
+
+    private void RunProgressBar()
+    {
+        int maxval = 100;
+        splash.SetPbarMax(maxval);
+        new Thread(() =>
+        {
+            CallDeferred(nameof(IncrementPbar), 1);
+            CallDeferred(nameof(ChangePbarLabel), string.Format("Checking for environment"));
+            Thread.Sleep(20);
+            if (!Directory.Exists(GlobalVariables.AppFolder))
+            {
+                Directory.CreateDirectory(GlobalVariables.AppFolder);
+            }
+            if (!Directory.Exists(GlobalVariables.TempFolder))
+            {
+                Directory.CreateDirectory(GlobalVariables.TempFolder);
+            }
+            if (!Directory.Exists(GlobalVariables.LogFolder))
+            {
+                Directory.CreateDirectory(GlobalVariables.LogFolder);
+            }
+            if (!Directory.Exists(GlobalVariables.DataFolder))
+            {
+                Directory.CreateDirectory(GlobalVariables.DataFolder);
+            }
+            if (!Directory.Exists(GlobalVariables.OverridesFolder))
+            {
+                Directory.CreateDirectory(GlobalVariables.OverridesFolder);
+            }
+            if (!Directory.Exists(GlobalVariables.ThemesFolder))
+            {
+                CallDeferred(nameof(IncrementPbar), 1);
+                CallDeferred(nameof(ChangePbarLabel), string.Format("Creating themes."));
+                Thread.Sleep(20);
+                Directory.CreateDirectory(GlobalVariables.ThemesFolder);
+                Themes.CreateThemeFiles();
+            }
+            XmlSerializer SettingsSerializer = new XmlSerializer(typeof(SCCMSettings));
+            if (File.Exists(GlobalVariables.SettingsFile))
+            {
+                CallDeferred(nameof(IncrementPbar), 1);
+                CallDeferred(nameof(ChangePbarLabel), string.Format("Creating settings."));
+                Thread.Sleep(20);
+                using (FileStream fileStream = new(GlobalVariables.SettingsFile, FileMode.Open, System.IO.FileAccess.Read))
+                {
+                    using (StreamReader streamReader = new(fileStream))
+                    {
+                        GlobalVariables.LoadedSettings = (SCCMSettings)SettingsSerializer.Deserialize(streamReader);
+                        streamReader.Close();
+                    }
+                    fileStream.Close();
+                }
+            }
+            else
+            {
+                GlobalVariables.LoadedSettings = new();
+                GlobalVariables.LoadedSettings.SaveSettings();                
+            }
+            GlobalVariables.DebugMode = GlobalVariables.LoadedSettings.DebugMode;            
+
+            if (Directory.Exists(GlobalVariables.ThemesFolder))
+            {
+                XmlSerializer ThemeReader = new XmlSerializer(typeof(SCCMTheme));
+                Themes.AllThemes = new();
+                foreach (string file in Directory.GetFiles(GlobalVariables.ThemesFolder))
+                {
+                    FileInfo fileinfo = new(file);
+                    if (fileinfo.Extension == ".xml"){
+                        SCCMTheme newtheme = new();
+                        using (FileStream fileStream = new(file, FileMode.Open, System.IO.FileAccess.Read))
+                        {
+                            using (StreamReader streamReader = new(fileStream))
+                            {
+                                newtheme = (SCCMTheme)ThemeReader.Deserialize(streamReader);
+                                streamReader.Close();
+                            }
+                            fileStream.Close();
+                        }
+                        Themes.AllThemes.Add(newtheme);
+                        GlobalVariables.LoadedSettings.ThemeOptions.Clear();
+                        foreach (SCCMTheme theme in Themes.AllThemes)
+                        {
+                            GlobalVariables.LoadedSettings.ThemeOptions.Add(theme.ThemeName);
+                        }
+                    }                    
+                }
+                GlobalVariables.LoadedTheme = Themes.AllThemes.Where(x => x.ThemeName == GlobalVariables.LoadedSettings.LoadedTheme).First();
+                GlobalVariables.LoadedSettings.SaveSettings();
+            }
+            
+            CallDeferred(nameof(UpdateColors));
+
+
+
+            if (File.Exists(GlobalVariables.MovedItemsFile))
+            {
+                WaitingPopupWindow = true;
+                CallDeferred(nameof(PopupRemoveFilesWindow));
+            }
+
+            while (WaitingPopupWindow)
+            {
+                //wait
+            }
+
+
+
+            for (int i = (int)splash.SplashProgressBar.Value; i < maxval; i++)
+            {
+                CallDeferred(nameof(IncrementPbar), 1);
+                CallDeferred(nameof(ChangePbarLabel), string.Format("Organizing splines..."));
+                Thread.Sleep(10);
+            }
+        })
+        { IsBackground = true }.Start();
+    }
+
+    private void IncrementPbar(int Num)
+    {
+        splash.IncrementProgressBar(Num);
+    }
+    private void ChangePbarLabel(string Text)
+    {
+        splash.ChangeProgressBarText(Text);
+    }
+    private void CloseMainMenu()
+    {
+        mainMenu.CloseMainMenu();
+    }
+
+    private void FinishedLoading()
+    {        
+        stopwatch.Stop();
+        mainMenu = MainMenuPS.Instantiate() as MainMenu;
+        splash.QueueFree();
+        Footer.Visible = true;
+        AddChild(mainMenu);
+        MoveChild(Footer, GetChildCount());
+        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Sims CC Manager loaded in {0}", stopwatch.Elapsed));
+        GetWindow().Borderless = false;
+    } 
+
+    public void LoadingPackageDisplayStart(int maxvalue = 100)
+    {               
+        loadingInstance = LoadingScreenPS.Instantiate() as LoadingInstance; 
+        loadingInstance.progressBar.MaxValue = maxvalue;
+        AddChild(loadingInstance);
+        MoveChild(Footer, GetChildCount());
+    }
+
+    public void LoadPackageDisplay(GameInstance instanceData, bool load = false)
+    {
+        if (load)
+        {
+            GlobalVariables.LoadedSettings.InstanceFolders.First(x => x.InstanceID == instanceData.InstanceID).InstanceLastModified = DateTime.Now;
+            GlobalVariables.LoadedSettings.SaveSettings();
+        } else
+        {
+            GlobalVariables.LoadedSettings.InstanceFolders.Add(new Instance() { InstanceLocation = instanceData.InstanceFolder, InstanceCreated = DateTime.Now, InstanceLastModified = DateTime.Now, InstanceName = instanceData.InstanceName, InstanceID = instanceData.InstanceID, Game = instanceData.GameChoice});
+            GlobalVariables.LoadedSettings.SaveSettings();
+        }
+        
+        mainMenu.QueueFree();
+        packageDisplay = PackageDisplayPS.Instantiate() as PackageDisplay;
+        packageDisplay.ThisInstance = instanceData;
+        AddChild(packageDisplay);
+        MoveChild(Footer, GetChildCount());
+        loadingInstance.QueueFree();
+    }
+
+    public void IncrementLoadingScreen(int amount, string text)
+    {
+        CallDeferred(nameof(DeferredLoadingScreen), amount, text);
+    }
+
+    private void DeferredLoadingScreen(int amount, string text)
+    {
+        loadingInstance.progressBar.Value += amount;
+        loadingInstance.ProgressLabel.Text = text;
+    }
+
+    public void WriteGDPrint(string text)
+    {
+        CallDeferred(nameof(DeferredGDPrint), text);
+    }
+
+    private void DeferredGDPrint(string text)
+    {
+        GD.Print(text);
+    }
+
+    public void InstantiateTooltip(string text)
+    {
+        if (!tooltipVisible)
+        {
+            tooltipVisible = true;
+            tooltipTimer.Start();
+            TooltipMessage = text;
+        }
+        
+    }
+    private void SpawnTooltip()
+    {
+        if (IsInstanceValid(tooltip))
+        {
+            tooltip?.QueueFree();
+        }
+        tooltip = TooltipPS.Instantiate() as ToolTip;
+        tooltip.TooltipText.Text = TooltipMessage;
+        Vector2 mouse = GetGlobalMousePosition();
+        tooltip.GlobalPosition = mouse;
+        AddChild(tooltip);
+        float tooltipwidth = tooltip.TooltipText.Size.X;
+        Rect2 rect2 = GetGlobalRect();
+        Rect2 rect2Right = rect2; 
+        rect2Right.Size = new(rect2Right.Size.X - tooltipwidth, rect2Right.Size.Y);
+        if (!rect2Right.HasPoint(mouse))
+        {
+            tooltip.GlobalPosition = new(mouse.X - tooltipwidth, mouse.Y);
+        }
+    }
+    public void CancelTooltip()
+    {
+        tooltipVisible = false;
+        if (IsInstanceValid(tooltipTimer))
+        {
+            tooltipTimer.Stop();
+        }
+        if (IsInstanceValid(tooltip))
+        {
+            tooltip?.QueueFree();
+        }
+    }
+
+    public void ReturnToMain()
+    {
+        Instance data = GlobalVariables.LoadedSettings.InstanceFolders.Where(x => x.InstanceID == packageDisplay.ThisInstance.InstanceID).First();
+        packageDisplay.ThisInstance.WriteXML();
+        data.InstanceLastModified = DateTime.Now;
+        GlobalVariables.LoadedSettings.SaveSettings();
+        packageDisplay.QueueFree();
+        mainMenu = MainMenuPS.Instantiate() as MainMenu;
+        AddChild(mainMenu);
+        MoveChild(Footer, GetChildCount());
+    }
 }

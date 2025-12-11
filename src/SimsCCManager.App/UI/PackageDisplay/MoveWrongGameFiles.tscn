@@ -1,0 +1,146 @@
+[gd_scene load_steps=4 format=3 uid="uid://4cyha7g8sfro"]
+
+[ext_resource type="Theme" uid="uid://b4fe82i5mblf5" path="res://themes/packagedisplay_headers.tres" id="1_2hmmk"]
+[ext_resource type="Theme" uid="uid://elq77dslte5a" path="res://themes/ManageCategories_buttons.tres" id="2_anvut"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_r2byt"]
+bg_color = Color(0.6, 0.6, 0.6, 0)
+
+[node name="MoveWrongGameFiles" type="MarginContainer"]
+visible = false
+
+[node name="ColorRect" type="ColorRect" parent="."]
+modulate = Color(1, 1, 1, 0.505882)
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 2
+theme_override_constants/margin_left = 50
+theme_override_constants/margin_top = 50
+theme_override_constants/margin_right = 50
+theme_override_constants/margin_bottom = 125
+
+[node name="ColorRect" type="ColorRect" parent="MarginContainer"]
+layout_mode = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+alignment = 1
+
+[node name="AllMods_Label" type="Label" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme = ExtResource("1_2hmmk")
+text = "Detected files from the wrong game in this instance. 
+Do you want to move them elsewhere?"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ScrollContainer" type="ScrollContainer" parent="MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 350)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_r2byt")
+horizontal_scroll_mode = 0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/VBoxContainer/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 6
+size_flags_vertical = 3
+alignment = 1
+
+[node name="Sims2Wrong_Location" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ScrollContainer/VBoxContainer"]
+layout_mode = 2
+alignment = 2
+
+[node name="Sims2Wrong_Location_Label" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/VBoxContainer/Sims2Wrong_Location"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme = ExtResource("1_2hmmk")
+text = "Sims 2 Files"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Sims2Wrong_Location_LineEdit" type="LineEdit" parent="MarginContainer/VBoxContainer/ScrollContainer/VBoxContainer/Sims2Wrong_Location"]
+custom_minimum_size = Vector2(450, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+theme = ExtResource("1_2hmmk")
+
+[node name="Sims3Wrong_Location" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ScrollContainer/VBoxContainer"]
+layout_mode = 2
+alignment = 2
+
+[node name="Sims3Wrong_Location_Label" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/VBoxContainer/Sims3Wrong_Location"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme = ExtResource("1_2hmmk")
+text = "Sims 3 Files"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Sims3Wrong_Location_LineEdit" type="LineEdit" parent="MarginContainer/VBoxContainer/ScrollContainer/VBoxContainer/Sims3Wrong_Location"]
+custom_minimum_size = Vector2(450, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+theme = ExtResource("1_2hmmk")
+
+[node name="Sims4Wrong_Location" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ScrollContainer/VBoxContainer"]
+layout_mode = 2
+alignment = 2
+
+[node name="Sims4Wrong_Location_Label" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/VBoxContainer/Sims4Wrong_Location"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme = ExtResource("1_2hmmk")
+text = "Sims 4 Files"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Sims4Wrong_Location_LineEdit" type="LineEdit" parent="MarginContainer/VBoxContainer/ScrollContainer/VBoxContainer/Sims4Wrong_Location"]
+custom_minimum_size = Vector2(450, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+theme = ExtResource("1_2hmmk")
+
+[node name="OtherWrong_Location" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ScrollContainer/VBoxContainer"]
+layout_mode = 2
+alignment = 2
+
+[node name="OtherWrong_Location_Label" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/VBoxContainer/OtherWrong_Location"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme = ExtResource("1_2hmmk")
+text = "Other Games"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="OtherWrong_Location_LineEdit" type="LineEdit" parent="MarginContainer/VBoxContainer/ScrollContainer/VBoxContainer/OtherWrong_Location"]
+custom_minimum_size = Vector2(450, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+theme = ExtResource("1_2hmmk")
+
+[node name="AllMods_Label" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme = ExtResource("1_2hmmk")
+text = "Detected files from the wrong game in this instance. 
+Do you want to move them elsewhere?"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+alignment = 1
+
+[node name="Move_Button" type="Button" parent="MarginContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+theme = ExtResource("2_anvut")
+text = "Move"
+
+[node name="Cancel_Button" type="Button" parent="MarginContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+theme = ExtResource("2_anvut")
+text = "Cancel"

@@ -1,17 +1,19 @@
-[gd_scene load_steps=4 format=3 uid="uid://dnkueu3pxnu2b"]
+[gd_scene load_steps=4 format=3 uid="uid://uo2724xgb1uw"]
 
-[ext_resource type="Script" path="res://UI/Background.cs" id="1_0b8hi"]
 [ext_resource type="Texture2D" uid="uid://c15j17c1fk36q" path="res://assets/images/diamond-upholstery.png" id="1_3gvub"]
+[ext_resource type="Script" uid="uid://uk26ah03ens4" path="res://UI/Background.cs" id="1_nko78"]
 
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_kbg1w"]
 texture = ExtResource("1_3gvub")
 axis_stretch_horizontal = 1
 axis_stretch_vertical = 1
 
-[node name="Background" type="Control"]
+[node name="Background" type="Control" node_paths=PackedStringArray("MainColor", "SecondaryColor")]
 layout_mode = 3
 anchors_preset = 0
-script = ExtResource("1_0b8hi")
+script = ExtResource("1_nko78")
+MainColor = NodePath("BG_Color")
+SecondaryColor = NodePath("BG_Pattern/BG_PatternColor")
 
 [node name="BG_Color" type="ColorRect" parent="."]
 layout_mode = 1

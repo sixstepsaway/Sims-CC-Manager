@@ -1,0 +1,30 @@
+[gd_scene load_steps=3 format=3 uid="uid://b40b3grp0owkb"]
+
+[ext_resource type="Script" uid="uid://dnubvnt3tmqdt" path="res://addons/CustomDataGrid/DataGrid/DataGridHeaderSizeAdjuster.cs" id="1_0nmi8"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_lentn"]
+
+[node name="DataGridHeaderSizeAdjuster" type="MarginContainer" node_paths=PackedStringArray("ClickDetector")]
+custom_minimum_size = Vector2(2, 15)
+script = ExtResource("1_0nmi8")
+ClickDetector = NodePath("Button")
+
+[node name="ColorRect" type="ColorRect" parent="."]
+layout_mode = 2
+color = Color(0.6, 0.6, 0.6, 0.54902)
+
+[node name="Button" type="Button" parent="."]
+layout_mode = 2
+focus_mode = 0
+mouse_default_cursor_shape = 10
+theme_override_styles/focus = SubResource("StyleBoxEmpty_lentn")
+theme_override_styles/disabled_mirrored = SubResource("StyleBoxEmpty_lentn")
+theme_override_styles/disabled = SubResource("StyleBoxEmpty_lentn")
+theme_override_styles/hover_pressed_mirrored = SubResource("StyleBoxEmpty_lentn")
+theme_override_styles/hover_pressed = SubResource("StyleBoxEmpty_lentn")
+theme_override_styles/hover_mirrored = SubResource("StyleBoxEmpty_lentn")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_lentn")
+theme_override_styles/pressed_mirrored = SubResource("StyleBoxEmpty_lentn")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_lentn")
+theme_override_styles/normal_mirrored = SubResource("StyleBoxEmpty_lentn")
+theme_override_styles/normal = SubResource("StyleBoxEmpty_lentn")

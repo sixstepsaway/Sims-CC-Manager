@@ -1,0 +1,330 @@
+[gd_scene load_steps=18 format=3 uid="uid://djy0ci67h1dkw"]
+
+[ext_resource type="Theme" uid="uid://b4fe82i5mblf5" path="res://themes/packagedisplay_headers.tres" id="1_2f4dp"]
+[ext_resource type="Script" uid="uid://bv20t3yeiyyof" path="res://UI/PackageDisplay/CategoryManagement.cs" id="1_vgm2j"]
+[ext_resource type="Theme" uid="uid://elq77dslte5a" path="res://themes/ManageCategories_buttons.tres" id="2_0fdr1"]
+[ext_resource type="PackedScene" uid="uid://cqsw5fjta1myu" path="res://UI/PackageDisplay/SubWindows/CategoryItem.tscn" id="2_s1447"]
+[ext_resource type="FontFile" uid="uid://bob4v2pndpu0q" path="res://assets/fonts/Convergence/Convergence-Regular.ttf" id="5_pk4a4"]
+[ext_resource type="FontFile" uid="uid://biq6mub1golgk" path="res://assets/fonts/Dongle/Dongle-Regular.ttf" id="6_jata1"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_vgm2j"]
+bg_color = Color(0.85, 0.85, 0.85, 0.2901961)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bekm5"]
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.38549247, 0.38549256, 0.38549227, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+expand_margin_left = 10.0
+expand_margin_top = 10.0
+expand_margin_right = 10.0
+expand_margin_bottom = 10.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_s1447"]
+bg_color = Color(0.6, 0.6, 0.6, 0)
+border_width_left = 3
+border_width_top = 4
+border_width_right = 5
+border_width_bottom = 4
+border_color = Color(0.450648, 0.450648, 0.450648, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_pk4a4"]
+bg_color = Color(0.6, 0.6, 0.6, 0)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_jata1"]
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.38549247, 0.38549256, 0.38549227, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+expand_margin_left = 10.0
+expand_margin_top = 10.0
+expand_margin_right = 10.0
+expand_margin_bottom = 10.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_8ejxn"]
+content_margin_left = 5.0
+content_margin_right = 5.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_1ydx4"]
+content_margin_left = 5.0
+content_margin_top = 0.0
+content_margin_right = 5.0
+content_margin_bottom = 0.0
+bg_color = Color(0.835294, 0.835294, 0.835294, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.870588, 0.827451, 0.894118, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_g4rbl"]
+content_margin_left = 5.0
+content_margin_top = 0.0
+content_margin_right = 5.0
+content_margin_bottom = 0.0
+bg_color = Color(0.835294, 0.835294, 0.835294, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.996078, 0.996078, 0.996078, 1)
+
+[sub_resource type="Theme" id="Theme_nshgy"]
+Label/colors/font_color = Color(0.8, 0.670588, 0.847059, 1)
+Label/font_sizes/font_size = 13
+Label/fonts/font = ExtResource("5_pk4a4")
+LineEdit/colors/font_placeholder_color = Color(0.88, 0.88, 0.88, 1)
+LineEdit/styles/normal = SubResource("StyleBoxFlat_8ejxn")
+TextEdit/colors/font_color = Color(0.196078, 0.196078, 0.196078, 1)
+TextEdit/colors/font_placeholder_color = Color(0.498039, 0.498039, 0.498039, 1)
+TextEdit/constants/line_spacing = -6
+TextEdit/font_sizes/font_size = 26
+TextEdit/fonts/font = ExtResource("6_jata1")
+TextEdit/styles/focus = SubResource("StyleBoxFlat_1ydx4")
+TextEdit/styles/normal = SubResource("StyleBoxFlat_g4rbl")
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bf830"]
+content_margin_top = 7.0
+bg_color = Color(0.6, 0.6, 0.6, 0)
+
+[sub_resource type="Theme" id="Theme_7djfg"]
+Label/colors/font_color = Color(0.8, 0.670588, 0.847059, 1)
+Label/font_sizes/font_size = 13
+Label/fonts/font = ExtResource("5_pk4a4")
+LineEdit/colors/font_placeholder_color = Color(0.88, 0.88, 0.88, 1)
+LineEdit/styles/normal = SubResource("StyleBoxFlat_8ejxn")
+TextEdit/colors/font_color = Color(0.196078, 0.196078, 0.196078, 1)
+TextEdit/colors/font_placeholder_color = Color(0.498039, 0.498039, 0.498039, 1)
+TextEdit/constants/line_spacing = -6
+TextEdit/font_sizes/font_size = 26
+TextEdit/fonts/font = ExtResource("6_jata1")
+TextEdit/styles/focus = SubResource("StyleBoxFlat_1ydx4")
+TextEdit/styles/normal = SubResource("StyleBoxFlat_g4rbl")
+
+[node name="CategoryManagement" type="MarginContainer" node_paths=PackedStringArray("BgPanel", "CategoryLabel", "ListBg", "CategoryList", "NewCategoryButton", "EditCategoryButton", "DupeCategoryButton", "DeleteCategoryButton", "CloseButton", "MiniWindow", "CategoryNameBox", "CategoryDescriptionBox", "BGColorPickerLabel", "BGColorPicker", "TextColorPickerLabel", "TextColorPicker", "ConfirmButton", "CancelButton")]
+script = ExtResource("1_vgm2j")
+CategoryItemPS = ExtResource("2_s1447")
+BgPanel = NodePath("MarginContainer/Panel")
+CategoryLabel = NodePath("MarginContainer/VBoxContainer/Manage Categories")
+ListBg = NodePath("MarginContainer/VBoxContainer/HBoxContainer2/MarginContainer/Panel")
+CategoryList = NodePath("MarginContainer/VBoxContainer/HBoxContainer2/MarginContainer/MarginContainer/ScrollContainer/VBoxContainer")
+NewCategoryButton = NodePath("MarginContainer/VBoxContainer/HBoxContainer2/MarginContainer2/VBoxContainer/NewProfile_Button")
+EditCategoryButton = NodePath("MarginContainer/VBoxContainer/HBoxContainer2/MarginContainer2/VBoxContainer/EditProfile_Button")
+DupeCategoryButton = NodePath("MarginContainer/VBoxContainer/HBoxContainer2/MarginContainer2/VBoxContainer/DuplicateProfile_Button")
+DeleteCategoryButton = NodePath("MarginContainer/VBoxContainer/HBoxContainer2/MarginContainer2/VBoxContainer/DeleteProfile_Button")
+CloseButton = NodePath("MarginContainer/VBoxContainer/HBoxContainer/Close_Button")
+MiniWindow = NodePath("MarginContainer2")
+CategoryNameBox = NodePath("MarginContainer2/MarginContainer/VBoxContainer/LineEdit")
+CategoryDescriptionBox = NodePath("MarginContainer2/MarginContainer/VBoxContainer/TextEdit")
+BGColorPickerLabel = NodePath("MarginContainer2/MarginContainer/VBoxContainer/HBoxContainer2/VBoxContainer/Label")
+BGColorPicker = NodePath("MarginContainer2/MarginContainer/VBoxContainer/HBoxContainer2/VBoxContainer/ColorPickerButton")
+TextColorPickerLabel = NodePath("MarginContainer2/MarginContainer/VBoxContainer/HBoxContainer2/VBoxContainer2/Label")
+TextColorPicker = NodePath("MarginContainer2/MarginContainer/VBoxContainer/HBoxContainer2/VBoxContainer2/ColorPickerButton")
+ConfirmButton = NodePath("MarginContainer2/MarginContainer/VBoxContainer/HBoxContainer/Confirm_Button")
+CancelButton = NodePath("MarginContainer2/MarginContainer/VBoxContainer/HBoxContainer/Cancel_Button")
+
+[node name="Panel" type="Panel" parent="."]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_vgm2j")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 2
+theme_override_constants/margin_left = 50
+theme_override_constants/margin_top = 50
+theme_override_constants/margin_right = 50
+theme_override_constants/margin_bottom = 125
+
+[node name="Panel" type="Panel" parent="MarginContainer"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_bekm5")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+alignment = 1
+
+[node name="Manage Categories" type="Label" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme = ExtResource("1_2f4dp")
+text = "Manage Categories"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HBoxContainer2" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+alignment = 1
+
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer/VBoxContainer/HBoxContainer2"]
+custom_minimum_size = Vector2(350, 0)
+layout_mode = 2
+
+[node name="Panel" type="Panel" parent="MarginContainer/VBoxContainer/HBoxContainer2/MarginContainer"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_s1447")
+
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer/VBoxContainer/HBoxContainer2/MarginContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="ScrollContainer" type="ScrollContainer" parent="MarginContainer/VBoxContainer/HBoxContainer2/MarginContainer/MarginContainer"]
+custom_minimum_size = Vector2(0, 350)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_pk4a4")
+horizontal_scroll_mode = 0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/VBoxContainer/HBoxContainer2/MarginContainer/MarginContainer/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="MarginContainer2" type="MarginContainer" parent="MarginContainer/VBoxContainer/HBoxContainer2"]
+layout_mode = 2
+theme_override_constants/margin_left = 100
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/VBoxContainer/HBoxContainer2/MarginContainer2"]
+layout_mode = 2
+alignment = 1
+
+[node name="NewProfile_Button" type="Button" parent="MarginContainer/VBoxContainer/HBoxContainer2/MarginContainer2/VBoxContainer"]
+layout_mode = 2
+theme = ExtResource("2_0fdr1")
+text = "New"
+
+[node name="EditProfile_Button" type="Button" parent="MarginContainer/VBoxContainer/HBoxContainer2/MarginContainer2/VBoxContainer"]
+layout_mode = 2
+theme = ExtResource("2_0fdr1")
+text = "Edit"
+
+[node name="DuplicateProfile_Button" type="Button" parent="MarginContainer/VBoxContainer/HBoxContainer2/MarginContainer2/VBoxContainer"]
+layout_mode = 2
+theme = ExtResource("2_0fdr1")
+text = "Duplicate"
+
+[node name="DeleteProfile_Button" type="Button" parent="MarginContainer/VBoxContainer/HBoxContainer2/MarginContainer2/VBoxContainer"]
+layout_mode = 2
+theme = ExtResource("2_0fdr1")
+text = "Delete"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+alignment = 1
+
+[node name="Close_Button" type="Button" parent="MarginContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+theme = ExtResource("2_0fdr1")
+text = "Close"
+
+[node name="MarginContainer2" type="MarginContainer" parent="."]
+visible = false
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+
+[node name="Panel" type="Panel" parent="MarginContainer2"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_jata1")
+
+[node name="MarginContainer2" type="MarginContainer" parent="MarginContainer2"]
+layout_mode = 2
+theme_override_constants/margin_left = 2
+theme_override_constants/margin_top = 2
+theme_override_constants/margin_right = 2
+theme_override_constants/margin_bottom = 2
+
+[node name="ColorRect" type="ColorRect" parent="MarginContainer2/MarginContainer2"]
+visible = false
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer2"]
+layout_mode = 2
+theme_override_constants/margin_left = 15
+theme_override_constants/margin_top = 15
+theme_override_constants/margin_right = 15
+theme_override_constants/margin_bottom = 15
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer2/MarginContainer"]
+layout_mode = 2
+
+[node name="LineEdit" type="LineEdit" parent="MarginContainer2/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(250, 0)
+layout_mode = 2
+placeholder_text = "Category name..."
+
+[node name="TextEdit" type="TextEdit" parent="MarginContainer2/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 150)
+layout_mode = 2
+placeholder_text = "Category description..."
+wrap_mode = 1
+
+[node name="HBoxContainer2" type="HBoxContainer" parent="MarginContainer2/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 75)
+layout_mode = 2
+theme_override_constants/separation = 15
+alignment = 1
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer2/MarginContainer/VBoxContainer/HBoxContainer2"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="MarginContainer2/MarginContainer/VBoxContainer/HBoxContainer2/VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme = SubResource("Theme_nshgy")
+theme_override_styles/normal = SubResource("StyleBoxFlat_bf830")
+text = "Background Color"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ColorPickerButton" type="ColorPickerButton" parent="MarginContainer2/MarginContainer/VBoxContainer/HBoxContainer2/VBoxContainer"]
+custom_minimum_size = Vector2(0, 25)
+layout_mode = 2
+
+[node name="VBoxContainer2" type="VBoxContainer" parent="MarginContainer2/MarginContainer/VBoxContainer/HBoxContainer2"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="MarginContainer2/MarginContainer/VBoxContainer/HBoxContainer2/VBoxContainer2"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme = SubResource("Theme_7djfg")
+theme_override_styles/normal = SubResource("StyleBoxFlat_bf830")
+text = "Text Color"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ColorPickerButton" type="ColorPickerButton" parent="MarginContainer2/MarginContainer/VBoxContainer/HBoxContainer2/VBoxContainer2"]
+custom_minimum_size = Vector2(0, 25)
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer2/MarginContainer/VBoxContainer"]
+layout_mode = 2
+alignment = 1
+
+[node name="Confirm_Button" type="Button" parent="MarginContainer2/MarginContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+theme = ExtResource("2_0fdr1")
+text = "Confirm"
+
+[node name="Cancel_Button" type="Button" parent="MarginContainer2/MarginContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+theme = ExtResource("2_0fdr1")
+text = "Cancel"

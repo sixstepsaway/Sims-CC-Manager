@@ -1,0 +1,78 @@
+[gd_scene load_steps=9 format=3 uid="uid://db2ljd672tk3d"]
+
+[ext_resource type="Texture2D" uid="uid://bucjsdv7htgdm" path="res://assets/images/dress_plain_coat.png" id="1_3n0tv"]
+[ext_resource type="Script" uid="uid://dr37eraxqs0ia" path="res://UI/PackageDisplay/PackageViewer.cs" id="1_e2dtu"]
+[ext_resource type="FontFile" uid="uid://2m7ci2r6uwu2" path="res://assets/fonts/Anek_Gurmukhi/AnekGurmukhi-VariableFont_wdth,wght.ttf" id="2_tj8po"]
+[ext_resource type="FontFile" uid="uid://bt8gppu2qtqcj" path="res://assets/fonts/Anek_Gurmukhi/static/AnekGurmukhi-Bold.ttf" id="3_r488i"]
+[ext_resource type="FontFile" uid="uid://cngyc2meesxbk" path="res://assets/fonts/Anek_Gurmukhi/static/AnekGurmukhi-Medium.ttf" id="4_up6s8"]
+[ext_resource type="FontFile" uid="uid://6rcdnvoy1v23" path="res://assets/fonts/Anek_Gurmukhi/static/AnekGurmukhi-Regular.ttf" id="5_txuu3"]
+
+[sub_resource type="Theme" id="Theme_pft5s"]
+Label/colors/font_color = Color(0.099986, 0.099986, 0.099986, 1)
+Label/fonts/font = ExtResource("2_tj8po")
+
+[sub_resource type="Theme" id="Theme_1txe6"]
+RichTextLabel/colors/default_color = Color(0.0980392, 0.0980392, 0.0980392, 1)
+RichTextLabel/fonts/bold_font = ExtResource("3_r488i")
+RichTextLabel/fonts/bold_italics_font = null
+RichTextLabel/fonts/italics_font = null
+RichTextLabel/fonts/mono_font = ExtResource("4_up6s8")
+RichTextLabel/fonts/normal_font = ExtResource("5_txuu3")
+
+[node name="PackageViewer" type="MarginContainer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_e2dtu")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer/HBoxContainer"]
+visible = false
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="TextureRect" type="TextureRect" parent="MarginContainer/HBoxContainer/MarginContainer"]
+visible = false
+layout_mode = 2
+texture = ExtResource("1_3n0tv")
+expand_mode = 3
+
+[node name="ScrollContainer" type="ScrollContainer" parent="MarginContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+horizontal_scroll_mode = 0
+
+[node name="MarginContainer2" type="MarginContainer" parent="MarginContainer/HBoxContainer/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/HBoxContainer/ScrollContainer/MarginContainer2"]
+layout_mode = 2
+
+[node name="PackageViewer_PackageName" type="Label" parent="MarginContainer/HBoxContainer/ScrollContainer/MarginContainer2/VBoxContainer"]
+layout_mode = 2
+theme = SubResource("Theme_pft5s")
+text = "6c376d23VLSFlrVictorian.package"
+
+[node name="PackageViewer_Information" type="RichTextLabel" parent="MarginContainer/HBoxContainer/ScrollContainer/MarginContainer2/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+theme = SubResource("Theme_1txe6")
+text = "lalalalala
+"

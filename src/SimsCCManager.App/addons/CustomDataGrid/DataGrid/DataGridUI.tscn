@@ -1,0 +1,309 @@
+[gd_scene load_steps=28 format=3 uid="uid://pqlyp7m4dn4s"]
+
+[ext_resource type="Script" uid="uid://dlt1yxcjxvivg" path="res://addons/CustomDataGrid/DataGrid/DataGridUi.cs" id="1_rwqe3"]
+[ext_resource type="FontFile" uid="uid://c1806s1t11f3t" path="res://addons/CustomDataGrid/assets/OpenSans-VariableFont_wdth,wght.ttf" id="2_lcl42"]
+[ext_resource type="Texture2D" uid="uid://2mvtivometqs" path="res://addons/CustomDataGrid/assets/twotone_arrow_drop_up_black_48dp.png" id="3_rf5x8"]
+[ext_resource type="Texture2D" uid="uid://byk0nxabtoms4" path="res://addons/CustomDataGrid/assets/twotone_arrow_drop_down_black_48dp.png" id="4_w23mw"]
+[ext_resource type="Texture2D" uid="uid://de2ermpqct8xs" path="res://addons/CustomDataGrid/assets/twotone_arrow_left_black_48dp.png" id="5_a38o7"]
+[ext_resource type="Texture2D" uid="uid://bp8cvk5uy0e4b" path="res://addons/CustomDataGrid/assets/twotone_arrow_right_black_48dp.png" id="6_i8q8j"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_qx78q"]
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_xig5q"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_w7f5l"]
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_snh6f"]
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_p3qiu"]
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+
+[sub_resource type="Theme" id="Theme_1cx0q"]
+Button/styles/disabled = SubResource("StyleBoxFlat_qx78q")
+Button/styles/focus = SubResource("StyleBoxEmpty_xig5q")
+Button/styles/hover = SubResource("StyleBoxFlat_w7f5l")
+Button/styles/normal = SubResource("StyleBoxFlat_snh6f")
+Button/styles/pressed = SubResource("StyleBoxFlat_p3qiu")
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_103ea"]
+content_margin_top = 3.0
+content_margin_bottom = 3.0
+bg_color = Color(0.210255, 0.67516, 0.692144, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_kobee"]
+content_margin_top = 3.0
+content_margin_bottom = 3.0
+bg_color = Color(0.210255, 0.67516, 0.692144, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ctv6d"]
+content_margin_top = 3.0
+content_margin_bottom = 3.0
+bg_color = Color(0.210255, 0.67516, 0.692144, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_84wla"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_smkad"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_mpkrr"]
+content_margin_top = 3.0
+content_margin_bottom = 3.0
+bg_color = Color(0.210255, 0.67516, 0.692144, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_xpfl1"]
+content_margin_top = 3.0
+content_margin_bottom = 3.0
+bg_color = Color(0.210255, 0.67516, 0.692144, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ccn8i"]
+
+[sub_resource type="Theme" id="Theme_yp4c5"]
+HScrollBar/styles/grabber = SubResource("StyleBoxFlat_103ea")
+HScrollBar/styles/grabber_highlight = SubResource("StyleBoxFlat_kobee")
+HScrollBar/styles/grabber_pressed = SubResource("StyleBoxFlat_ctv6d")
+HScrollBar/styles/scroll = SubResource("StyleBoxFlat_84wla")
+HScrollBar/styles/scroll_focus = SubResource("StyleBoxFlat_smkad")
+VScrollBar/styles/grabber = SubResource("StyleBoxFlat_103ea")
+VScrollBar/styles/grabber_highlight = SubResource("StyleBoxFlat_mpkrr")
+VScrollBar/styles/grabber_pressed = SubResource("StyleBoxFlat_xpfl1")
+VScrollBar/styles/scroll = SubResource("StyleBoxFlat_84wla")
+VScrollBar/styles/scroll_focus = SubResource("StyleBoxFlat_ccn8i")
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_q8mp5"]
+content_margin_left = 3.0
+content_margin_right = 3.0
+bg_color = Color(0.486678, 0.587472, 0.874869, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_dyd2w"]
+content_margin_left = 3.0
+content_margin_right = 3.0
+bg_color = Color(0.486678, 0.587472, 0.874869, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_7w6vo"]
+content_margin_left = 3.0
+content_margin_right = 3.0
+bg_color = Color(0.486678, 0.587472, 0.874869, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_62e7k"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_w5ydd"]
+
+[sub_resource type="Theme" id="Theme_7vdkj"]
+HScrollBar/styles/grabber = SubResource("StyleBoxFlat_q8mp5")
+HScrollBar/styles/grabber_highlight = SubResource("StyleBoxFlat_dyd2w")
+HScrollBar/styles/grabber_pressed = SubResource("StyleBoxFlat_7w6vo")
+HScrollBar/styles/scroll = SubResource("StyleBoxFlat_62e7k")
+HScrollBar/styles/scroll_focus = SubResource("StyleBoxFlat_w5ydd")
+
+[node name="DataGridUI" type="MarginContainer" node_paths=PackedStringArray("ScrollContainer", "AllRowsContainer", "HeaderHolder", "RowsHolder", "hScrollBar", "VScrollContainer", "vScrollBar", "ScrollUpButton", "ScrollDownButton", "ScrollLeftButton", "ScrollRightButton", "ColorRects_BackgroundColors", "ColorRects_AccentColors", "ColorRects_SecondaryColors")]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_rwqe3")
+ScrollContainer = NodePath("VBoxContainer/HBoxContainer/Control/DataContainer")
+AllRowsContainer = NodePath("VBoxContainer/HBoxContainer/Control/DataContainer/AllRows")
+HeaderHolder = NodePath("VBoxContainer/HBoxContainer/Control/DataContainer/AllRows/DataGrid_HeaderRow")
+RowsHolder = NodePath("VBoxContainer/HBoxContainer/Control/DataContainer/AllRows/DataGrid_Rows")
+hScrollBar = NodePath("VBoxContainer/HScrollContainer/HScroller/HScrollBar")
+VScrollContainer = NodePath("VBoxContainer/HBoxContainer/VScrollContainer")
+vScrollBar = NodePath("VBoxContainer/HBoxContainer/VScrollContainer/VScroller/VScrollBar")
+ScrollUpButton = NodePath("VBoxContainer/HBoxContainer/VScrollContainer/VScroller/ScrollUp/ScrollUp_Button")
+ScrollDownButton = NodePath("VBoxContainer/HBoxContainer/VScrollContainer/VScroller/ScrollDown/ScrollDown_Button")
+ScrollLeftButton = NodePath("VBoxContainer/HScrollContainer/HScroller/ScrollLeft/ScrollLeft_Button")
+ScrollRightButton = NodePath("VBoxContainer/HScrollContainer/HScroller/ScrollRight/ScrollRight_Button")
+ColorRects_BackgroundColors = [NodePath("BackgroundColor")]
+ColorRects_AccentColors = [NodePath("VBoxContainer/HBoxContainer/VScrollContainer/VScroller/ScrollUp/TextureRect/ScrollUpAccentColor"), NodePath("VBoxContainer/HBoxContainer/VScrollContainer/VScroller/ScrollDown/TextureRect/ColorRect"), NodePath("VBoxContainer/HScrollContainer/HScroller/ScrollLeft/TextureRect/ColorRect"), NodePath("VBoxContainer/HScrollContainer/HScroller/ScrollRight/TextureRect/ColorRect")]
+ColorRects_SecondaryColors = [NodePath("VBoxContainer/HScrollContainer/ColorRect"), NodePath("VBoxContainer/HBoxContainer/VScrollContainer/ColorRect")]
+DefaultFont = ExtResource("2_lcl42")
+
+[node name="BackgroundColor" type="ColorRect" parent="."]
+layout_mode = 2
+color = Color(0.678944, 0.678944, 0.678944, 1)
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 0
+
+[node name="Control" type="Control" parent="VBoxContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="DataContainer" type="ScrollContainer" parent="VBoxContainer/HBoxContainer/Control"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+horizontal_scroll_mode = 3
+vertical_scroll_mode = 0
+
+[node name="AllRows" type="VBoxContainer" parent="VBoxContainer/HBoxContainer/Control/DataContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 0
+
+[node name="DataGrid_HeaderRow" type="VBoxContainer" parent="VBoxContainer/HBoxContainer/Control/DataContainer/AllRows"]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="DataGrid_Rows" type="VBoxContainer" parent="VBoxContainer/HBoxContainer/Control/DataContainer/AllRows"]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="VScrollContainer" type="MarginContainer" parent="VBoxContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 8
+
+[node name="ColorRect" type="ColorRect" parent="VBoxContainer/HBoxContainer/VScrollContainer"]
+layout_mode = 2
+
+[node name="VScroller" type="VBoxContainer" parent="VBoxContainer/HBoxContainer/VScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 8
+theme_override_constants/separation = 0
+
+[node name="ScrollUp" type="MarginContainer" parent="VBoxContainer/HBoxContainer/VScrollContainer/VScroller"]
+custom_minimum_size = Vector2(15, 15)
+layout_mode = 2
+
+[node name="ScrollUp_Button" type="Button" parent="VBoxContainer/HBoxContainer/VScrollContainer/VScroller/ScrollUp"]
+layout_mode = 2
+focus_mode = 0
+theme = SubResource("Theme_1cx0q")
+
+[node name="TextureRect" type="TextureRect" parent="VBoxContainer/HBoxContainer/VScrollContainer/VScroller/ScrollUp"]
+clip_children = 1
+layout_mode = 2
+mouse_filter = 2
+texture = ExtResource("3_rf5x8")
+expand_mode = 5
+
+[node name="ScrollUpAccentColor" type="ColorRect" parent="VBoxContainer/HBoxContainer/VScrollContainer/VScroller/ScrollUp/TextureRect"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="VScrollBar" type="VScrollBar" parent="VBoxContainer/HBoxContainer/VScrollContainer/VScroller"]
+custom_minimum_size = Vector2(15, 0)
+layout_mode = 2
+size_flags_vertical = 3
+theme = SubResource("Theme_yp4c5")
+step = 1.0
+
+[node name="ScrollDown" type="MarginContainer" parent="VBoxContainer/HBoxContainer/VScrollContainer/VScroller"]
+custom_minimum_size = Vector2(15, 15)
+layout_mode = 2
+
+[node name="ScrollDown_Button" type="Button" parent="VBoxContainer/HBoxContainer/VScrollContainer/VScroller/ScrollDown"]
+layout_mode = 2
+focus_mode = 0
+
+[node name="TextureRect" type="TextureRect" parent="VBoxContainer/HBoxContainer/VScrollContainer/VScroller/ScrollDown"]
+clip_children = 1
+layout_mode = 2
+mouse_filter = 2
+texture = ExtResource("4_w23mw")
+expand_mode = 5
+
+[node name="ColorRect" type="ColorRect" parent="VBoxContainer/HBoxContainer/VScrollContainer/VScroller/ScrollDown/TextureRect"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="HScrollContainer" type="MarginContainer" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_constants/margin_right = 15
+
+[node name="ColorRect" type="ColorRect" parent="VBoxContainer/HScrollContainer"]
+layout_mode = 2
+
+[node name="HScroller" type="HBoxContainer" parent="VBoxContainer/HScrollContainer"]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="ScrollLeft" type="MarginContainer" parent="VBoxContainer/HScrollContainer/HScroller"]
+custom_minimum_size = Vector2(15, 15)
+layout_mode = 2
+size_flags_horizontal = 0
+
+[node name="ScrollLeft_Button" type="Button" parent="VBoxContainer/HScrollContainer/HScroller/ScrollLeft"]
+layout_mode = 2
+focus_mode = 0
+
+[node name="TextureRect" type="TextureRect" parent="VBoxContainer/HScrollContainer/HScroller/ScrollLeft"]
+clip_children = 1
+layout_mode = 2
+mouse_filter = 2
+texture = ExtResource("5_a38o7")
+expand_mode = 3
+
+[node name="ColorRect" type="ColorRect" parent="VBoxContainer/HScrollContainer/HScroller/ScrollLeft/TextureRect"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="HScrollBar" type="HScrollBar" parent="VBoxContainer/HScrollContainer/HScroller"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 1
+theme = SubResource("Theme_7vdkj")
+
+[node name="ScrollRight" type="MarginContainer" parent="VBoxContainer/HScrollContainer/HScroller"]
+custom_minimum_size = Vector2(15, 15)
+layout_mode = 2
+size_flags_horizontal = 8
+
+[node name="ScrollRight_Button" type="Button" parent="VBoxContainer/HScrollContainer/HScroller/ScrollRight"]
+layout_mode = 2
+focus_mode = 0
+
+[node name="TextureRect" type="TextureRect" parent="VBoxContainer/HScrollContainer/HScroller/ScrollRight"]
+clip_children = 1
+layout_mode = 2
+mouse_filter = 2
+texture = ExtResource("6_i8q8j")
+expand_mode = 3
+
+[node name="ColorRect" type="ColorRect" parent="VBoxContainer/HScrollContainer/HScroller/ScrollRight/TextureRect"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2

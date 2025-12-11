@@ -1,0 +1,171 @@
+[gd_scene load_steps=9 format=3 uid="uid://c3i4gopw7biqs"]
+
+[ext_resource type="Texture2D" uid="uid://b0magg63i1jet" path="res://assets/icons/materialicons/twotone_brightness_1_black_48dp.png" id="1_fklgv"]
+[ext_resource type="Texture2D" uid="uid://dpjtf5cwu47ob" path="res://assets/icons/materialicons/twotone_brightness_high_black_48dp.png" id="2_i8s8p"]
+[ext_resource type="Texture2D" uid="uid://b00yu44otr462" path="res://assets/icons/materialicons/twotone_folder_black_48dp.png" id="3_xtlig"]
+[ext_resource type="Texture2D" uid="uid://d3rbekxlm4p3x" path="res://assets/icons/materialicons/twotone_check_black_48dp.png" id="4_ndn4c"]
+[ext_resource type="FontFile" uid="uid://cum4yxi7ul06s" path="res://assets/fonts/Gotu/Gotu-Regular.ttf" id="5_sm1y0"]
+
+[sub_resource type="Resource" id="Resource_lq3ec"]
+metadata/__load_path__ = "res://UI/PackageDisplay_Elements/subwindows/LinkedItemsRow.cs"
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_p7nyk"]
+
+[sub_resource type="Theme" id="Theme_oxq3s"]
+Label/colors/font_color = Color(0.233925, 0.233925, 0.233925, 1)
+Label/fonts/font = ExtResource("5_sm1y0")
+
+[node name="ItemRow" type="MarginContainer"]
+size_flags_horizontal = 3
+script = SubResource("Resource_lq3ec")
+
+[node name="ColorRect" type="ColorRect" parent="."]
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="PrimaryFile" type="MarginContainer" parent="HBoxContainer"]
+layout_mode = 2
+
+[node name="ColorRect" type="ColorRect" parent="HBoxContainer/PrimaryFile"]
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="HBoxContainer/PrimaryFile"]
+custom_minimum_size = Vector2(35, 35)
+layout_mode = 2
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_right = 5
+
+[node name="CheckBox_BG" type="MarginContainer" parent="HBoxContainer/PrimaryFile/MarginContainer"]
+layout_mode = 2
+
+[node name="TextureRect" type="TextureRect" parent="HBoxContainer/PrimaryFile/MarginContainer/CheckBox_BG"]
+clip_children = 1
+layout_mode = 2
+texture = ExtResource("1_fklgv")
+expand_mode = 3
+
+[node name="ColorRect" type="ColorRect" parent="HBoxContainer/PrimaryFile/MarginContainer/CheckBox_BG/TextureRect"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.31051, 0.527337, 0.760347, 1)
+
+[node name="CheckBox_Checked" type="MarginContainer" parent="HBoxContainer/PrimaryFile/MarginContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="TextureRect" type="TextureRect" parent="HBoxContainer/PrimaryFile/MarginContainer/CheckBox_Checked"]
+clip_children = 1
+layout_mode = 2
+texture = ExtResource("2_i8s8p")
+expand_mode = 3
+
+[node name="ColorRect" type="ColorRect" parent="HBoxContainer/PrimaryFile/MarginContainer/CheckBox_Checked/TextureRect"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.127082, 0.263109, 0.406695, 1)
+
+[node name="PrimaryFile_Button" type="Button" parent="HBoxContainer/PrimaryFile"]
+layout_mode = 2
+theme_override_styles/focus = SubResource("StyleBoxEmpty_p7nyk")
+theme_override_styles/disabled_mirrored = SubResource("StyleBoxEmpty_p7nyk")
+theme_override_styles/disabled = SubResource("StyleBoxEmpty_p7nyk")
+theme_override_styles/hover_pressed_mirrored = SubResource("StyleBoxEmpty_p7nyk")
+theme_override_styles/hover_pressed = SubResource("StyleBoxEmpty_p7nyk")
+theme_override_styles/hover_mirrored = SubResource("StyleBoxEmpty_p7nyk")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_p7nyk")
+theme_override_styles/pressed_mirrored = SubResource("StyleBoxEmpty_p7nyk")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_p7nyk")
+theme_override_styles/normal_mirrored = SubResource("StyleBoxEmpty_p7nyk")
+theme_override_styles/normal = SubResource("StyleBoxEmpty_p7nyk")
+
+[node name="LinkedFile" type="MarginContainer" parent="HBoxContainer"]
+layout_mode = 2
+
+[node name="ColorRect" type="ColorRect" parent="HBoxContainer/LinkedFile"]
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="HBoxContainer/LinkedFile"]
+custom_minimum_size = Vector2(35, 35)
+layout_mode = 2
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_right = 5
+
+[node name="CheckBox_BG" type="MarginContainer" parent="HBoxContainer/LinkedFile/MarginContainer"]
+layout_mode = 2
+
+[node name="TextureRect" type="TextureRect" parent="HBoxContainer/LinkedFile/MarginContainer/CheckBox_BG"]
+clip_children = 1
+layout_mode = 2
+texture = ExtResource("3_xtlig")
+expand_mode = 3
+
+[node name="ColorRect" type="ColorRect" parent="HBoxContainer/LinkedFile/MarginContainer/CheckBox_BG/TextureRect"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.682353, 0.431373, 0.490196, 1)
+
+[node name="CheckBox_Checked" type="MarginContainer" parent="HBoxContainer/LinkedFile/MarginContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="TextureRect" type="TextureRect" parent="HBoxContainer/LinkedFile/MarginContainer/CheckBox_Checked"]
+clip_children = 1
+layout_mode = 2
+texture = ExtResource("4_ndn4c")
+expand_mode = 3
+
+[node name="ColorRect" type="ColorRect" parent="HBoxContainer/LinkedFile/MarginContainer/CheckBox_Checked/TextureRect"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.312372, 0.170961, 0.205594, 1)
+
+[node name="LinkFile_Button" type="Button" parent="HBoxContainer/LinkedFile"]
+layout_mode = 2
+theme_override_styles/focus = SubResource("StyleBoxEmpty_p7nyk")
+theme_override_styles/disabled_mirrored = SubResource("StyleBoxEmpty_p7nyk")
+theme_override_styles/disabled = SubResource("StyleBoxEmpty_p7nyk")
+theme_override_styles/hover_pressed_mirrored = SubResource("StyleBoxEmpty_p7nyk")
+theme_override_styles/hover_pressed = SubResource("StyleBoxEmpty_p7nyk")
+theme_override_styles/hover_mirrored = SubResource("StyleBoxEmpty_p7nyk")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_p7nyk")
+theme_override_styles/pressed_mirrored = SubResource("StyleBoxEmpty_p7nyk")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_p7nyk")
+theme_override_styles/normal_mirrored = SubResource("StyleBoxEmpty_p7nyk")
+theme_override_styles/normal = SubResource("StyleBoxEmpty_p7nyk")
+
+[node name="FileNameContainer" type="MarginContainer" parent="HBoxContainer"]
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="HBoxContainer/FileNameContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_right = 5
+
+[node name="FileNameLabel" type="Label" parent="HBoxContainer/FileNameContainer/MarginContainer"]
+layout_mode = 2
+theme = SubResource("Theme_oxq3s")
+text = "FileName"

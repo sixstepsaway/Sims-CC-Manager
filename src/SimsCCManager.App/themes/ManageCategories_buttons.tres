@@ -13,16 +13,7 @@ border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_odbmm"]
-content_margin_left = 25.0
-content_margin_top = 5.0
-content_margin_right = 25.0
-content_margin_bottom = 5.0
-bg_color = Color(0.862745, 0.862745, 0.862745, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_c0jn3"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_vqbh2"]
 content_margin_left = 25.0
@@ -64,7 +55,7 @@ Button/colors/font_hover_pressed_color = Color(0.24728, 0.512746, 0.512958, 1)
 Button/font_sizes/font_size = 15
 Button/fonts/font = ExtResource("1_v06yl")
 Button/styles/disabled = SubResource("StyleBoxFlat_wovyn")
-Button/styles/focus = SubResource("StyleBoxFlat_odbmm")
+Button/styles/focus = SubResource("StyleBoxEmpty_c0jn3")
 Button/styles/hover = SubResource("StyleBoxFlat_vqbh2")
 Button/styles/normal = SubResource("StyleBoxFlat_cmnjv")
 Button/styles/pressed = SubResource("StyleBoxFlat_pabxb")

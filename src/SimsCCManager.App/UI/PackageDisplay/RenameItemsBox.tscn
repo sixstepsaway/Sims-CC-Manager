@@ -1,0 +1,127 @@
+[gd_scene load_steps=9 format=3 uid="uid://dpecepynaf7d5"]
+
+[ext_resource type="Theme" uid="uid://b4fe82i5mblf5" path="res://themes/packagedisplay_headers.tres" id="1_2yitw"]
+[ext_resource type="Texture2D" uid="uid://bfqqudt7sll4n" path="res://assets/icons/materialicons/twotone_refresh_black_48dp.png" id="2_bvb50"]
+[ext_resource type="Theme" uid="uid://elq77dslte5a" path="res://themes/ManageCategories_buttons.tres" id="3_ypnqs"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_u43vk"]
+bg_color = Color(0.6, 0.6, 0.6, 0)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.977937, 0.977937, 0.977937, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_atf2m"]
+bg_color = Color(0.6, 0.6, 0.6, 0)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.894922, 0.894922, 0.894922, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_8s3fj"]
+bg_color = Color(0.6, 0.6, 0.6, 0)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+
+[sub_resource type="Theme" id="Theme_ejbk3"]
+Button/styles/hover = SubResource("StyleBoxFlat_u43vk")
+Button/styles/normal = SubResource("StyleBoxFlat_atf2m")
+Button/styles/pressed = SubResource("StyleBoxFlat_8s3fj")
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_x16ux"]
+bg_color = Color(0.6, 0.6, 0.6, 0)
+
+[node name="RenameItemsBox" type="MarginContainer"]
+
+[node name="ColorRect" type="ColorRect" parent="."]
+modulate = Color(1, 1, 1, 0.505882)
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 2
+theme_override_constants/margin_left = 50
+theme_override_constants/margin_top = 50
+theme_override_constants/margin_right = 50
+theme_override_constants/margin_bottom = 125
+
+[node name="ColorRect" type="ColorRect" parent="MarginContainer"]
+layout_mode = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+alignment = 1
+
+[node name="AllMods_Label" type="Label" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme = ExtResource("1_2yitw")
+text = "Rename Mods or Press Button to Get Internal Name"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HBoxContainer2" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+alignment = 1
+
+[node name="AllMods_Label" type="Label" parent="MarginContainer/VBoxContainer/HBoxContainer2"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme = ExtResource("1_2yitw")
+text = "Get All Names"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="GetAllNamesBox" type="MarginContainer" parent="MarginContainer/VBoxContainer/HBoxContainer2"]
+custom_minimum_size = Vector2(30, 30)
+layout_mode = 2
+
+[node name="ButtonSpin" type="Node2D" parent="MarginContainer/VBoxContainer/HBoxContainer2/GetAllNamesBox"]
+position = Vector2(15, 15)
+
+[node name="TextureRect" type="TextureRect" parent="MarginContainer/VBoxContainer/HBoxContainer2/GetAllNamesBox/ButtonSpin"]
+clip_children = 1
+offset_left = -15.0
+offset_top = -15.0
+offset_right = 15.0
+offset_bottom = 15.0
+texture = ExtResource("2_bvb50")
+expand_mode = 3
+metadata/_edit_use_anchors_ = true
+
+[node name="ColorRect" type="ColorRect" parent="MarginContainer/VBoxContainer/HBoxContainer2/GetAllNamesBox/ButtonSpin/TextureRect"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Button" type="Button" parent="MarginContainer/VBoxContainer/HBoxContainer2/GetAllNamesBox"]
+layout_mode = 2
+theme = SubResource("Theme_ejbk3")
+
+[node name="ScrollContainer" type="ScrollContainer" parent="MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 350)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_x16ux")
+horizontal_scroll_mode = 0
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+alignment = 1
+
+[node name="Rename_Button" type="Button" parent="MarginContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+theme = ExtResource("3_ypnqs")
+text = "Rename"
+
+[node name="Cancel_Button" type="Button" parent="MarginContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+theme = ExtResource("3_ypnqs")
+text = "Cancel"

@@ -1,16 +1,21 @@
-[gd_scene load_steps=17 format=3 uid="uid://dsflv6ica77kt"]
+[gd_scene load_steps=23 format=3 uid="uid://dsflv6ica77kt"]
 
-[ext_resource type="Script" path="res://windows/MainWindow.cs" id="1_be40n"]
+[ext_resource type="Script" uid="uid://crjixgpgv7u48" path="res://windows/MainWindow.cs" id="1_88poc"]
+[ext_resource type="PackedScene" uid="uid://bnwk8hgw5n5uj" path="res://windows/SplashScreen.tscn" id="2_44weo"]
+[ext_resource type="PackedScene" uid="uid://irapd2eho84h" path="res://UI/MainMenu.tscn" id="3_4fg3a"]
 [ext_resource type="FontFile" uid="uid://rj6fcxmqe8tx" path="res://assets/fonts/Accidental_Presidency/AccidentalPresidency.ttf" id="3_quaxr"]
+[ext_resource type="PackedScene" uid="uid://c4rjghpqcjk60" path="res://UI/PackageDisplay.tscn" id="4_63i11"]
 [ext_resource type="Theme" uid="uid://blowbhtn7n10r" path="res://themes/footer_buttons_text.tres" id="4_hg6ub"]
-[ext_resource type="PackedScene" uid="uid://ce1n3devdsmfh" path="res://UI/PackageDisplay_Elements/socials_button.tscn" id="5_ghblx"]
-[ext_resource type="Texture2D" uid="uid://bihfoehitjlro" path="res://assets/images/twittericon.png" id="6_jmcvf"]
+[ext_resource type="PackedScene" uid="uid://ce1n3devdsmfh" path="res://UI/Buttons/SocialsButton.tscn" id="4_qtbug"]
+[ext_resource type="PackedScene" uid="uid://bj24a4o55aw5b" path="res://UI/LoadingInstance.tscn" id="5_l26s6"]
+[ext_resource type="PackedScene" uid="uid://dvy3imsnkyjp5" path="res://UI/ToolTip.tscn" id="6_4fg3a"]
 [ext_resource type="Texture2D" uid="uid://clq1s4vbr6p0k" path="res://assets/images/kofiicon.png" id="7_ldykl"]
 [ext_resource type="Texture2D" uid="uid://dpix7pk4gs1c2" path="res://assets/images/githubicon.png" id="8_5h3pv"]
 [ext_resource type="Texture2D" uid="uid://c5hnr6jv0wxfx" path="res://assets/images/discordicon.png" id="9_asanl"]
-[ext_resource type="Texture2D" uid="uid://b7hf23rkhnbcp" path="res://assets/images/tumblricon_w.png" id="10_kata0"]
-[ext_resource type="Script" path="res://UI/HolderNode.cs" id="11_3c1oh"]
+[ext_resource type="Texture2D" uid="uid://bwpht08dh3nma" path="res://assets/images/tumblr_4096_black-1914164580.png" id="9_vc3gp"]
 [ext_resource type="Texture2D" uid="uid://bchdaw51l2qxm" path="res://assets/images/itch-io-icon-md-2372909491.png" id="11_6646j"]
+[ext_resource type="FontFile" uid="uid://bob4v2pndpu0q" path="res://assets/fonts/Convergence/Convergence-Regular.ttf" id="16_bw2rg"]
+[ext_resource type="Theme" uid="uid://elq77dslte5a" path="res://themes/ManageCategories_buttons.tres" id="17_ok2fl"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_uic8o"]
 bg_color = Color(0.317116, 0.395759, 0.35931, 1)
@@ -29,7 +34,9 @@ texture = SubResource("GradientTexture2D_c408c")
 ProgressBar/styles/background = SubResource("StyleBoxFlat_uic8o")
 ProgressBar/styles/fill = SubResource("StyleBoxTexture_26dce")
 
-[node name="MainWindow" type="MarginContainer"]
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_1hsbu"]
+
+[node name="MainWindow" type="MarginContainer" node_paths=PackedStringArray("SocialsButtons", "Labels", "MainColors", "Footer", "FDPopupWindow", "FDMoreInfoButton", "FDYesButton", "FDNoButton")]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -37,13 +44,26 @@ grow_horizontal = 2
 grow_vertical = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
-script = ExtResource("1_be40n")
+script = ExtResource("1_88poc")
+SplashPS = ExtResource("2_44weo")
+MainMenuPS = ExtResource("3_4fg3a")
+PackageDisplayPS = ExtResource("4_63i11")
+LoadingScreenPS = ExtResource("5_l26s6")
+TooltipPS = ExtResource("6_4fg3a")
+SocialsButtons = [NodePath("Footer/FooterInternalMargins/SocialsButtons/TwitterButton"), NodePath("Footer/FooterInternalMargins/SocialsButtons/KofiButton"), NodePath("Footer/FooterInternalMargins/SocialsButtons/GithubButton"), NodePath("Footer/FooterInternalMargins/SocialsButtons/DiscordButton"), NodePath("Footer/FooterInternalMargins/SocialsButtons/TumblrButton"), NodePath("Footer/FooterInternalMargins/SocialsButtons/ItchButton")]
+Labels = [NodePath("Footer/FooterInternalMargins/FooterHbox/Version_Label")]
+MainColors = [NodePath("Footer/FooterColor")]
+Footer = NodePath("Footer")
+FDPopupWindow = NodePath("Window")
+FDMoreInfoButton = NodePath("Window/MarginContainer/MarginContainer/VBoxContainer/HBoxContainer2/MarginContainer/Button")
+FDYesButton = NodePath("Window/MarginContainer/MarginContainer/VBoxContainer/HBoxContainer/Yes_Button")
+FDNoButton = NodePath("Window/MarginContainer/MarginContainer/VBoxContainer/HBoxContainer/No_Button")
 
 [node name="Footer" type="MarginContainer" parent="."]
 layout_mode = 2
 size_flags_vertical = 8
 
-[node name="FooterColor" type="ColorRect" parent="Footer" groups=["AccentColorBox"]]
+[node name="FooterColor" type="ColorRect" parent="Footer"]
 layout_mode = 2
 color = Color(0.12549, 0.282353, 0.352941, 1)
 
@@ -58,7 +78,7 @@ theme_override_constants/margin_bottom = 5
 custom_minimum_size = Vector2(0, 55)
 layout_mode = 2
 
-[node name="Version_Label" type="Label" parent="Footer/FooterInternalMargins/FooterHbox" groups=["AccentLabels"]]
+[node name="Version_Label" type="Label" parent="Footer/FooterInternalMargins/FooterHbox"]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("3_quaxr")
 theme_override_font_sizes/font_size = 30
@@ -72,7 +92,7 @@ theme_override_constants/margin_left = 15
 theme_override_constants/margin_top = 10
 theme_override_constants/margin_right = 15
 
-[node name="ReportABug_Button" type="Button" parent="Footer/FooterInternalMargins/FooterHbox/MarginContainer" groups=["AccentTextButtons"]]
+[node name="ReportABug_Button" type="Button" parent="Footer/FooterInternalMargins/FooterHbox/MarginContainer"]
 layout_mode = 2
 theme = ExtResource("4_hg6ub")
 text = "Report A Bug"
@@ -84,7 +104,7 @@ theme_override_constants/margin_left = 15
 theme_override_constants/margin_top = 10
 theme_override_constants/margin_right = 15
 
-[node name="DevTest_Button" type="Button" parent="Footer/FooterInternalMargins/FooterHbox/MarginContainer2" groups=["AccentTextButtons"]]
+[node name="DevTest_Button" type="Button" parent="Footer/FooterInternalMargins/FooterHbox/MarginContainer2"]
 layout_mode = 2
 theme = ExtResource("4_hg6ub")
 text = "Dev Test"
@@ -127,39 +147,129 @@ text = "Stop"
 layout_mode = 2
 alignment = 2
 
-[node name="Twitter_SocialsButton" parent="Footer/FooterInternalMargins/SocialsButtons" groups=["SocialsButtons"] instance=ExtResource("5_ghblx")]
+[node name="TwitterButton" parent="Footer/FooterInternalMargins/SocialsButtons" instance=ExtResource("4_qtbug")]
 layout_mode = 2
-buttonImage = ExtResource("6_jmcvf")
+LinkString = "http://x.com/sinfulsimming"
 
-[node name="Kofi_SocialsButton" parent="Footer/FooterInternalMargins/SocialsButtons" groups=["SocialsButtons"] instance=ExtResource("5_ghblx")]
+[node name="KofiButton" parent="Footer/FooterInternalMargins/SocialsButtons" instance=ExtResource("4_qtbug")]
 layout_mode = 2
-buttonImage = ExtResource("7_ldykl")
+LinkString = "http://ko-fi.com/sinfulsimming"
 
-[node name="Github_SocialsButton" parent="Footer/FooterInternalMargins/SocialsButtons" groups=["SocialsButtons"] instance=ExtResource("5_ghblx")]
+[node name="TextureRect" parent="Footer/FooterInternalMargins/SocialsButtons/KofiButton" index="0"]
+texture = ExtResource("7_ldykl")
+
+[node name="GithubButton" parent="Footer/FooterInternalMargins/SocialsButtons" instance=ExtResource("4_qtbug")]
 layout_mode = 2
-buttonImage = ExtResource("8_5h3pv")
+LinkString = "https://github.com/sixstepsaway/Sims-CC-Manager"
 
-[node name="Discord_SocialsButton" parent="Footer/FooterInternalMargins/SocialsButtons" groups=["SocialsButtons"] instance=ExtResource("5_ghblx")]
+[node name="TextureRect" parent="Footer/FooterInternalMargins/SocialsButtons/GithubButton" index="0"]
+texture = ExtResource("8_5h3pv")
+
+[node name="DiscordButton" parent="Footer/FooterInternalMargins/SocialsButtons" instance=ExtResource("4_qtbug")]
 visible = false
 layout_mode = 2
-buttonImage = ExtResource("9_asanl")
+LinkString = "http://google.com"
 
-[node name="Tumblr_SocialsButton" parent="Footer/FooterInternalMargins/SocialsButtons" groups=["SocialsButtons"] instance=ExtResource("5_ghblx")]
-layout_mode = 2
-buttonImage = ExtResource("10_kata0")
+[node name="TextureRect" parent="Footer/FooterInternalMargins/SocialsButtons/DiscordButton" index="0"]
+texture = ExtResource("9_asanl")
 
-[node name="Itch_SocialsButton" parent="Footer/FooterInternalMargins/SocialsButtons" groups=["SocialsButtons"] instance=ExtResource("5_ghblx")]
-layout_mode = 2
-buttonImage = ExtResource("11_6646j")
-
-[node name="HolderNode" type="Control" parent="."]
+[node name="TumblrButton" parent="Footer/FooterInternalMargins/SocialsButtons" instance=ExtResource("4_qtbug")]
 visible = false
 layout_mode = 2
-script = ExtResource("11_3c1oh")
+LinkString = "http://sinfulsimming.tumblr.com/"
 
-[connection signal="ButtonClicked" from="Footer/FooterInternalMargins/SocialsButtons/Twitter_SocialsButton" to="." method="_on_twitter_socials_button_button_clicked"]
-[connection signal="ButtonClicked" from="Footer/FooterInternalMargins/SocialsButtons/Kofi_SocialsButton" to="." method="_on_kofi_socials_button_button_clicked"]
-[connection signal="ButtonClicked" from="Footer/FooterInternalMargins/SocialsButtons/Github_SocialsButton" to="." method="_on_github_socials_button_button_clicked"]
-[connection signal="ButtonClicked" from="Footer/FooterInternalMargins/SocialsButtons/Discord_SocialsButton" to="." method="_on_discord_socials_button_button_clicked"]
-[connection signal="ButtonClicked" from="Footer/FooterInternalMargins/SocialsButtons/Tumblr_SocialsButton" to="." method="_on_tumblr_socials_button_button_clicked"]
-[connection signal="ButtonClicked" from="Footer/FooterInternalMargins/SocialsButtons/Itch_SocialsButton" to="." method="_on_itch_socials_button_button_clicked"]
+[node name="TextureRect" parent="Footer/FooterInternalMargins/SocialsButtons/TumblrButton" index="0"]
+texture = ExtResource("9_vc3gp")
+
+[node name="ItchButton" parent="Footer/FooterInternalMargins/SocialsButtons" instance=ExtResource("4_qtbug")]
+layout_mode = 2
+LinkString = "http://sixstepsaway.itch.io"
+
+[node name="TextureRect" parent="Footer/FooterInternalMargins/SocialsButtons/ItchButton" index="0"]
+texture = ExtResource("11_6646j")
+
+[node name="Window" type="Window" parent="."]
+oversampling_override = 1.0
+title = "Virtual Files Detected"
+initial_position = 2
+size = Vector2i(415, 235)
+visible = false
+force_native = true
+
+[node name="MarginContainer" type="MarginContainer" parent="Window"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="BgColor" type="ColorRect" parent="Window/MarginContainer"]
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="Window/MarginContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 15
+theme_override_constants/margin_top = 15
+theme_override_constants/margin_right = 15
+theme_override_constants/margin_bottom = 15
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Window/MarginContainer/MarginContainer"]
+layout_mode = 2
+
+[node name="HBoxContainer2" type="VBoxContainer" parent="Window/MarginContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="RichTextLabel" type="RichTextLabel" parent="Window/MarginContainer/MarginContainer/VBoxContainer/HBoxContainer2"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_colors/default_color = Color(0, 0, 0, 1)
+theme_override_fonts/normal_font = ExtResource("16_bw2rg")
+text = "SCCM did not close cleanly, and residual virtual files have been detected in Sims folders. 
+
+Do you want to clear these files now?
+
+(Uncleared files can cause issues running the game!)"
+
+[node name="MarginContainer" type="MarginContainer" parent="Window/MarginContainer/MarginContainer/VBoxContainer/HBoxContainer2"]
+layout_mode = 2
+size_flags_horizontal = 8
+
+[node name="Label" type="Label" parent="Window/MarginContainer/MarginContainer/VBoxContainer/HBoxContainer2/MarginContainer"]
+layout_mode = 2
+size_flags_horizontal = 8
+theme_override_colors/font_color = Color(0.1955201, 0.4599418, 0.7154591, 1)
+theme_override_fonts/font = ExtResource("16_bw2rg")
+theme_override_font_sizes/font_size = 13
+text = "More information"
+horizontal_alignment = 2
+
+[node name="Button" type="Button" parent="Window/MarginContainer/MarginContainer/VBoxContainer/HBoxContainer2/MarginContainer"]
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxEmpty_1hsbu")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_1hsbu")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_1hsbu")
+theme_override_styles/disabled = SubResource("StyleBoxEmpty_1hsbu")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_1hsbu")
+
+[node name="HBoxContainer" type="HBoxContainer" parent="Window/MarginContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+alignment = 1
+
+[node name="Yes_Button" type="Button" parent="Window/MarginContainer/MarginContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+theme = ExtResource("17_ok2fl")
+text = "Yes"
+
+[node name="No_Button" type="Button" parent="Window/MarginContainer/MarginContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+theme = ExtResource("17_ok2fl")
+text = "No"
+
+[editable path="Footer/FooterInternalMargins/SocialsButtons/TwitterButton"]
+[editable path="Footer/FooterInternalMargins/SocialsButtons/KofiButton"]
+[editable path="Footer/FooterInternalMargins/SocialsButtons/GithubButton"]
+[editable path="Footer/FooterInternalMargins/SocialsButtons/DiscordButton"]
+[editable path="Footer/FooterInternalMargins/SocialsButtons/TumblrButton"]
+[editable path="Footer/FooterInternalMargins/SocialsButtons/ItchButton"]

@@ -1,0 +1,42 @@
+[gd_scene load_steps=2 format=3 uid="uid://ctqps0rpkhdg8"]
+
+[ext_resource type="Script" uid="uid://beeskvsi4nddd" path="res://addons/CustomDataGrid/DataGrid/HeaderDragger.cs" id="1_7ylj6"]
+
+[node name="Dragger" type="Node2D" node_paths=PackedStringArray("VerticalLine", "TopLine", "BottomLine", "TopCurve", "BottomCurve")]
+script = ExtResource("1_7ylj6")
+VerticalLine = NodePath("VerticalLine")
+TopLine = NodePath("TopLine")
+BottomLine = NodePath("BottomLine")
+TopCurve = NodePath("TopLineCurve")
+BottomCurve = NodePath("BottomLineCurve")
+
+[node name="VerticalLine" type="Line2D" parent="."]
+points = PackedVector2Array(0, 0, 0, 25)
+width = 2.0
+default_color = Color(0.899973, 0.908283, 0.926878, 1)
+
+[node name="TopLine" type="Line2D" parent="."]
+points = PackedVector2Array(-5, 0, 5, 0)
+width = 2.0
+default_color = Color(0.898039, 0.909804, 0.92549, 1)
+
+[node name="BottomLine" type="Line2D" parent="."]
+points = PackedVector2Array(-5, 25, 5, 25)
+width = 2.0
+default_color = Color(0.898039, 0.909804, 0.92549, 1)
+
+[node name="TopLineCurve" type="Line2D" parent="."]
+points = PackedVector2Array(-5, 0, 0, 2, 5, 0)
+width = 2.0
+default_color = Color(0.898039, 0.909804, 0.92549, 1)
+
+[node name="BottomLineCurve" type="Line2D" parent="."]
+points = PackedVector2Array(-5, 25, 0, 23, 5, 25)
+width = 2.0
+default_color = Color(0.898039, 0.909804, 0.92549, 1)
+
+[node name="MarkerLine" type="Line2D" parent="."]
+visible = false
+points = PackedVector2Array(-6, 1, 0, 1, 6, 1, 0, 1, 0, 29, -6, 29, 6, 29)
+width = 2.0
+default_color = Color(0.899973, 0.908283, 0.926878, 1)

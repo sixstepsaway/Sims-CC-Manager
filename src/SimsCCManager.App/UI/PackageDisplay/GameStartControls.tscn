@@ -1,0 +1,126 @@
+[gd_scene load_steps=9 format=3 uid="uid://dolbjbnv8hxy2"]
+
+[ext_resource type="Script" uid="uid://ks4gkye0klkm" path="res://UI/PackageDisplay/GameStartControls.cs" id="1_4hxal"]
+[ext_resource type="Texture2D" uid="uid://d1216ob5rait5" path="res://assets/icons/materialicons/twotone_arrow_drop_down_black_48dp.png" id="1_jj24v"]
+[ext_resource type="Texture2D" uid="uid://bvsroafqogyd0" path="res://assets/images/s4.png" id="2_4hxal"]
+[ext_resource type="PackedScene" uid="uid://ryrvwl0ec34b" path="res://UI/Buttons/TopbarButton.tscn" id="3_7lsfw"]
+[ext_resource type="Texture2D" uid="uid://dtc02rko6kqee" path="res://assets/icons/materialicons/twotone_play_arrow_black_48dp.png" id="4_wtfji"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_yu83b"]
+bg_color = Color(0.333333, 0.294118, 0.34902, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.8, 0.670588, 0.847059, 1)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+
+[sub_resource type="Theme" id="Theme_lhcnj"]
+Panel/styles/panel = SubResource("StyleBoxFlat_yu83b")
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_sw8eu"]
+bg_color = Color(0.184314, 0.184314, 0.192157, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+
+[node name="GameStartControls" type="MarginContainer" node_paths=PackedStringArray("ExeNameLabel", "ExePathLabel", "ExeIcon", "PlayButton", "GameChoiceDropDownButton")]
+size_flags_horizontal = 4
+size_flags_vertical = 4
+script = ExtResource("1_4hxal")
+ExeNameLabel = NodePath("HBoxContainer/Name_Container/VBoxContainer/ExeName_Label")
+ExePathLabel = NodePath("HBoxContainer/Name_Container/VBoxContainer/ExeExe_Label")
+ExeIcon = NodePath("HBoxContainer/ExeIcon_Container/HBoxContainer/MarginContainer/ExeIcon_Image")
+PlayButton = NodePath("HBoxContainer/PlayButton_Container/Play_Button")
+GameChoiceDropDownButton = NodePath("HBoxContainer/ExeIcon_Container/HBoxContainer/MarginContainer3/GameChoice_Dropdown")
+
+[node name="Panel" type="Panel" parent="."]
+layout_mode = 2
+theme = SubResource("Theme_lhcnj")
+
+[node name="HBoxContainer" type="HBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="ChangeExe_Container" type="MarginContainer" parent="HBoxContainer"]
+layout_mode = 2
+
+[node name="ExeIcon_Container" type="MarginContainer" parent="HBoxContainer"]
+layout_mode = 2
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="HBoxContainer" type="HBoxContainer" parent="HBoxContainer/ExeIcon_Container"]
+layout_mode = 2
+
+[node name="MarginContainer3" type="MarginContainer" parent="HBoxContainer/ExeIcon_Container/HBoxContainer"]
+custom_minimum_size = Vector2(13, 0)
+layout_mode = 2
+
+[node name="GameChoice_Dropdown" type="Button" parent="HBoxContainer/ExeIcon_Container/HBoxContainer/MarginContainer3"]
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_sw8eu")
+
+[node name="MarginContainer" type="MarginContainer" parent="HBoxContainer/ExeIcon_Container/HBoxContainer/MarginContainer3"]
+custom_minimum_size = Vector2(20, 20)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+mouse_filter = 2
+
+[node name="TextureRect" type="TextureRect" parent="HBoxContainer/ExeIcon_Container/HBoxContainer/MarginContainer3/MarginContainer"]
+clip_children = 1
+layout_mode = 2
+mouse_filter = 2
+texture = ExtResource("1_jj24v")
+expand_mode = 3
+
+[node name="ColorRect" type="ColorRect" parent="HBoxContainer/ExeIcon_Container/HBoxContainer/MarginContainer3/MarginContainer/TextureRect"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.8, 0.670588, 0.847059, 1)
+
+[node name="MarginContainer" type="MarginContainer" parent="HBoxContainer/ExeIcon_Container/HBoxContainer"]
+custom_minimum_size = Vector2(65, 65)
+layout_mode = 2
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="ExeIcon_Image" type="TextureRect" parent="HBoxContainer/ExeIcon_Container/HBoxContainer/MarginContainer"]
+layout_mode = 2
+texture = ExtResource("2_4hxal")
+expand_mode = 5
+
+[node name="Name_Container" type="MarginContainer" parent="HBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 4
+
+[node name="VBoxContainer" type="VBoxContainer" parent="HBoxContainer/Name_Container"]
+layout_mode = 2
+
+[node name="ExeName_Label" type="Label" parent="HBoxContainer/Name_Container/VBoxContainer"]
+layout_mode = 2
+text = "Default"
+
+[node name="ExeExe_Label" type="Label" parent="HBoxContainer/Name_Container/VBoxContainer"]
+layout_mode = 2
+text = "TS4x64.exe"
+
+[node name="PlayButton_Container" type="MarginContainer" parent="HBoxContainer"]
+layout_mode = 2
+theme_override_constants/margin_right = 8
+
+[node name="Play_Button" parent="HBoxContainer/PlayButton_Container" instance=ExtResource("3_7lsfw")]
+custom_minimum_size = Vector2(55, 55)
+layout_mode = 2
+Texture = ExtResource("4_wtfji")

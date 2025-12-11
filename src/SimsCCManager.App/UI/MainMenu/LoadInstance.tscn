@@ -1,0 +1,269 @@
+[gd_scene load_steps=13 format=3 uid="uid://d1a1q32e3vjdw"]
+
+[ext_resource type="Script" uid="uid://dvh22l52ftbad" path="res://UI/MainMenu/LoadInstance.cs" id="1_61n18"]
+[ext_resource type="PackedScene" uid="uid://uo2724xgb1uw" path="res://UI/Background.tscn" id="2_8ux1x"]
+[ext_resource type="PackedScene" uid="uid://q5rj0o1rl08t" path="res://UI/MainMenu/InstancePickerBox.tscn" id="2_pul82"]
+[ext_resource type="PackedScene" uid="uid://dpna1rktoenjc" path="res://UI/Buttons/MMButton.tscn" id="2_qos52"]
+[ext_resource type="Texture2D" uid="uid://u7h16r70fle5" path="res://assets/icons/materialicons/twotone_backspace_black_48dp.png" id="3_caes4"]
+[ext_resource type="Texture2D" uid="uid://pclpeqlqhoje" path="res://assets/icons/materialicons/twotone_next_plan_black_48dp.png" id="4_8ux1x"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_hmgm0"]
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.537011, 0.537011, 0.537011, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_2x6i4"]
+border_width_left = 2
+border_width_top = 1
+border_width_right = 2
+border_width_bottom = 1
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+expand_margin_left = 5.0
+expand_margin_top = 2.0
+expand_margin_right = 5.0
+expand_margin_bottom = 2.0
+
+[sub_resource type="Theme" id="Theme_pul82"]
+Panel/styles/panel = SubResource("StyleBoxFlat_2x6i4")
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_3wbg4"]
+border_width_left = 2
+border_width_top = 1
+border_width_right = 2
+border_width_bottom = 1
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+expand_margin_left = 5.0
+expand_margin_top = 2.0
+expand_margin_right = 5.0
+expand_margin_bottom = 2.0
+
+[sub_resource type="Theme" id="Theme_wr0d4"]
+Panel/styles/panel = SubResource("StyleBoxFlat_3wbg4")
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_yook7"]
+
+[node name="LoadInstance" type="MarginContainer" node_paths=PackedStringArray("ListBGColor", "InstanceList", "CancelButton", "LoadButton", "AcceptDialogHolder", "AcceptDialogOK", "AcceptDialogCANCEL")]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+script = ExtResource("1_61n18")
+ListBGColor = NodePath("MarginContainer/VBoxContainer/MarginContainer/MarginContainer/ColorRect")
+InstanceList = NodePath("MarginContainer/VBoxContainer/MarginContainer/ScrollContainer/GamePicker")
+CancelButton = NodePath("MarginContainer/VBoxContainer/HBoxContainer/CancelButton")
+LoadButton = NodePath("MarginContainer/VBoxContainer/HBoxContainer/ConfirmButton")
+InstancePickerPS = ExtResource("2_pul82")
+AcceptDialogHolder = NodePath("AcceptDialogHolder")
+AcceptDialogOK = NodePath("AcceptDialogHolder/AcceptDialog/VBoxContainer/MarginContainer2/HBoxContainer/MarginContainer2/Button_OK")
+AcceptDialogCANCEL = NodePath("AcceptDialogHolder/AcceptDialog/VBoxContainer/MarginContainer2/HBoxContainer/MarginContainer/Button_Back")
+
+[node name="Background" parent="." instance=ExtResource("2_8ux1x")]
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_override_constants/margin_left = 15
+theme_override_constants/margin_top = 15
+theme_override_constants/margin_right = 15
+theme_override_constants/margin_bottom = 15
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+alignment = 1
+
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(450, 200)
+layout_mode = 2
+
+[node name="Panel" type="Panel" parent="MarginContainer/VBoxContainer/MarginContainer"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_hmgm0")
+
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer/VBoxContainer/MarginContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 2
+theme_override_constants/margin_top = 2
+theme_override_constants/margin_right = 2
+theme_override_constants/margin_bottom = 2
+
+[node name="ColorRect" type="ColorRect" parent="MarginContainer/VBoxContainer/MarginContainer/MarginContainer"]
+layout_mode = 2
+color = Color(0.860369, 0.860369, 0.860369, 1)
+
+[node name="ScrollContainer" type="ScrollContainer" parent="MarginContainer/VBoxContainer/MarginContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="GamePicker" type="VBoxContainer" parent="MarginContainer/VBoxContainer/MarginContainer/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+alignment = 1
+
+[node name="CancelButton" parent="MarginContainer/VBoxContainer/HBoxContainer" instance=ExtResource("2_qos52")]
+custom_minimum_size = Vector2(320, 80)
+layout_mode = 2
+
+[node name="MMContainer" parent="MarginContainer/VBoxContainer/HBoxContainer/CancelButton/Node2D" index="0"]
+offset_right = 387.0
+
+[node name="PanelContainer" parent="MarginContainer/VBoxContainer/HBoxContainer/CancelButton/Node2D/MMContainer" index="0"]
+size_flags_horizontal = 0
+
+[node name="MarginContainer" parent="MarginContainer/VBoxContainer/HBoxContainer/CancelButton/Node2D/MMContainer/PanelContainer" index="2"]
+size_flags_horizontal = 0
+
+[node name="Label" parent="MarginContainer/VBoxContainer/HBoxContainer/CancelButton/Node2D/MMContainer/PanelContainer/MarginContainer" index="0"]
+text = "Cancel"
+
+[node name="TextureRect" parent="MarginContainer/VBoxContainer/HBoxContainer/CancelButton/Node2D/MMContainer/MarginContainer" index="0"]
+texture = ExtResource("3_caes4")
+
+[node name="ConfirmButton" parent="MarginContainer/VBoxContainer/HBoxContainer" instance=ExtResource("2_qos52")]
+custom_minimum_size = Vector2(300, 80)
+layout_mode = 2
+
+[node name="MMContainer" parent="MarginContainer/VBoxContainer/HBoxContainer/ConfirmButton/Node2D" index="0"]
+offset_right = 387.0
+
+[node name="PanelContainer" parent="MarginContainer/VBoxContainer/HBoxContainer/ConfirmButton/Node2D/MMContainer" index="0"]
+size_flags_horizontal = 0
+
+[node name="MarginContainer" parent="MarginContainer/VBoxContainer/HBoxContainer/ConfirmButton/Node2D/MMContainer/PanelContainer" index="2"]
+size_flags_horizontal = 0
+
+[node name="Label" parent="MarginContainer/VBoxContainer/HBoxContainer/ConfirmButton/Node2D/MMContainer/PanelContainer/MarginContainer" index="0"]
+text = "Load"
+
+[node name="TextureRect" parent="MarginContainer/VBoxContainer/HBoxContainer/ConfirmButton/Node2D/MMContainer/MarginContainer" index="0"]
+texture = ExtResource("4_8ux1x")
+
+[node name="AcceptDialogHolder" type="Control" parent="."]
+visible = false
+layout_mode = 2
+
+[node name="AcceptDialog" type="MarginContainer" parent="AcceptDialogHolder"]
+custom_minimum_size = Vector2(300, 150)
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.5
+anchor_top = 0.47100002
+anchor_right = 0.5
+anchor_bottom = 0.47100002
+offset_left = -150.0
+offset_top = -96.25
+offset_right = 150.0
+offset_bottom = 96.75
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ColorRect" type="ColorRect" parent="AcceptDialogHolder/AcceptDialog"]
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="AcceptDialogHolder/AcceptDialog"]
+layout_mode = 2
+theme_override_constants/margin_left = 2
+theme_override_constants/margin_top = 2
+theme_override_constants/margin_right = 2
+theme_override_constants/margin_bottom = 2
+
+[node name="Background" parent="AcceptDialogHolder/AcceptDialog/MarginContainer" instance=ExtResource("2_8ux1x")]
+layout_mode = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="AcceptDialogHolder/AcceptDialog"]
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="AcceptDialogHolder/AcceptDialog/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/margin_left = 25
+theme_override_constants/margin_right = 25
+
+[node name="Label" type="Label" parent="AcceptDialogHolder/AcceptDialog/VBoxContainer/MarginContainer"]
+custom_minimum_size = Vector2(250, 49)
+layout_mode = 2
+text = "Removing an instance will not delete it from your PC, only remove it from this list.  Click OK if you're sure."
+autowrap_mode = 2
+
+[node name="MarginContainer2" type="MarginContainer" parent="AcceptDialogHolder/AcceptDialog/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 0
+theme_override_constants/margin_bottom = 20
+
+[node name="HBoxContainer" type="HBoxContainer" parent="AcceptDialogHolder/AcceptDialog/VBoxContainer/MarginContainer2"]
+layout_mode = 2
+theme_override_constants/separation = 30
+alignment = 1
+
+[node name="MarginContainer" type="MarginContainer" parent="AcceptDialogHolder/AcceptDialog/VBoxContainer/MarginContainer2/HBoxContainer"]
+custom_minimum_size = Vector2(50, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+
+[node name="PanelMain" type="Panel" parent="AcceptDialogHolder/AcceptDialog/VBoxContainer/MarginContainer2/HBoxContainer/MarginContainer"]
+layout_mode = 2
+theme = SubResource("Theme_pul82")
+
+[node name="PanelHover" type="Panel" parent="AcceptDialogHolder/AcceptDialog/VBoxContainer/MarginContainer2/HBoxContainer/MarginContainer"]
+layout_mode = 2
+theme = SubResource("Theme_wr0d4")
+
+[node name="Label" type="Label" parent="AcceptDialogHolder/AcceptDialog/VBoxContainer/MarginContainer2/HBoxContainer/MarginContainer"]
+layout_mode = 2
+text = "CANCEL"
+horizontal_alignment = 1
+
+[node name="Button_Back" type="Button" parent="AcceptDialogHolder/AcceptDialog/VBoxContainer/MarginContainer2/HBoxContainer/MarginContainer"]
+layout_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_styles/normal = SubResource("StyleBoxEmpty_yook7")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_yook7")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_yook7")
+theme_override_styles/disabled = SubResource("StyleBoxEmpty_yook7")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_yook7")
+
+[node name="MarginContainer2" type="MarginContainer" parent="AcceptDialogHolder/AcceptDialog/VBoxContainer/MarginContainer2/HBoxContainer"]
+custom_minimum_size = Vector2(50, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+
+[node name="PanelMain" type="Panel" parent="AcceptDialogHolder/AcceptDialog/VBoxContainer/MarginContainer2/HBoxContainer/MarginContainer2"]
+layout_mode = 2
+theme = SubResource("Theme_pul82")
+
+[node name="PanelHover" type="Panel" parent="AcceptDialogHolder/AcceptDialog/VBoxContainer/MarginContainer2/HBoxContainer/MarginContainer2"]
+layout_mode = 2
+theme = SubResource("Theme_wr0d4")
+
+[node name="Label" type="Label" parent="AcceptDialogHolder/AcceptDialog/VBoxContainer/MarginContainer2/HBoxContainer/MarginContainer2"]
+layout_mode = 2
+text = "OK"
+horizontal_alignment = 1
+
+[node name="Button_OK" type="Button" parent="AcceptDialogHolder/AcceptDialog/VBoxContainer/MarginContainer2/HBoxContainer/MarginContainer2"]
+layout_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_styles/normal = SubResource("StyleBoxEmpty_yook7")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_yook7")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_yook7")
+theme_override_styles/disabled = SubResource("StyleBoxEmpty_yook7")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_yook7")
+
+[editable path="MarginContainer/VBoxContainer/HBoxContainer/CancelButton"]
+[editable path="MarginContainer/VBoxContainer/HBoxContainer/ConfirmButton"]

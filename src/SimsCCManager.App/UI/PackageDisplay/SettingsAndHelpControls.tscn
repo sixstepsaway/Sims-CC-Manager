@@ -1,0 +1,74 @@
+[gd_scene load_steps=8 format=3 uid="uid://32whu6sh6ha1"]
+
+[ext_resource type="PackedScene" uid="uid://ryrvwl0ec34b" path="res://UI/Buttons/TopbarButton.tscn" id="1_mq0u7"]
+[ext_resource type="Script" uid="uid://bteq4lnaltk0l" path="res://UI/PackageDisplay/SettingsAndHelpControls.cs" id="1_wr2e3"]
+[ext_resource type="Texture2D" uid="uid://u7h16r70fle5" path="res://assets/icons/materialicons/twotone_backspace_black_48dp.png" id="2_wr2e3"]
+[ext_resource type="Texture2D" uid="uid://bkuudak2gjupp" path="res://assets/icons/materialicons/twotone_settings_black_48dp.png" id="3_rhbyh"]
+[ext_resource type="Texture2D" uid="uid://c8mq228vanu3y" path="res://assets/icons/materialicons/twotone_error_black_48dp.png" id="5_5r2bt"]
+[ext_resource type="Texture2D" uid="uid://bp0j34pwjatb4" path="res://assets/icons/materialicons/twotone_help_black_48dp.png" id="6_p1aw0"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_mq0u7"]
+bg_color = Color(0.86095154, 0.017409759, 0.03165954, 1)
+corner_radius_top_left = 100
+corner_radius_top_right = 100
+corner_radius_bottom_right = 100
+corner_radius_bottom_left = 100
+
+[node name="SettingsAndHelpControls" type="MarginContainer" node_paths=PackedStringArray("Settings", "BackToMainMenu", "ViewErrors", "Help", "ErrorsDetectedCircle")]
+size_flags_horizontal = 8
+size_flags_vertical = 0
+script = ExtResource("1_wr2e3")
+Settings = NodePath("HBoxContainer/Settings")
+BackToMainMenu = NodePath("HBoxContainer/BackToMainMenu")
+ViewErrors = NodePath("HBoxContainer/MarginContainer/ViewErrors")
+Help = NodePath("HBoxContainer/Help")
+ErrorsDetectedCircle = NodePath("HBoxContainer/MarginContainer/ErrorsDetected")
+
+[node name="HBoxContainer" type="HBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="BackToMainMenu" parent="HBoxContainer" instance=ExtResource("1_mq0u7")]
+custom_minimum_size = Vector2(45, 45)
+layout_mode = 2
+Texture = ExtResource("2_wr2e3")
+ToolTipText = "Return to Main Menu"
+
+[node name="Settings" parent="HBoxContainer" instance=ExtResource("1_mq0u7")]
+custom_minimum_size = Vector2(45, 45)
+layout_mode = 2
+Texture = ExtResource("3_rhbyh")
+ToolTipText = "Open Settings"
+
+[node name="MarginContainer" type="MarginContainer" parent="HBoxContainer"]
+custom_minimum_size = Vector2(45, 45)
+layout_mode = 2
+
+[node name="ViewErrors" parent="HBoxContainer/MarginContainer" instance=ExtResource("1_mq0u7")]
+custom_minimum_size = Vector2(45, 45)
+layout_mode = 2
+Texture = ExtResource("5_5r2bt")
+ToolTipText = "View Errors"
+
+[node name="ErrorsDetected" type="MarginContainer" parent="HBoxContainer/MarginContainer"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/margin_top = 2
+theme_override_constants/margin_right = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="HBoxContainer/MarginContainer/ErrorsDetected"]
+custom_minimum_size = Vector2(15, 15)
+layout_mode = 2
+size_flags_horizontal = 8
+size_flags_vertical = 0
+mouse_filter = 2
+
+[node name="Panel" type="Panel" parent="HBoxContainer/MarginContainer/ErrorsDetected/MarginContainer"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_mq0u7")
+
+[node name="Help" parent="HBoxContainer" instance=ExtResource("1_mq0u7")]
+custom_minimum_size = Vector2(45, 45)
+layout_mode = 2
+Texture = ExtResource("6_p1aw0")
+ToolTipText = "Help"

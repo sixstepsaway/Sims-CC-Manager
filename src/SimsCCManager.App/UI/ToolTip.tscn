@@ -1,9 +1,17 @@
 [gd_scene load_steps=6 format=3 uid="uid://dvy3imsnkyjp5"]
 
-[ext_resource type="FontFile" uid="uid://cqipos5auyftq" path="res://assets/fonts/Antic/Antic-Regular.ttf" id="1_3fgkl"]
-[ext_resource type="Script" path="res://UI/ToolTip.cs" id="1_6hxhs"]
+[ext_resource type="Script" uid="uid://bohq8chv6lvmu" path="res://UI/ToolTip.cs" id="1_6hxhs"]
+[ext_resource type="FontFile" uid="uid://dsv3tma4glemy" path="res://assets/fonts/Averia_Sans_Libre/AveriaSansLibre-Bold.ttf" id="2_pt6rj"]
 
-[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_4jqtb"]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_pt6rj"]
+bg_color = Color(0.2, 0.2, 0.2, 0.3882353)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+shadow_color = Color(0, 0, 0, 0.078431375)
+shadow_size = 3
+shadow_offset = Vector2(2, 2)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_rync2"]
 bg_color = Color(0.6, 0.6, 0.6, 0)
@@ -17,56 +25,41 @@ Label/colors/font_shadow_color = Color(0.374139, 0.374139, 0.374139, 1)
 Label/constants/shadow_offset_x = 0
 Label/constants/shadow_offset_y = 0
 Label/constants/shadow_outline_size = 5
-Label/font_sizes/font_size = 14
-Label/fonts/font = ExtResource("1_3fgkl")
+Label/font_sizes/font_size = 15
+Label/fonts/font = ExtResource("2_pt6rj")
 Label/styles/normal = SubResource("StyleBoxFlat_rync2")
 
-[node name="Window" type="Control"]
-layout_mode = 3
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
+[node name="Tooltip" type="Node2D" node_paths=PackedStringArray("TooltipText")]
 script = ExtResource("1_6hxhs")
+TooltipText = NodePath("Control/MarginContainer2/MarginContainer/text")
 
-[node name="Button" type="Button" parent="."]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-theme_override_styles/focus = SubResource("StyleBoxEmpty_4jqtb")
-theme_override_styles/disabled_mirrored = SubResource("StyleBoxEmpty_4jqtb")
-theme_override_styles/disabled = SubResource("StyleBoxEmpty_4jqtb")
-theme_override_styles/hover_pressed_mirrored = SubResource("StyleBoxEmpty_4jqtb")
-theme_override_styles/hover_pressed = SubResource("StyleBoxEmpty_4jqtb")
-theme_override_styles/hover_mirrored = SubResource("StyleBoxEmpty_4jqtb")
-theme_override_styles/hover = SubResource("StyleBoxEmpty_4jqtb")
-theme_override_styles/pressed_mirrored = SubResource("StyleBoxEmpty_4jqtb")
-theme_override_styles/pressed = SubResource("StyleBoxEmpty_4jqtb")
-theme_override_styles/normal_mirrored = SubResource("StyleBoxEmpty_4jqtb")
-theme_override_styles/normal = SubResource("StyleBoxEmpty_4jqtb")
-
-[node name="LabelHolder" type="Node2D" parent="."]
-
-[node name="Control" type="Control" parent="LabelHolder"]
+[node name="Control" type="Control" parent="."]
 layout_mode = 3
 anchors_preset = 0
+offset_left = 14.0
+offset_top = 18.0
+offset_right = 14.0
+offset_bottom = 18.0
+mouse_filter = 2
 
-[node name="MarginContainer" type="MarginContainer" parent="LabelHolder/Control"]
-layout_mode = 1
-offset_left = -15.0
-offset_top = -15.0
-offset_right = 240.0
-offset_bottom = 31.0
-theme_override_constants/margin_left = 15
-theme_override_constants/margin_top = 15
-theme_override_constants/margin_right = 15
-theme_override_constants/margin_bottom = 15
+[node name="MarginContainer2" type="MarginContainer" parent="Control"]
+layout_mode = 0
+offset_right = 225.0
+offset_bottom = 18.0
 
-[node name="text" type="Label" parent="LabelHolder/Control/MarginContainer"]
+[node name="Panel" type="Panel" parent="Control/MarginContainer2"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_pt6rj")
+
+[node name="MarginContainer" type="MarginContainer" parent="Control/MarginContainer2"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="text" type="Label" parent="Control/MarginContainer2/MarginContainer"]
 custom_minimum_size = Vector2(225, 0)
 layout_mode = 2
 theme = SubResource("Theme_rdv4f")

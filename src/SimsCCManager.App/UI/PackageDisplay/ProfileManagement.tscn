@@ -1,0 +1,309 @@
+[gd_scene load_steps=11 format=3 uid="uid://brdr53bjv2rqf"]
+
+[ext_resource type="Script" uid="uid://rlsrt82g768p" path="res://UI/PackageDisplay/ProfileManagement.cs" id="1_1r50d"]
+[ext_resource type="Theme" uid="uid://b4fe82i5mblf5" path="res://themes/packagedisplay_headers.tres" id="1_j3obd"]
+[ext_resource type="Theme" uid="uid://elq77dslte5a" path="res://themes/ManageCategories_buttons.tres" id="2_1r50d"]
+[ext_resource type="PackedScene" uid="uid://x3br0dh2qyld" path="res://UI/PackageDisplay/SubWindows/ProfileItem.tscn" id="2_yq3p3"]
+[ext_resource type="PackedScene" uid="uid://cyfgp4vopp1cq" path="res://UI/Buttons/CustomCheckButton.tscn" id="3_yq3p3"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_1r50d"]
+bg_color = Color(0.85, 0.85, 0.85, 0.2901961)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_yq3p3"]
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.38549247, 0.38549256, 0.38549227, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+expand_margin_left = 10.0
+expand_margin_top = 10.0
+expand_margin_right = 10.0
+expand_margin_bottom = 10.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_l055a"]
+bg_color = Color(0.6, 0.6, 0.6, 0)
+border_width_left = 3
+border_width_top = 4
+border_width_right = 5
+border_width_bottom = 4
+border_color = Color(0.450648, 0.450648, 0.450648, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_r2byt"]
+bg_color = Color(0.6, 0.6, 0.6, 0)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_wkl23"]
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.38549247, 0.38549256, 0.38549227, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+expand_margin_left = 10.0
+expand_margin_top = 10.0
+expand_margin_right = 10.0
+expand_margin_bottom = 10.0
+
+[node name="ProfileManagement" type="MarginContainer" node_paths=PackedStringArray("BgPanel", "ProfilesLabel", "ListBg", "ProfilesList", "NewProfileButton", "EditProfileButton", "DupeProfileButton", "DeleteProfileButton", "CloseButton", "MiniWindow", "ProfileNameBox", "ProfileDescriptionBox", "ConfirmButton", "CancelButton", "LocalSavesLabel", "LocalSavesCheck", "LocalSettingsLabel", "LocalSettingsCheck", "LocalMediaLabel", "LocalMediaCheck", "LocalDataLabel", "LocalDataCheck")]
+script = ExtResource("1_1r50d")
+ProfileItemPS = ExtResource("2_yq3p3")
+BgPanel = NodePath("MarginContainer/Panel")
+ProfilesLabel = NodePath("MarginContainer/VBoxContainer/Profiles_Label")
+ListBg = NodePath("MarginContainer/VBoxContainer/HBoxContainer2/MarginContainer/Panel")
+ProfilesList = NodePath("MarginContainer/VBoxContainer/HBoxContainer2/MarginContainer/MarginContainer/ScrollContainer/VBoxContainer")
+NewProfileButton = NodePath("MarginContainer/VBoxContainer/HBoxContainer2/MarginContainer2/VBoxContainer/NewProfile_Button")
+EditProfileButton = NodePath("MarginContainer/VBoxContainer/HBoxContainer2/MarginContainer2/VBoxContainer/EditProfile_Button")
+DupeProfileButton = NodePath("MarginContainer/VBoxContainer/HBoxContainer2/MarginContainer2/VBoxContainer/DuplicateProfile_Button")
+DeleteProfileButton = NodePath("MarginContainer/VBoxContainer/HBoxContainer2/MarginContainer2/VBoxContainer/DeleteProfile_Button")
+CloseButton = NodePath("MarginContainer/VBoxContainer/HBoxContainer/Close_Button")
+MiniWindow = NodePath("MarginContainer2")
+ProfileNameBox = NodePath("MarginContainer2/MarginContainer/VBoxContainer/LineEdit")
+ProfileDescriptionBox = NodePath("MarginContainer2/MarginContainer/VBoxContainer/TextEdit")
+ConfirmButton = NodePath("MarginContainer2/MarginContainer/VBoxContainer/HBoxContainer/Confirm_Button")
+CancelButton = NodePath("MarginContainer2/MarginContainer/VBoxContainer/HBoxContainer/Cancel_Button")
+LocalSavesLabel = NodePath("MarginContainer2/MarginContainer/VBoxContainer/VBoxContainer/HBoxContainer5/HBoxContainer/Label")
+LocalSavesCheck = NodePath("MarginContainer2/MarginContainer/VBoxContainer/VBoxContainer/HBoxContainer5/HBoxContainer/LocalSaves_CheckButton")
+LocalSettingsLabel = NodePath("MarginContainer2/MarginContainer/VBoxContainer/VBoxContainer/HBoxContainer5/HBoxContainer2/Label")
+LocalSettingsCheck = NodePath("MarginContainer2/MarginContainer/VBoxContainer/VBoxContainer/HBoxContainer5/HBoxContainer2/LocalSettings_CheckButton")
+LocalMediaLabel = NodePath("MarginContainer2/MarginContainer/VBoxContainer/VBoxContainer/HBoxContainer/HBoxContainer3/Label")
+LocalMediaCheck = NodePath("MarginContainer2/MarginContainer/VBoxContainer/VBoxContainer/HBoxContainer/HBoxContainer3/LocalMedia_CheckButton")
+LocalDataLabel = NodePath("MarginContainer2/MarginContainer/VBoxContainer/VBoxContainer/HBoxContainer/HBoxContainer4/Label")
+LocalDataCheck = NodePath("MarginContainer2/MarginContainer/VBoxContainer/VBoxContainer/HBoxContainer/HBoxContainer4/LocalData_CheckButton")
+
+[node name="Panel" type="Panel" parent="."]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_1r50d")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 2
+theme_override_constants/margin_left = 50
+theme_override_constants/margin_top = 50
+theme_override_constants/margin_right = 50
+theme_override_constants/margin_bottom = 125
+
+[node name="Panel" type="Panel" parent="MarginContainer"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_yq3p3")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+alignment = 1
+
+[node name="Profiles_Label" type="Label" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme = ExtResource("1_j3obd")
+text = "Manage Profiles"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HBoxContainer2" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+alignment = 1
+
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer/VBoxContainer/HBoxContainer2"]
+custom_minimum_size = Vector2(350, 0)
+layout_mode = 2
+
+[node name="Panel" type="Panel" parent="MarginContainer/VBoxContainer/HBoxContainer2/MarginContainer"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_l055a")
+
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer/VBoxContainer/HBoxContainer2/MarginContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="ScrollContainer" type="ScrollContainer" parent="MarginContainer/VBoxContainer/HBoxContainer2/MarginContainer/MarginContainer"]
+custom_minimum_size = Vector2(0, 350)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_r2byt")
+horizontal_scroll_mode = 0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/VBoxContainer/HBoxContainer2/MarginContainer/MarginContainer/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="MarginContainer2" type="MarginContainer" parent="MarginContainer/VBoxContainer/HBoxContainer2"]
+layout_mode = 2
+theme_override_constants/margin_left = 100
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/VBoxContainer/HBoxContainer2/MarginContainer2"]
+layout_mode = 2
+alignment = 1
+
+[node name="NewProfile_Button" type="Button" parent="MarginContainer/VBoxContainer/HBoxContainer2/MarginContainer2/VBoxContainer"]
+layout_mode = 2
+theme = ExtResource("2_1r50d")
+text = "New"
+
+[node name="EditProfile_Button" type="Button" parent="MarginContainer/VBoxContainer/HBoxContainer2/MarginContainer2/VBoxContainer"]
+layout_mode = 2
+theme = ExtResource("2_1r50d")
+text = "Edit"
+
+[node name="DuplicateProfile_Button" type="Button" parent="MarginContainer/VBoxContainer/HBoxContainer2/MarginContainer2/VBoxContainer"]
+layout_mode = 2
+theme = ExtResource("2_1r50d")
+text = "Duplicate"
+
+[node name="DeleteProfile_Button" type="Button" parent="MarginContainer/VBoxContainer/HBoxContainer2/MarginContainer2/VBoxContainer"]
+layout_mode = 2
+theme = ExtResource("2_1r50d")
+text = "Delete"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+alignment = 1
+
+[node name="Close_Button" type="Button" parent="MarginContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+theme = ExtResource("2_1r50d")
+text = "Close"
+
+[node name="MarginContainer2" type="MarginContainer" parent="."]
+visible = false
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+
+[node name="Panel" type="Panel" parent="MarginContainer2"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_wkl23")
+
+[node name="MarginContainer2" type="MarginContainer" parent="MarginContainer2"]
+layout_mode = 2
+theme_override_constants/margin_left = 2
+theme_override_constants/margin_top = 2
+theme_override_constants/margin_right = 2
+theme_override_constants/margin_bottom = 2
+
+[node name="ColorRect" type="ColorRect" parent="MarginContainer2/MarginContainer2"]
+visible = false
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer2"]
+layout_mode = 2
+theme_override_constants/margin_left = 15
+theme_override_constants/margin_top = 15
+theme_override_constants/margin_right = 15
+theme_override_constants/margin_bottom = 15
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer2/MarginContainer"]
+layout_mode = 2
+
+[node name="LineEdit" type="LineEdit" parent="MarginContainer2/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(250, 0)
+layout_mode = 2
+placeholder_text = "Profile name..."
+
+[node name="TextEdit" type="TextEdit" parent="MarginContainer2/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 150)
+layout_mode = 2
+placeholder_text = "Profile description..."
+wrap_mode = 1
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer2/MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 0
+
+[node name="HBoxContainer5" type="HBoxContainer" parent="MarginContainer2/MarginContainer/VBoxContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer2/MarginContainer/VBoxContainer/VBoxContainer/HBoxContainer5"]
+layout_mode = 2
+theme_override_constants/separation = 15
+alignment = 2
+
+[node name="Label" type="Label" parent="MarginContainer2/MarginContainer/VBoxContainer/VBoxContainer/HBoxContainer5/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme = ExtResource("1_j3obd")
+text = "Local Saves "
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="LocalSaves_CheckButton" parent="MarginContainer2/MarginContainer/VBoxContainer/VBoxContainer/HBoxContainer5/HBoxContainer" instance=ExtResource("3_yq3p3")]
+layout_mode = 2
+
+[node name="HBoxContainer2" type="HBoxContainer" parent="MarginContainer2/MarginContainer/VBoxContainer/VBoxContainer/HBoxContainer5"]
+layout_mode = 2
+theme_override_constants/separation = 15
+alignment = 2
+
+[node name="Label" type="Label" parent="MarginContainer2/MarginContainer/VBoxContainer/VBoxContainer/HBoxContainer5/HBoxContainer2"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme = ExtResource("1_j3obd")
+text = "Local Settings"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="LocalSettings_CheckButton" parent="MarginContainer2/MarginContainer/VBoxContainer/VBoxContainer/HBoxContainer5/HBoxContainer2" instance=ExtResource("3_yq3p3")]
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer2/MarginContainer/VBoxContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="HBoxContainer3" type="HBoxContainer" parent="MarginContainer2/MarginContainer/VBoxContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 15
+alignment = 2
+
+[node name="Label" type="Label" parent="MarginContainer2/MarginContainer/VBoxContainer/VBoxContainer/HBoxContainer/HBoxContainer3"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme = ExtResource("1_j3obd")
+text = "Local Media"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="LocalMedia_CheckButton" parent="MarginContainer2/MarginContainer/VBoxContainer/VBoxContainer/HBoxContainer/HBoxContainer3" instance=ExtResource("3_yq3p3")]
+layout_mode = 2
+
+[node name="HBoxContainer4" type="HBoxContainer" parent="MarginContainer2/MarginContainer/VBoxContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 15
+alignment = 2
+
+[node name="Label" type="Label" parent="MarginContainer2/MarginContainer/VBoxContainer/VBoxContainer/HBoxContainer/HBoxContainer4"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme = ExtResource("1_j3obd")
+text = "Local Data"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="LocalData_CheckButton" parent="MarginContainer2/MarginContainer/VBoxContainer/VBoxContainer/HBoxContainer/HBoxContainer4" instance=ExtResource("3_yq3p3")]
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer2/MarginContainer/VBoxContainer"]
+layout_mode = 2
+alignment = 1
+
+[node name="Confirm_Button" type="Button" parent="MarginContainer2/MarginContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+theme = ExtResource("2_1r50d")
+text = "Confirm"
+
+[node name="Cancel_Button" type="Button" parent="MarginContainer2/MarginContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+theme = ExtResource("2_1r50d")
+text = "Cancel"

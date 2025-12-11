@@ -1,0 +1,46 @@
+[gd_scene load_steps=4 format=3 uid="uid://1rtsedrb1s3e"]
+
+[ext_resource type="Script" uid="uid://dwrcvk4yfbiav" path="res://addons/CustomDataGrid/DataGrid/DataGridIconOption.cs" id="1_encps"]
+[ext_resource type="Texture2D" uid="uid://c6d0e10pdme3s" path="res://addons/CustomDataGrid/assets/twotone_album_black_48dp.png" id="1_eo3bi"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_jkn4b"]
+
+[node name="IconOption" type="TextureRect" node_paths=PackedStringArray("IconColor", "hoverbutton")]
+clip_children = 1
+custom_minimum_size = Vector2(12, 12)
+size_flags_horizontal = 4
+size_flags_vertical = 4
+texture = ExtResource("1_eo3bi")
+expand_mode = 2
+script = ExtResource("1_encps")
+IconColor = NodePath("ColorRect")
+hoverbutton = NodePath("Button")
+
+[node name="ColorRect" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+color = Color(0.12549, 0.184314, 0.207843, 1)
+
+[node name="Button" type="Button" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/normal = SubResource("StyleBoxEmpty_jkn4b")
+theme_override_styles/normal_mirrored = SubResource("StyleBoxEmpty_jkn4b")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_jkn4b")
+theme_override_styles/pressed_mirrored = SubResource("StyleBoxEmpty_jkn4b")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_jkn4b")
+theme_override_styles/hover_mirrored = SubResource("StyleBoxEmpty_jkn4b")
+theme_override_styles/hover_pressed = SubResource("StyleBoxEmpty_jkn4b")
+theme_override_styles/hover_pressed_mirrored = SubResource("StyleBoxEmpty_jkn4b")
+theme_override_styles/disabled = SubResource("StyleBoxEmpty_jkn4b")
+theme_override_styles/disabled_mirrored = SubResource("StyleBoxEmpty_jkn4b")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_jkn4b")

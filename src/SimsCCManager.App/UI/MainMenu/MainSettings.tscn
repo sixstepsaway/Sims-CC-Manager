@@ -1,0 +1,140 @@
+[gd_scene load_steps=10 format=3 uid="uid://bd3663meb1j7e"]
+
+[ext_resource type="Script" uid="uid://kbnmdg5mnx50" path="res://UI/MainMenu/MainSettings.cs" id="1_mide4"]
+[ext_resource type="PackedScene" uid="uid://uo2724xgb1uw" path="res://UI/Background.tscn" id="1_q45dc"]
+[ext_resource type="PackedScene" uid="uid://gy580non02wm" path="res://UI/MainMenu/NewTheme.tscn" id="2_tkcu5"]
+[ext_resource type="PackedScene" uid="uid://ryrvwl0ec34b" path="res://UI/Buttons/TopbarButton.tscn" id="3_ikmb5"]
+[ext_resource type="Theme" uid="uid://elq77dslte5a" path="res://themes/ManageCategories_buttons.tres" id="3_plqag"]
+[ext_resource type="PackedScene" uid="uid://cyfgp4vopp1cq" path="res://UI/Buttons/CustomCheckButton.tscn" id="3_vatd5"]
+[ext_resource type="Texture2D" uid="uid://cr0iyclc7hnb5" path="res://assets/icons/materialicons/twotone_add_box_black_48dp.png" id="4_tkcu5"]
+[ext_resource type="Texture2D" uid="uid://cnkm88exmqnd8" path="res://assets/icons/materialicons/twotone_indeterminate_check_box_black_48dp.png" id="6_h647y"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_uk27k"]
+bg_color = Color(0.6, 0.6, 0.6, 0.529412)
+
+[node name="MainSettings" type="MarginContainer" node_paths=PackedStringArray("BackgroundNode", "Labels", "ThemeOptions", "DebugModeCheck", "RestrictCPUCheck", "LoadLatestCheck", "ShowTaliCheck", "CloseSettingsButton", "AddTheme", "DeleteTheme")]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/margin_bottom = 65
+script = ExtResource("1_mide4")
+BackgroundNode = NodePath("MarginContainer/MarginContainer2/Background")
+Labels = [NodePath("MarginContainer/VBoxContainer/HBoxContainer2/Label"), NodePath("MarginContainer/VBoxContainer/DebugMode_Setting/DebugMode_Label"), NodePath("MarginContainer/VBoxContainer/RestrictCPU_Setting/RestrictCPU_Label"), NodePath("MarginContainer/VBoxContainer/AutomaticallyLoadLatestInstance_Setting/AutomaticallyLoadLatestInstance_Label"), NodePath("MarginContainer/VBoxContainer/ShowTali_Setting/ShowTali_Label")]
+ThemeOptions = NodePath("MarginContainer/VBoxContainer/HBoxContainer2/OptionButton")
+DebugModeCheck = NodePath("MarginContainer/VBoxContainer/DebugMode_Setting/DebugMode_Check")
+RestrictCPUCheck = NodePath("MarginContainer/VBoxContainer/RestrictCPU_Setting/RestrictCPU_Check")
+LoadLatestCheck = NodePath("MarginContainer/VBoxContainer/AutomaticallyLoadLatestInstance_Setting/AutomaticallyLoadLatestInstance_Check")
+ShowTaliCheck = NodePath("MarginContainer/VBoxContainer/ShowTali_Setting/ShowTali_Check")
+CloseSettingsButton = NodePath("MarginContainer/MarginContainer/SettingsClose_Button")
+AddTheme = NodePath("MarginContainer/VBoxContainer/HBoxContainer2/Topbar_Button")
+DeleteTheme = NodePath("MarginContainer/VBoxContainer/HBoxContainer2/Topbar_Button2")
+NewThemePS = ExtResource("2_tkcu5")
+
+[node name="Panel" type="Panel" parent="."]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_uk27k")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+custom_minimum_size = Vector2(500, 275)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_override_constants/margin_left = 35
+theme_override_constants/margin_top = 35
+theme_override_constants/margin_right = 35
+theme_override_constants/margin_bottom = 35
+
+[node name="MarginContainer2" type="MarginContainer" parent="MarginContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = -10
+theme_override_constants/margin_top = -10
+theme_override_constants/margin_right = -10
+theme_override_constants/margin_bottom = -10
+
+[node name="Background" parent="MarginContainer/MarginContainer2" instance=ExtResource("1_q45dc")]
+layout_mode = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+size_flags_horizontal = 0
+
+[node name="HBoxContainer2" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 0
+
+[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/HBoxContainer2"]
+layout_mode = 2
+text = "Theme "
+
+[node name="OptionButton" type="OptionButton" parent="MarginContainer/VBoxContainer/HBoxContainer2"]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+fit_to_longest_item = false
+
+[node name="Topbar_Button" parent="MarginContainer/VBoxContainer/HBoxContainer2" instance=ExtResource("3_ikmb5")]
+custom_minimum_size = Vector2(25, 25)
+layout_mode = 2
+Texture = ExtResource("4_tkcu5")
+
+[node name="Topbar_Button2" parent="MarginContainer/VBoxContainer/HBoxContainer2" instance=ExtResource("3_ikmb5")]
+custom_minimum_size = Vector2(25, 25)
+layout_mode = 2
+Texture = ExtResource("6_h647y")
+
+[node name="DebugMode_Setting" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="DebugMode_Label" type="Label" parent="MarginContainer/VBoxContainer/DebugMode_Setting"]
+layout_mode = 2
+text = "Debug Mode"
+
+[node name="DebugMode_Check" parent="MarginContainer/VBoxContainer/DebugMode_Setting" instance=ExtResource("3_vatd5")]
+layout_mode = 2
+
+[node name="RestrictCPU_Setting" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="RestrictCPU_Label" type="Label" parent="MarginContainer/VBoxContainer/RestrictCPU_Setting"]
+layout_mode = 2
+text = "Restrict CPU Usage"
+
+[node name="RestrictCPU_Check" parent="MarginContainer/VBoxContainer/RestrictCPU_Setting" instance=ExtResource("3_vatd5")]
+layout_mode = 2
+
+[node name="AutomaticallyLoadLatestInstance_Setting" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="AutomaticallyLoadLatestInstance_Label" type="Label" parent="MarginContainer/VBoxContainer/AutomaticallyLoadLatestInstance_Setting"]
+layout_mode = 2
+text = "Automatically Load Latest Instance"
+
+[node name="AutomaticallyLoadLatestInstance_Check" parent="MarginContainer/VBoxContainer/AutomaticallyLoadLatestInstance_Setting" instance=ExtResource("3_vatd5")]
+layout_mode = 2
+
+[node name="ShowTali_Setting" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="ShowTali_Label" type="Label" parent="MarginContainer/VBoxContainer/ShowTali_Setting"]
+layout_mode = 2
+text = "Show Tali"
+
+[node name="ShowTali_Check" parent="MarginContainer/VBoxContainer/ShowTali_Setting" instance=ExtResource("3_vatd5")]
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer"]
+layout_mode = 2
+size_flags_horizontal = 8
+size_flags_vertical = 8
+theme_override_constants/margin_top = 125
+
+[node name="SettingsClose_Button" type="Button" parent="MarginContainer/MarginContainer"]
+layout_mode = 2
+theme = ExtResource("3_plqag")
+text = "Close"
+
+[connection signal="item_selected" from="MarginContainer/VBoxContainer/HBoxContainer2/OptionButton" to="." method="_on_option_button_item_selected"]

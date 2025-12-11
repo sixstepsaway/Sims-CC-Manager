@@ -1,0 +1,163 @@
+[gd_scene load_steps=6 format=3 uid="uid://18iajhmo8px0"]
+
+[ext_resource type="Texture2D" uid="uid://gugl3f4m0ccf" path="res://addons/CustomDataGrid/assets/twotone_clear_black_48dp.png" id="1_rw1co"]
+[ext_resource type="Script" uid="uid://b7egbudftpjd0" path="res://addons/CustomDataGrid/DataGrid/MiniGrid.cs" id="1_s3hv6"]
+[ext_resource type="PackedScene" uid="uid://rdkekf1v163i" path="res://addons/CustomDataGrid/DataGrid/MiniGridButton.tscn" id="2_fhgnm"]
+[ext_resource type="Texture2D" uid="uid://uyitnsfjudx7" path="res://addons/CustomDataGrid/assets/twotone_check_box_outline_blank_black_48dp.png" id="2_s3hv6"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_s3hv6"]
+
+[node name="Control" type="Control" node_paths=PackedStringArray("addFiles", "MinigridHolder", "ItemContainer", "CloseButton", "MainColors", "HoverColors", "RemoveButton", "AddButton")]
+layout_mode = 3
+anchor_left = 0.48000002
+anchor_top = 0.48000002
+anchor_right = 0.48000002
+anchor_bottom = 0.48000002
+offset_left = -480.00003
+offset_top = -360.0
+offset_right = 520.0
+offset_bottom = 390.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_s3hv6")
+addFiles = NodePath("FileDialog")
+MinigridHolder = NodePath("MiniGrid")
+ItemContainer = NodePath("MiniGrid/MarginContainer/VBoxContainer/ScrollContainer/Items")
+CloseButton = NodePath("MiniGrid/CloseButton/Button")
+MainColors = [NodePath("MiniGrid/CloseButton/TextureRect/ColorRect_Main"), NodePath("MiniGrid/CloseButton/TextureRect2/ColorRect_Main")]
+HoverColors = [NodePath("MiniGrid/CloseButton/TextureRect/ColorRect_Hover"), NodePath("MiniGrid/CloseButton/TextureRect2/ColorRect_Hover")]
+RemoveButton = NodePath("MiniGrid/MarginContainer/VBoxContainer/MarginContainer/HBoxContainer/MinigridButton2")
+AddButton = NodePath("MiniGrid/MarginContainer/VBoxContainer/MarginContainer/HBoxContainer/MinigridButton")
+
+[node name="MiniGrid" type="MarginContainer" parent="."]
+custom_minimum_size = Vector2(250, 300)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -249.0
+offset_top = -150.0
+offset_right = 251.0
+offset_bottom = 150.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+mouse_filter = 2
+theme_override_constants/margin_left = 25
+theme_override_constants/margin_right = 25
+
+[node name="MarginContainer" type="MarginContainer" parent="MiniGrid"]
+layout_mode = 2
+
+[node name="Panel" type="Panel" parent="MiniGrid/MarginContainer"]
+layout_mode = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MiniGrid/MarginContainer"]
+layout_mode = 2
+
+[node name="ScrollContainer" type="ScrollContainer" parent="MiniGrid/MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Items" type="VBoxContainer" parent="MiniGrid/MarginContainer/VBoxContainer/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="MarginContainer" type="MarginContainer" parent="MiniGrid/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MiniGrid/MarginContainer/VBoxContainer/MarginContainer"]
+layout_mode = 2
+alignment = 1
+
+[node name="MinigridButton" parent="MiniGrid/MarginContainer/VBoxContainer/MarginContainer/HBoxContainer" instance=ExtResource("2_fhgnm")]
+layout_mode = 2
+
+[node name="Label" parent="MiniGrid/MarginContainer/VBoxContainer/MarginContainer/HBoxContainer/MinigridButton" index="2"]
+text = "Add Item to Group"
+
+[node name="MinigridButton2" parent="MiniGrid/MarginContainer/VBoxContainer/MarginContainer/HBoxContainer" instance=ExtResource("2_fhgnm")]
+layout_mode = 2
+
+[node name="Label" parent="MiniGrid/MarginContainer/VBoxContainer/MarginContainer/HBoxContainer/MinigridButton2" index="2"]
+text = "Remove From Group"
+
+[node name="CloseButton" type="MarginContainer" parent="MiniGrid"]
+custom_minimum_size = Vector2(35, 35)
+layout_mode = 2
+size_flags_horizontal = 8
+size_flags_vertical = 0
+
+[node name="TextureRect" type="TextureRect" parent="MiniGrid/CloseButton"]
+clip_children = 1
+layout_mode = 2
+texture = ExtResource("1_rw1co")
+expand_mode = 3
+
+[node name="ColorRect_Main" type="ColorRect" parent="MiniGrid/CloseButton/TextureRect"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ColorRect_Hover" type="ColorRect" parent="MiniGrid/CloseButton/TextureRect"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="TextureRect2" type="TextureRect" parent="MiniGrid/CloseButton"]
+clip_children = 1
+layout_mode = 2
+texture = ExtResource("2_s3hv6")
+expand_mode = 3
+
+[node name="ColorRect_Main" type="ColorRect" parent="MiniGrid/CloseButton/TextureRect2"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ColorRect_Hover" type="ColorRect" parent="MiniGrid/CloseButton/TextureRect2"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Button" type="Button" parent="MiniGrid/CloseButton"]
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxEmpty_s3hv6")
+theme_override_styles/normal_mirrored = SubResource("StyleBoxEmpty_s3hv6")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_s3hv6")
+theme_override_styles/pressed_mirrored = SubResource("StyleBoxEmpty_s3hv6")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_s3hv6")
+theme_override_styles/hover_mirrored = SubResource("StyleBoxEmpty_s3hv6")
+theme_override_styles/hover_pressed = SubResource("StyleBoxEmpty_s3hv6")
+theme_override_styles/hover_pressed_mirrored = SubResource("StyleBoxEmpty_s3hv6")
+theme_override_styles/disabled = SubResource("StyleBoxEmpty_s3hv6")
+theme_override_styles/disabled_mirrored = SubResource("StyleBoxEmpty_s3hv6")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_s3hv6")
+
+[node name="FileDialog" type="FileDialog" parent="."]
+title = "Open File(s)"
+dialog_hide_on_ok = true
+file_mode = 1
+access = 2
+use_native_dialog = true
+
+[editable path="MiniGrid/MarginContainer/VBoxContainer/MarginContainer/HBoxContainer/MinigridButton"]
+[editable path="MiniGrid/MarginContainer/VBoxContainer/MarginContainer/HBoxContainer/MinigridButton2"]

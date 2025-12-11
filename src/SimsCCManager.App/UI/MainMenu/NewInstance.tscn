@@ -1,0 +1,641 @@
+[gd_scene load_steps=26 format=3 uid="uid://bnb556r4b8okd"]
+
+[ext_resource type="PackedScene" uid="uid://uo2724xgb1uw" path="res://UI/Background.tscn" id="1_sdman"]
+[ext_resource type="Script" uid="uid://dah7gonninlim" path="res://UI/MainMenu/NewInstance.cs" id="1_xanfm"]
+[ext_resource type="FontFile" uid="uid://2m7ci2r6uwu2" path="res://assets/fonts/Anek_Gurmukhi/AnekGurmukhi-VariableFont_wdth,wght.ttf" id="2_7hxry"]
+[ext_resource type="FontFile" uid="uid://bob4v2pndpu0q" path="res://assets/fonts/Convergence/Convergence-Regular.ttf" id="3_kbayx"]
+[ext_resource type="FontFile" uid="uid://bmfd11n63bcn0" path="res://assets/fonts/NTR/NTR-Regular.ttf" id="3_wclnf"]
+[ext_resource type="PackedScene" uid="uid://bodob30nu6cq" path="res://UI/MainMenu/GamePickerBox.tscn" id="4_thfna"]
+[ext_resource type="Texture2D" uid="uid://cdnxqocgy3qn0" path="res://assets/images/s3.png" id="7_2x6i4"]
+[ext_resource type="Texture2D" uid="uid://bvsroafqogyd0" path="res://assets/images/s4.png" id="8_3wbg4"]
+[ext_resource type="PackedScene" uid="uid://dpna1rktoenjc" path="res://UI/Buttons/MMButton.tscn" id="8_uin8o"]
+[ext_resource type="PackedScene" uid="uid://cyfgp4vopp1cq" path="res://UI/Buttons/CustomCheckButton.tscn" id="10_2xn22"]
+[ext_resource type="FontFile" uid="uid://k4r0g5uck1l4" path="res://assets/fonts/Gantari/static/Gantari-Regular.ttf" id="13_vtgmf"]
+
+[sub_resource type="Theme" id="Theme_jqtt5"]
+Label/font_sizes/font_size = 28
+Label/fonts/font = ExtResource("3_wclnf")
+
+[sub_resource type="Theme" id="Theme_44hop"]
+Label/font_sizes/font_size = 31
+Label/fonts/font = ExtResource("2_7hxry")
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_0u322"]
+content_margin_left = 11.0
+content_margin_top = 2.0
+content_margin_right = 11.0
+content_margin_bottom = 2.0
+bg_color = Color(0.865921, 0.817304, 0.820706, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.470076, 0.470076, 0.470076, 1)
+
+[sub_resource type="Theme" id="Theme_jr5xk"]
+LineEdit/colors/font_color = Color(0.35907, 0.359069, 0.359069, 1)
+LineEdit/font_sizes/font_size = 12
+LineEdit/fonts/font = ExtResource("3_kbayx")
+LineEdit/styles/focus = SubResource("StyleBoxFlat_0u322")
+LineEdit/styles/normal = SubResource("StyleBoxFlat_0u322")
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_hrgkf"]
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.537011, 0.537011, 0.537011, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_emiat"]
+content_margin_left = 8.0
+content_margin_right = 8.0
+bg_color = Color(0.745098, 0.901961, 0.992157, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.585, 0.7085, 0.78, 1)
+corner_radius_top_left = 2
+corner_radius_top_right = 2
+corner_radius_bottom_right = 2
+corner_radius_bottom_left = 2
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_nouvp"]
+content_margin_left = 8.0
+content_margin_right = 8.0
+bg_color = Color(0.866667, 0.866667, 0.866667, 1)
+corner_radius_top_left = 2
+corner_radius_top_right = 2
+corner_radius_bottom_right = 2
+corner_radius_bottom_left = 2
+
+[sub_resource type="Theme" id="Theme_8iket"]
+Button/colors/font_color = Color(0.114897, 0.114897, 0.114897, 1)
+Button/colors/font_hover_color = Color(0.114897, 0.114897, 0.114897, 1)
+Button/font_sizes/font_size = 16
+Button/fonts/font = ExtResource("13_vtgmf")
+Button/styles/hover = SubResource("StyleBoxFlat_emiat")
+Button/styles/normal = SubResource("StyleBoxFlat_nouvp")
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_tdynt"]
+content_margin_left = 8.0
+content_margin_right = 8.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_2x6i4"]
+border_width_left = 2
+border_width_top = 1
+border_width_right = 2
+border_width_bottom = 1
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+expand_margin_left = 5.0
+expand_margin_top = 2.0
+expand_margin_right = 5.0
+expand_margin_bottom = 2.0
+
+[sub_resource type="Theme" id="Theme_3wbg4"]
+Panel/styles/panel = SubResource("StyleBoxFlat_2x6i4")
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_3wbg4"]
+border_width_left = 2
+border_width_top = 1
+border_width_right = 2
+border_width_bottom = 1
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+expand_margin_left = 5.0
+expand_margin_top = 2.0
+expand_margin_right = 5.0
+expand_margin_bottom = 2.0
+
+[sub_resource type="Theme" id="Theme_2x6i4"]
+Panel/styles/panel = SubResource("StyleBoxFlat_3wbg4")
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_2x6i4"]
+
+[node name="New Instance" type="MarginContainer" node_paths=PackedStringArray("BackgroundNode", "Page1", "Page2", "Pg1ConfirmButton", "Pg1CancelButton", "Pg2ConfirmButton", "Pg2CancelButton", "FromDownloadsCheck", "Sims2", "Sims3", "Sims4", "InstanceName", "InstallFolderLE", "InstallFolderBrowse", "DocsFolderLE", "DocsFolderBrowse", "InstanceFolderLE", "InstanceFolderBrowse", "PackagesFolderLE", "PackagesFolderBrowse", "DownloadsFolderLE", "DownloadsFolderBrowse", "ProfilesFolderLE", "ProfilesFolderBrowse", "DataCacheFolderLE", "DataCacheFolderBrowse", "fileDialog", "confirmationDialog", "acceptDialog", "acceptDialogText", "acceptDialogOK", "acceptDialogBack", "acceptDialogBG", "acceptDialogLabelA", "acceptDialogLabelB", "acceptDialogButtonPanelMain", "acceptDialogButtonPanelHover", "acceptDialogButtonContainerOK", "acceptDialogButtonContainerBack", "BGControl")]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_bottom = 65
+script = ExtResource("1_xanfm")
+BackgroundNode = NodePath("Background")
+Page1 = NodePath("Page1")
+Page2 = NodePath("Page2")
+Pg1ConfirmButton = NodePath("Page1/VBoxContainer/HBoxContainer/Pg1ConfirmButton")
+Pg1CancelButton = NodePath("Page1/VBoxContainer/HBoxContainer/Pg1CancelButton")
+Pg2ConfirmButton = NodePath("Page2/VBoxContainer/HBoxContainer/Page2ConfirmButton")
+Pg2CancelButton = NodePath("Page2/VBoxContainer/HBoxContainer/Page2CancelButton")
+FromDownloadsCheck = NodePath("Page2/VBoxContainer/HBoxContainer2/CustomCheckButton")
+Sims2 = NodePath("Page1/VBoxContainer/MarginContainer/GamePicker/Sims 2")
+Sims3 = NodePath("Page1/VBoxContainer/MarginContainer/GamePicker/Sims 3")
+Sims4 = NodePath("Page1/VBoxContainer/MarginContainer/GamePicker/Sims 4")
+InstanceName = NodePath("Page1/VBoxContainer/InstanceName_LineEdit")
+InstallFolderLE = NodePath("Page2/VBoxContainer/InstallFolder/InstallFolder_LineEdit")
+InstallFolderBrowse = NodePath("Page2/VBoxContainer/InstallFolder/InstallFolder_Button")
+DocsFolderLE = NodePath("Page2/VBoxContainer/DocsFolder/DocsFolder_LineEdit")
+DocsFolderBrowse = NodePath("Page2/VBoxContainer/DocsFolder/DocsFolder_Button")
+InstanceFolderLE = NodePath("Page2/VBoxContainer/InstanceFolder/InstanceFolder_LineEdit")
+InstanceFolderBrowse = NodePath("Page2/VBoxContainer/InstanceFolder/InstanceFolder_Button")
+PackagesFolderLE = NodePath("Page2/VBoxContainer/PackagesFolder/PackagesFolder_LineEdit")
+PackagesFolderBrowse = NodePath("Page2/VBoxContainer/PackagesFolder/PackagesFolder_Button")
+DownloadsFolderLE = NodePath("Page2/VBoxContainer/DownloadsFolder/DownloadsFolder_LineEdit")
+DownloadsFolderBrowse = NodePath("Page2/VBoxContainer/DownloadsFolder/DownloadsFolder_Button")
+ProfilesFolderLE = NodePath("Page2/VBoxContainer/ProfilesFolder/Profiles_LineEdit")
+ProfilesFolderBrowse = NodePath("Page2/VBoxContainer/ProfilesFolder/Profiles_Button")
+DataCacheFolderLE = NodePath("Page2/VBoxContainer/DataCacheFolder/DataCacheFolder_LineEdit")
+DataCacheFolderBrowse = NodePath("Page2/VBoxContainer/DataCacheFolder/DataCacheFolder_Button")
+fileDialog = NodePath("Control/FileDialog")
+confirmationDialog = NodePath("Control/ConfirmationDialog")
+acceptDialog = NodePath("Control/AcceptDialog")
+acceptDialogText = NodePath("Control/AcceptDialog/VBoxContainer/MarginContainer/Label")
+acceptDialogOK = NodePath("Control/AcceptDialog/VBoxContainer/MarginContainer2/HBoxContainer/MarginContainer2/Button_OK")
+acceptDialogBack = NodePath("Control/AcceptDialog/VBoxContainer/MarginContainer2/HBoxContainer/MarginContainer/Button_Back")
+acceptDialogBG = NodePath("Control/AcceptDialog/MarginContainer/Background")
+acceptDialogLabelA = NodePath("Control/AcceptDialog/VBoxContainer/MarginContainer/Label")
+acceptDialogLabelB = NodePath("Control/AcceptDialog/VBoxContainer/MarginContainer2/HBoxContainer/MarginContainer/Label")
+acceptDialogButtonPanelMain = NodePath("Control/AcceptDialog/VBoxContainer/MarginContainer2/HBoxContainer/MarginContainer/PanelMain")
+acceptDialogButtonPanelHover = NodePath("Control/AcceptDialog/VBoxContainer/MarginContainer2/HBoxContainer/MarginContainer/PanelHover")
+acceptDialogButtonContainerOK = NodePath("Control/AcceptDialog/VBoxContainer/MarginContainer2/HBoxContainer/MarginContainer")
+acceptDialogButtonContainerBack = NodePath("Control/AcceptDialog/VBoxContainer/MarginContainer2/HBoxContainer/MarginContainer2")
+BGControl = NodePath("Control")
+
+[node name="Background" parent="." instance=ExtResource("1_sdman")]
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 2
+size_flags_vertical = 0
+theme_override_constants/margin_top = 10
+
+[node name="Label" type="Label" parent="MarginContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 0
+theme = SubResource("Theme_jqtt5")
+text = "Create a New Instance"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Page1" type="MarginContainer" parent="."]
+visible = false
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Page1"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Page1/VBoxContainer"]
+layout_mode = 2
+theme = SubResource("Theme_44hop")
+text = "(Optional) Name your instance"
+horizontal_alignment = 1
+
+[node name="InstanceName_LineEdit" type="LineEdit" parent="Page1/VBoxContainer"]
+layout_mode = 2
+theme = SubResource("Theme_jr5xk")
+theme_override_font_sizes/font_size = 21
+
+[node name="MarginContainer" type="MarginContainer" parent="Page1/VBoxContainer"]
+layout_mode = 2
+
+[node name="Panel" type="Panel" parent="Page1/VBoxContainer/MarginContainer"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_hrgkf")
+
+[node name="MarginContainer" type="MarginContainer" parent="Page1/VBoxContainer/MarginContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 2
+theme_override_constants/margin_top = 2
+theme_override_constants/margin_right = 2
+theme_override_constants/margin_bottom = 2
+
+[node name="ColorRect" type="ColorRect" parent="Page1/VBoxContainer/MarginContainer/MarginContainer"]
+layout_mode = 2
+color = Color(0.860369, 0.860369, 0.860369, 1)
+
+[node name="GamePicker" type="VBoxContainer" parent="Page1/VBoxContainer/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="Sims 2" parent="Page1/VBoxContainer/MarginContainer/GamePicker" instance=ExtResource("4_thfna")]
+layout_mode = 2
+GameString = "Sims 2"
+
+[node name="Sims 3" parent="Page1/VBoxContainer/MarginContainer/GamePicker" instance=ExtResource("4_thfna")]
+layout_mode = 2
+GameString = "Sims 3"
+
+[node name="TextureRect" parent="Page1/VBoxContainer/MarginContainer/GamePicker/Sims 3/MarginContainer2/Item/MarginContainer" index="0"]
+texture = ExtResource("7_2x6i4")
+
+[node name="Label2" parent="Page1/VBoxContainer/MarginContainer/GamePicker/Sims 3/MarginContainer2/Item/MarginContainer2" index="0"]
+text = "Sims 3"
+
+[node name="Sims 4" parent="Page1/VBoxContainer/MarginContainer/GamePicker" instance=ExtResource("4_thfna")]
+layout_mode = 2
+GameString = "Sims 4"
+
+[node name="TextureRect" parent="Page1/VBoxContainer/MarginContainer/GamePicker/Sims 4/MarginContainer2/Item/MarginContainer" index="0"]
+texture = ExtResource("8_3wbg4")
+
+[node name="Label2" parent="Page1/VBoxContainer/MarginContainer/GamePicker/Sims 4/MarginContainer2/Item/MarginContainer2" index="0"]
+text = "Sims 4"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="Page1/VBoxContainer"]
+layout_mode = 2
+
+[node name="Pg1CancelButton" parent="Page1/VBoxContainer/HBoxContainer" instance=ExtResource("8_uin8o")]
+custom_minimum_size = Vector2(320, 80)
+layout_mode = 2
+
+[node name="MMContainer" parent="Page1/VBoxContainer/HBoxContainer/Pg1CancelButton/Node2D" index="0"]
+offset_right = 387.0
+
+[node name="PanelContainer" parent="Page1/VBoxContainer/HBoxContainer/Pg1CancelButton/Node2D/MMContainer" index="0"]
+size_flags_horizontal = 0
+
+[node name="MarginContainer" parent="Page1/VBoxContainer/HBoxContainer/Pg1CancelButton/Node2D/MMContainer/PanelContainer" index="2"]
+size_flags_horizontal = 0
+
+[node name="Label" parent="Page1/VBoxContainer/HBoxContainer/Pg1CancelButton/Node2D/MMContainer/PanelContainer/MarginContainer" index="0"]
+text = "Cancel"
+
+[node name="Pg1ConfirmButton" parent="Page1/VBoxContainer/HBoxContainer" instance=ExtResource("8_uin8o")]
+custom_minimum_size = Vector2(300, 80)
+layout_mode = 2
+
+[node name="MMContainer" parent="Page1/VBoxContainer/HBoxContainer/Pg1ConfirmButton/Node2D" index="0"]
+offset_right = 387.0
+
+[node name="PanelContainer" parent="Page1/VBoxContainer/HBoxContainer/Pg1ConfirmButton/Node2D/MMContainer" index="0"]
+size_flags_horizontal = 0
+
+[node name="MarginContainer" parent="Page1/VBoxContainer/HBoxContainer/Pg1ConfirmButton/Node2D/MMContainer/PanelContainer" index="2"]
+size_flags_horizontal = 0
+
+[node name="Label" parent="Page1/VBoxContainer/HBoxContainer/Pg1ConfirmButton/Node2D/MMContainer/PanelContainer/MarginContainer" index="0"]
+text = "Confirm"
+
+[node name="Page2" type="MarginContainer" parent="."]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Page2"]
+layout_mode = 2
+alignment = 1
+
+[node name="InstallFolder" type="HBoxContainer" parent="Page2/VBoxContainer"]
+layout_mode = 2
+
+[node name="InstallFolder_Label" type="Label" parent="Page2/VBoxContainer/InstallFolder"]
+layout_mode = 2
+theme = SubResource("Theme_44hop")
+theme_override_font_sizes/font_size = 19
+text = "Install Folder"
+horizontal_alignment = 1
+
+[node name="InstallFolder_LineEdit" type="LineEdit" parent="Page2/VBoxContainer/InstallFolder"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme = SubResource("Theme_jr5xk")
+
+[node name="InstallFolder_Button" type="Button" parent="Page2/VBoxContainer/InstallFolder"]
+layout_mode = 2
+theme = SubResource("Theme_8iket")
+text = "Browse"
+
+[node name="DocsFolder" type="HBoxContainer" parent="Page2/VBoxContainer"]
+layout_mode = 2
+
+[node name="DocsFolder_Label" type="Label" parent="Page2/VBoxContainer/DocsFolder"]
+layout_mode = 2
+theme = SubResource("Theme_44hop")
+theme_override_font_sizes/font_size = 19
+text = "Documents Folder"
+horizontal_alignment = 1
+
+[node name="DocsFolder_LineEdit" type="LineEdit" parent="Page2/VBoxContainer/DocsFolder"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme = SubResource("Theme_jr5xk")
+
+[node name="DocsFolder_Button" type="Button" parent="Page2/VBoxContainer/DocsFolder"]
+layout_mode = 2
+theme = SubResource("Theme_8iket")
+text = "Browse"
+
+[node name="Label" type="Label" parent="Page2/VBoxContainer"]
+custom_minimum_size = Vector2(250, 0)
+layout_mode = 2
+theme = SubResource("Theme_44hop")
+theme_override_font_sizes/font_size = 13
+theme_override_styles/normal = SubResource("StyleBoxEmpty_tdynt")
+text = "The locations below are where your mods will be kept for organization and deployment. This is NOT your game Mods folder, it is the SCCM build folder for this particular game and should be somewhere other than your Documents/Mods folder, and somewhere other than any other game builds' folders. We won't be putting any files directly into your mods or data folders!
+
+In most cases, these will be fine as they are."
+autowrap_mode = 2
+
+[node name="InstanceFolder" type="HBoxContainer" parent="Page2/VBoxContainer"]
+layout_mode = 2
+
+[node name="InstanceFolder_Label" type="Label" parent="Page2/VBoxContainer/InstanceFolder"]
+layout_mode = 2
+theme = SubResource("Theme_44hop")
+theme_override_font_sizes/font_size = 19
+text = "Instance Location"
+horizontal_alignment = 1
+
+[node name="InstanceFolder_LineEdit" type="LineEdit" parent="Page2/VBoxContainer/InstanceFolder"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme = SubResource("Theme_jr5xk")
+
+[node name="InstanceFolder_Button" type="Button" parent="Page2/VBoxContainer/InstanceFolder"]
+layout_mode = 2
+theme = SubResource("Theme_8iket")
+text = "Browse"
+
+[node name="PackagesFolder" type="HBoxContainer" parent="Page2/VBoxContainer"]
+layout_mode = 2
+
+[node name="PackagesFolder_Label" type="Label" parent="Page2/VBoxContainer/PackagesFolder"]
+layout_mode = 2
+theme = SubResource("Theme_44hop")
+theme_override_font_sizes/font_size = 19
+text = "Packages Folder"
+horizontal_alignment = 1
+
+[node name="PackagesFolder_LineEdit" type="LineEdit" parent="Page2/VBoxContainer/PackagesFolder"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme = SubResource("Theme_jr5xk")
+
+[node name="PackagesFolder_Button" type="Button" parent="Page2/VBoxContainer/PackagesFolder"]
+layout_mode = 2
+theme = SubResource("Theme_8iket")
+text = "Browse"
+
+[node name="DownloadsFolder" type="HBoxContainer" parent="Page2/VBoxContainer"]
+layout_mode = 2
+
+[node name="DownloadsFolder_Label" type="Label" parent="Page2/VBoxContainer/DownloadsFolder"]
+layout_mode = 2
+theme = SubResource("Theme_44hop")
+theme_override_font_sizes/font_size = 19
+text = "Downloads Folder"
+horizontal_alignment = 1
+
+[node name="DownloadsFolder_LineEdit" type="LineEdit" parent="Page2/VBoxContainer/DownloadsFolder"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme = SubResource("Theme_jr5xk")
+
+[node name="DownloadsFolder_Button" type="Button" parent="Page2/VBoxContainer/DownloadsFolder"]
+layout_mode = 2
+theme = SubResource("Theme_8iket")
+text = "Browse"
+
+[node name="ProfilesFolder" type="HBoxContainer" parent="Page2/VBoxContainer"]
+layout_mode = 2
+
+[node name="Profiles_Label" type="Label" parent="Page2/VBoxContainer/ProfilesFolder"]
+layout_mode = 2
+theme = SubResource("Theme_44hop")
+theme_override_font_sizes/font_size = 19
+text = "Profiles Folder"
+horizontal_alignment = 1
+
+[node name="Profiles_LineEdit" type="LineEdit" parent="Page2/VBoxContainer/ProfilesFolder"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme = SubResource("Theme_jr5xk")
+
+[node name="Profiles_Button" type="Button" parent="Page2/VBoxContainer/ProfilesFolder"]
+layout_mode = 2
+theme = SubResource("Theme_8iket")
+text = "Browse"
+
+[node name="DataCacheFolder" type="HBoxContainer" parent="Page2/VBoxContainer"]
+layout_mode = 2
+
+[node name="DataCacheFolder_Label" type="Label" parent="Page2/VBoxContainer/DataCacheFolder"]
+layout_mode = 2
+theme = SubResource("Theme_44hop")
+theme_override_font_sizes/font_size = 19
+text = "Data Cache"
+horizontal_alignment = 1
+
+[node name="DataCacheFolder_LineEdit" type="LineEdit" parent="Page2/VBoxContainer/DataCacheFolder"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme = SubResource("Theme_jr5xk")
+
+[node name="DataCacheFolder_Button" type="Button" parent="Page2/VBoxContainer/DataCacheFolder"]
+layout_mode = 2
+theme = SubResource("Theme_8iket")
+text = "Browse"
+
+[node name="HBoxContainer2" type="HBoxContainer" parent="Page2/VBoxContainer"]
+layout_mode = 2
+alignment = 1
+
+[node name="MarginContainer" type="MarginContainer" parent="Page2/VBoxContainer/HBoxContainer2"]
+layout_mode = 2
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 5
+
+[node name="Label" type="Label" parent="Page2/VBoxContainer/HBoxContainer2/MarginContainer"]
+layout_mode = 2
+theme = SubResource("Theme_44hop")
+theme_override_font_sizes/font_size = 21
+text = "Create from Current Documents Folder"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="CustomCheckButton" parent="Page2/VBoxContainer/HBoxContainer2" instance=ExtResource("10_2xn22")]
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="Page2/VBoxContainer"]
+layout_mode = 2
+alignment = 1
+
+[node name="Page2CancelButton" parent="Page2/VBoxContainer/HBoxContainer" instance=ExtResource("8_uin8o")]
+custom_minimum_size = Vector2(210, 80)
+layout_mode = 2
+
+[node name="MMContainer" parent="Page2/VBoxContainer/HBoxContainer/Page2CancelButton/Node2D" index="0"]
+offset_right = 387.0
+
+[node name="PanelContainer" parent="Page2/VBoxContainer/HBoxContainer/Page2CancelButton/Node2D/MMContainer" index="0"]
+size_flags_horizontal = 0
+
+[node name="MarginContainer" parent="Page2/VBoxContainer/HBoxContainer/Page2CancelButton/Node2D/MMContainer/PanelContainer" index="2"]
+size_flags_horizontal = 0
+
+[node name="Label" parent="Page2/VBoxContainer/HBoxContainer/Page2CancelButton/Node2D/MMContainer/PanelContainer/MarginContainer" index="0"]
+text = "Cancel"
+
+[node name="Page2ConfirmButton" parent="Page2/VBoxContainer/HBoxContainer" instance=ExtResource("8_uin8o")]
+custom_minimum_size = Vector2(215, 80)
+layout_mode = 2
+
+[node name="MMContainer" parent="Page2/VBoxContainer/HBoxContainer/Page2ConfirmButton/Node2D" index="0"]
+offset_right = 387.0
+
+[node name="PanelContainer" parent="Page2/VBoxContainer/HBoxContainer/Page2ConfirmButton/Node2D/MMContainer" index="0"]
+size_flags_horizontal = 0
+
+[node name="MarginContainer" parent="Page2/VBoxContainer/HBoxContainer/Page2ConfirmButton/Node2D/MMContainer/PanelContainer" index="2"]
+size_flags_horizontal = 0
+
+[node name="Label" parent="Page2/VBoxContainer/HBoxContainer/Page2ConfirmButton/Node2D/MMContainer/PanelContainer/MarginContainer" index="0"]
+text = "Confirm"
+
+[node name="Control" type="Control" parent="."]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="FileDialog" type="FileDialog" parent="Control"]
+auto_translate_mode = 2
+oversampling_override = 1.0
+title = "Open a Directory"
+initial_position = 2
+ok_button_text = "Select Current Folder"
+file_mode = 2
+access = 2
+use_native_dialog = true
+
+[node name="ConfirmationDialog" type="ConfirmationDialog" parent="Control"]
+auto_translate_mode = 2
+gui_embed_subwindows = true
+oversampling_override = 1.0
+initial_position = 2
+size = Vector2i(667, 132)
+dialog_text = "Creating from current folder will move saves, mods and user data to instance folder.
+
+Are you sure you want to proceed?"
+dialog_autowrap = true
+
+[node name="AcceptDialog" type="MarginContainer" parent="Control"]
+visible = false
+custom_minimum_size = Vector2(300, 150)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -20.0
+offset_right = 20.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ColorRect" type="ColorRect" parent="Control/AcceptDialog"]
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="Control/AcceptDialog"]
+layout_mode = 2
+theme_override_constants/margin_left = 2
+theme_override_constants/margin_top = 2
+theme_override_constants/margin_right = 2
+theme_override_constants/margin_bottom = 2
+
+[node name="Background" parent="Control/AcceptDialog/MarginContainer" instance=ExtResource("1_sdman")]
+layout_mode = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Control/AcceptDialog"]
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="Control/AcceptDialog/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/margin_left = 25
+theme_override_constants/margin_right = 25
+
+[node name="Label" type="Label" parent="Control/AcceptDialog/VBoxContainer/MarginContainer"]
+custom_minimum_size = Vector2(250, 49)
+layout_mode = 2
+text = "Please choose a game to create an instance for."
+autowrap_mode = 2
+
+[node name="MarginContainer2" type="MarginContainer" parent="Control/AcceptDialog/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 0
+theme_override_constants/margin_bottom = 20
+
+[node name="HBoxContainer" type="HBoxContainer" parent="Control/AcceptDialog/VBoxContainer/MarginContainer2"]
+layout_mode = 2
+theme_override_constants/separation = 30
+alignment = 1
+
+[node name="MarginContainer" type="MarginContainer" parent="Control/AcceptDialog/VBoxContainer/MarginContainer2/HBoxContainer"]
+custom_minimum_size = Vector2(50, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+
+[node name="PanelMain" type="Panel" parent="Control/AcceptDialog/VBoxContainer/MarginContainer2/HBoxContainer/MarginContainer"]
+layout_mode = 2
+theme = SubResource("Theme_3wbg4")
+
+[node name="PanelHover" type="Panel" parent="Control/AcceptDialog/VBoxContainer/MarginContainer2/HBoxContainer/MarginContainer"]
+layout_mode = 2
+theme = SubResource("Theme_2x6i4")
+
+[node name="Label" type="Label" parent="Control/AcceptDialog/VBoxContainer/MarginContainer2/HBoxContainer/MarginContainer"]
+layout_mode = 2
+text = "BACK"
+horizontal_alignment = 1
+
+[node name="Button_Back" type="Button" parent="Control/AcceptDialog/VBoxContainer/MarginContainer2/HBoxContainer/MarginContainer"]
+layout_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_styles/normal = SubResource("StyleBoxEmpty_2x6i4")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_2x6i4")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_2x6i4")
+theme_override_styles/disabled = SubResource("StyleBoxEmpty_2x6i4")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_2x6i4")
+
+[node name="MarginContainer2" type="MarginContainer" parent="Control/AcceptDialog/VBoxContainer/MarginContainer2/HBoxContainer"]
+custom_minimum_size = Vector2(50, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+
+[node name="PanelMain" type="Panel" parent="Control/AcceptDialog/VBoxContainer/MarginContainer2/HBoxContainer/MarginContainer2"]
+layout_mode = 2
+theme = SubResource("Theme_3wbg4")
+
+[node name="PanelHover" type="Panel" parent="Control/AcceptDialog/VBoxContainer/MarginContainer2/HBoxContainer/MarginContainer2"]
+layout_mode = 2
+theme = SubResource("Theme_2x6i4")
+
+[node name="Label" type="Label" parent="Control/AcceptDialog/VBoxContainer/MarginContainer2/HBoxContainer/MarginContainer2"]
+layout_mode = 2
+text = "OK"
+horizontal_alignment = 1
+
+[node name="Button_OK" type="Button" parent="Control/AcceptDialog/VBoxContainer/MarginContainer2/HBoxContainer/MarginContainer2"]
+layout_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_styles/normal = SubResource("StyleBoxEmpty_2x6i4")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_2x6i4")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_2x6i4")
+theme_override_styles/disabled = SubResource("StyleBoxEmpty_2x6i4")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_2x6i4")
+
+[editable path="Page1/VBoxContainer/MarginContainer/GamePicker/Sims 3"]
+[editable path="Page1/VBoxContainer/MarginContainer/GamePicker/Sims 4"]
+[editable path="Page1/VBoxContainer/HBoxContainer/Pg1CancelButton"]
+[editable path="Page1/VBoxContainer/HBoxContainer/Pg1ConfirmButton"]
+[editable path="Page2/VBoxContainer/HBoxContainer/Page2CancelButton"]
+[editable path="Page2/VBoxContainer/HBoxContainer/Page2ConfirmButton"]

@@ -1,18 +1,18 @@
 [gd_scene load_steps=12 format=3 uid="uid://irapd2eho84h"]
 
-[ext_resource type="Script" path="res://UI/MainMenu.cs" id="1_47kx6"]
-[ext_resource type="PackedScene" uid="uid://dnkueu3pxnu2b" path="res://UI/background.tscn" id="1_pexg1"]
-[ext_resource type="PackedScene" uid="uid://cevqdk2sipct5" path="res://UI/logo.tscn" id="3_57kfk"]
+[ext_resource type="PackedScene" uid="uid://uo2724xgb1uw" path="res://UI/Background.tscn" id="1_pexg1"]
+[ext_resource type="Script" uid="uid://dbcr5yfc03dkq" path="res://UI/MainMenu.cs" id="1_y6s48"]
+[ext_resource type="PackedScene" uid="uid://dvds34uk1vogh" path="res://UI/Logo.tscn" id="3_57kfk"]
 [ext_resource type="Texture2D" uid="uid://yfcxmxm6eddm" path="res://assets/images/Tali.png" id="3_vx6va"]
-[ext_resource type="Texture2D" uid="uid://b6njo80bsr20m" path="res://assets/icons/materialicons/twotone_article_black_48dp.png" id="5_4emft"]
-[ext_resource type="Texture2D" uid="uid://b5n2gwxghupb1" path="res://assets/icons/materialicons/twotone_settings_applications_black_48dp.png" id="6_7jmu2"]
-[ext_resource type="Texture2D" uid="uid://dyh5q6dmv03ax" path="res://assets/icons/materialicons/twotone_grid_on_black_48dp.png" id="6_h7mhk"]
-[ext_resource type="PackedScene" uid="uid://dpna1rktoenjc" path="res://UI/MainMenu_Elements/mm_button.tscn" id="6_pbt0c"]
-[ext_resource type="Texture2D" uid="uid://dwy6vrnug6a5c" path="res://assets/icons/materialicons/twotone_help_center_black_48dp.png" id="7_2s6u4"]
-[ext_resource type="Texture2D" uid="uid://drntqgk06oftk" path="res://assets/icons/materialicons/twotone_exit_to_app_black_48dp.png" id="8_68hk8"]
-[ext_resource type="Texture2D" uid="uid://dwuth3ffohccl" path="res://assets/icons/materialicons/twotone_warning_black_48dp.png" id="11_45wje"]
+[ext_resource type="Texture2D" uid="uid://rshuljq2xb6v" path="res://assets/icons/materialicons/twotone_add_circle_black_48dp.png" id="6_6vw7e"]
+[ext_resource type="PackedScene" uid="uid://dpna1rktoenjc" path="res://UI/Buttons/MMButton.tscn" id="6_pbt0c"]
+[ext_resource type="Texture2D" uid="uid://pclpeqlqhoje" path="res://assets/icons/materialicons/twotone_next_plan_black_48dp.png" id="7_qrfef"]
+[ext_resource type="Texture2D" uid="uid://dutdbjc14uqab" path="res://assets/icons/materialicons/twotone_build_circle_black_48dp.png" id="8_csrb3"]
+[ext_resource type="Texture2D" uid="uid://bp0j34pwjatb4" path="res://assets/icons/materialicons/twotone_help_black_48dp.png" id="9_wxllh"]
+[ext_resource type="Texture2D" uid="uid://dcv4ywu85velm" path="res://assets/icons/materialicons/twotone_cancel_black_48dp.png" id="10_avhca"]
+[ext_resource type="Texture2D" uid="uid://r7qsrf3ixrvw" path="res://assets/icons/materialicons/twotone_info_black_48dp.png" id="11_x8sin"]
 
-[node name="MainMenu" type="MarginContainer"]
+[node name="MainMenu" type="MarginContainer" node_paths=PackedStringArray("NewInstanceButton", "LoadInstanceButton", "SettingsButton", "HelpButton", "CreditsButton", "QuitButton", "DevButton", "BackgroundNode", "LogoNode", "Tali")]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -20,38 +20,84 @@ grow_horizontal = 2
 grow_vertical = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
-script = ExtResource("1_47kx6")
+script = ExtResource("1_y6s48")
+NewInstanceButton = NodePath("Control2/Menu/MarginContainer/VBoxContainer/New Instance")
+LoadInstanceButton = NodePath("Control2/Menu/MarginContainer/VBoxContainer/Load Instance")
+SettingsButton = NodePath("Control2/Menu/MarginContainer/VBoxContainer/Settings")
+HelpButton = NodePath("Control2/Menu/MarginContainer/VBoxContainer/Help")
+CreditsButton = NodePath("Control2/Menu/MarginContainer/VBoxContainer/Credits")
+QuitButton = NodePath("Control2/Menu/MarginContainer/VBoxContainer/Quit")
+DevButton = NodePath("Control2/Menu/MarginContainer/VBoxContainer/DevTest")
+BackgroundNode = NodePath("Background")
+LogoNode = NodePath("Control/Logo")
+Tali = NodePath("Control3/Tali")
 
-[node name="Background" parent="." groups=["Background"] instance=ExtResource("1_pexg1")]
+[node name="Background" parent="." instance=ExtResource("1_pexg1")]
 layout_mode = 2
 
-[node name="Logo" parent="." instance=ExtResource("3_57kfk")]
+[node name="Control" type="Control" parent="."]
 layout_mode = 2
 
-[node name="Tali" type="MarginContainer" parent="."]
+[node name="Logo" parent="Control" instance=ExtResource("3_57kfk")]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.187
+anchor_top = 0.286
+anchor_right = 0.187
+anchor_bottom = 0.286
+offset_left = -187.0
+offset_top = -214.50002
+offset_right = 1315.0
+offset_bottom = 535.5
+grow_horizontal = 1
+grow_vertical = 1
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 655
+
+[node name="Control3" type="Control" parent="."]
+layout_mode = 2
+
+[node name="Tali" type="MarginContainer" parent="Control3"]
 custom_minimum_size = Vector2(150, 150)
-layout_mode = 2
+layout_mode = 1
+anchors_preset = -1
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_top = -243.65384
+offset_right = 150.0
+grow_vertical = 0
 size_flags_horizontal = 0
 size_flags_vertical = 8
 theme_override_constants/margin_left = 10
 theme_override_constants/margin_bottom = 70
 
-[node name="TextureRect" type="TextureRect" parent="Tali"]
+[node name="TextureRect" type="TextureRect" parent="Control3/Tali"]
 layout_mode = 2
 texture = ExtResource("3_vx6va")
 expand_mode = 5
 
-[node name="Menu" type="MarginContainer" parent="."]
+[node name="Control2" type="Control" parent="."]
 layout_mode = 2
+
+[node name="Menu" type="MarginContainer" parent="Control2"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.35000002
+anchor_top = 0.53300005
+anchor_right = 1.0
+anchor_bottom = 0.546
+offset_left = -147.00003
+offset_top = -399.75003
+offset_bottom = 340.5
 size_flags_horizontal = 8
 theme_override_constants/margin_right = 45
 
-[node name="MarginContainer" type="MarginContainer" parent="Menu"]
+[node name="MarginContainer" type="MarginContainer" parent="Control2/Menu"]
 layout_mode = 2
 theme_override_constants/margin_left = 252
 theme_override_constants/margin_top = 125
 
-[node name="VBoxContainer" type="VBoxContainer" parent="Menu/MarginContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="Control2/Menu/MarginContainer"]
 custom_minimum_size = Vector2(500, 0)
 layout_mode = 2
 size_flags_horizontal = 4
@@ -59,72 +105,80 @@ size_flags_vertical = 4
 theme_override_constants/separation = -16
 alignment = 2
 
-[node name="MMButton_NewInstance" parent="Menu/MarginContainer/VBoxContainer" groups=["MMButtons"] instance=ExtResource("6_pbt0c")]
+[node name="New Instance" parent="Control2/Menu/MarginContainer/VBoxContainer" instance=ExtResource("6_pbt0c")]
 custom_minimum_size = Vector2(500, 80)
 layout_mode = 2
-ButtonName = "New Instance"
-buttonImage = ExtResource("6_h7mhk")
 
-[node name="Label" parent="Menu/MarginContainer/VBoxContainer/MMButton_NewInstance/Node2D/MMContainer/PanelContainer/MarginContainer" index="0"]
+[node name="Label" parent="Control2/Menu/MarginContainer/VBoxContainer/New Instance/Node2D/MMContainer/PanelContainer/MarginContainer" index="0"]
 text = "New Instance"
 
-[node name="MMButton_LoadInstance" parent="Menu/MarginContainer/VBoxContainer" groups=["MMButtons"] instance=ExtResource("6_pbt0c")]
-visible = false
+[node name="TextureRect" parent="Control2/Menu/MarginContainer/VBoxContainer/New Instance/Node2D/MMContainer/MarginContainer" index="0"]
+texture = ExtResource("6_6vw7e")
+
+[node name="Load Instance" parent="Control2/Menu/MarginContainer/VBoxContainer" instance=ExtResource("6_pbt0c")]
 custom_minimum_size = Vector2(500, 80)
 layout_mode = 2
-ButtonName = "Load Instance"
-buttonImage = ExtResource("5_4emft")
 
-[node name="Label" parent="Menu/MarginContainer/VBoxContainer/MMButton_LoadInstance/Node2D/MMContainer/PanelContainer/MarginContainer" index="0"]
+[node name="Label" parent="Control2/Menu/MarginContainer/VBoxContainer/Load Instance/Node2D/MMContainer/PanelContainer/MarginContainer" index="0"]
 text = "Load Instance"
 
-[node name="MMButton_Settings" parent="Menu/MarginContainer/VBoxContainer" groups=["MMButtons"] instance=ExtResource("6_pbt0c")]
+[node name="TextureRect" parent="Control2/Menu/MarginContainer/VBoxContainer/Load Instance/Node2D/MMContainer/MarginContainer" index="0"]
+texture = ExtResource("7_qrfef")
+
+[node name="Settings" parent="Control2/Menu/MarginContainer/VBoxContainer" instance=ExtResource("6_pbt0c")]
 custom_minimum_size = Vector2(500, 80)
 layout_mode = 2
-ButtonName = "Settings"
-buttonImage = ExtResource("6_7jmu2")
 
-[node name="Label" parent="Menu/MarginContainer/VBoxContainer/MMButton_Settings/Node2D/MMContainer/PanelContainer/MarginContainer" index="0"]
+[node name="Label" parent="Control2/Menu/MarginContainer/VBoxContainer/Settings/Node2D/MMContainer/PanelContainer/MarginContainer" index="0"]
 text = "Settings"
 
-[node name="MMButton_Help" parent="Menu/MarginContainer/VBoxContainer" groups=["MMButtons"] instance=ExtResource("6_pbt0c")]
+[node name="TextureRect" parent="Control2/Menu/MarginContainer/VBoxContainer/Settings/Node2D/MMContainer/MarginContainer" index="0"]
+texture = ExtResource("8_csrb3")
+
+[node name="Credits" parent="Control2/Menu/MarginContainer/VBoxContainer" instance=ExtResource("6_pbt0c")]
 custom_minimum_size = Vector2(500, 80)
 layout_mode = 2
-ButtonName = "Help"
-buttonImage = ExtResource("7_2s6u4")
 
-[node name="Label" parent="Menu/MarginContainer/VBoxContainer/MMButton_Help/Node2D/MMContainer/PanelContainer/MarginContainer" index="0"]
+[node name="Label" parent="Control2/Menu/MarginContainer/VBoxContainer/Credits/Node2D/MMContainer/PanelContainer/MarginContainer" index="0"]
+text = "Credits"
+
+[node name="TextureRect" parent="Control2/Menu/MarginContainer/VBoxContainer/Credits/Node2D/MMContainer/MarginContainer" index="0"]
+texture = ExtResource("8_csrb3")
+
+[node name="Help" parent="Control2/Menu/MarginContainer/VBoxContainer" instance=ExtResource("6_pbt0c")]
+custom_minimum_size = Vector2(500, 80)
+layout_mode = 2
+
+[node name="Label" parent="Control2/Menu/MarginContainer/VBoxContainer/Help/Node2D/MMContainer/PanelContainer/MarginContainer" index="0"]
 text = "Help"
 
-[node name="MMButton_Quit" parent="Menu/MarginContainer/VBoxContainer" groups=["MMButtons"] instance=ExtResource("6_pbt0c")]
+[node name="TextureRect" parent="Control2/Menu/MarginContainer/VBoxContainer/Help/Node2D/MMContainer/MarginContainer" index="0"]
+texture = ExtResource("9_wxllh")
+
+[node name="Quit" parent="Control2/Menu/MarginContainer/VBoxContainer" instance=ExtResource("6_pbt0c")]
 custom_minimum_size = Vector2(500, 80)
 layout_mode = 2
-ButtonName = "Quit"
-buttonImage = ExtResource("8_68hk8")
 
-[node name="Label" parent="Menu/MarginContainer/VBoxContainer/MMButton_Quit/Node2D/MMContainer/PanelContainer/MarginContainer" index="0"]
-text = "Quit"
+[node name="Label" parent="Control2/Menu/MarginContainer/VBoxContainer/Quit/Node2D/MMContainer/PanelContainer/MarginContainer" index="0"]
+text = "Exit"
 
-[node name="MMButton_DevTest" parent="Menu/MarginContainer/VBoxContainer" groups=["MMButtons"] instance=ExtResource("6_pbt0c")]
+[node name="TextureRect" parent="Control2/Menu/MarginContainer/VBoxContainer/Quit/Node2D/MMContainer/MarginContainer" index="0"]
+texture = ExtResource("10_avhca")
+
+[node name="DevTest" parent="Control2/Menu/MarginContainer/VBoxContainer" instance=ExtResource("6_pbt0c")]
 custom_minimum_size = Vector2(500, 80)
 layout_mode = 2
-ButtonName = "DevTest"
-buttonImage = ExtResource("11_45wje")
 
-[node name="Label" parent="Menu/MarginContainer/VBoxContainer/MMButton_DevTest/Node2D/MMContainer/PanelContainer/MarginContainer" index="0"]
-text = "DevTest"
+[node name="Label" parent="Control2/Menu/MarginContainer/VBoxContainer/DevTest/Node2D/MMContainer/PanelContainer/MarginContainer" index="0"]
+text = "Dev Test"
 
-[connection signal="mouse_entered" from="Tali" to="." method="_on_tali_mouse_entered"]
-[connection signal="ButtonClicked" from="Menu/MarginContainer/VBoxContainer/MMButton_NewInstance" to="." method="_on_mm_button_new_instance_button_clicked"]
-[connection signal="ButtonClicked" from="Menu/MarginContainer/VBoxContainer/MMButton_LoadInstance" to="." method="_on_mm_button_load_instance_button_clicked"]
-[connection signal="ButtonClicked" from="Menu/MarginContainer/VBoxContainer/MMButton_Settings" to="." method="_on_mm_button_settings_button_clicked"]
-[connection signal="ButtonClicked" from="Menu/MarginContainer/VBoxContainer/MMButton_Help" to="." method="_on_mm_button_help_button_clicked"]
-[connection signal="ButtonClicked" from="Menu/MarginContainer/VBoxContainer/MMButton_Quit" to="." method="_on_mm_button_quit_button_clicked"]
-[connection signal="ButtonClicked" from="Menu/MarginContainer/VBoxContainer/MMButton_DevTest" to="." method="_on_mm_button_dev_test_button_clicked"]
+[node name="TextureRect" parent="Control2/Menu/MarginContainer/VBoxContainer/DevTest/Node2D/MMContainer/MarginContainer" index="0"]
+texture = ExtResource("11_x8sin")
 
-[editable path="Menu/MarginContainer/VBoxContainer/MMButton_NewInstance"]
-[editable path="Menu/MarginContainer/VBoxContainer/MMButton_LoadInstance"]
-[editable path="Menu/MarginContainer/VBoxContainer/MMButton_Settings"]
-[editable path="Menu/MarginContainer/VBoxContainer/MMButton_Help"]
-[editable path="Menu/MarginContainer/VBoxContainer/MMButton_Quit"]
-[editable path="Menu/MarginContainer/VBoxContainer/MMButton_DevTest"]
+[editable path="Control2/Menu/MarginContainer/VBoxContainer/New Instance"]
+[editable path="Control2/Menu/MarginContainer/VBoxContainer/Load Instance"]
+[editable path="Control2/Menu/MarginContainer/VBoxContainer/Settings"]
+[editable path="Control2/Menu/MarginContainer/VBoxContainer/Credits"]
+[editable path="Control2/Menu/MarginContainer/VBoxContainer/Help"]
+[editable path="Control2/Menu/MarginContainer/VBoxContainer/Quit"]
+[editable path="Control2/Menu/MarginContainer/VBoxContainer/DevTest"]

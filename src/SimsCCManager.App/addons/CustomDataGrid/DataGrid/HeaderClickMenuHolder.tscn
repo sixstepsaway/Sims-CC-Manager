@@ -1,0 +1,43 @@
+[gd_scene load_steps=4 format=3 uid="uid://c6aq48wrtsrfd"]
+
+[ext_resource type="Script" uid="uid://d808j86tbxis" path="res://addons/CustomDataGrid/DataGrid/HeaderClickMenuHolder.cs" id="1_5470y"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_wcs0o"]
+bg_color = Color(0.6, 0.6, 0.6, 0)
+border_width_left = 2
+border_width_top = 15
+border_width_right = 2
+border_width_bottom = 2
+
+[sub_resource type="Theme" id="Theme_gavxs"]
+Panel/styles/panel = SubResource("StyleBoxFlat_wcs0o")
+
+[node name="HeaderClickMenuHolder" type="Node2D" node_paths=PackedStringArray("MenuContainer", "BackgroundColor", "HeaderOptionsContainer", "ColorPanel")]
+top_level = true
+script = ExtResource("1_5470y")
+MenuContainer = NodePath("MarginContainer")
+BackgroundColor = NodePath("MarginContainer/ColorRect")
+HeaderOptionsContainer = NodePath("MarginContainer/MarginContainer/VBoxContainer")
+ColorPanel = NodePath("MarginContainer/Panel")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+custom_minimum_size = Vector2(125, 200)
+offset_right = 125.0
+offset_bottom = 200.0
+
+[node name="ColorRect" type="ColorRect" parent="MarginContainer"]
+layout_mode = 2
+
+[node name="Panel" type="Panel" parent="MarginContainer"]
+layout_mode = 2
+theme = SubResource("Theme_gavxs")
+
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 2
+theme_override_constants/margin_top = 15
+theme_override_constants/margin_right = 2
+theme_override_constants/margin_bottom = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/MarginContainer"]
+layout_mode = 2

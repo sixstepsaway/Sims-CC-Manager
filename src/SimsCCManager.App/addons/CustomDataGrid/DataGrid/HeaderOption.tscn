@@ -1,0 +1,70 @@
+[gd_scene load_steps=5 format=3 uid="uid://cjvv6u1qoxvcm"]
+
+[ext_resource type="Script" uid="uid://jddvghoe0vaf" path="res://addons/CustomDataGrid/DataGrid/HeaderOption.cs" id="1_k8h0y"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_2e3s5"]
+bg_color = Color(0.6, 0.6, 0.6, 0)
+border_width_left = 4
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+
+[sub_resource type="Theme" id="Theme_ya7a0"]
+Panel/styles/panel = SubResource("StyleBoxFlat_2e3s5")
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_hq5ql"]
+
+[node name="HeaderOption" type="MarginContainer" node_paths=PackedStringArray("HeaderLabel", "HighlightPanel", "HighlightPanelColor", "HeaderCheck", "OptionButton")]
+script = ExtResource("1_k8h0y")
+HeaderLabel = NodePath("MarginContainer/HBoxContainer/Label")
+HighlightPanel = NodePath("HighlightPanel")
+HighlightPanelColor = NodePath("HighlightPanel/ColorRect")
+HeaderCheck = NodePath("MarginContainer/HBoxContainer/CheckBox")
+OptionButton = NodePath("Button")
+
+[node name="HighlightPanel" type="Panel" parent="."]
+visible = false
+clip_children = 1
+layout_mode = 2
+theme = SubResource("Theme_ya7a0")
+
+[node name="ColorRect" type="ColorRect" parent="HighlightPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 2
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_top = 3
+theme_override_constants/margin_right = 5
+theme_override_constants/margin_bottom = 3
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+
+[node name="CheckBox" type="CheckBox" parent="MarginContainer/HBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="MarginContainer/HBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 10
+text = "Name"
+
+[node name="Button" type="Button" parent="."]
+layout_mode = 2
+focus_mode = 0
+theme_override_styles/normal = SubResource("StyleBoxEmpty_hq5ql")
+theme_override_styles/normal_mirrored = SubResource("StyleBoxEmpty_hq5ql")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_hq5ql")
+theme_override_styles/pressed_mirrored = SubResource("StyleBoxEmpty_hq5ql")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_hq5ql")
+theme_override_styles/hover_mirrored = SubResource("StyleBoxEmpty_hq5ql")
+theme_override_styles/hover_pressed = SubResource("StyleBoxEmpty_hq5ql")
+theme_override_styles/hover_pressed_mirrored = SubResource("StyleBoxEmpty_hq5ql")
+theme_override_styles/disabled = SubResource("StyleBoxEmpty_hq5ql")
+theme_override_styles/disabled_mirrored = SubResource("StyleBoxEmpty_hq5ql")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_hq5ql")

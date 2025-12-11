@@ -11,8 +11,8 @@ config_version=5
 [application]
 
 config/name="Sims CC Manager"
-run/main_scene="res://windows/MainWindow.tscn"
-config/features=PackedStringArray("4.3", "C#", "GL Compatibility")
+run/main_scene="uid://dsflv6ica77kt"
+config/features=PackedStringArray("4.5", "C#", "GL Compatibility")
 boot_splash/show_image=false
 boot_splash/fullsize=false
 boot_splash/use_filter=false
@@ -36,31 +36,9 @@ project/assembly_name="Sims CC Manager"
 
 movie_writer/movie_file="O:/Godot Projects/SimsCCManager/Recordings/recording.avi"
 
-[global_group]
+[editor_plugins]
 
-SocialsButtons=""
-AccentColorBox=""
-Background=""
-AccentLabels=""
-Labels=""
-AccentTextButtons=""
-TextButtons=""
-OptionButtons=""
-CheckButtons=""
-MainButtons=""
-MMButtons=""
-PackageEditorButtons=""
-LineEdits=""
-PanelsWBorders=""
-ButtonsWithBorders=""
-PlainBG=""
-SimpleContrastLabel=""
-RCM_Labels=""
-Scrollbar_Bar=""
-ScrollBar_ButtonBG=""
-Scrollbar_BG=""
-LinkedFilesBG=""
-LinkedFilesLabel=""
+enabled=PackedStringArray("res://addons/CustomDataGrid/plugin.cfg")
 
 [input]
 

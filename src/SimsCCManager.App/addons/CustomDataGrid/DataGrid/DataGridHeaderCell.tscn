@@ -1,0 +1,159 @@
+[gd_scene load_steps=13 format=3 uid="uid://dj8a7dqmry2ly"]
+
+[ext_resource type="Script" uid="uid://cbnkrxo1tc6sy" path="res://addons/CustomDataGrid/DataGrid/DataGridHeaderCell.cs" id="1_4wl38"]
+[ext_resource type="Texture2D" uid="uid://b782fcy3xe4x0" path="res://addons/CustomDataGrid/assets/twotone_keyboard_arrow_down_black_48dp.png" id="2_0njtt"]
+[ext_resource type="Texture2D" uid="uid://c2y6dru3pqtcw" path="res://addons/CustomDataGrid/assets/twotone_keyboard_arrow_up_black_48dp.png" id="3_4l115"]
+
+[sub_resource type="Gradient" id="Gradient_18op3"]
+interpolation_mode = 2
+offsets = PackedFloat32Array(0.844311, 1)
+colors = PackedColorArray(1, 1, 1, 0, 0.458405, 0.458405, 0.458405, 0.219608)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_wobql"]
+gradient = SubResource("Gradient_18op3")
+fill = 2
+fill_from = Vector2(0.491453, 0.495726)
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_uxf5g"]
+texture = SubResource("GradientTexture2D_wobql")
+
+[sub_resource type="Theme" id="Theme_n0eyv"]
+Label/colors/font_color = Color(0.165656, 0.165656, 0.165656, 1)
+Label/font_sizes/font_size = 12
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_kv106"]
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_vld7q"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ks5li"]
+bg_color = Color(0.6, 0.6, 0.6, 0)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_kcp0p"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_gytt0"]
+
+[node name="DataGrid_HeaderCell" type="Control" node_paths=PackedStringArray("HeaderLabel", "Clicker", "Arrow", "Accents", "SortedIcon", "Container", "ClickHoldButton")]
+clip_children = 1
+clip_contents = true
+custom_minimum_size = Vector2(15, 15)
+layout_mode = 3
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_top = -7.5
+offset_right = 15.0
+offset_bottom = 7.5
+grow_vertical = 2
+size_flags_horizontal = 0
+size_flags_vertical = 3
+script = ExtResource("1_4wl38")
+HeaderLabel = NodePath("Container/MarginContainer2/Label")
+Clicker = NodePath("Container/MarginContainer/Button")
+Arrow = NodePath("Container/MarginContainer3/TextureRect")
+Accents = [NodePath("Container/MarginContainer3/TextureRect/ColorRect")]
+SortedIcon = NodePath("Container/MarginContainer3")
+ArrowDown = ExtResource("2_0njtt")
+ArrowUp = ExtResource("3_4l115")
+Container = NodePath("Container")
+ClickHoldButton = NodePath("Button")
+
+[node name="Container" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Panel" type="Panel" parent="Container"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxTexture_uxf5g")
+
+[node name="MarginContainer2" type="MarginContainer" parent="Container"]
+clip_contents = true
+layout_mode = 2
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_right = 3
+
+[node name="Label" type="Label" parent="Container/MarginContainer2"]
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 1
+theme = SubResource("Theme_n0eyv")
+vertical_alignment = 1
+
+[node name="MarginContainer3" type="MarginContainer" parent="Container"]
+visible = false
+custom_minimum_size = Vector2(10, 10)
+layout_mode = 2
+size_flags_horizontal = 8
+size_flags_vertical = 4
+theme_override_constants/margin_right = 5
+
+[node name="Panel" type="Panel" parent="Container/MarginContainer3"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_kv106")
+
+[node name="TextureRect" type="TextureRect" parent="Container/MarginContainer3"]
+clip_children = 1
+custom_minimum_size = Vector2(10, 10)
+layout_mode = 2
+texture = ExtResource("2_0njtt")
+expand_mode = 3
+
+[node name="ColorRect" type="ColorRect" parent="Container/MarginContainer3/TextureRect"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.787141, 0.37721, 0.528993, 1)
+
+[node name="MarginContainer" type="MarginContainer" parent="Container"]
+visible = false
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Button" type="Button" parent="Container/MarginContainer"]
+layout_mode = 2
+focus_mode = 0
+theme_override_styles/normal = SubResource("StyleBoxEmpty_vld7q")
+theme_override_styles/normal_mirrored = SubResource("StyleBoxEmpty_vld7q")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_ks5li")
+theme_override_styles/pressed_mirrored = SubResource("StyleBoxEmpty_kcp0p")
+theme_override_styles/hover = SubResource("StyleBoxFlat_ks5li")
+theme_override_styles/hover_mirrored = SubResource("StyleBoxEmpty_kcp0p")
+theme_override_styles/hover_pressed = SubResource("StyleBoxEmpty_kcp0p")
+theme_override_styles/hover_pressed_mirrored = SubResource("StyleBoxEmpty_kcp0p")
+theme_override_styles/disabled = SubResource("StyleBoxEmpty_kcp0p")
+theme_override_styles/disabled_mirrored = SubResource("StyleBoxEmpty_kcp0p")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_kcp0p")
+
+[node name="Button" type="Button" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+focus_mode = 0
+theme_override_styles/normal = SubResource("StyleBoxEmpty_gytt0")
+theme_override_styles/normal_mirrored = SubResource("StyleBoxEmpty_gytt0")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_gytt0")
+theme_override_styles/pressed_mirrored = SubResource("StyleBoxEmpty_gytt0")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_gytt0")
+theme_override_styles/hover_mirrored = SubResource("StyleBoxEmpty_gytt0")
+theme_override_styles/hover_pressed = SubResource("StyleBoxEmpty_gytt0")
+theme_override_styles/hover_pressed_mirrored = SubResource("StyleBoxEmpty_gytt0")
+theme_override_styles/disabled = SubResource("StyleBoxEmpty_gytt0")
+theme_override_styles/disabled_mirrored = SubResource("StyleBoxEmpty_gytt0")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_gytt0")

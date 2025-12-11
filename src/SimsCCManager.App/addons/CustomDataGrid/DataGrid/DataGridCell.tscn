@@ -1,0 +1,475 @@
+[gd_scene load_steps=17 format=3 uid="uid://bvk41nvc6rq1u"]
+
+[ext_resource type="Script" uid="uid://b0740eu7uilm5" path="res://addons/CustomDataGrid/DataGrid/DataGridCell.cs" id="1_gr0fp"]
+[ext_resource type="FontFile" uid="uid://c1806s1t11f3t" path="res://addons/CustomDataGrid/assets/OpenSans-VariableFont_wdth,wght.ttf" id="2_u63wh"]
+[ext_resource type="Texture2D" uid="uid://blnbxq3ph05vf" path="res://addons/CustomDataGrid/assets/twotone_check_black_48dp.png" id="3_uptwa"]
+[ext_resource type="Texture2D" uid="uid://gugl3f4m0ccf" path="res://addons/CustomDataGrid/assets/twotone_clear_black_48dp.png" id="4_t4n2q"]
+[ext_resource type="Texture2D" uid="uid://uyitnsfjudx7" path="res://addons/CustomDataGrid/assets/twotone_check_box_outline_blank_black_48dp.png" id="5_wldxl"]
+[ext_resource type="Texture2D" uid="uid://ix2qv8gcj7gc" path="res://addons/CustomDataGrid/assets/twotone_indeterminate_check_box_black_48dp.png" id="6_xasmm"]
+[ext_resource type="Texture2D" uid="uid://beo27e5s4g6an" path="res://addons/CustomDataGrid/assets/twotone_check_box_black_48dp.png" id="7_vjdql"]
+[ext_resource type="Texture2D" uid="uid://c2y6dru3pqtcw" path="res://addons/CustomDataGrid/assets/twotone_keyboard_arrow_up_black_48dp.png" id="8_k5t6v"]
+[ext_resource type="Texture2D" uid="uid://b782fcy3xe4x0" path="res://addons/CustomDataGrid/assets/twotone_keyboard_arrow_down_black_48dp.png" id="9_f4qc8"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_uw5ip"]
+bg_color = Color(0.6, 0.6, 0.6, 0)
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.55, 0.55, 0.55, 0.482353)
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_wysmd"]
+
+[sub_resource type="Theme" id="Theme_kcnql"]
+LineEdit/font_sizes/font_size = 12
+LineEdit/fonts/font = ExtResource("2_u63wh")
+LineEdit/styles/focus = SubResource("StyleBoxEmpty_wysmd")
+LineEdit/styles/normal = SubResource("StyleBoxEmpty_wysmd")
+LineEdit/styles/read_only = SubResource("StyleBoxEmpty_wysmd")
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_pnu40"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_20ji7"]
+bg_color = Color(0.47788, 0.47788, 0.47788, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+
+[sub_resource type="Theme" id="Theme_2c7yn"]
+Panel/styles/panel = SubResource("StyleBoxFlat_20ji7")
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_2mng4"]
+
+[node name="DataGrid_Cell" type="Control" node_paths=PackedStringArray("ClickButton", "TextContainer", "TextHolder", "NumContainer", "NumAdjusterPlaceholder", "NumUp", "NumDown", "NumUpColor", "NumDownColor", "NumberHolder", "AdjusterBg", "IconsContainer", "IconsRow", "TrueFalseContainer", "TrueImage", "FalseImage", "TrueColor", "FalseColor", "ColorContainer", "ImageContainer", "ImageSizer", "ImageTextureRect", "NumberAdjusterContainer", "ToggleContainer", "ToggleSelectedImage", "ToggleUnselectedImage", "ToggleHoverImage", "ToggleSelectedColor", "ToggleUnselectedColor", "ToggleHoverColor", "CustomContainer")]
+clip_contents = true
+custom_minimum_size = Vector2(25, 0)
+layout_mode = 3
+anchors_preset = 0
+offset_right = 25.0
+offset_bottom = 25.0
+size_flags_horizontal = 4
+size_flags_vertical = 0
+script = ExtResource("1_gr0fp")
+ClickButton = NodePath("Button")
+TextContainer = NodePath("TextOption")
+TextHolder = NodePath("TextOption/LineEdit")
+NumContainer = NodePath("NumberOption")
+NumAdjusterPlaceholder = NodePath("NumberOption/HBoxContainer/NumAdjusterPlaceholder")
+NumUp = NodePath("NumberOption/HBoxContainer/NumberAdjuster/MarginContainer/VBoxContainer/MarginContainer/Button_Up")
+NumDown = NodePath("NumberOption/HBoxContainer/NumberAdjuster/MarginContainer/VBoxContainer/MarginContainer2/Button_Down")
+NumUpColor = NodePath("NumberOption/HBoxContainer/NumberAdjuster/MarginContainer/VBoxContainer/MarginContainer/TextureRect/ColorRect")
+NumDownColor = NodePath("NumberOption/HBoxContainer/NumberAdjuster/MarginContainer/VBoxContainer/MarginContainer2/TextureRect/ColorRect")
+NumberHolder = NodePath("NumberOption/HBoxContainer/MarginContainer/LineEdit")
+AdjusterBg = NodePath("NumberOption/HBoxContainer/NumberAdjuster/Control/ColorRect")
+IconsContainer = NodePath("IconsOption")
+IconsRow = NodePath("IconsOption/IconsContainer")
+TrueFalseContainer = NodePath("TrueFalseOption")
+TrueImage = NodePath("TrueFalseOption/True")
+FalseImage = NodePath("TrueFalseOption/False")
+TrueColor = NodePath("TrueFalseOption/True/ColorRect")
+FalseColor = NodePath("TrueFalseOption/False/ColorRect")
+ColorContainer = NodePath("ColorOption")
+ImageContainer = NodePath("PictureOption")
+ImageSizer = NodePath("PictureOption/PictureHolder")
+ImageTextureRect = NodePath("PictureOption/PictureHolder/Image")
+NumberAdjusterContainer = NodePath("NumberOption/HBoxContainer/NumberAdjuster")
+ToggleContainer = NodePath("ToggleOption")
+ToggleSelectedImage = NodePath("ToggleOption/Checked")
+ToggleUnselectedImage = NodePath("ToggleOption/Unchecked")
+ToggleHoverImage = NodePath("ToggleOption/Hover")
+ToggleSelectedColor = NodePath("ToggleOption/Checked/ColorRect")
+ToggleUnselectedColor = NodePath("ToggleOption/Unchecked/ColorRect")
+ToggleHoverColor = NodePath("ToggleOption/Hover/ColorRect")
+CustomContainer = NodePath("CustomContainer")
+
+[node name="Panel" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_uw5ip")
+
+[node name="TextOption" type="MarginContainer" parent="."]
+visible = false
+clip_contents = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 53.875
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 3
+theme_override_constants/margin_right = 3
+
+[node name="LineEdit" type="LineEdit" parent="TextOption"]
+layout_mode = 2
+mouse_filter = 1
+theme = SubResource("Theme_kcnql")
+editable = false
+
+[node name="NumberOption" type="MarginContainer" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -6.5
+offset_right = 53.875
+offset_bottom = 6.5
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = -5
+
+[node name="HBoxContainer" type="HBoxContainer" parent="NumberOption"]
+layout_mode = 2
+size_flags_horizontal = 0
+theme_override_constants/separation = -6
+
+[node name="NumAdjusterPlaceholder" type="MarginContainer" parent="NumberOption/HBoxContainer"]
+visible = false
+custom_minimum_size = Vector2(18, 38)
+layout_mode = 2
+
+[node name="NumberAdjuster" type="MarginContainer" parent="NumberOption/HBoxContainer"]
+z_index = 1000
+z_as_relative = false
+custom_minimum_size = Vector2(18, 0)
+layout_mode = 2
+size_flags_horizontal = 0
+theme_override_constants/margin_left = -1
+
+[node name="Control" type="Control" parent="NumberOption/HBoxContainer/NumberAdjuster"]
+layout_mode = 2
+
+[node name="ColorRect" type="ColorRect" parent="NumberOption/HBoxContainer/NumberAdjuster/Control"]
+top_level = true
+layout_mode = 0
+offset_left = -1.0
+offset_right = 10.0
+offset_bottom = 25.0
+mouse_filter = 2
+color = Color(0.737193, 0.737193, 0.737193, 1)
+
+[node name="MarginContainer" type="MarginContainer" parent="NumberOption/HBoxContainer/NumberAdjuster"]
+layout_mode = 2
+theme_override_constants/margin_left = 4
+theme_override_constants/margin_bottom = 1
+
+[node name="VBoxContainer" type="VBoxContainer" parent="NumberOption/HBoxContainer/NumberAdjuster/MarginContainer"]
+layout_mode = 2
+size_flags_horizontal = 0
+theme_override_constants/separation = -2
+alignment = 1
+
+[node name="MarginContainer" type="MarginContainer" parent="NumberOption/HBoxContainer/NumberAdjuster/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(12, 17)
+layout_mode = 2
+size_flags_horizontal = 4
+
+[node name="TextureRect" type="TextureRect" parent="NumberOption/HBoxContainer/NumberAdjuster/MarginContainer/VBoxContainer/MarginContainer"]
+clip_children = 1
+layout_mode = 2
+texture = ExtResource("8_k5t6v")
+expand_mode = 5
+
+[node name="ColorRect" type="ColorRect" parent="NumberOption/HBoxContainer/NumberAdjuster/MarginContainer/VBoxContainer/MarginContainer/TextureRect"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Button_Up" type="Button" parent="NumberOption/HBoxContainer/NumberAdjuster/MarginContainer/VBoxContainer/MarginContainer"]
+layout_mode = 2
+focus_mode = 0
+theme_override_styles/normal = SubResource("StyleBoxEmpty_pnu40")
+theme_override_styles/normal_mirrored = SubResource("StyleBoxEmpty_pnu40")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_pnu40")
+theme_override_styles/pressed_mirrored = SubResource("StyleBoxEmpty_pnu40")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_pnu40")
+theme_override_styles/hover_mirrored = SubResource("StyleBoxEmpty_pnu40")
+theme_override_styles/hover_pressed = SubResource("StyleBoxEmpty_pnu40")
+theme_override_styles/hover_pressed_mirrored = SubResource("StyleBoxEmpty_pnu40")
+theme_override_styles/disabled = SubResource("StyleBoxEmpty_pnu40")
+theme_override_styles/disabled_mirrored = SubResource("StyleBoxEmpty_pnu40")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_pnu40")
+
+[node name="MarginContainer2" type="MarginContainer" parent="NumberOption/HBoxContainer/NumberAdjuster/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(12, 17)
+layout_mode = 2
+size_flags_horizontal = 4
+
+[node name="TextureRect" type="TextureRect" parent="NumberOption/HBoxContainer/NumberAdjuster/MarginContainer/VBoxContainer/MarginContainer2"]
+clip_children = 1
+layout_mode = 2
+texture = ExtResource("9_f4qc8")
+expand_mode = 5
+
+[node name="ColorRect" type="ColorRect" parent="NumberOption/HBoxContainer/NumberAdjuster/MarginContainer/VBoxContainer/MarginContainer2/TextureRect"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Button_Down" type="Button" parent="NumberOption/HBoxContainer/NumberAdjuster/MarginContainer/VBoxContainer/MarginContainer2"]
+layout_mode = 2
+focus_mode = 0
+theme_override_styles/normal = SubResource("StyleBoxEmpty_pnu40")
+theme_override_styles/normal_mirrored = SubResource("StyleBoxEmpty_pnu40")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_pnu40")
+theme_override_styles/pressed_mirrored = SubResource("StyleBoxEmpty_pnu40")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_pnu40")
+theme_override_styles/hover_mirrored = SubResource("StyleBoxEmpty_pnu40")
+theme_override_styles/hover_pressed = SubResource("StyleBoxEmpty_pnu40")
+theme_override_styles/hover_pressed_mirrored = SubResource("StyleBoxEmpty_pnu40")
+theme_override_styles/disabled = SubResource("StyleBoxEmpty_pnu40")
+theme_override_styles/disabled_mirrored = SubResource("StyleBoxEmpty_pnu40")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_pnu40")
+
+[node name="MarginContainer" type="MarginContainer" parent="NumberOption/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 8
+mouse_filter = 2
+theme_override_constants/margin_left = 6
+
+[node name="LineEdit" type="LineEdit" parent="NumberOption/HBoxContainer/MarginContainer"]
+layout_mode = 2
+mouse_filter = 1
+mouse_default_cursor_shape = 0
+theme = SubResource("Theme_kcnql")
+text = "number"
+expand_to_text_length = true
+
+[node name="IconsOption" type="MarginContainer" parent="."]
+visible = false
+clip_contents = true
+layout_mode = 1
+anchors_preset = 9
+anchor_bottom = 1.0
+offset_right = 6.0
+offset_bottom = -5.0
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 3
+theme_override_constants/margin_top = 1
+theme_override_constants/margin_right = 3
+theme_override_constants/margin_bottom = 1
+
+[node name="IconsContainer" type="HBoxContainer" parent="IconsOption"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 1
+alignment = 1
+
+[node name="TrueFalseOption" type="MarginContainer" parent="."]
+visible = false
+clip_contents = true
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -10.0
+offset_top = -10.0
+offset_right = 10.0
+offset_bottom = 10.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Panel" type="Panel" parent="TrueFalseOption"]
+layout_mode = 2
+theme = SubResource("Theme_2c7yn")
+
+[node name="True" type="TextureRect" parent="TrueFalseOption"]
+clip_children = 1
+custom_minimum_size = Vector2(20, 20)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+texture = ExtResource("3_uptwa")
+expand_mode = 2
+
+[node name="ColorRect" type="ColorRect" parent="TrueFalseOption/True"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.610957, 0.730333, 0.785406, 1)
+
+[node name="False" type="TextureRect" parent="TrueFalseOption"]
+visible = false
+clip_children = 1
+custom_minimum_size = Vector2(20, 20)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+texture = ExtResource("4_t4n2q")
+expand_mode = 2
+
+[node name="ColorRect" type="ColorRect" parent="TrueFalseOption/False"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.124547, 0.182963, 0.20923, 1)
+
+[node name="ColorOption" type="MarginContainer" parent="."]
+visible = false
+clip_contents = true
+layout_mode = 1
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_top = -7.5
+offset_right = 15.0
+offset_bottom = 7.5
+grow_vertical = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="ColorOption"]
+custom_minimum_size = Vector2(15, 15)
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_right = 5
+
+[node name="ColorOption_Color" type="ColorRect" parent="ColorOption/MarginContainer"]
+custom_minimum_size = Vector2(25, 0)
+layout_mode = 2
+
+[node name="ToggleOption" type="MarginContainer" parent="."]
+visible = false
+clip_contents = true
+custom_minimum_size = Vector2(25, 25)
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 4
+
+[node name="Unchecked" type="TextureRect" parent="ToggleOption"]
+visible = false
+clip_children = 1
+custom_minimum_size = Vector2(20, 20)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+texture = ExtResource("5_wldxl")
+expand_mode = 2
+
+[node name="ColorRect" type="ColorRect" parent="ToggleOption/Unchecked"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.124547, 0.182963, 0.20923, 1)
+
+[node name="Hover" type="TextureRect" parent="ToggleOption"]
+visible = false
+clip_children = 1
+custom_minimum_size = Vector2(20, 20)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+texture = ExtResource("6_xasmm")
+expand_mode = 2
+
+[node name="ColorRect" type="ColorRect" parent="ToggleOption/Hover"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.124547, 0.182963, 0.20923, 1)
+
+[node name="Checked" type="TextureRect" parent="ToggleOption"]
+visible = false
+clip_children = 1
+custom_minimum_size = Vector2(20, 20)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+texture = ExtResource("7_vjdql")
+expand_mode = 2
+
+[node name="ColorRect" type="ColorRect" parent="ToggleOption/Checked"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.12549, 0.184314, 0.207843, 1)
+
+[node name="CustomContainer" type="MarginContainer" parent="."]
+visible = false
+clip_contents = true
+custom_minimum_size = Vector2(25, 25)
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 4
+
+[node name="PictureOption" type="MarginContainer" parent="."]
+visible = false
+clip_contents = true
+custom_minimum_size = Vector2(25, 25)
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 4
+theme_override_constants/margin_left = 2
+theme_override_constants/margin_right = 2
+
+[node name="PictureHolder" type="MarginContainer" parent="PictureOption"]
+clip_contents = true
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="Image" type="TextureRect" parent="PictureOption/PictureHolder"]
+layout_mode = 2
+expand_mode = 3
+stretch_mode = 5
+
+[node name="Button" type="Button" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+focus_mode = 0
+mouse_filter = 1
+theme_override_styles/normal = SubResource("StyleBoxEmpty_2mng4")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_2mng4")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_2mng4")
+theme_override_styles/disabled = SubResource("StyleBoxEmpty_2mng4")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_2mng4")

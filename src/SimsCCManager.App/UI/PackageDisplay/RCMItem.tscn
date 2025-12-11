@@ -1,0 +1,64 @@
+[gd_scene load_steps=11 format=3 uid="uid://2ybbdyju3wdc"]
+
+[ext_resource type="Script" uid="uid://8jd71s7rouan" path="res://UI/PackageDisplay/RcmItem.cs" id="1_gapdb"]
+[ext_resource type="FontFile" uid="uid://2m7ci2r6uwu2" path="res://assets/fonts/Anek_Gurmukhi/AnekGurmukhi-VariableFont_wdth,wght.ttf" id="1_sl2ek"]
+
+[sub_resource type="Theme" id="Theme_5c6e1"]
+Label/colors/font_color = Color(0.099986, 0.099986, 0.099986, 1)
+Label/fonts/font = ExtResource("1_sl2ek")
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_xoeka"]
+content_margin_left = 7.0
+content_margin_top = 5.0
+content_margin_right = 1.0
+bg_color = Color(0.6, 0.6, 0.6, 0)
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_dytdo"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_sn0so"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_ciava"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_0dert"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_dx0t6"]
+bg_color = Color(0.6, 0.6, 0.6, 0)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_fmkrp"]
+
+[node name="RCMItem" type="MarginContainer" node_paths=PackedStringArray("button", "label")]
+theme_override_constants/margin_left = 2
+theme_override_constants/margin_top = 2
+theme_override_constants/margin_right = 2
+theme_override_constants/margin_bottom = 2
+script = ExtResource("1_gapdb")
+button = NodePath("Button")
+label = NodePath("HBoxContainer/Label")
+
+[node name="HBoxContainer" type="HBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="HBoxContainer"]
+layout_mode = 2
+theme = SubResource("Theme_5c6e1")
+theme_override_styles/normal = SubResource("StyleBoxFlat_xoeka")
+text = "Root"
+vertical_alignment = 1
+
+[node name="Button" type="Button" parent="."]
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxEmpty_dytdo")
+theme_override_styles/normal_mirrored = SubResource("StyleBoxEmpty_sn0so")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_ciava")
+theme_override_styles/pressed_mirrored = SubResource("StyleBoxEmpty_0dert")
+theme_override_styles/hover = SubResource("StyleBoxFlat_dx0t6")
+theme_override_styles/hover_mirrored = SubResource("StyleBoxEmpty_fmkrp")
+theme_override_styles/hover_pressed = SubResource("StyleBoxEmpty_fmkrp")
+theme_override_styles/hover_pressed_mirrored = SubResource("StyleBoxEmpty_fmkrp")
+theme_override_styles/disabled = SubResource("StyleBoxEmpty_fmkrp")
+theme_override_styles/disabled_mirrored = SubResource("StyleBoxEmpty_fmkrp")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_fmkrp")

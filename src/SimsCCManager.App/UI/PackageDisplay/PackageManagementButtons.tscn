@@ -1,0 +1,64 @@
+[gd_scene load_steps=10 format=3 uid="uid://c5syo7ja1jgbg"]
+
+[ext_resource type="PackedScene" uid="uid://ryrvwl0ec34b" path="res://UI/Buttons/TopbarButton.tscn" id="1_nk6b8"]
+[ext_resource type="Script" uid="uid://dpv4yfy7q8h5p" path="res://UI/PackageDisplay/PackageManagementButtons.cs" id="1_yuesw"]
+[ext_resource type="Texture2D" uid="uid://dso4s7aqi8x4c" path="res://assets/icons/materialicons/twotone_library_add_black_48dp.png" id="2_5lmyk"]
+[ext_resource type="Texture2D" uid="uid://cr0iyclc7hnb5" path="res://assets/icons/materialicons/twotone_add_box_black_48dp.png" id="3_nlo4a"]
+[ext_resource type="Texture2D" uid="uid://dosqoo8wirnm8" path="res://assets/icons/materialicons/twotone_archive_black_48dp.png" id="3_yuesw"]
+[ext_resource type="Texture2D" uid="uid://btjijgdsk4da0" path="res://assets/icons/materialicons/twotone_assignment_black_48dp.png" id="4_nlo4a"]
+[ext_resource type="Texture2D" uid="uid://dkhgnqbvo1f0v" path="res://assets/icons/materialicons/twotone_create_new_folder_black_48dp.png" id="5_pxkjp"]
+[ext_resource type="Texture2D" uid="uid://b6njo80bsr20m" path="res://assets/icons/materialicons/twotone_article_black_48dp.png" id="6_kbkg1"]
+[ext_resource type="Texture2D" uid="uid://b5n2gwxghupb1" path="res://assets/icons/materialicons/twotone_settings_applications_black_48dp.png" id="7_umxvt"]
+
+[node name="PackageManagementButtons" type="MarginContainer" node_paths=PackedStringArray("AddFiles", "AddFolder", "Refresh", "SortSubfolders", "ExportProfile", "ManageCategories", "EditExes", "buttons")]
+size_flags_horizontal = 0
+size_flags_vertical = 8
+theme_override_constants/margin_top = 50
+script = ExtResource("1_yuesw")
+AddFiles = NodePath("HBoxContainer/AddFiles")
+AddFolder = NodePath("HBoxContainer/AddFolder")
+Refresh = NodePath("HBoxContainer/Refresh")
+SortSubfolders = NodePath("HBoxContainer/SortSubfolders")
+ExportProfile = NodePath("HBoxContainer/ExportProfile")
+ManageCategories = NodePath("HBoxContainer/ManageCategories")
+EditExes = NodePath("HBoxContainer/EditExes")
+buttons = [NodePath("HBoxContainer/AddFiles"), NodePath("HBoxContainer/AddFolder"), NodePath("HBoxContainer/Refresh"), NodePath("HBoxContainer/SortSubfolders"), NodePath("HBoxContainer/ExportProfile"), NodePath("HBoxContainer/ManageCategories"), NodePath("HBoxContainer/EditExes")]
+
+[node name="HBoxContainer" type="HBoxContainer" parent="."]
+layout_mode = 2
+theme_override_constants/separation = -1
+
+[node name="AddFiles" parent="HBoxContainer" instance=ExtResource("1_nk6b8")]
+layout_mode = 2
+Texture = ExtResource("3_nlo4a")
+ToolTipText = "Add Files to Instance"
+
+[node name="AddFolder" parent="HBoxContainer" instance=ExtResource("1_nk6b8")]
+layout_mode = 2
+Texture = ExtResource("2_5lmyk")
+ToolTipText = "Add Folder to Instance"
+
+[node name="Refresh" parent="HBoxContainer" instance=ExtResource("1_nk6b8")]
+layout_mode = 2
+Texture = ExtResource("3_yuesw")
+ToolTipText = "Refresh files"
+
+[node name="SortSubfolders" parent="HBoxContainer" instance=ExtResource("1_nk6b8")]
+layout_mode = 2
+Texture = ExtResource("4_nlo4a")
+ToolTipText = "Sort Subfolders"
+
+[node name="ExportProfile" parent="HBoxContainer" instance=ExtResource("1_nk6b8")]
+layout_mode = 2
+Texture = ExtResource("5_pxkjp")
+ToolTipText = "Export Profile"
+
+[node name="ManageCategories" parent="HBoxContainer" instance=ExtResource("1_nk6b8")]
+layout_mode = 2
+Texture = ExtResource("6_kbkg1")
+ToolTipText = "Manage Categories"
+
+[node name="EditExes" parent="HBoxContainer" instance=ExtResource("1_nk6b8")]
+layout_mode = 2
+Texture = ExtResource("7_umxvt")
+ToolTipText = "Edit Exes"

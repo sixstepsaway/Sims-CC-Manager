@@ -1,0 +1,80 @@
+[gd_scene load_steps=8 format=3 uid="uid://bj24a4o55aw5b"]
+
+[ext_resource type="Script" uid="uid://dx4evnvub7ku" path="res://UI/LoadingInstance.cs" id="1_d55ca"]
+[ext_resource type="PackedScene" uid="uid://uo2724xgb1uw" path="res://UI/background.tscn" id="1_shmkj"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_5kt08"]
+bg_color = Color(0.317116, 0.395759, 0.35931, 1)
+
+[sub_resource type="Gradient" id="Gradient_7aik0"]
+offsets = PackedFloat32Array(0, 0.272727, 0.493506, 0.805195, 0.974026)
+colors = PackedColorArray(0.506672, 0.646309, 0.474212, 1, 0.278417, 0.65, 0.195, 1, 0.2305, 0.5, 0.17, 1, 0.27301, 0.69, 0.1794, 1, 0.278417, 0.65, 0.195, 1)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_6eso3"]
+gradient = SubResource("Gradient_7aik0")
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_gywvd"]
+texture = SubResource("GradientTexture2D_6eso3")
+
+[sub_resource type="Theme" id="Theme_jvlka"]
+ProgressBar/styles/background = SubResource("StyleBoxFlat_5kt08")
+ProgressBar/styles/fill = SubResource("StyleBoxTexture_gywvd")
+
+[node name="LoadingInstance" type="Control" node_paths=PackedStringArray("progressBar", "ProgressLabel", "background")]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_d55ca")
+progressBar = NodePath("ProgressBar/VBoxContainer/HBoxContainer/MarginContainer/ProgressBar")
+ProgressLabel = NodePath("ProgressBar/VBoxContainer/Label")
+background = NodePath("Background")
+
+[node name="Background" parent="." instance=ExtResource("1_shmkj")]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ProgressBar" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -194.5
+offset_top = -25.0
+offset_right = 194.5
+offset_bottom = 25.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+mouse_filter = 2
+theme_override_constants/margin_bottom = 50
+
+[node name="VBoxContainer" type="VBoxContainer" parent="ProgressBar"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="ProgressBar/VBoxContainer"]
+layout_mode = 2
+text = "Doing something... "
+horizontal_alignment = 1
+
+[node name="HBoxContainer" type="HBoxContainer" parent="ProgressBar/VBoxContainer"]
+layout_mode = 2
+alignment = 1
+
+[node name="MarginContainer" type="MarginContainer" parent="ProgressBar/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ProgressBar" type="ProgressBar" parent="ProgressBar/VBoxContainer/HBoxContainer/MarginContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme = SubResource("Theme_jvlka")

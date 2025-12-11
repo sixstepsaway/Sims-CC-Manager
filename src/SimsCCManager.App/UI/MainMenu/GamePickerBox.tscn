@@ -1,0 +1,90 @@
+[gd_scene load_steps=8 format=3 uid="uid://bodob30nu6cq"]
+
+[ext_resource type="Script" uid="uid://ccbw2nlmbp7lk" path="res://UI/MainMenu/GamePickerBox.cs" id="1_heice"]
+[ext_resource type="Texture2D" uid="uid://d08ycpo6imm84" path="res://assets/images/s2.png" id="1_sxbh8"]
+[ext_resource type="FontFile" uid="uid://2m7ci2r6uwu2" path="res://assets/fonts/Anek_Gurmukhi/AnekGurmukhi-VariableFont_wdth,wght.ttf" id="2_8d588"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_heice"]
+bg_color = Color(0.6, 0.6, 0.6, 0)
+border_width_left = 15
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.37770733, 0.6918343, 0.7628607, 0.7882353)
+
+[sub_resource type="Theme" id="Theme_44hop"]
+Label/colors/font_color = Color(0.249581, 0.250574, 0.332425, 1)
+Label/font_sizes/font_size = 31
+Label/fonts/font = ExtResource("2_8d588")
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_6bb4u"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_d71ra"]
+
+[node name="GamePicker" type="MarginContainer" node_paths=PackedStringArray("GameIcon", "GameLabel", "ButtonClicker", "SelectedBorder")]
+offset_right = 165.0
+offset_bottom = 75.0
+theme_override_constants/margin_left = 4
+theme_override_constants/margin_top = 4
+theme_override_constants/margin_right = 4
+theme_override_constants/margin_bottom = 4
+script = ExtResource("1_heice")
+GameIcon = NodePath("MarginContainer2/Item/MarginContainer/TextureRect")
+GameLabel = NodePath("MarginContainer2/Item/MarginContainer2/Label2")
+ButtonClicker = NodePath("Button")
+SelectedBorder = NodePath("MarginContainer")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+visible = false
+layout_mode = 2
+
+[node name="Selected" type="Panel" parent="MarginContainer"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_heice")
+
+[node name="MarginContainer2" type="MarginContainer" parent="."]
+layout_mode = 2
+theme_override_constants/margin_left = 15
+
+[node name="Item" type="HBoxContainer" parent="MarginContainer2"]
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer2/Item"]
+custom_minimum_size = Vector2(55, 55)
+layout_mode = 2
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="TextureRect" type="TextureRect" parent="MarginContainer2/Item/MarginContainer"]
+layout_mode = 2
+texture = ExtResource("1_sxbh8")
+expand_mode = 5
+
+[node name="MarginContainer2" type="MarginContainer" parent="MarginContainer2/Item"]
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_constants/margin_top = 7
+
+[node name="Label2" type="Label" parent="MarginContainer2/Item/MarginContainer2"]
+layout_mode = 2
+theme = SubResource("Theme_44hop")
+text = "Sims 2"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Button" type="Button" parent="."]
+layout_mode = 2
+theme_override_styles/focus = SubResource("StyleBoxEmpty_6bb4u")
+theme_override_styles/disabled_mirrored = SubResource("StyleBoxEmpty_6bb4u")
+theme_override_styles/disabled = SubResource("StyleBoxEmpty_6bb4u")
+theme_override_styles/hover_pressed_mirrored = SubResource("StyleBoxEmpty_6bb4u")
+theme_override_styles/hover_pressed = SubResource("StyleBoxEmpty_6bb4u")
+theme_override_styles/hover_mirrored = SubResource("StyleBoxEmpty_6bb4u")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_6bb4u")
+theme_override_styles/pressed_mirrored = SubResource("StyleBoxEmpty_6bb4u")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_6bb4u")
+theme_override_styles/normal_mirrored = SubResource("StyleBoxEmpty_6bb4u")
+theme_override_styles/normal = SubResource("StyleBoxEmpty_d71ra")
+toggle_mode = true

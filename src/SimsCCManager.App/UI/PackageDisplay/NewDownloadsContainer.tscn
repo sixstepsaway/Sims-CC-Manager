@@ -1,0 +1,148 @@
+[gd_scene load_steps=14 format=3 uid="uid://dxpbhvncqax7u"]
+
+[ext_resource type="Script" uid="uid://piscs3fsdgfu" path="res://UI/PackageDisplay/NewDownloadsContainer.cs" id="1_ikong"]
+[ext_resource type="Theme" uid="uid://b4fe82i5mblf5" path="res://themes/packagedisplay_headers.tres" id="1_y675w"]
+[ext_resource type="Script" uid="uid://b6yx50ewa2jxt" path="res://addons/CustomDataGrid/DataGrid/DataGrid.cs" id="2_ikong"]
+[ext_resource type="FontFile" uid="uid://dbl0pkpxsvvww" path="res://assets/fonts/Livvic/Livvic-Medium.ttf" id="3_1vgcu"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ea8ua"]
+content_margin_left = 5.0
+content_margin_top = 1.0
+content_margin_right = 5.0
+content_margin_bottom = 1.0
+bg_color = Color(0.5019608, 0.5019608, 0.5019608, 1)
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ym2rk"]
+content_margin_left = 5.0
+content_margin_top = 1.0
+content_margin_right = 5.0
+content_margin_bottom = 1.0
+bg_color = Color(0.5019608, 0.5019608, 0.5019608, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+
+[sub_resource type="Theme" id="Theme_lk7cq"]
+LineEdit/fonts/font = ExtResource("3_1vgcu")
+LineEdit/styles/focus = SubResource("StyleBoxFlat_ea8ua")
+LineEdit/styles/normal = SubResource("StyleBoxFlat_ym2rk")
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_sh1cm"]
+content_margin_left = 5.0
+content_margin_top = 1.0
+content_margin_right = 5.0
+content_margin_bottom = 1.0
+bg_color = Color(0.62, 0.62, 0.62, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_0tei2"]
+content_margin_left = 5.0
+content_margin_top = 1.0
+content_margin_right = 5.0
+content_margin_bottom = 1.0
+bg_color = Color(0.62, 0.62, 0.62, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ylio6"]
+content_margin_left = 5.0
+content_margin_top = 1.0
+content_margin_right = 5.0
+content_margin_bottom = 1.0
+bg_color = Color(0.5014065, 0.50140655, 0.50140643, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_1bilu"]
+content_margin_left = 5.0
+content_margin_top = 1.0
+content_margin_right = 5.0
+content_margin_bottom = 1.0
+bg_color = Color(0.4, 0.4, 0.4, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+
+[sub_resource type="Theme" id="Theme_owug4"]
+OptionButton/fonts/font = ExtResource("3_1vgcu")
+OptionButton/styles/focus = SubResource("StyleBoxFlat_sh1cm")
+OptionButton/styles/hover = SubResource("StyleBoxFlat_0tei2")
+OptionButton/styles/normal = SubResource("StyleBoxFlat_ylio6")
+OptionButton/styles/pressed = SubResource("StyleBoxFlat_1bilu")
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_3p7jc"]
+
+[node name="NewDownloadsContainer" type="MarginContainer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_vertical = 3
+script = ExtResource("1_ikong")
+
+[node name="ContainerHeader" type="MarginContainer" parent="."]
+layout_mode = 2
+size_flags_vertical = 0
+theme_override_constants/margin_left = 25
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="LabelPositioner" type="MarginContainer" parent="ContainerHeader"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Label" type="Label" parent="ContainerHeader/LabelPositioner"]
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 1
+theme = ExtResource("1_y675w")
+text = "Downloads"
+
+[node name="SearchPositioner" type="HBoxContainer" parent="ContainerHeader"]
+layout_mode = 2
+mouse_filter = 2
+alignment = 2
+
+[node name="NewDL_SearchBox" type="LineEdit" parent="ContainerHeader/SearchPositioner"]
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+size_flags_horizontal = 8
+theme = SubResource("Theme_lk7cq")
+placeholder_text = "Search..."
+
+[node name="OptionButton" type="OptionButton" parent="ContainerHeader/SearchPositioner"]
+custom_minimum_size = Vector2(110, 0)
+layout_mode = 2
+theme = SubResource("Theme_owug4")
+
+[node name="NewDL_Container" type="MarginContainer" parent="."]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/margin_top = 40
+
+[node name="Panel" type="Panel" parent="NewDL_Container"]
+visible = false
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_3p7jc")
+
+[node name="GridContainer" type="MarginContainer" parent="NewDL_Container"]
+layout_mode = 2
+
+[node name="DataGrid" type="Control" parent="NewDL_Container/GridContainer"]
+layout_mode = 2
+script = ExtResource("2_ikong")

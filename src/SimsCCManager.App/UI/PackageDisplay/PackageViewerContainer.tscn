@@ -1,0 +1,43 @@
+[gd_scene load_steps=5 format=3 uid="uid://5xhx8fvbykrg"]
+
+[ext_resource type="Theme" uid="uid://b4fe82i5mblf5" path="res://themes/packagedisplay_headers.tres" id="1_jevr1"]
+[ext_resource type="Script" uid="uid://ph6i1gxmwmad" path="res://UI/PackageDisplay/PackageViewerContainer.cs" id="1_mxfm6"]
+[ext_resource type="PackedScene" uid="uid://db2ljd672tk3d" path="res://UI/PackageDisplay/PackageViewer.tscn" id="2_mxfm6"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_3p7jc"]
+
+[node name="PackageViewerContainer" type="MarginContainer"]
+size_flags_vertical = 3
+script = ExtResource("1_mxfm6")
+
+[node name="ContainerHeader" type="MarginContainer" parent="."]
+layout_mode = 2
+size_flags_vertical = 0
+theme_override_constants/margin_left = 25
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="LabelPositioner" type="MarginContainer" parent="ContainerHeader"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Label" type="Label" parent="ContainerHeader/LabelPositioner"]
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 1
+theme = ExtResource("1_jevr1")
+text = "Package Viewer"
+
+[node name="PackageViewer_Container" type="MarginContainer" parent="."]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/margin_top = 40
+
+[node name="Panel" type="Panel" parent="PackageViewer_Container"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_3p7jc")
+
+[node name="PackageViewer" parent="PackageViewer_Container" instance=ExtResource("2_mxfm6")]
+layout_mode = 2
+script = null

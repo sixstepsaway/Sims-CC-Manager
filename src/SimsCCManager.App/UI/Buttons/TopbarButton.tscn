@@ -1,0 +1,61 @@
+[gd_scene load_steps=4 format=3 uid="uid://ryrvwl0ec34b"]
+
+[ext_resource type="Script" uid="uid://calach28r0i11" path="res://UI/Buttons/TopbarButton.cs" id="1_bmvs2"]
+[ext_resource type="Texture2D" uid="uid://cr0iyclc7hnb5" path="res://assets/icons/materialicons/twotone_add_box_black_48dp.png" id="1_tjerp"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_itpq1"]
+
+[node name="Topbar_Button" type="MarginContainer" node_paths=PackedStringArray("ButtonTexture", "ButtonColorMain", "ButtonColorHover", "ButtonColorClick", "ButtonClicker")]
+custom_minimum_size = Vector2(40, 40)
+size_flags_vertical = 4
+mouse_default_cursor_shape = 2
+script = ExtResource("1_bmvs2")
+ButtonTexture = NodePath("TextureRect")
+ButtonColorMain = NodePath("TextureRect/Color_Main")
+ButtonColorHover = NodePath("TextureRect/Color_Hover")
+ButtonColorClick = NodePath("TextureRect/Color_Click")
+ButtonClicker = NodePath("TopbarButton_Button")
+
+[node name="TextureRect" type="TextureRect" parent="."]
+clip_children = 1
+layout_mode = 2
+texture = ExtResource("1_tjerp")
+expand_mode = 3
+stretch_mode = 4
+
+[node name="Color_Main" type="ColorRect" parent="TextureRect"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.52549, 0.533333, 0.662745, 1)
+
+[node name="Color_Hover" type="ColorRect" parent="TextureRect"]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.8, 0.670588, 0.847059, 1)
+
+[node name="Color_Click" type="ColorRect" parent="TextureRect"]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.878431, 0.8, 0.905882, 1)
+
+[node name="TopbarButton_Button" type="Button" parent="."]
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxEmpty_itpq1")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_itpq1")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_itpq1")
+theme_override_styles/disabled = SubResource("StyleBoxEmpty_itpq1")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_itpq1")

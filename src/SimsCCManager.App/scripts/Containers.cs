@@ -1,147 +1,134 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Reflection;
-using System.Runtime;
-using System.Runtime.CompilerServices;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
+using System.Text.RegularExpressions;
 using System.Xml.Serialization;
-using Godot;
 using SimsCCManager.Debugging;
 using SimsCCManager.Globals;
-using SimsCCManager.Packages.Containers;
-using SimsCCManager.Settings.Loaded;
-using SimsCCManager.Settings.SettingsSystem;
+using SimsCCManager.OptionLists;
 
 namespace SimsCCManager.Containers
 {
-    [XmlInclude(typeof(Sims2Instance))]
-    [XmlInclude(typeof(Sims3Instance))]
-    [XmlInclude(typeof(Sims4Instance))]
-    public abstract class GameInstanceBase
+    public class GameInstance
     {
-        protected Guid identifier;
-        public abstract Guid Identifier {get; set;}
-        protected Games gamechoice;
-        public abstract Games GameChoice {get; set;}
-        protected string gameversion;
-        public abstract string GameVersion {get; set;}
-        protected string gameinstallfolder;
-        public abstract string GameInstallFolder {get; set;}
-        protected string gameexe;
-        public abstract string GameExe {get; set;}
-        protected string gamedocumentsfolder;
-        public abstract string GameDocumentsFolder {get; set;}
-        protected string exepath;
-        public abstract string ExePath {get; set;}
-        protected string instancefolder;
-        public abstract string InstanceFolder {get; set;}
-        protected string instancename;
-        public abstract string InstanceName {get; set;}
-        protected string instancepackagesfolder;
-        public abstract string InstancePackagesFolder {get; set;}
-        protected string instancedatafolder;
-        public abstract string InstanceDataFolder {get; set;}
-        protected string instancedownloadsfolder;
-        public abstract string InstanceDownloadsFolder {get; set;}
-        protected string instanceprofilesfolder;
-        public abstract string InstanceProfilesFolder {get; set;}
-        protected string instancesharedgamedatafolder;
-        public abstract string InstanceSharedGameDataFolder {get; set;}
-        protected List<Category> categories;
-        public abstract List<Category> Categories {get; set;}
-        protected List<Executable> executables;
-        public abstract List<Executable> Executables {get; set;}
-        protected List<string> profiles;
-        public abstract List<string> Profiles {get; set;}
-        protected string activeprofile;
-        public abstract string ActiveProfile {get; set;}
-
-
-        public GameInstanceBase(){
-            categories = new List<Category>();
-            executables = new List<Executable>();  
-            profiles = new List<string>();
+        public Guid InstanceID {get; set;} = Guid.NewGuid();        
+        public SimsGames GameChoice { get; set; }
+        public string GameVersion {get; set;}
+        public string GameInstallFolder { get; set; }
+        public string GameDocumentsFolder { get; set; }
+        public Executable CurrentExecutable {get {return Executables[CurrentExecutableIndex]; }}
+        public string ExecutablePath { get { return CurrentExecutable.Path; } }
+        public string ExecutableName { get { return CurrentExecutable.ExeName; } }
+        public string ExecutableNamePath { get { return Path.Combine(CurrentExecutable.Path, CurrentExecutable.ExeName); } }
+        public string ExecutableArgs { get { return CurrentExecutable.Arguments; } }
+        public List<Executable> Executables {get; set;}
+        private int _currentexecutableindex;
+        public int CurrentExecutableIndex {
+            get {return _currentexecutableindex; } 
+            set {_currentexecutableindex = value; 
+            InstanceInformationChanged?.Invoke(); 
+            }
         }
+        public string InstanceName { get; set; }
+        public string InstanceFolder { get; set; }
+        public string ActiveProfile {get; set;}
+        public DateTime DateCreated {get; set;}
+        public DateTime DateModified {get; set;}
+        public Sims2Folders Sims2Folders {get; set;}
+        public Sims3Folders Sims3Folders {get; set;}
+        public Sims4Folders Sims4Folders {get; set;}
+        public InstanceFolders InstanceFolders {get; set;}
+        public List<InstanceProfile> InstanceProfiles {get; set;}
+        private InstanceProfile _loadedprofile;
+        [XmlIgnore]
+        public InstanceProfile LoadedProfile {get { return _loadedprofile; } set { _loadedprofile = value; 
+        InstanceInformationChanged?.Invoke(); }}
+        public Guid LoadedProfileID { get { return LoadedProfile.ProfileIdentifier; } set
+            {
+                LoadedProfile = InstanceProfiles.Where(x => x.ProfileIdentifier == value).First();
+            }
+        }
+        public List<Category> Categories {get; set;}
+
+        private IList<ISimsFile> _files;
+        [XmlIgnore]
+        public IList<ISimsFile> Files {
+            get { return _files; }
+            set { _files = value; }
+        }
+
+
+        public delegate void FilesChangedEvent();
+        [XmlIgnore]
+        public FilesChangedEvent FilesChanged;
+
+        public GameInstance(){
+            Files = [];
+        }
+
+        public void CreateDefaults()
+        {
+            
+
+
+            InstanceProfiles = new();
+            InstanceProfile instanceProfile = new() {EnabledPackages = new(), ProfileDescription = "The default instance profile.", ProfileName = "Default"};
+            InstanceProfiles.Add(instanceProfile);
+            LoadedProfile = instanceProfile;
+            Categories = new();
+            Category category = new() { Name = "Default", Background = Godot.Colors.Transparent, TextColor = Godot.Colors.Transparent, Description = "The default category for all packages."};
+            Categories.Add(category);
+        }
+
+        public void BuildInstanceFolders()
+        {
+            if (!Directory.Exists(InstanceFolder)) Directory.CreateDirectory(InstanceFolder);
+            if (!Directory.Exists(InstanceFolders.InstanceDataFolder)) Directory.CreateDirectory(InstanceFolders.InstanceDataFolder);
+            if (!Directory.Exists(InstanceFolders.InstanceDownloadsFolder)) Directory.CreateDirectory(InstanceFolders.InstanceDownloadsFolder);
+            if (!Directory.Exists(InstanceFolders.InstancePackagesFolder)) Directory.CreateDirectory(InstanceFolders.InstancePackagesFolder);
+            if (!Directory.Exists(InstanceFolders.InstanceProfilesFolder)) Directory.CreateDirectory(InstanceFolders.InstanceProfilesFolder);
+            //if (!Directory.Exists(InstanceFolders.InstanceSharedGameDataFolder)) Directory.CreateDirectory(InstanceFolders.InstanceSharedGameDataFolder);
+            InstanceFolders.InstanceSharedGameDataFolder = Path.Combine(InstanceFolder, "SharedGameData");
+        }
+        
+        public delegate void InstanceInformationChangedEvent();
+        [XmlIgnore]
+        public InstanceInformationChangedEvent InstanceInformationChanged;
+         
+
 
         public string XMLfile(){
             return Path.Combine(InstanceFolder, "Instance.xml");
         }
 
-        public abstract void TestInstance();
-        
-
-        public void SetCoreDirectories(){
-            InstanceDownloadsFolder = Path.Combine(InstanceFolder, "Downloads");;
-            InstanceDataFolder = Path.Combine(InstanceFolder, "Data");
-            InstancePackagesFolder = Path.Combine(InstanceFolder, "Packages");
-            InstanceProfilesFolder = Path.Combine(InstanceFolder, "Profiles");
-            InstanceSharedGameDataFolder = Path.Combine(InstanceFolder, "SharedGameData");            
-        }
-
-        public void BuildInstanceCore(){
-            if (Directory.Exists(InstanceFolder)){
-                string renamed = RenameExistingFolder(InstanceFolder);
-                Directory.Move(InstanceFolder, renamed);
-                var old = LoadedSettings.SetSettings.Instances.Where(x => x.InstanceLocation == InstanceFolder);
-                if (old.Any()){
-                    LoadedSettings.SetSettings.Instances[LoadedSettings.SetSettings.Instances.IndexOf(old.First())].InstanceLocation = renamed;
-                    SettingsFileManagement.SaveSettings();
-                }
+        public void WriteXML()
+        {
+            if (File.Exists(this.XMLfile()))
+            {
+                /*if (File.Exists(this.XMLfile().Replace(".xml", ".xml.bk")))
+                {
+                    File.Delete(this.XMLfile().Replace(".xml", ".xml.bk"));
+                }*/
+                //File.Copy(this.XMLfile(), this.XMLfile().Replace(".xml", ".xml.bk"));
+                File.Delete(this.XMLfile());
             }
-            string defaultprofilefolder = Path.Combine(InstanceProfilesFolder, "Default");
-            Directory.CreateDirectory(defaultprofilefolder);
-            Directory.CreateDirectory(InstanceFolder);
-            Directory.CreateDirectory(InstanceDownloadsFolder);
-            Directory.CreateDirectory(InstanceDataFolder);
-            Directory.CreateDirectory(InstancePackagesFolder);
-            Directory.CreateDirectory(InstanceProfilesFolder);
-            Directory.CreateDirectory(InstanceSharedGameDataFolder);
-            //Identifier = Guid.NewGuid();
-            string nm = "";
-            if (GameChoice == Games.Sims2) nm = "The Sims 2";
-            if (GameChoice == Games.Sims3) nm = "The Sims 3";
-            if (GameChoice == Games.Sims4) nm = "The Sims 4";
-            Executables.Add(new Executable() { Path = ExePath, Exe = GameExe, Arguments = "", Selected = true, Name = nm});
-            Categories.Add(new Category() { Name = "Default", Description = "The default category.", Background = new Godot.Color(Color.FromHtml("DDDDDD")), TextColor = new Godot.Color(Color.FromHtml("222222"))});
-            Profiles.Add("Default");
-        }
-
-        public void BuildInstanceCoreFromCurrent(){
-            if (Directory.Exists(InstanceFolder)){
-                string renamed = RenameExistingFolder(InstanceFolder);
-                Directory.Move(InstanceFolder, renamed);
-                var old = LoadedSettings.SetSettings.Instances.Where(x => x.InstanceLocation == InstanceFolder);
-                if (old.Any()){
-                    LoadedSettings.SetSettings.Instances[LoadedSettings.SetSettings.Instances.IndexOf(old.First())].InstanceLocation = renamed;
-                    SettingsFileManagement.SaveSettings();
-                }
+            XmlSerializer InstanceSerializer = new XmlSerializer(this.GetType());
+            using (var writer = new StreamWriter(this.XMLfile()))
+            {
+                InstanceSerializer.Serialize(writer, this);
             }
-            string defaultprofilefolder = Path.Combine(InstanceProfilesFolder, "Default");
-            Directory.CreateDirectory(defaultprofilefolder);
-            Directory.CreateDirectory(InstanceFolder);
-            Directory.CreateDirectory(InstanceDownloadsFolder);
-            Directory.CreateDirectory(InstanceDataFolder);
-            Directory.CreateDirectory(InstanceProfilesFolder);
-            Directory.CreateDirectory(InstanceSharedGameDataFolder);
-            //Identifier = Guid.NewGuid();
-            string nm = "";
-            if (GameChoice == Games.Sims2) nm = "The Sims 2";
-            if (GameChoice == Games.Sims3) nm = "The Sims 3";
-            if (GameChoice == Games.Sims4) nm = "The Sims 4";
-            Executables.Add(new Executable() { Path = ExePath, Exe = GameExe, Arguments = "", Selected = true, Name = nm});
-            Categories.Add(new Category() { Name = "Default", Description = "The default category.", Background = new Godot.Color(Color.FromHtml("DDDDDD")), TextColor = new Godot.Color(Color.FromHtml("222222"))});
-            Profiles.Add("Default");
         }
 
-        public abstract void MakeFolderTree();
-        public abstract void CreateFromCurrent();
-
-        public abstract void WriteXML();
+        public void CheckExisting()
+        {
+            if (Directory.Exists(InstanceFolder)){
+                RenameExistingFolder(InstanceFolder);
+            }
+        }
 
         public static string RenameExistingFolder(string folder){
             if (Directory.Exists(folder)){
@@ -152,39 +139,444 @@ namespace SimsCCManager.Containers
             }
         }
 
-        public dynamic GetProperty(string propName){
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Checking {0} property", propName));
-            var prop = this.ProcessProperty(propName);
-            PropertyInfo property = this.GetType().GetProperty(propName);
-            if (property.PropertyType == typeof(Games)){
-                Games game = (Games)prop;
-                if (game == Games.Sims1){
-                    return "Sims 1";
-                } else if (game == Games.Sims2){
-                    return "Sims 2";
-                } else if (game == Games.Sims3){
-                    return "Sims 3";
-                } else if (game == Games.Sims4){
-                    return "Sims 4";
-                } else if (game == Games.SimCity5){
-                    return "SimCity 5";
-                } else if (game == Games.SimsMedieval){
-                    return "Sims Medieval";
-                } else {
-                    return "none";
-                }
-            } else if (property.PropertyType == typeof(string)){
-                return prop;
-            } else if (property.PropertyType == typeof(Guid)){
-                return prop.ToString();
-            } else if (property.PropertyType == typeof(DateTime)){
-                DateTime dt = (DateTime)prop;                
-                return dt.ToString("MM/dd/yyyy H:mm");
-            } else if (property.PropertyType == typeof(bool)){
-                return prop;
-            } else {
-                return null;
+        public void MakeFolderTree()
+        {
+            switch (GameChoice)
+            {
+                case SimsGames.Sims2:
+                    Sims2Folders = new();
+                    Sims2Folders.DownloadsFolder = Path.Combine(GameDocumentsFolder, "Downloads");
+                    Sims2Folders.CollectionsFolder = Path.Combine(GameDocumentsFolder, "Collections");
+                    Sims2Folders.ScreenshotsFolder = Path.Combine(GameDocumentsFolder, "Screenshots");
+                    Sims2Folders.MusicFolder = Path.Combine(GameDocumentsFolder, "Music");
+                    Sims2Folders.TerrainsFolder = Path.Combine(GameDocumentsFolder, "SC4Terrains");
+                    Sims2Folders.LotCatalogFolder = Path.Combine(GameDocumentsFolder, "LotCatalog");
+                    Sims2Folders.ConfigFolder = Path.Combine(GameDocumentsFolder, "Config");
+                    Sims2Folders.CamerasFolder = Path.Combine(GameDocumentsFolder, "Cameras");
+                    Sims2Folders.NeighborhoodsFolder = Path.Combine(GameDocumentsFolder, "Neighborhoods");
+                    Sims2Folders.MoviesFolder = Path.Combine(GameDocumentsFolder, "Movies");
+                    Sims2Folders.PackagedLotsFolder = Path.Combine(GameDocumentsFolder, "PackagedLots");
+
+                    Sims2Folders.CacheFiles.Add(Path.Combine(GameDocumentsFolder, "Accessory.cache"));
+                    Sims2Folders.CacheFiles.Add(Path.Combine(GameDocumentsFolder, "Groups.cache"));
+
+                    Sims2Folders.ThumbnailsFiles.Add(Path.Combine(GameDocumentsFolder, @"Thumbnails\BuildModeThumbnails.package"));
+                    Sims2Folders.ThumbnailsFiles.Add(Path.Combine(GameDocumentsFolder, @"Thumbnails\CANHObjectsThumbnails.package"));
+                    Sims2Folders.ThumbnailsFiles.Add(Path.Combine(GameDocumentsFolder, @"Thumbnails\CASThumbnails.package"));
+                    Sims2Folders.ThumbnailsFiles.Add(Path.Combine(GameDocumentsFolder, @"Thumbnails\DesignModeThumbnails.package"));
+                    Sims2Folders.ThumbnailsFiles.Add(Path.Combine(GameDocumentsFolder, @"Thumbnails\ObjectThumbnails.package"));
+                break;
+                case SimsGames.Sims3:
+                    Sims3Folders = new();
+                    Sims3Folders.DownloadsFolder = Path.Combine(GameDocumentsFolder, "Downloads");
+                    Sims3Folders.CollectionsFolder = Path.Combine(GameDocumentsFolder, "Collections");
+                    Sims3Folders.ScreenshotsFolder = Path.Combine(GameDocumentsFolder, "Screenshots");
+                    Sims3Folders.CustomMusicFolder = Path.Combine(GameDocumentsFolder, "CustomMusic");
+                    Sims3Folders.InstalledWorldsFolder = Path.Combine(GameDocumentsFolder, "InstalledWorlds");
+                    Sims3Folders.ExportsFolder = Path.Combine(GameDocumentsFolder, "Exports");
+                    Sims3Folders.ModsFolder = Path.Combine(GameDocumentsFolder, "Mods");
+                    Sims3Folders.VideosFolder = Path.Combine(GameDocumentsFolder, "Recorded Videos");
+                    Sims3Folders.SavedOutfitsFolder = Path.Combine(GameDocumentsFolder, "SavedOutfits");
+                    Sims3Folders.SavedSimsFolder = Path.Combine(GameDocumentsFolder, "SavedSims");
+                    Sims3Folders.SavesFolder = Path.Combine(GameDocumentsFolder, "Saves");
+                    Sims3Folders.ScreenshotsFolder = Path.Combine(GameDocumentsFolder, "Screenshots");
+                    Sims3Folders.ThumbnailsFolder = Path.Combine(GameDocumentsFolder, "Thumbnails");
+
+                    Sims3Folders.InstanceInstalledWorldsFolder = Path.Combine(InstanceFolders.InstanceSharedGameDataFolder, "InstalledWorldsFolder");
+                    Sims3Folders.InstanceExportsFolder = Path.Combine(InstanceFolders.InstanceSharedGameDataFolder, "ExportsFolder");
+                    Sims3Folders.InstanceThumbnailsFolder = Path.Combine(InstanceFolders.InstanceSharedGameDataFolder, "ThumbnailsFolder");
+                    Sims3Folders.InstanceS3DownloadsFolder = Path.Combine(InstanceFolders.InstanceSharedGameDataFolder, "Downloads");
+
+                    Sims3Folders.CacheFiles.Add(Path.Combine(GameDocumentsFolder, "CASPartCache.package"));
+                    Sims3Folders.CacheFiles.Add(Path.Combine(GameDocumentsFolder, "compositorCache.package"));
+                    Sims3Folders.CacheFiles.Add(Path.Combine(GameDocumentsFolder, "scriptCache.package"));
+                    Sims3Folders.CacheFiles.Add(Path.Combine(GameDocumentsFolder, "simCompositorCache.package"));
+                    Sims3Folders.CacheFiles.Add(Path.Combine(GameDocumentsFolder, "socialCache.package"));
+                    Sims3Folders.CacheFiles.Add(Path.Combine(GameDocumentsFolder, @"DCCache\missingdeps.idx"));
+                    Sims3Folders.CacheFiles.Add(Path.Combine(GameDocumentsFolder, @"DCCache\dcc.ent"));
+                    Sims3Folders.CacheFiles.Add(Path.Combine(GameDocumentsFolder, @"IGACache"));
+
+                    Sims3Folders.ThumbnailsFiles.Add(Path.Combine(GameDocumentsFolder, "CASPartCache.package"));
+                    Sims3Folders.ThumbnailsFiles.Add(Path.Combine(GameDocumentsFolder, "compositorCache.package"));
+                    Sims3Folders.ThumbnailsFiles.Add(Path.Combine(GameDocumentsFolder, "simCompositorCache.package"));
+                break;
+                case SimsGames.Sims4:
+                    Sims4Folders = new();
+                    Sims4Folders.ContentFolder = Path.Combine(GameDocumentsFolder, "Content");
+                    Sims4Folders.ConfigOverrideFolder = Path.Combine(GameDocumentsFolder, "ConfigOverride");
+                    Sims4Folders.ScreenshotsFolder = Path.Combine(GameDocumentsFolder, "Screenshots");
+                    Sims4Folders.ModsFolder = Path.Combine(GameDocumentsFolder, "Mods");
+                    Sims4Folders.VideosFolder = Path.Combine(GameDocumentsFolder, "Recorded Videos");
+                    Sims4Folders.TrayFolder = Path.Combine(GameDocumentsFolder, "Tray");
+                    Sims4Folders.SavesFolder = Path.Combine(GameDocumentsFolder, "Saves");
+                    Sims4Folders.InstanceContentFolder = Path.Combine(InstanceFolders.InstanceSharedGameDataFolder, "Content");
+                    Sims4Folders.InstanceScreenshotsFolder = Path.Combine(InstanceFolders.InstanceSharedGameDataFolder, "Screenshots");
+                    Sims4Folders.InstanceVideosFolder = Path.Combine(InstanceFolders.InstanceSharedGameDataFolder, "Videos");
+
+                    Sims4Folders.CacheFiles.Add(Path.Combine(GameDocumentsFolder, "avatarcache.package"));
+                    Sims4Folders.CacheFiles.Add(Path.Combine(GameDocumentsFolder, "localthumbcache.package"));
+                    Sims4Folders.CacheFiles.Add(Path.Combine(GameDocumentsFolder, "cachestr"));
+                    Sims4Folders.CacheFiles.Add(Path.Combine(GameDocumentsFolder, "onlinethumbnailcache"));
+
+                    Sims4Folders.ThumbnailsFiles.Add(Path.Combine(GameDocumentsFolder, "localthumbcache.package"));
+                break;
             }
+        }
+
+        public void GetGameVersion(){
+            string ver = "";
+            if (GameChoice == SimsGames.Sims2) ver = GetSims2Version(GameDocumentsFolder);
+            if (GameChoice == SimsGames.Sims3) ver = GetSims3Version(GameDocumentsFolder);
+            if (GameChoice == SimsGames.Sims4) ver = GetSims4Version(GameDocumentsFolder);
+            if (ver != "") {
+                ver = Regex.Replace(ver, @"[\p{C}-[\t\r\n]]+", "");
+            } 
+            
+            GameVersion = ver;
+        }
+
+        public static string GetSims4Version(string docfolder){
+            string version = "";
+            string versionfile = Path.Combine(docfolder, "GameVersion.txt");
+            if (File.Exists(versionfile)){
+                using (FileStream fileStream = new(versionfile, FileMode.Open, System.IO.FileAccess.Read)){
+                    using (StreamReader streamReader = new(versionfile)){
+                        version = streamReader.ReadLine();
+                        streamReader.Close();
+                    }
+                    fileStream.Close();
+                }
+            }
+            return version;
+        }
+        public static string GetSims3Version(string docfolder){
+            string version = "";
+            string versionfile = Path.Combine(docfolder, "Version.tag");
+            if (File.Exists(versionfile)){
+                using (FileStream fileStream = new(versionfile, FileMode.Open, System.IO.FileAccess.Read)){
+                    using (StreamReader streamReader = new(versionfile)){
+                        if (streamReader.ReadLine() == "[Version]") {
+                            version = streamReader.ReadLine();
+                            version = version.Replace("LatestBase = ", "");
+                        };                        
+                        streamReader.Close();
+                    }
+                    fileStream.Close();
+                }
+            }
+            return version;
+        }
+
+        public static string GetSims2Version(string docfolder){
+            return "LatestVersion";
+        }
+
+        public void TestInstance()
+        {
+            StringBuilder sb = new();            
+            sb.AppendLine(InstanceFolder);
+            sb.AppendLine(InstanceFolders.InstanceDataFolder);
+            sb.AppendLine(Path.Combine(ExecutablePath, ExecutableName));
+            if (GameChoice == SimsGames.Sims2)
+            {
+                sb.AppendLine(Sims2Folders.MoviesFolder);
+                sb.AppendLine(Sims2Folders.DownloadsFolder);
+                sb.AppendLine(Sims2Folders.TerrainsFolder);
+                foreach (string cache in Sims2Folders.CacheFiles)
+                {
+                    sb.AppendLine(cache);
+                }
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(sb.ToString());
+            }            
+        }
+    }
+
+    public class InstanceFolders
+    {        
+        public string InstancePackagesFolder {get; set;}
+        public string InstanceDataFolder {get; set;}
+        public string InstanceDownloadsFolder {get; set;}
+        public string InstanceProfilesFolder {get; set;}
+        public string InstanceSharedGameDataFolder {get; set;}
+    }
+
+    public class Sims2Folders
+    {        
+        public string DownloadsFolder { get; set; }
+
+        //data
+
+        public string TerrainsFolder { get; set; }
+        public string LotCatalogFolder { get; set; }
+        public string CollectionsFolder { get; set; }
+        public string PackagedLotsFolder { get; set; }
+        //media        
+        public string ScreenshotsFolder { get; set; }
+        public string MusicFolder { get; set; }
+        public string MoviesFolder { get; set; }
+
+        //settings
+        public string ConfigFolder { get; set; }
+        public string CamerasFolder { get; set; }
+
+        //saves
+
+        public string NeighborhoodsFolder { get; set; }
+
+        public List<string> CacheFiles { get; set; } = new();
+        public List<string> ThumbnailsFiles { get; set; } = new();
+
+        
+    }
+
+    public class Sims3Folders
+    {
+        public string CollectionsFolder { get; set; }
+        public string CustomMusicFolder { get; set; }
+        public string InstalledWorldsFolder { get; set; }
+        public string DownloadsFolder { get; set; }
+        public string ExportsFolder { get; set; }
+        public string ModsFolder { get; set; }
+        public string VideosFolder { get; set; }
+        public string SavedOutfitsFolder { get; set; }
+        public string SavedSimsFolder { get; set; }
+        public string SavesFolder { get; set; }
+        public string ScreenshotsFolder { get; set; }
+        public string ThumbnailsFolder { get; set; }
+
+        public string InstanceInstalledWorldsFolder { get; set; }
+        public string InstanceExportsFolder { get; set; }
+        public string InstanceThumbnailsFolder { get; set; }
+        public string InstanceS3DownloadsFolder { get; set; }
+
+        public List<string> CacheFiles { get; set; } = new();
+        public List<string> ThumbnailsFiles { get; set; } = new();
+    }
+
+    public class Sims4Folders
+    {
+        public string ContentFolder { get; set; }
+        public string ConfigOverrideFolder { get; set; }
+        public string ModsFolder { get; set; }
+        public string VideosFolder { get; set; }
+        public string ScreenshotsFolder { get; set; }
+        public string TrayFolder { get; set; }
+        public string SavesFolder { get; set; }
+
+        public string InstanceContentFolder { get; set; }
+        public string InstanceScreenshotsFolder { get; set; }
+        public string InstanceVideosFolder { get; set; }
+
+        public List<string> CacheFiles { get; set; } = new();
+        public List<string> ThumbnailsFiles { get; set; } = new();
+    }
+
+
+    public class Sims2Data
+    {
+        
+    }
+    public class Sims3Data
+    {
+        
+    }
+    public class Sims4Data
+    {
+        
+    }
+
+
+
+
+
+    public class Category {
+        public string Name {get; set;}
+        public Guid Identifier {get; set;} = Guid.NewGuid();
+        public string Description {get; set;}
+        public Godot.Color Background {get; set;} = Godot.Color.FromHtml("FFFFFF");
+        public Godot.Color TextColor {get; set;} = Godot.Color.FromHtml("000000");
+        public int Packages {get; set;}
+    }
+
+    public class Executable {
+        public string Path {get; set;}
+        public string ExeName {get; set;}
+        public string Arguments {get; set;}
+        public bool Selected {get; set;} = false;
+        public string Name {get; set;}
+    }
+
+    public class Instance
+    {
+        public Guid InstanceID {get; set;}
+        public string InstanceLocation {get; set;}
+        public string InstanceName {get; set;}
+        public DateTime InstanceCreated {get; set;}
+        public DateTime InstanceLastModified {get; set;}
+        public SimsGames Game {get; set;}
+    }
+
+    public class InstanceProfile
+    {
+        
+        public string ProfileName {get; set;}
+        public Guid ProfileIdentifier {get; set;} = Guid.NewGuid();
+        public string ProfileDescription {get; set;}
+        public bool LocalSaves {get; set;}
+        public bool LocalSettings {get; set;}
+        public bool LocalMedia {get; set;}
+        public bool LocalData {get; set;}
+        public List<EnabledPackages> EnabledPackages {get; set;} = new();
+
+        public void RemoveEnabled(EnabledPackages pa)
+        {
+            EnabledPackages.Remove(pa);
+            int i = 0;
+            EnabledPackages = EnabledPackages.OrderBy(x => x.LoadOrder).ToList();
+            foreach (EnabledPackages p in EnabledPackages)
+            {
+                p.LoadOrder = i;
+                i++;
+            }
+        }
+
+        public override string ToString()
+        {
+            StringBuilder stringBuilder = new();
+            foreach (EnabledPackages package in EnabledPackages)
+            {
+                if (package == EnabledPackages.Last())
+                {
+                    stringBuilder.Append(string.Format("{0} (Category: {1}, Load Order: {2})", package.PackageName, package.Category, package.LoadOrder));
+                } else
+                {
+                    stringBuilder.Append(string.Format("{0} (Category: {1}, Load Order: {2})\n", package.PackageName, package.Category, package.LoadOrder));   
+                }
+            }
+            if (EnabledPackages.Count != 0)
+            {
+                return string.Format("Name: {0}, Description: {1}, ID: {2}, Enabled Packages: {3}", this.ProfileName, this.ProfileDescription, this.ProfileIdentifier.ToString(), stringBuilder.ToString());
+            } else
+            {
+                return string.Format("Name: {0}, Description: {1}, ID: {2}", this.ProfileName, this.ProfileDescription, this.ProfileIdentifier.ToString());
+            }
+            
+        }
+    }
+
+    
+
+    public class EnabledPackages
+    {
+        public string PackageName {get; set;}
+        public string PackageLocation {get; set;}
+        public Guid PackageIdentifier {get; set;}
+        public int LoadOrder {get; set;} 
+        public Category Category {get; set;}       
+    }
+
+    public interface ISimsFile
+    {
+        public string InfoFile {get;}
+        public Guid Identifier {get; set;}      
+        public string FileName {get; set;}
+        public string Location {get; set;}
+        public string FileSize {get;}
+        public FileTypes FileType {get;}
+        public DateTime DateAdded {get; set;}
+        public DateTime DateUpdated {get; set;}
+        [XmlIgnore]
+        public bool Selected {get; set;}
+
+        void WriteXML();
+    }
+
+    public class SimsPackage : ISimsFile
+    {
+        public Guid Identifier {get; set;} = Guid.NewGuid();   
+        public string FileName {get; set;}
+        public string InfoFile
+        {
+            get { 
+                    if (IsDirectory)
+                    {
+                        return string.Format("{0}.info", new DirectoryInfo(Location).FullName); 
+                    } else { 
+                        return string.Format("{0}.info", new FileInfo(Location).FullName); 
+                    } 
+                }
+        }
+        public string Location {get; set;}
+        public string FileSize {
+            get { 
+                    if (Directory.Exists(Location))
+                    {
+                        return Utilities.SizeSuffix(Utilities.DirSize(new(Location))); 
+                    } else if (File.Exists(Location)) { 
+                        return Utilities.SizeSuffix(new FileInfo(Location).Length);
+                    } else
+                {
+                    return "N/a";
+                }
+            }
+        }
+        public FileTypes FileType {
+            get {
+                if (!IsDirectory && !RootMod)
+                {
+                    return ContainerExtensions.TypeFromExtension(new FileInfo(Location).Extension);
+                } else if (RootMod)
+                {
+                    return FileTypes.Root;
+                } else {
+                    return FileTypes.Folder;
+                }                
+            }
+        }
+        public DateTime DateAdded {get; set;}
+        public DateTime DateUpdated {get; set;}
+        public string InstalledForVersion {get; set;}
+        [XmlIgnore]
+        public bool Selected {get; set;}
+        public bool IsDirectory {get; set;}
+        public bool StandAlone {get; set;}
+        public bool Broken {get; set;}
+        public bool WrongGame {get; set;}
+
+        public string PackageGameVersion {get; set;}
+        public List<string> LinkedFiles {get; set;} = new();
+        public List<string> LinkedFolders {get; set;} = new();
+        [XmlIgnore]
+        public List<SimsPackage> LinkedPackages {get; set;} = new();
+        [XmlIgnore]
+        public List<SimsPackage> LinkedPackageFolders {get; set;} = new();
+        public Category PackageCategory {get; set;} = new();
+        public string CategoryName { get { return PackageCategory.Name; } }
+        public Godot.Color CategoryColor { get { return PackageCategory.Background; }}
+
+        public string Image {get; set;}
+        public SimsGames Game {get; set;}
+        public bool RootMod {get; set;}
+        public bool OutOfDate {get; set;}
+        public bool Orphan {get; set;}
+        public bool Favorite {get; set;}
+        [XmlIgnore]
+        public bool IsEnabled { get; set; }
+        [XmlIgnore]
+        public int LoadOrder { get; set; }
+
+        
+        public void WriteXML()
+        {
+            if (File.Exists(this.InfoFile))
+            {
+                File.Delete(this.InfoFile);
+            }
+            XmlSerializer InfoSerializer = new XmlSerializer(this.GetType());
+            using (var writer = new StreamWriter(this.InfoFile))
+            {
+                InfoSerializer.Serialize(writer, this);
+            }   
         }
 
         public void SetProperty(string propName, dynamic input){
@@ -209,771 +601,423 @@ namespace SimsCCManager.Containers
                     } else if (input.GetType() == typeof(string)){
                         property.SetValue(this, bool.Parse(input));
                     }                    
-                } else if (property.PropertyType == typeof(Games)){
-                    if (input.GetType() == typeof(Games)){
-                        property.SetValue(this, input);
-                    } else if (input.GetType() == typeof(string)) {
-                        string data = (string)input;
-                        if (data == "Sims 1") {
-                            property.SetValue(this, Games.Sims1);
-                        } else if (data == "Sims 2") {
-                            property.SetValue(this, Games.Sims2);
-                        } else if (data == "Sims 3") {
-                            property.SetValue(this, Games.Sims3);
-                        } else if (data == "Sims 4") {
-                            property.SetValue(this, Games.Sims4);
-                        } else if (data == "Sims Medieval" || data == "SimsMedieval") {
-                            property.SetValue(this, Games.SimsMedieval);
-                        } else if (data == "Simcity 5" || data == "SimCity 5" || data == "SimCity5") {
-                            property.SetValue(this, Games.SimCity5);
-                        } else if (data == "none" || data == "" || data == "null") {
-                            property.SetValue(this, Games.Null);
-                        } else {
-                            property.SetValue(this, Games.Null);
-                        }
-                    }             
+                } else if (property.PropertyType == typeof(SimsGames)){
+                                 
                 }
-            }            
+            }
         }
 
         public object ProcessProperty(string propName){
             return this.GetType().GetProperty(propName).GetValue (this, null);
         }
+
     }
 
-    public class Sims2Instance : GameInstanceBase {
-        public override Guid Identifier{ 
-            get { return identifier; } set { identifier = value; }
-        }
-        public override Games GameChoice{ 
-            get { return gamechoice; } set { gamechoice = value; }
-        }
-        public override string GameVersion{ 
-            get { return gameversion; } set { gameversion = value; }
-        }
-        public override string GameInstallFolder{
-            get { return gameinstallfolder; } set { gameinstallfolder = value; } 
-        }
-        public override string GameExe{
-            get { return gameexe; } set { gameexe = value; } 
-        }
-        public override string GameDocumentsFolder{ 
-            get { return gamedocumentsfolder; } set { gamedocumentsfolder = value; } 
-        }
-        public override string ExePath{ 
-            get { return exepath; } set { exepath = value; } 
-        }
-        public override string InstanceFolder{ 
-            get { return instancefolder; } set { instancefolder = value; } 
-        }
-        public override string InstanceName{ 
-            get { return instancename; } set { instancename = value; } 
-        }
-        public override string InstanceDownloadsFolder{ 
-            get { return instancedownloadsfolder; } set { instancedownloadsfolder = value; } 
-        }
-        public override string InstanceDataFolder{ 
-            get { return instancedatafolder; } set { instancedatafolder = value; } 
-        }
-        public override string InstancePackagesFolder{ 
-            get { return instancepackagesfolder; } set { instancepackagesfolder = value; } 
-        }
-        public override string InstanceProfilesFolder{ 
-            get { return instanceprofilesfolder; } set { instanceprofilesfolder = value; } 
-        }
-        public override string InstanceSharedGameDataFolder{ 
-            get { return instancesharedgamedatafolder; } set { instancesharedgamedatafolder = value; } 
-        }
-        public override List<Category> Categories{ 
-            get { return categories; } set { categories = value; } 
-        }
-        public override List<Executable> Executables{ 
-            get { return executables; } set { executables = value; } 
-        }
-        public override List<string> Profiles{ 
-            get { return profiles; } set { profiles = value; } 
-        }
-
-        public override string ActiveProfile { 
-            get {return activeprofile; } set { activeprofile = value; }
-        }
-
-        public string DownloadsFolder {get; set;} = "";
-
-        //data
+    public class SimsDownload : ISimsFile
+    {
         
-        public string TerrainsFolder {get; set;} = "";
-        public string LotCatalogFolder {get; set;} = "";
-        public string CollectionsFolder {get; set;} = "";
-        public string PackagedLotsFolder {get; set;} = "";
-        //media        
-        public string ScreenshotsFolder {get; set;} = "";
-        public string MusicFolder {get; set;} = "";        
-        public string MoviesFolder {get; set;} = "";
-
-        //settings
-        public string ConfigFolder {get; set;} = "";
-        public string CamerasFolder {get; set;} = "";
-
-        //saves
-        
-        public string NeighborhoodsFolder {get; set;} = "";      
-        
-               
-        
-
-        public List<string> CacheFiles {get; set; } = new List<string>();
-        public List<string> ThumbnailsFiles {get; set;} = new List<string>();
-        
-
-
-        public void BuildInstance(bool createfromcurrent, Guid ident){
-            new Thread (() => {
-                this.Identifier = ident;
-                SetCoreDirectories();
-                MakeFolderTree();
-                if (createfromcurrent){
-                    BuildInstanceCoreFromCurrent();
-                    CreateFromCurrent();
-                } else {
-                    BuildInstanceCore();
+        public Guid Identifier {get; set;} = Guid.NewGuid();
+        public string FileName {get; set;}
+        public string InfoFile
+        {
+            get { 
+                    return string.Format("{0}.info", new FileInfo(Location).FullName);                     
                 }
-                WriteXML();
-            }){IsBackground = true}.Start();
-
         }
-
-        public override void CreateFromCurrent()
-        {
-            //reimplement
-
-
-
-        }
-
-
-        public override void TestInstance()
-        {
-            StringBuilder sb = new();
-            sb.AppendLine(MoviesFolder);
-            sb.AppendLine(DownloadsFolder);
-            sb.AppendLine(TerrainsFolder);
-            sb.AppendLine(InstanceFolder);
-            sb.AppendLine(InstanceDataFolder);
-            sb.AppendLine(GameExe);
-            foreach (string cache in CacheFiles){
-                sb.AppendLine(cache);
-            }
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(sb.ToString());
-        }
-
-        public override void MakeFolderTree(){
-            DownloadsFolder = Path.Combine(GameDocumentsFolder, "Downloads");
-            CollectionsFolder = Path.Combine(GameDocumentsFolder, "Collections");
-            ScreenshotsFolder = Path.Combine(GameDocumentsFolder, "Screenshots");
-            MusicFolder = Path.Combine(GameDocumentsFolder, "Music");
-            TerrainsFolder = Path.Combine(GameDocumentsFolder, "SC4Terrains");
-            LotCatalogFolder = Path.Combine(GameDocumentsFolder, "LotCatalog");
-            ConfigFolder = Path.Combine(GameDocumentsFolder, "Config");
-            CamerasFolder = Path.Combine(GameDocumentsFolder, "Cameras");
-            NeighborhoodsFolder = Path.Combine(GameDocumentsFolder, "Neighborhoods");
-            MoviesFolder = Path.Combine(GameDocumentsFolder, "Movies");
-            PackagedLotsFolder = Path.Combine(GameDocumentsFolder, "PackagedLots");
-            
-            CacheFiles.Add(Path.Combine(GameDocumentsFolder, "Accessory.cache"));
-            CacheFiles.Add(Path.Combine(GameDocumentsFolder, "Groups.cache"));
-
-            ThumbnailsFiles.Add(Path.Combine(GameDocumentsFolder, @"Thumbnails\BuildModeThumbnails.package"));
-            ThumbnailsFiles.Add(Path.Combine(GameDocumentsFolder, @"Thumbnails\CANHObjectsThumbnails.package"));
-            ThumbnailsFiles.Add(Path.Combine(GameDocumentsFolder, @"Thumbnails\CASThumbnails.package"));
-            ThumbnailsFiles.Add(Path.Combine(GameDocumentsFolder, @"Thumbnails\DesignModeThumbnails.package"));
-            ThumbnailsFiles.Add(Path.Combine(GameDocumentsFolder, @"Thumbnails\ObjectThumbnails.package"));
-
-            GameVersion = Utilities.GetGameVersion(GameChoice, GameDocumentsFolder);
-
-
-        }
-
-        public override void WriteXML(){
-            
-            if (File.Exists(this.XMLfile())){
-                if (File.Exists(this.XMLfile().Replace(".xml", ".xml.bk"))){
-                    File.Delete(this.XMLfile().Replace(".xml", ".xml.bk"));
-                }
-                File.Copy(this.XMLfile(), this.XMLfile().Replace(".xml", ".xml.bk"));
-                File.Delete(this.XMLfile());
-            }
-            XmlSerializer InstanceSerializer = new XmlSerializer(this.GetType());
-            using (var writer = new StreamWriter(this.XMLfile()))
-            {
-                InstanceSerializer.Serialize(writer, this);
-            }
-
-            /*StringBuilder sb = new();
-            sb.AppendLine(string.Format("{0}={1}", "InstanceName", GetProperty("InstanceName")));
-            sb.AppendLine(string.Format("{0}={1}", "GameChoice", GetProperty("GameChoice")));
-            sb.AppendLine(string.Format("{0}={1}", "Identifier", GetProperty("Identifier")));
-            sb.AppendLine(string.Format("{0}={1}", "GameInstallFolder", GetProperty("GameInstallFolder")));
-            sb.AppendLine(string.Format("{0}={1}", "GameExe", GetProperty("GameExe")));
-            sb.AppendLine(string.Format("{0}={1}", "GameDocumentsFolder", GetProperty("GameDocumentsFolder")));
-            sb.AppendLine(string.Format("{0}={1}", "ExePath", GetProperty("ExePath")));
-            sb.AppendLine(string.Format("{0}={1}", "InstanceFolder", GetProperty("InstanceFolder")));
-            sb.AppendLine(string.Format("{0}={1}", "InstanceDownloadsFolder", GetProperty("InstanceDownloadsFolder")));
-            sb.AppendLine(string.Format("{0}={1}", "InstanceDataFolder", GetProperty("InstanceDataFolder")));
-            sb.AppendLine(string.Format("{0}={1}", "InstancePackagesFolder", GetProperty("InstancePackagesFolder")));
-            sb.AppendLine(string.Format("{0}={1}", "InstanceProfilesFolder", GetProperty("InstanceProfilesFolder")));
-            
-            sb.AppendLine(string.Format("{0}={1}", "DownloadsFolder", GetProperty("DownloadsFolder")));
-            sb.AppendLine(string.Format("{0}={1}", "ScreenshotsFolder", GetProperty("ScreenshotsFolder")));
-            sb.AppendLine(string.Format("{0}={1}", "MusicFolder", GetProperty("MusicFolder")));
-            sb.AppendLine(string.Format("{0}={1}", "TerrainsFolder", GetProperty("TerrainsFolder")));
-            sb.AppendLine(string.Format("{0}={1}", "LotCatalogFolder", GetProperty("LotCatalogFolder")));
-            sb.AppendLine(string.Format("{0}={1}", "ConfigFolder", GetProperty("ConfigFolder")));
-            sb.AppendLine(string.Format("{0}={1}", "CollectionsFolder", GetProperty("CollectionsFolder")));
-            sb.AppendLine(string.Format("{0}={1}", "CamerasFolder", GetProperty("CamerasFolder")));
-            sb.AppendLine(string.Format("{0}={1}", "NeighborhoodsFolder", GetProperty("NeighborhoodsFolder")));
-            sb.AppendLine(string.Format("{0}={1}", "MoviesFolder", GetProperty("MoviesFolder")));
-            sb.AppendLine(string.Format("{0}={1}", "PackagedLotsFolder", GetProperty("PackagedLotsFolder")));
-            
-            sb.AppendLine(string.Format("[CACHE FILES]"));
-
-            foreach (string item in CacheFiles){
-                sb.AppendLine(string.Format("{0}", item));
-            }
-
-            sb.AppendLine(string.Format("[THUMBNAIL FILES]"));
-
-            foreach (string item in ThumbnailsFiles){
-                sb.AppendLine(string.Format("{0}", item));
-            }
-
-            sb.AppendLine(string.Format("[EXECUTABLES]"));
-            foreach (Executable executable in Executables){
-                sb.AppendLine(string.Format("{0}={1}", "Exe", executable.Exe));
-                sb.AppendLine(string.Format("{0}={1}", "Path", executable.Path));
-                sb.AppendLine(string.Format("{0}={1}", "Name", executable.Name));
-                string args = executable.Arguments;
-                if (executable.Arguments == "") args = "None";
-                sb.AppendLine(string.Format("{0}={1}", "Arguments", args));
-                sb.AppendLine(string.Format("{0}={1}", "Selected", executable.Selected));
-            }
-
-            sb.AppendLine(string.Format("[CATEGORIES]"));
-            foreach (Category category in Categories){
-                sb.AppendLine(string.Format("{0}={1}", "Name", category.Name));
-                sb.AppendLine(string.Format("{0}={1}", "Description", category.Description));
-                sb.AppendLine(string.Format("{0}={1}", "Background", category.Background.ToHtml()));
-                sb.AppendLine(string.Format("{0}={1}", "TextColor", category.TextColor.ToHtml()));
-            }
-
-            sb.AppendLine(string.Format("[PROFILES]"));
-            foreach (string profile in profiles){
-                sb.AppendLine(profile);
-            }
-            return sb;*/
-        }
-    }
-    public class Sims3Instance : GameInstanceBase {
-        public override Guid Identifier{ 
-            get { return identifier; } set { identifier = value; }
-        }
-        public override Games GameChoice{ 
-            get { return gamechoice; } set { gamechoice = value; }
-        }
-        public override string GameVersion{ 
-            get { return gameversion; } set { gameversion = value; }
-        }
-        public override string GameInstallFolder{
-            get { return gameinstallfolder; } set { gameinstallfolder = value; } 
-        }
-        public override string GameExe{
-            get { return gameexe; } set { gameexe = value; } 
-        }
-        public override string GameDocumentsFolder{ 
-            get { return gamedocumentsfolder; } set { gamedocumentsfolder = value; } 
-        }
-        public override string ExePath{ 
-            get { return exepath; } set { exepath = value; } 
-        }
-        public override string InstanceFolder{ 
-            get { return instancefolder; } set { instancefolder = value; } 
-        }
-        public override string InstanceName{ 
-            get { return instancename; } set { instancename = value; } 
-        }
-        public override string InstanceDownloadsFolder{ 
-            get { return instancedownloadsfolder; } set { instancedownloadsfolder = value; } 
-        }
-        public override string InstanceDataFolder{ 
-            get { return instancedatafolder; } set { instancedatafolder = value; } 
-        }
-        public override string InstancePackagesFolder{ 
-            get { return instancepackagesfolder; } set { instancepackagesfolder = value; } 
-        }
-        public override string InstanceProfilesFolder{ 
-            get { return instanceprofilesfolder; } set { instanceprofilesfolder = value; } 
-        }
-        public override string InstanceSharedGameDataFolder{ 
-            get { return instancesharedgamedatafolder; } set { instancesharedgamedatafolder = value; } 
-        }
-        public override List<Category> Categories{ 
-            get { return categories; } set { categories = value; } 
-        }
-        public override List<Executable> Executables{ 
-            get { return executables; } set { executables = value; } 
-        }
-        public override List<string> Profiles{ 
-            get { return profiles; } set { profiles = value; } 
-        }
-
-        public override string ActiveProfile { 
-            get {return activeprofile; } set { activeprofile = value; }
-        }
-
-        //data
-
-        //media
-
-        //saves
-
-        //settings
-
-        public string CollectionsFolder {get; set;} = "";
-        public string CustomMusicFolder {get; set;} = "";
-        public string InstalledWorldsFolder {get; set;} = "";
-        public string DownloadsFolder {get; set;} = "";
-        public string ExportsFolder {get; set;} = "";
-        public string ModsFolder {get; set;} = "";
-        public string VideosFolder {get; set;} = "";
-        public string SavedOutfitsFolder {get; set;} = "";
-        public string SavedSimsFolder {get; set;} = "";
-        public string SavesFolder {get; set;} = "";
-        public string ScreenshotsFolder {get; set;} = "";
-        public string ThumbnailsFolder {get; set;} = "";
-
-        public string InstanceInstalledWorldsFolder {get; set;} = "";
-        public string InstanceExportsFolder {get; set;} = "";
-        public string InstanceThumbnailsFolder {get; set;} = "";
-        public string InstanceS3DownloadsFolder {get; set;}
-
-        public List<string> CacheFiles {get; set;} = new List<string>();
-        public List<string> ThumbnailsFiles {get; set;} = new List<string>();
-
-        public override void TestInstance()
-        {
-            throw new NotImplementedException();
-        }
-
-        public override void CreateFromCurrent()
-        {
-            //reimplement
-
-        }
-        
-        public override void MakeFolderTree(){
-            DownloadsFolder = Path.Combine(GameDocumentsFolder, "Downloads");
-            CollectionsFolder = Path.Combine(GameDocumentsFolder, "Collections");
-            ScreenshotsFolder = Path.Combine(GameDocumentsFolder, "Screenshots");
-            CustomMusicFolder = Path.Combine(GameDocumentsFolder, "CustomMusic");
-            InstalledWorldsFolder = Path.Combine(GameDocumentsFolder, "InstalledWorlds");
-            ExportsFolder = Path.Combine(GameDocumentsFolder, "Exports");
-            ModsFolder = Path.Combine(GameDocumentsFolder, "Mods");
-            VideosFolder = Path.Combine(GameDocumentsFolder, "Recorded Videos");
-            SavedOutfitsFolder = Path.Combine(GameDocumentsFolder, "SavedOutfits");
-            SavedSimsFolder = Path.Combine(GameDocumentsFolder, "SavedSims");
-            SavesFolder = Path.Combine(GameDocumentsFolder, "Saves");
-            ScreenshotsFolder = Path.Combine(GameDocumentsFolder, "Screenshots");
-            ThumbnailsFolder = Path.Combine(GameDocumentsFolder, "Thumbnails");
-
-            InstanceInstalledWorldsFolder = Path.Combine(InstanceSharedGameDataFolder, "InstalledWorldsFolder");
-            InstanceExportsFolder = Path.Combine(InstanceSharedGameDataFolder, "ExportsFolder");
-            InstanceThumbnailsFolder = Path.Combine(InstanceSharedGameDataFolder, "ThumbnailsFolder");
-            InstanceS3DownloadsFolder = Path.Combine(InstanceSharedGameDataFolder, "Downloads");
-            
-            CacheFiles.Add(Path.Combine(GameDocumentsFolder, "CASPartCache.package"));
-            CacheFiles.Add(Path.Combine(GameDocumentsFolder, "compositorCache.package"));
-            CacheFiles.Add(Path.Combine(GameDocumentsFolder, "scriptCache.package"));
-            CacheFiles.Add(Path.Combine(GameDocumentsFolder, "simCompositorCache.package"));
-            CacheFiles.Add(Path.Combine(GameDocumentsFolder, "socialCache.package"));
-            CacheFiles.Add(Path.Combine(GameDocumentsFolder, @"DCCache\missingdeps.idx"));
-            CacheFiles.Add(Path.Combine(GameDocumentsFolder, @"DCCache\dcc.ent"));
-            CacheFiles.Add(Path.Combine(GameDocumentsFolder, @"IGACache"));
-
-            ThumbnailsFiles.Add(Path.Combine(GameDocumentsFolder, "CASPartCache.package"));
-            ThumbnailsFiles.Add(Path.Combine(GameDocumentsFolder, "compositorCache.package"));
-            ThumbnailsFiles.Add(Path.Combine(GameDocumentsFolder, "simCompositorCache.package"));
-
-            GameVersion = Utilities.GetGameVersion(GameChoice, GameDocumentsFolder);
-        }
-
-        public void BuildInstance(bool createfromcurrent, Guid ident){
-            new Thread (() => {
-                this.Identifier = ident;
-                SetCoreDirectories();
-                MakeFolderTree();
-                if (createfromcurrent){
-                    BuildInstanceCoreFromCurrent();
-                    CreateFromCurrent();
-                } else {
-                    BuildInstanceCore();
+        public string Location {get; set;}
+        public string FileSize {
+            get { 
+                    return Utilities.SizeSuffix(new FileInfo(Location).Length);
                 }            
-                WriteXML();
-            }){IsBackground = true}.Start();
-
         }
-
-                
-        public override void WriteXML(){            
-
-            if (File.Exists(this.XMLfile())){
-                File.Delete(this.XMLfile());                
-            }
-            XmlSerializer InstanceSerializer = new XmlSerializer(this.GetType());
-            using (var writer = new StreamWriter(this.XMLfile()))
-            {
-                InstanceSerializer.Serialize(writer, this);
-            }
-            /*StringBuilder sb = new();
-            sb.AppendLine(string.Format("{0}={1}", "InstanceName", GetProperty("InstanceName")));
-            sb.AppendLine(string.Format("{0}={1}", "GameChoice", GetProperty("GameChoice")));
-            sb.AppendLine(string.Format("{0}={1}", "Identifier", GetProperty("Identifier")));
-            sb.AppendLine(string.Format("{0}={1}", "GameInstallFolder", GetProperty("GameInstallFolder")));
-            sb.AppendLine(string.Format("{0}={1}", "GameExe", GetProperty("GameExe")));
-            sb.AppendLine(string.Format("{0}={1}", "GameDocumentsFolder", GetProperty("GameDocumentsFolder")));
-            sb.AppendLine(string.Format("{0}={1}", "ExePath", GetProperty("ExePath")));
-            sb.AppendLine(string.Format("{0}={1}", "InstanceFolder", GetProperty("InstanceFolder")));
-            sb.AppendLine(string.Format("{0}={1}", "InstanceDownloadsFolder", GetProperty("InstanceDownloadsFolder")));
-            sb.AppendLine(string.Format("{0}={1}", "InstanceDataFolder", GetProperty("InstanceDataFolder")));
-            sb.AppendLine(string.Format("{0}={1}", "InstancePackagesFolder", GetProperty("InstancePackagesFolder")));
-            sb.AppendLine(string.Format("{0}={1}", "InstanceProfilesFolder", GetProperty("InstanceProfilesFolder")));
-            
-            sb.AppendLine(string.Format("{0}={1}", "CollectionsFolder", GetProperty("CollectionsFolder")));
-            sb.AppendLine(string.Format("{0}={1}", "CustomMusicFolder", GetProperty("CustomMusicFolder")));
-            sb.AppendLine(string.Format("{0}={1}", "InstalledWorldsFolder", GetProperty("InstalledWorldsFolder")));
-            sb.AppendLine(string.Format("{0}={1}", "DownloadsFolder", GetProperty("DownloadsFolder")));
-            sb.AppendLine(string.Format("{0}={1}", "ExportsFolder", GetProperty("ExportsFolder")));
-            sb.AppendLine(string.Format("{0}={1}", "LibraryFolder", GetProperty("LibraryFolder")));
-            sb.AppendLine(string.Format("{0}={1}", "ModsFolder", GetProperty("ModsFolder")));
-            sb.AppendLine(string.Format("{0}={1}", "VideosFolder", GetProperty("VideosFolder")));
-            sb.AppendLine(string.Format("{0}={1}", "SavedOutfitsFolder", GetProperty("SavedOutfitsFolder")));
-            sb.AppendLine(string.Format("{0}={1}", "SavedSimsFolder", GetProperty("SavedSimsFolder")));
-            sb.AppendLine(string.Format("{0}={1}", "SavesFolder", GetProperty("SavesFolder")));
-            sb.AppendLine(string.Format("{0}={1}", "ScreenshotsFolder", GetProperty("ScreenshotsFolder")));
-            sb.AppendLine(string.Format("{0}={1}", "ThumbnailsFolder", GetProperty("ThumbnailsFolder")));
-
-            sb.AppendLine(string.Format("[CACHE FILES]"));
-
-            foreach (string item in CacheFiles){
-                sb.AppendLine(string.Format("{0}", item));
-            }
-
-            sb.AppendLine(string.Format("[THUMBNAIL FILES]"));
-
-            foreach (string item in ThumbnailsFiles){
-                sb.AppendLine(string.Format("{0}", item));
-            }
-
-            sb.AppendLine(string.Format("[EXECUTABLES]"));
-            foreach (Executable executable in Executables){
-                sb.AppendLine(string.Format("{0}={1}", "Exe", executable.Exe));
-                sb.AppendLine(string.Format("{0}={1}", "Path", executable.Path));
-                sb.AppendLine(string.Format("{0}={1}", "Name", executable.Name));
-                string args = executable.Arguments;
-                if (executable.Arguments == "") args = "None";
-                sb.AppendLine(string.Format("{0}={1}", "Arguments", args));
-                sb.AppendLine(string.Format("{0}={1}", "Selected", executable.Selected));
-            }
-
-            sb.AppendLine(string.Format("[CATEGORIES]"));
-            foreach (Category category in Categories){
-                sb.AppendLine(string.Format("{0}={1}", "Name", category.Name));
-                sb.AppendLine(string.Format("{0}={1}", "Description", category.Description));
-                sb.AppendLine(string.Format("{0}={1}", "Background", category.Background.ToHtml()));
-                sb.AppendLine(string.Format("{0}={1}", "TextColor", category.TextColor.ToHtml()));
-            }
-
-            sb.AppendLine(string.Format("[PROFILES]"));
-            foreach (string profile in profiles){
-                sb.AppendLine(profile);
-            }
-            return sb;*/
-        }
-    }
-    public class Sims4Instance : GameInstanceBase {
-        public override Guid Identifier{ 
-            get { return identifier; } set { identifier = value; }
-        }
-        public override Games GameChoice{ 
-            get { return gamechoice; } set { gamechoice = value; }
-        }
-        public override string GameVersion{ 
-            get { return gameversion; } set { gameversion = value; }
-        }
-        public override string GameInstallFolder{
-            get { return gameinstallfolder; } set { gameinstallfolder = value; } 
-        }
-        public override string GameExe{
-            get { return gameexe; } set { gameexe = value; } 
-        }
-        public override string GameDocumentsFolder{ 
-            get { return gamedocumentsfolder; } set { gamedocumentsfolder = value; } 
-        }
-        public override string ExePath{ 
-            get { return exepath; } set { exepath = value; } 
-        }
-        public override string InstanceFolder{ 
-            get { return instancefolder; } set { instancefolder = value; } 
-        }
-        public override string InstanceName{ 
-            get { return instancename; } set { instancename = value; } 
-        }
-        public override string InstanceDownloadsFolder{ 
-            get { return instancedownloadsfolder; } set { instancedownloadsfolder = value; } 
-        }
-        public override string InstanceDataFolder{ 
-            get { return instancedatafolder; } set { instancedatafolder = value; } 
-        }
-        public override string InstancePackagesFolder{ 
-            get { return instancepackagesfolder; } set { instancepackagesfolder = value; } 
-        }
-        public override string InstanceProfilesFolder{ 
-            get { return instanceprofilesfolder; } set { instanceprofilesfolder = value; } 
-        }
-        public override string InstanceSharedGameDataFolder{ 
-            get { return instancesharedgamedatafolder; } set { instancesharedgamedatafolder = value; } 
-        }
-        public override List<Category> Categories{ 
-            get { return categories; } set { categories = value; } 
-        }
-        public override List<Executable> Executables{ 
-            get { return executables; } set { executables = value; } 
-        }
-        public override List<string> Profiles{ 
-            get { return profiles; } set { profiles = value; } 
-        }
-
-        public override string ActiveProfile { 
-            get {return activeprofile; } set { activeprofile = value; }
-        }
-        
-        public string ContentFolder {get; set;} = "";
-        public string ConfigOverrideFolder {get; set;} = "";
-        public string ModsFolder {get; set;} = "";
-        public string VideosFolder {get; set;} = "";
-        public string ScreenshotsFolder {get; set;} = "";
-        public string TrayFolder {get; set;} = "";
-        public string SavesFolder {get; set;} = "";
-
-        public string InstanceContentFolder {get; set;} = "";
-        public string InstanceScreenshotsFolder {get; set;} = "";
-        public string InstanceVideosFolder {get; set;} = "";
-
-        public List<string> CacheFiles {get; set; } = new List<string>();
-        public List<string> ThumbnailsFiles {get; set;} = new List<string>();
-        public override void MakeFolderTree(){
-            ContentFolder = Path.Combine(GameDocumentsFolder, "Content");
-            ConfigOverrideFolder = Path.Combine(GameDocumentsFolder, "ConfigOverride");
-            ScreenshotsFolder = Path.Combine(GameDocumentsFolder, "Screenshots");
-            ModsFolder = Path.Combine(GameDocumentsFolder, "Mods");
-            VideosFolder = Path.Combine(GameDocumentsFolder, "Recorded Videos");
-            TrayFolder = Path.Combine(GameDocumentsFolder, "Tray");
-            SavesFolder = Path.Combine(GameDocumentsFolder, "Saves");
-            InstanceContentFolder = Path.Combine(InstanceSharedGameDataFolder, "Content");
-            InstanceScreenshotsFolder = Path.Combine(InstanceSharedGameDataFolder, "Screenshots");
-            InstanceVideosFolder = Path.Combine(InstanceSharedGameDataFolder, "Videos");
-            
-            CacheFiles.Add(Path.Combine(GameDocumentsFolder, "avatarcache.package"));
-            CacheFiles.Add(Path.Combine(GameDocumentsFolder, "localthumbcache.package"));
-            CacheFiles.Add(Path.Combine(GameDocumentsFolder, "cachestr"));
-            CacheFiles.Add(Path.Combine(GameDocumentsFolder, "onlinethumbnailcache"));
-
-            ThumbnailsFiles.Add(Path.Combine(GameDocumentsFolder, "localthumbcache.package"));
-
-            GameVersion = Utilities.GetGameVersion(GameChoice, GameDocumentsFolder);
-        }
-
-        
-
-        public void BuildInstance(bool createfromcurrent, Guid ident){
-            new Thread (() => {
-                this.Identifier = ident;
-                SetCoreDirectories();
-                MakeFolderTree();
-                if (createfromcurrent){
-                    BuildInstanceCoreFromCurrent();
-                    CreateFromCurrent();
-                } else {
-                    BuildInstanceCore();
-                }            
-                WriteXML();
-            }){IsBackground = true}.Start();
-
-        }
-
-        public override void TestInstance()
-        {
-            throw new NotImplementedException();
-        }
-
-        public override void CreateFromCurrent()
-        {
-            //reimplement
-        }
-        
-        public override void WriteXML(){
-            
-            if (File.Exists(this.XMLfile())){
-                File.Delete(this.XMLfile());                
-            }
-            XmlSerializer InstanceSerializer = new XmlSerializer(this.GetType());
-            using (var writer = new StreamWriter(this.XMLfile()))
-            {
-                InstanceSerializer.Serialize(writer, this);
-            }
-            /*StringBuilder sb = new();
-            sb.AppendLine(string.Format("{0}={1}", "InstanceName", GetProperty("InstanceName")));
-            sb.AppendLine(string.Format("{0}={1}", "GameChoice", GetProperty("GameChoice")));
-            sb.AppendLine(string.Format("{0}={1}", "Identifier", GetProperty("Identifier")));
-            sb.AppendLine(string.Format("{0}={1}", "GameInstallFolder", GetProperty("GameInstallFolder")));
-            sb.AppendLine(string.Format("{0}={1}", "GameExe", GetProperty("GameExe")));
-            sb.AppendLine(string.Format("{0}={1}", "GameDocumentsFolder", GetProperty("GameDocumentsFolder")));
-            sb.AppendLine(string.Format("{0}={1}", "ExePath", GetProperty("ExePath")));
-            sb.AppendLine(string.Format("{0}={1}", "InstanceFolder", GetProperty("InstanceFolder")));
-            sb.AppendLine(string.Format("{0}={1}", "InstanceDownloadsFolder", GetProperty("InstanceDownloadsFolder")));
-            sb.AppendLine(string.Format("{0}={1}", "InstanceDataFolder", GetProperty("InstanceDataFolder")));
-            sb.AppendLine(string.Format("{0}={1}", "InstancePackagesFolder", GetProperty("InstancePackagesFolder")));
-            sb.AppendLine(string.Format("{0}={1}", "InstanceProfilesFolder", GetProperty("InstanceProfilesFolder")));
-            
-            sb.AppendLine(string.Format("{0}={1}", "ContentFolder", GetProperty("ContentFolder")));
-            sb.AppendLine(string.Format("{0}={1}", "ModsFolder", GetProperty("ModsFolder")));
-            sb.AppendLine(string.Format("{0}={1}", "VideosFolder", GetProperty("VideosFolder")));
-            sb.AppendLine(string.Format("{0}={1}", "ScreenshotsFolder", GetProperty("ScreenshotsFolder")));
-            sb.AppendLine(string.Format("{0}={1}", "TrayFolder", GetProperty("TrayFolder")));
-            sb.AppendLine(string.Format("{0}={1}", "SavesFolder", GetProperty("SavesFolder")));
-
-            sb.AppendLine(string.Format("[CACHE FILES]"));
-
-            foreach (string item in CacheFiles){
-                sb.AppendLine(string.Format("{0}", item));
-            }
-
-            sb.AppendLine(string.Format("[THUMBNAIL FILES]"));
-
-            foreach (string item in ThumbnailsFiles){
-                sb.AppendLine(string.Format("{0}", item));
-            }
-
-            sb.AppendLine(string.Format("[EXECUTABLES]"));
-            foreach (Executable executable in Executables){
-                sb.AppendLine(string.Format("{0}={1}", "Exe", executable.Exe));
-                sb.AppendLine(string.Format("{0}={1}", "Path", executable.Path));
-                sb.AppendLine(string.Format("{0}={1}", "Name", executable.Name));
-                string args = executable.Arguments;
-                if (executable.Arguments == "") args = "None";
-                sb.AppendLine(string.Format("{0}={1}", "Arguments", args));
-                sb.AppendLine(string.Format("{0}={1}", "Selected", executable.Selected));
-            }
-
-            sb.AppendLine(string.Format("[CATEGORIES]"));
-            foreach (Category category in Categories){
-                sb.AppendLine(string.Format("{0}={1}", "Name", category.Name));
-                sb.AppendLine(string.Format("{0}={1}", "Description", category.Description));
-                sb.AppendLine(string.Format("{0}={1}", "Background", category.Background.ToHtml()));
-                sb.AppendLine(string.Format("{0}={1}", "TextColor", category.TextColor.ToHtml()));
-            }
-
-            sb.AppendLine(string.Format("[PROFILES]"));
-            foreach (string profile in profiles){
-                sb.AppendLine(profile);
-            }
-            return sb;*/
-        }        
-    }
-
-    public class ExeInfo {
-        public string folder {get; set;}
-        public string name {get; set;}
-    }
-
-    public class ProfileInfo {
-        public string ProfileName {get; set;} = "";
-        public string InfoLocation {get; set;} = "";
-        public string ProfileFolder {get; set;} = "";
-        public string ScreenshotsFolder {get; set;} = "";
-        public string VideosFolder {get; set;} = "";
-        public string TrayFolder {get; set;} = "";
-        public bool LocalSaves {get; set;} = false;
-        public bool LocalData {get; set;} = false;
-        public bool LocalMedia {get; set;} = false;
-        public bool LocalSettings {get; set;} = false;
-        public string LocalSavesFolder {get; set;} = "";
-        public string LocalDataFolder {get; set;} = "";
-        public string LocalMediaFolder {get; set;} = "";
-        public string LocalSettingsFolder {get; set;} = "";
-        private List<ProfilePackage> _packages {get; set;} = new();
-        public List<ProfilePackage> Packages {
-            get { return _packages; }
-            set { _packages = value; 
-            SaveProfile();}
-        }
-
-        public List<LocalFolders> LocalDataFolders {get; set;} = new();
-        public List<LocalFolders> LocalMediaFolders {get; set;} = new();
-        public List<LocalFolders> LocalSettingsFolders {get; set;} = new();
-        public List<LocalFolders> LocalSaveFolders {get; set;} = new();
-        public List<LocalFolders> LocalDataFiles {get; set;} = new();
-        public List<LocalFolders> LocalMediaFiles {get; set;} = new();
-        public List<LocalFolders> LocalSettingsFiles {get; set;} = new();
-        public List<LocalFolders> LocalSaveFiles {get; set;} = new();
-
-        public ProfileInfo(){
-            Packages = new();
-        }        
-
-        public void MakeInfoLocation(){
-            if (ProfileName != ""){
-                string proffolder = GlobalVariables.thisinstance.InstanceProfilesFolder;
-                string thisproffolder = Path.Combine(proffolder, ProfileName);
-                ProfileFolder = thisproffolder;
-                string profileinfo = Path.Combine(thisproffolder, "ProfileInformation.info");
-                InfoLocation = profileinfo;
-            }
-        }
-
-        public void SaveProfile(){
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Saving profile {0}.", this.ProfileName));
-            if (InfoLocation != ""){
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Saving profile to: {0}.", this.InfoLocation));
-                if (File.Exists(InfoLocation)){
-                    File.Delete(InfoLocation);                
-                } else if (!Directory.Exists(new FileInfo(InfoLocation).DirectoryName)){
-                    Directory.CreateDirectory(new FileInfo(InfoLocation).DirectoryName);
+        public FileTypes FileType {
+            get {
+                    return ContainerExtensions.TypeFromExtension(new FileInfo(Location).Extension);
                 }
-                XmlSerializer packageSerializer = new XmlSerializer(this.GetType());
-                try { 
-                    using (var writer = new StreamWriter(InfoLocation))
-                    {
-                        
-                            packageSerializer.Serialize(writer, this); 
-                        
-                    }
-                } catch (Exception e) {
-                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Writing info file for profile {0} failed: {1}\n{2}\n{3}\n.", this.ProfileName, e.Message, e.StackTrace, e.Source));
-                }
-            } else {
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Profile {0} has no infolocation.", this.ProfileName));
+        }
+        public DateTime DateAdded {get; set;}
+        public DateTime DateUpdated {get; set;}
+        [XmlIgnore]
+        public bool Selected {get; set;}        
+        public bool Installed {get; set;} = false;
+        public void WriteXML()
+        {
+            if (File.Exists(this.InfoFile))
+            {
+                File.Delete(this.InfoFile);
             }
+            XmlSerializer InfoSerializer = new XmlSerializer(this.GetType());
+            using (var writer = new StreamWriter(this.InfoFile))
+            {
+                InfoSerializer.Serialize(writer, this);
+            }   
         }
     }
 
-    public class ProfilePackage {
-        public string PackageFile {get; set;}
-        public int LoadOrder {get; set;} = -1;
-        public Guid Identifier {get; set;}
+    public class ContainerExtensions
+    {
+        public static FileTypes TypeFromExtension(string extension){
+            extension = extension.Replace(".", "").ToLower();
+            return extension switch
+            {
+                "zip" => FileTypes.Zip,
+                "rar" => FileTypes.Rar,
+                "package" => FileTypes.Package,
+                "ts4script" => FileTypes.TS4Script,
+                "sims3pack" => FileTypes.Sims3Pack,
+                "sims2pack" => FileTypes.Sims2Pack,
+                "7z" => FileTypes.SevenZip,
+                "pkg" => FileTypes.PKG,
+                "jpg" => FileTypes.JPG,
+                "jpeg" => FileTypes.JPG,
+                "png" => FileTypes.PNG,
+                "doc" => FileTypes.Doc,
+                "txt" => FileTypes.Txt,
+                "folder" => FileTypes.Folder,
+                _ => FileTypes.Other,
+            };
+        }
     }
 
-    public class LocalFolders {
-        public string LocalFolder {get; set;} = "";
-        public string OriginalFolder {get; set;} = "";
+    public enum FileTypes {
+        [Description("Package")]
+        Package,
+        [Description("TS4Script")]
+        TS4Script,
+        [Description("Sims3Pack")]
+        Sims3Pack,
+        [Description("Sims2Pack")]
+        Sims2Pack,
+        [Description("Zip")]
+        Zip,
+        [Description("7Zip")]
+        SevenZip,
+        [Description("Rar")]
+        Rar,
+        [Description("PKG")]
+        PKG,
+        [Description("JPG")]
+        JPG,
+        [Description("PNG")]
+        PNG,
+        [Description("Doc")]
+        Doc,
+        [Description("Txt")]
+        Txt,
+        [Description("Other")]
+        Other,
+        [Description("Folder")]
+        Folder,
+        [Description("Root")]
+        Root,
+        [Description("Null")]
+        Null
     }
+
+    public enum Sims2Expansions{
+        [Description("Base Game")]
+        BaseGame,
+        [Description("University")]
+        University,
+        [Description("Nightlife")]
+        Nightlife,
+        [Description("Open for Business")]
+        OpenforBusiness,
+        [Description("Pets")]
+        Pets,
+        [Description("Seasons")]
+        Seasons,
+        [Description("BonVoyage")]
+        BonVoyage,
+        [Description("FreeTime")]
+        FreeTime,
+        [Description("Apartment Life")]
+        ApartmentLife,
+        [Description("Family Fun Stuff")]
+        FamilyFunStuff,
+        [Description("Glamour Life Stuff")]
+        GlamourLifeStuff,
+        [Description("Happy Holiday Stuff")]
+        HappyHolidayStuff,
+        [Description("Celebration Stuff")]
+        CelebrationStuff,
+        [Description("H&M Fashion Stuff")]
+        HMFashionStuff,
+        [Description("Teen Style Stuff")]
+        TeenStyleStuff,
+        [Description("Kitchen & Bath Interior Design Stuff")]
+        KitchenBathInteriorDesignStuff,
+        [Description("IKEA Home Stuff")]
+        IKEAHomeStuff,
+        [Description("Mansion Garden Stuff")]
+        MansionGardenStuff
+    }
+
+    public enum Sims3Expansions{
+        [Description("WorldAdventures")]
+        WorldAdventures,
+        [Description("Ambitions")]
+        Ambitions,
+        [Description("Late Night")]
+        LateNight,
+        [Description("Generations")]
+        Generations,
+        [Description("Pets")]
+        Pets,
+        [Description("Showtime")]
+        Showtime,
+        [Description("Supernatural")]
+        Supernatural,
+        [Description("Seasons")]
+        Seasons,
+        [Description("University Life")]
+        UniversityLife,
+        [Description("Island Paradise")]
+        IslandParadise,
+        [Description("Into the Future")]
+        IntotheFuture,
+        [Description("High End Loft Stuff")]
+        HighEndLoftStuff,
+        [Description("Fast Lane Stuff")]
+        FastLaneStuff,
+        [Description("Outdoor Living Stuff")]
+        OutdoorLivingStuff,
+        [Description("Town Life Stuff")]
+        TownLifeStuff,
+        [Description("Master Suite Stuff")]
+        MasterSuiteStuff,
+        [Description("Katy Perry's Sweet Treats")]
+        KatyPerrysSweetTreats,
+        [Description("Diesel Stuff")]
+        DieselStuff,
+        [Description("Decades Stuff")]
+        DecadesStuff,
+        [Description("Movie Stuff")]
+        MovieStuff
+    }
+
+    public enum Sims4Expansions{
+        [Description("Get to Work")]
+        GettoWork,
+        [Description("Get Together")]
+        GetTogether,
+        [Description("City Living")]
+        CityLiving,
+        [Description("Cats & Dogs")]
+        CatsDogs,
+        [Description("Seasons")]
+        Seasons,
+        [Description("Get Famous")]
+        GetFamous,
+        [Description("Island Living")]
+        IslandLiving,
+        [Description("Discover University")]
+        DiscoverUniversity,
+        [Description("Eco Lifestyle")]
+        EcoLifestyle,
+        [Description("Snowy Escape")]
+        SnowyEscape,
+        [Description("Cottage Living")]
+        CottageLiving,
+        [Description("High School Years")]
+        HighSchoolYears,
+        [Description("Growing Together")]
+        GrowingTogether,
+        [Description("Horse Ranch")]
+        HorseRanch,
+        [Description("For Rent")]
+        ForRent,
+        [Description("Lovestruck")]
+        Lovestruck,
+        [Description("Life & Death")]
+        LifeDeath,
+        [Description("Businesses & Hobbies")]
+        BusinessesHobbies,
+        [Description("Enchanted by Nature")]
+        EnchantedbyNature,
+        [Description("Adventure Awaits")]
+        AdventureAwaits,
+        [Description("Outdoor Retreat")]
+        OutdoorRetreat,
+        [Description("Spa Day")]
+        SpaDay,
+        [Description("Dine Out")]
+        DineOut,
+        [Description("Vampires")]
+        Vampires,
+        [Description("Parenthood")]
+        Parenthood,
+        [Description("Jungle Adventure")]
+        JungleAdventure,
+        [Description("StrangerVille")]
+        StrangerVille,
+        [Description("Realm of Magic")]
+        RealmofMagic,
+        [Description("Star Wars: Journey to Batuu")]
+        StarWarsJourneytoBatuu,
+        [Description("Dream Home Decorator")]
+        DreamHomeDecorator,
+        [Description("My Wedding Stories")]
+        MyWeddingStories,
+        [Description("Werewolves")]
+        Werewolves,
+        [Description("Luxury Party Stuff")]
+        LuxuryPartyStuff,
+        [Description("Perfect Patio Stuff")]
+        PerfectPatioStuff,
+        [Description("Cool Kitchen Stuff")]
+        CoolKitchenStuff,
+        [Description("Spooky Stuff")]
+        SpookyStuff,
+        [Description("Movie Hangout Stuff")]
+        MovieHangoutStuff,
+        [Description("Romantic Garden Stuff")]
+        RomanticGardenStuff,
+        [Description("Kids Room Stuff")]
+        KidsRoomStuff,
+        [Description("Backyard Stuff")]
+        BackyardStuff,
+        [Description("Vintage Glamour Stuff")]
+        VintageGlamourStuff,
+        [Description("Bowling Night Stuff")]
+        BowlingNightStuff,
+        [Description("Fitness Stuff")]
+        FitnessStuff,
+        [Description("Toddler Stuff")]
+        ToddlerStuff,
+        [Description("Laundry Day Stuff")]
+        LaundryDayStuff,
+        [Description("My First Pet Stuff")]
+        MyFirstPetStuff,
+        [Description("Moschino Stuff")]
+        MoschinoStuff,
+        [Description("Tiny Living Stuff")]
+        TinyLivingStuff,
+        [Description("Nifty Knitting Stuff")]
+        NiftyKnittingStuff,
+        [Description("Paranormal Stuff")]
+        ParanormalStuff,
+        [Description("Home Chef Hustle Stuff")]
+        HomeChefHustleStuff,
+        [Description("Crystal Creations Stuff")]
+        CrystalCreationsStuff,
+        [Description("Throwback Fit Kit")]
+        ThrowbackFitKit,
+        [Description("Country Kitchen Kit")]
+        CountryKitchenKit,
+        [Description("Bust the Dust Kit")]
+        BusttheDustKit,
+        [Description("Courtyard Oasis Kit")]
+        CourtyardOasisKit,
+        [Description("Industrial Loft Kit")]
+        IndustrialLoftKit,
+        [Description("Fashion Street Kit")]
+        FashionStreetKit,
+        [Description("Incheon Arrivals Kit")]
+        IncheonArrivalsKit,
+        [Description("Blooming Rooms Kit")]
+        BloomingRoomsKit,
+        [Description("Modern Menswear Kit")]
+        ModernMenswearKit,
+        [Description("Carnaval Streetwear Kit")]
+        CarnavalStreetwearKit,
+        [Description("Decor to the Max Kit")]
+        DecortotheMaxKit,
+        [Description("Moonlight Chic Kit")]
+        MoonlightChicKit,
+        [Description("Little Campers Kit")]
+        LittleCampersKit,
+        [Description("First Fits Kit")]
+        FirstFitsKit,
+        [Description("Desert Luxe Kit")]
+        DesertLuxeKit,
+        [Description("Pastel Pop Kit")]
+        PastelPopKit,
+        [Description("Everyday Clutter Kit")]
+        EverydayClutterKit,
+        [Description("Bathroom Clutter Kit")]
+        BathroomClutterKit,
+        [Description("Simtimates Collection Kit")]
+        SimtimatesCollectionKit,
+        [Description("Greenhouse Haven Kit")]
+        GreenhouseHavenKit,
+        [Description("Basement Treasures Kit")]
+        BasementTreasuresKit,
+        [Description("Book Nook Kit")]
+        BookNookKit,
+        [Description("Grunge Revival Kit")]
+        GrungeRevivalKit,
+        [Description("Poolside Splash Kit")]
+        PoolsideSplashKit,
+        [Description("Modern Luxe Kit")]
+        ModernLuxeKit,
+        [Description("Castle Estate Kit")]
+        CastleEstateKit,
+        [Description("Goth Galore Kit")]
+        GothGaloreKit,
+        [Description("Urban Homage Kit")]
+        UrbanHomageKit,
+        [Description("Party Essentials Kit")]
+        PartyEssentialsKit,
+        [Description("Riviera Retreat Kit")]
+        RivieraRetreatKit,
+        [Description("Cozy Bistro Kit")]
+        CozyBistroKit,
+        [Description("Storybook Nursery Kit")]
+        StorybookNurseryKit,
+        [Description("Artist Studio Kit")]
+        ArtistStudioKit,
+        [Description("Sweet Slumber Party Kit")]
+        SweetSlumberPartyKit,
+        [Description("Cozy Kitsch Kit")]
+        CozyKitschKit,
+        [Description("Secret Sanctuary Kit")]
+        SecretSanctuaryKit,
+        [Description("Comfy Gamer Kit")]
+        ComfyGamerKit,
+        [Description("Casanova Cave Kit")]
+        CasanovaCaveKit,
+        [Description("Refined Living Room Kit")]
+        RefinedLivingRoomKit,
+        [Description("Business Chic Kit")]
+        BusinessChicKit,
+        [Description("Sweet Allure Kit")]
+        SweetAllureKit,
+        [Description("Sleek Bathroom Kit")]
+        SleekBathroomKit,
+        [Description("Restoration Workshop Kit")]
+        RestorationWorkshopKit,
+        [Description("Kitchen Clutter Kit")]
+        KitchenClutterKit,
+        [Description("Golden Years Kit")]
+        GoldenYearsKit,
+        [Description("Grange Mudroom Kit")]
+        GrangeMudroomKit,
+        [Description("Essential Glam Kit")]
+        EssentialGlamKit,
+        [Description("Autumn Apparel Kit")]
+        AutumnApparelKit
+    }
+
+    public class VFSFiles
+    {
+        public List<MovedItems> ItemsMoved {get; set;} = new();
+        public List<LinkedItems> ItemsLinked {get; set;} = new();
+
+        public List<string> FoldersCreated {get; set;} = new();
+    }
+
+    public class MovedItems
+    {
+        public string OriginalLocation {get; set;}
+        public string MovedTo {get; set;}
+        public bool IsFolder {get; set;}
+    }
+
+    public class LinkedItems
+    {
+        public string LinkLocation {get; set;}
+        public bool IsFolder {get; set;}
+    }
+
 }

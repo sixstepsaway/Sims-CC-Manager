@@ -1,5 +1,6 @@
-[gd_scene load_steps=4 format=3 uid="uid://cevqdk2sipct5"]
+[gd_scene load_steps=5 format=3 uid="uid://dvds34uk1vogh"]
 
+[ext_resource type="Script" uid="uid://b6emaiyuv23wj" path="res://UI/Logo.cs" id="1_ptd42"]
 [ext_resource type="Texture2D" uid="uid://bntp5u6idtu8g" path="res://assets/images/SCCM.png" id="1_uefdf"]
 [ext_resource type="FontFile" uid="uid://djlm6ldm5y0xn" path="res://assets/fonts/Yusei_Magic/YuseiMagic-Regular.ttf" id="2_jf2lk"]
 
@@ -15,8 +16,18 @@ Label/font_sizes/font_size = 73
 Label/fonts/font = ExtResource("2_jf2lk")
 
 [node name="MarginContainer" type="MarginContainer"]
-offset_right = 40.0
-offset_bottom = 40.0
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -423.5
+offset_top = -195.0
+offset_right = 423.5
+offset_bottom = 195.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_ptd42")
 
 [node name="Header_Image" type="MarginContainer" parent="."]
 layout_mode = 2

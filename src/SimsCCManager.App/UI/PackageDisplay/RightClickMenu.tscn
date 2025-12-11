@@ -1,0 +1,162 @@
+[gd_scene load_steps=5 format=3 uid="uid://ddcxne05qsers"]
+
+[ext_resource type="Script" uid="uid://mbu4hjptvw5s" path="res://UI/PackageDisplay/RightClickMenu.cs" id="1_71ntt"]
+[ext_resource type="PackedScene" uid="uid://2ybbdyju3wdc" path="res://UI/PackageDisplay/RCMItem.tscn" id="2_8xt3o"]
+[ext_resource type="PackedScene" uid="uid://bpc0tqlrai82g" path="res://UI/PackageDisplay/CategoryOption.tscn" id="2_bu7fk"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bu7fk"]
+bg_color = Color(0.6, 0.6, 0.6, 0)
+border_width_left = 10
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+
+[node name="RightClickMenu" type="Node2D" node_paths=PackedStringArray("MainContainer", "bgcolor", "bordercolor", "CategoryOptions", "EditDetails", "Categorylist", "MakeRoot", "Fave", "WrongGame", "UpdatedOOD", "Details", "FFromF", "Categories", "Rename", "Creator", "Source", "Move", "Delete", "Notes")]
+script = ExtResource("1_71ntt")
+MainContainer = NodePath("MarginContainer")
+CategoryOption = ExtResource("2_bu7fk")
+bgcolor = [NodePath("EditDetails_Options/BGColorRect3"), NodePath("CategoryOptions/BGColorRect2"), NodePath("MarginContainer/BGColorRect")]
+bordercolor = [NodePath("EditDetails_Options/Panel3/BorderColorRect"), NodePath("CategoryOptions/Panel2/BorderColorRect"), NodePath("MarginContainer/Panel/BorderColorRect")]
+CategoryOptions = NodePath("CategoryOptions")
+EditDetails = NodePath("EditDetails_Options")
+Categorylist = NodePath("CategoryOptions/VBoxContainer")
+MakeRoot = NodePath("MarginContainer/MarginContainer/VBoxContainer/MakeRoot")
+Fave = NodePath("MarginContainer/MarginContainer/VBoxContainer/Fave")
+WrongGame = NodePath("MarginContainer/MarginContainer/VBoxContainer/WrongGame")
+UpdatedOOD = NodePath("MarginContainer/MarginContainer/VBoxContainer/UpdatedOOD")
+Details = NodePath("MarginContainer/MarginContainer/VBoxContainer/Details")
+FFromF = NodePath("MarginContainer/MarginContainer/VBoxContainer/FolderFromFiles")
+Categories = NodePath("MarginContainer/MarginContainer/VBoxContainer/Categories")
+Rename = NodePath("EditDetails_Options/VBoxContainer/Rename")
+Creator = NodePath("EditDetails_Options/VBoxContainer/Creator")
+Source = NodePath("EditDetails_Options/VBoxContainer/Source")
+Move = NodePath("EditDetails_Options/VBoxContainer/Move")
+Delete = NodePath("EditDetails_Options/VBoxContainer/Del")
+Notes = NodePath("EditDetails_Options/VBoxContainer/AddNote")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+custom_minimum_size = Vector2(130, 0)
+offset_right = 130.0
+offset_bottom = 227.0
+
+[node name="BGColorRect" type="ColorRect" parent="MarginContainer"]
+layout_mode = 2
+color = Color(0.7690814, 0.54082465, 0.8437219, 1)
+
+[node name="Panel" type="Panel" parent="MarginContainer"]
+clip_children = 1
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_bu7fk")
+
+[node name="BorderColorRect" type="ColorRect" parent="MarginContainer/Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.23352596, 0.5170328, 0.41327563, 1)
+
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 7
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/MarginContainer"]
+layout_mode = 2
+
+[node name="MakeRoot" parent="MarginContainer/MarginContainer/VBoxContainer" instance=ExtResource("2_8xt3o")]
+layout_mode = 2
+
+[node name="Fave" parent="MarginContainer/MarginContainer/VBoxContainer" instance=ExtResource("2_8xt3o")]
+layout_mode = 2
+
+[node name="WrongGame" parent="MarginContainer/MarginContainer/VBoxContainer" instance=ExtResource("2_8xt3o")]
+layout_mode = 2
+
+[node name="UpdatedOOD" parent="MarginContainer/MarginContainer/VBoxContainer" instance=ExtResource("2_8xt3o")]
+layout_mode = 2
+
+[node name="Details" parent="MarginContainer/MarginContainer/VBoxContainer" instance=ExtResource("2_8xt3o")]
+layout_mode = 2
+
+[node name="FolderFromFiles" parent="MarginContainer/MarginContainer/VBoxContainer" instance=ExtResource("2_8xt3o")]
+layout_mode = 2
+
+[node name="Categories" parent="MarginContainer/MarginContainer/VBoxContainer" instance=ExtResource("2_8xt3o")]
+layout_mode = 2
+
+[node name="CategoryOptions" type="MarginContainer" parent="."]
+visible = false
+custom_minimum_size = Vector2(130, 0)
+offset_left = 128.0
+offset_top = 200.0
+offset_right = 258.0
+offset_bottom = 300.0
+
+[node name="BGColorRect2" type="ColorRect" parent="CategoryOptions"]
+layout_mode = 2
+color = Color(0.7690814, 0.54082465, 0.8437219, 1)
+
+[node name="Panel2" type="Panel" parent="CategoryOptions"]
+clip_children = 1
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_bu7fk")
+
+[node name="BorderColorRect" type="ColorRect" parent="CategoryOptions/Panel2"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.23352596, 0.5170328, 0.41327563, 1)
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CategoryOptions"]
+layout_mode = 2
+
+[node name="EditDetails_Options" type="MarginContainer" parent="."]
+visible = false
+custom_minimum_size = Vector2(140, 0)
+offset_left = 130.0
+offset_top = 128.0
+offset_right = 270.0
+offset_bottom = 322.0
+
+[node name="BGColorRect3" type="ColorRect" parent="EditDetails_Options"]
+layout_mode = 2
+color = Color(0.7690814, 0.54082465, 0.8437219, 1)
+
+[node name="Panel3" type="Panel" parent="EditDetails_Options"]
+clip_children = 1
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_bu7fk")
+
+[node name="BorderColorRect" type="ColorRect" parent="EditDetails_Options/Panel3"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.23352596, 0.5170328, 0.41327563, 1)
+
+[node name="VBoxContainer" type="VBoxContainer" parent="EditDetails_Options"]
+layout_mode = 2
+
+[node name="Rename" parent="EditDetails_Options/VBoxContainer" instance=ExtResource("2_8xt3o")]
+layout_mode = 2
+
+[node name="AddNote" parent="EditDetails_Options/VBoxContainer" instance=ExtResource("2_8xt3o")]
+layout_mode = 2
+
+[node name="Creator" parent="EditDetails_Options/VBoxContainer" instance=ExtResource("2_8xt3o")]
+layout_mode = 2
+
+[node name="Source" parent="EditDetails_Options/VBoxContainer" instance=ExtResource("2_8xt3o")]
+layout_mode = 2
+
+[node name="Move" parent="EditDetails_Options/VBoxContainer" instance=ExtResource("2_8xt3o")]
+layout_mode = 2
+
+[node name="Del" parent="EditDetails_Options/VBoxContainer" instance=ExtResource("2_8xt3o")]
+layout_mode = 2

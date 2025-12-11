@@ -1,0 +1,165 @@
+[gd_scene load_steps=15 format=3 uid="uid://55aunc3up5rf"]
+
+[ext_resource type="Script" uid="uid://biglkyj7fjd1m" path="res://UI/PackageDisplay/AllModsContainer.cs" id="1_07ull"]
+[ext_resource type="Theme" uid="uid://b4fe82i5mblf5" path="res://themes/packagedisplay_headers.tres" id="1_gmjrk"]
+[ext_resource type="Script" uid="uid://b6yx50ewa2jxt" path="res://addons/CustomDataGrid/DataGrid/DataGrid.cs" id="2_07ull"]
+[ext_resource type="PackedScene" uid="uid://ddcxne05qsers" path="res://UI/PackageDisplay/RightClickMenu.tscn" id="2_ea8ua"]
+[ext_resource type="FontFile" uid="uid://dbl0pkpxsvvww" path="res://assets/fonts/Livvic/Livvic-Medium.ttf" id="3_xitth"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ea8ua"]
+content_margin_left = 5.0
+content_margin_top = 1.0
+content_margin_right = 5.0
+content_margin_bottom = 1.0
+bg_color = Color(0.5019608, 0.5019608, 0.5019608, 1)
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ym2rk"]
+content_margin_left = 5.0
+content_margin_top = 1.0
+content_margin_right = 5.0
+content_margin_bottom = 1.0
+bg_color = Color(0.5019608, 0.5019608, 0.5019608, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+
+[sub_resource type="Theme" id="Theme_wdnan"]
+LineEdit/fonts/font = ExtResource("3_xitth")
+LineEdit/styles/focus = SubResource("StyleBoxFlat_ea8ua")
+LineEdit/styles/normal = SubResource("StyleBoxFlat_ym2rk")
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_sh1cm"]
+content_margin_left = 5.0
+content_margin_top = 1.0
+content_margin_right = 5.0
+content_margin_bottom = 1.0
+bg_color = Color(0.62, 0.62, 0.62, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_0tei2"]
+content_margin_left = 5.0
+content_margin_top = 1.0
+content_margin_right = 5.0
+content_margin_bottom = 1.0
+bg_color = Color(0.62, 0.62, 0.62, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ylio6"]
+content_margin_left = 5.0
+content_margin_top = 1.0
+content_margin_right = 5.0
+content_margin_bottom = 1.0
+bg_color = Color(0.5014065, 0.50140655, 0.50140643, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_1bilu"]
+content_margin_left = 5.0
+content_margin_top = 1.0
+content_margin_right = 5.0
+content_margin_bottom = 1.0
+bg_color = Color(0.4, 0.4, 0.4, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+
+[sub_resource type="Theme" id="Theme_6ykyx"]
+OptionButton/fonts/font = ExtResource("3_xitth")
+OptionButton/styles/focus = SubResource("StyleBoxFlat_sh1cm")
+OptionButton/styles/hover = SubResource("StyleBoxFlat_0tei2")
+OptionButton/styles/normal = SubResource("StyleBoxFlat_ylio6")
+OptionButton/styles/pressed = SubResource("StyleBoxFlat_1bilu")
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_3p7jc"]
+
+[node name="AllModsContainer" type="MarginContainer" node_paths=PackedStringArray("AllModsHeader", "AllModsModNumber", "SearchBox", "SearchOptions", "DataGrid", "GridContainer")]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+script = ExtResource("1_07ull")
+AllModsHeader = NodePath("ContainerHeader/LabelPositioner/AllMods_Label")
+AllModsModNumber = NodePath("ContainerHeader/AllModsInfo_Label")
+SearchBox = NodePath("ContainerHeader/SearchPositioner/AllMods_SearchBox")
+SearchOptions = NodePath("ContainerHeader/SearchPositioner/OptionButton")
+DataGrid = NodePath("AllMods_Container/GridContainer/DataGrid")
+GridContainer = NodePath("AllMods_Container/GridContainer")
+RightClickMenuPS = ExtResource("2_ea8ua")
+
+[node name="ContainerHeader" type="HBoxContainer" parent="."]
+layout_mode = 2
+size_flags_vertical = 0
+
+[node name="LabelPositioner" type="MarginContainer" parent="ContainerHeader"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 30
+
+[node name="AllMods_Label" type="Label" parent="ContainerHeader/LabelPositioner"]
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 8
+theme = ExtResource("1_gmjrk")
+text = "All Mods"
+
+[node name="AllModsInfo_Label" type="Label" parent="ContainerHeader"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 1
+theme = ExtResource("1_gmjrk")
+theme_override_font_sizes/font_size = 12
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="SearchPositioner" type="HBoxContainer" parent="ContainerHeader"]
+layout_mode = 2
+size_flags_horizontal = 8
+
+[node name="AllMods_SearchBox" type="LineEdit" parent="ContainerHeader/SearchPositioner"]
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+size_flags_horizontal = 8
+theme = SubResource("Theme_wdnan")
+placeholder_text = "Search..."
+
+[node name="OptionButton" type="OptionButton" parent="ContainerHeader/SearchPositioner"]
+custom_minimum_size = Vector2(110, 0)
+layout_mode = 2
+theme = SubResource("Theme_6ykyx")
+selected = 0
+item_count = 1
+popup/item_0/text = "Test"
+popup/item_0/id = 0
+
+[node name="AllMods_Container" type="MarginContainer" parent="."]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/margin_top = 40
+
+[node name="Panel" type="Panel" parent="AllMods_Container"]
+visible = false
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_3p7jc")
+
+[node name="GridContainer" type="MarginContainer" parent="AllMods_Container"]
+layout_mode = 2
+
+[node name="DataGrid" type="Control" parent="AllMods_Container/GridContainer"]
+layout_mode = 2
+script = ExtResource("2_07ull")

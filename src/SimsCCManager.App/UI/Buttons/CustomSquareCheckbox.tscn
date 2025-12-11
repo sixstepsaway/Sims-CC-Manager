@@ -1,0 +1,76 @@
+[gd_scene load_steps=3 format=3 uid="uid://b6nokbd163hyy"]
+
+[ext_resource type="Script" uid="uid://mpcwopbwcr16" path="res://UI/Buttons/CustomSquareCheckbox.cs" id="1_tbpyj"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_tbpyj"]
+
+[node name="CheckBox" type="MarginContainer" node_paths=PackedStringArray("BackgroundColor", "SelectedColor", "Box", "Selected2Color", "CheckedBox", "HoveredBox", "button")]
+custom_minimum_size = Vector2(25, 25)
+theme_override_constants/margin_left = 2
+theme_override_constants/margin_top = 2
+theme_override_constants/margin_right = 2
+theme_override_constants/margin_bottom = 2
+script = ExtResource("1_tbpyj")
+BackgroundColor = NodePath("ColorRect")
+SelectedColor = NodePath("SelectedBox/ColorRect")
+Box = NodePath("OpenBox/ColorRect")
+Selected2Color = NodePath("OpenBox/SelectedBox2/ColorRect")
+CheckedBox = NodePath("SelectedBox")
+HoveredBox = NodePath("OpenBox")
+button = NodePath("Button")
+
+[node name="ColorRect" type="ColorRect" parent="."]
+layout_mode = 2
+color = Color(0.400698, 0.400698, 0.400698, 1)
+
+[node name="SelectedBox" type="MarginContainer" parent="."]
+visible = false
+custom_minimum_size = Vector2(15, 15)
+layout_mode = 2
+theme_override_constants/margin_left = 2
+theme_override_constants/margin_top = 2
+theme_override_constants/margin_right = 2
+theme_override_constants/margin_bottom = 2
+
+[node name="ColorRect" type="ColorRect" parent="SelectedBox"]
+layout_mode = 2
+color = Color(0.707967, 0.707967, 0.707966, 1)
+
+[node name="OpenBox" type="MarginContainer" parent="."]
+visible = false
+custom_minimum_size = Vector2(10, 10)
+layout_mode = 2
+theme_override_constants/margin_left = 2
+theme_override_constants/margin_top = 2
+theme_override_constants/margin_right = 2
+theme_override_constants/margin_bottom = 2
+
+[node name="ColorRect" type="ColorRect" parent="OpenBox"]
+layout_mode = 2
+color = Color(0.707967, 0.707967, 0.707966, 1)
+
+[node name="SelectedBox2" type="MarginContainer" parent="OpenBox"]
+custom_minimum_size = Vector2(10, 10)
+layout_mode = 2
+theme_override_constants/margin_left = 3
+theme_override_constants/margin_top = 3
+theme_override_constants/margin_right = 3
+theme_override_constants/margin_bottom = 3
+
+[node name="ColorRect" type="ColorRect" parent="OpenBox/SelectedBox2"]
+layout_mode = 2
+color = Color(0.4, 0.4, 0.4, 1)
+
+[node name="Button" type="Button" parent="."]
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxEmpty_tbpyj")
+theme_override_styles/normal_mirrored = SubResource("StyleBoxEmpty_tbpyj")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_tbpyj")
+theme_override_styles/pressed_mirrored = SubResource("StyleBoxEmpty_tbpyj")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_tbpyj")
+theme_override_styles/hover_mirrored = SubResource("StyleBoxEmpty_tbpyj")
+theme_override_styles/hover_pressed = SubResource("StyleBoxEmpty_tbpyj")
+theme_override_styles/hover_pressed_mirrored = SubResource("StyleBoxEmpty_tbpyj")
+theme_override_styles/disabled = SubResource("StyleBoxEmpty_tbpyj")
+theme_override_styles/disabled_mirrored = SubResource("StyleBoxEmpty_tbpyj")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_tbpyj")

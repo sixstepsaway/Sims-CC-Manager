@@ -1,0 +1,45 @@
+[gd_scene format=3 uid="uid://cf340hxh8sp36"]
+
+[node name="Subrow" type="MarginContainer"]
+custom_minimum_size = Vector2(0, 25)
+
+[node name="Background" type="MarginContainer" parent="."]
+layout_mode = 2
+
+[node name="BackgroundColor" type="ColorRect" parent="Background"]
+layout_mode = 2
+color = Color(0.644363, 0.697673, 0.8384, 1)
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="VBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="VBoxContainer/MarginContainer"]
+layout_mode = 2
+text = "this is x pulled out"
+horizontal_alignment = 1
+
+[node name="DataContainer" type="ScrollContainer" parent="VBoxContainer"]
+layout_mode = 2
+mouse_filter = 2
+horizontal_scroll_mode = 3
+vertical_scroll_mode = 0
+
+[node name="AllRows" type="VBoxContainer" parent="VBoxContainer/DataContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 0
+
+[node name="DataGrid_HeaderRow" type="VBoxContainer" parent="VBoxContainer/DataContainer/AllRows"]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="DataGrid_Rows" type="VBoxContainer" parent="VBoxContainer/DataContainer/AllRows"]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="Button" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+text = "Close"

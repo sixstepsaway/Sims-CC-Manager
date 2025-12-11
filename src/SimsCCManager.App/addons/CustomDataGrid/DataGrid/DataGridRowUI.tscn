@@ -1,0 +1,61 @@
+[gd_scene load_steps=3 format=3 uid="uid://dul6s4kg6vo8m"]
+
+[ext_resource type="Script" uid="uid://bdm6r1ca4njb" path="res://addons/CustomDataGrid/DataGrid/DataGridRowUi.cs" id="1_ap4cg"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_00fpo"]
+
+[node name="DataGridRow_UI" type="MarginContainer" node_paths=PackedStringArray("RowsHolder", "RowSelectionButton", "SubRowContainer", "SubRowOuterContainer", "ColorHolder")]
+offset_right = 40.0
+offset_bottom = 40.0
+size_flags_vertical = 0
+script = ExtResource("1_ap4cg")
+RowsHolder = NodePath("VBoxContainer/RowContainer")
+RowSelectionButton = NodePath("Button")
+SubRowContainer = NodePath("VBoxContainer/MarginContainer/ScrollContainer/SubRowContainer")
+SubRowOuterContainer = NodePath("VBoxContainer/MarginContainer")
+ColorHolder = NodePath("Background/BackgroundColor")
+
+[node name="Background" type="MarginContainer" parent="."]
+layout_mode = 2
+
+[node name="BackgroundColor" type="ColorRect" parent="Background"]
+layout_mode = 2
+color = Color(0.644363, 0.697673, 0.8384, 1)
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="RowContainer" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 1
+
+[node name="MarginContainer" type="MarginContainer" parent="VBoxContainer"]
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/margin_left = 15
+
+[node name="ScrollContainer" type="ScrollContainer" parent="VBoxContainer/MarginContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="SubRowContainer" type="VBoxContainer" parent="VBoxContainer/MarginContainer/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 0
+
+[node name="Button" type="Button" parent="."]
+layout_mode = 2
+focus_mode = 0
+theme_override_styles/normal = SubResource("StyleBoxEmpty_00fpo")
+theme_override_styles/normal_mirrored = SubResource("StyleBoxEmpty_00fpo")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_00fpo")
+theme_override_styles/pressed_mirrored = SubResource("StyleBoxEmpty_00fpo")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_00fpo")
+theme_override_styles/hover_mirrored = SubResource("StyleBoxEmpty_00fpo")
+theme_override_styles/hover_pressed = SubResource("StyleBoxEmpty_00fpo")
+theme_override_styles/hover_pressed_mirrored = SubResource("StyleBoxEmpty_00fpo")
+theme_override_styles/disabled = SubResource("StyleBoxEmpty_00fpo")
+theme_override_styles/disabled_mirrored = SubResource("StyleBoxEmpty_00fpo")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_00fpo")

@@ -1,0 +1,30 @@
+[gd_scene load_steps=2 format=3 uid="uid://durdr7xt6rssc"]
+
+[ext_resource type="Script" uid="uid://b62gt21v8pwsr" path="res://addons/CustomDataGrid/DataGrid/DataGridHeaderRow.cs" id="1_2c5et"]
+
+[node name="DataGridHeaderRow" type="MarginContainer" node_paths=PackedStringArray("HeaderRow", "BackgroundColor1", "BackgroundColor2")]
+anchors_preset = 10
+anchor_right = 1.0
+offset_right = -1127.0
+offset_bottom = 15.0
+grow_horizontal = 2
+size_flags_horizontal = 3
+size_flags_vertical = 0
+script = ExtResource("1_2c5et")
+HeaderRow = NodePath("HeaderRow")
+BackgroundColor1 = NodePath("BackgroundColor")
+BackgroundColor2 = NodePath("BackgroundColor2")
+
+[node name="BackgroundColor" type="ColorRect" parent="."]
+custom_minimum_size = Vector2(25, 15)
+layout_mode = 2
+
+[node name="BackgroundColor2" type="ColorRect" parent="."]
+custom_minimum_size = Vector2(25, 2)
+layout_mode = 2
+size_flags_vertical = 8
+color = Color(0.59, 0.59, 0.59, 0.552941)
+
+[node name="HeaderRow" type="HBoxContainer" parent="."]
+layout_mode = 2
+theme_override_constants/separation = 0

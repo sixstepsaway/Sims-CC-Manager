@@ -1,8 +1,7 @@
-[gd_scene load_steps=9 format=3 uid="uid://bnwk8hgw5n5uj"]
+[gd_scene load_steps=8 format=3 uid="uid://bnwk8hgw5n5uj"]
 
-[ext_resource type="Script" path="res://windows/SplashScreen.cs" id="1_uoam6"]
-[ext_resource type="PackedScene" uid="uid://cevqdk2sipct5" path="res://UI/logo.tscn" id="2_hbqhi"]
-[ext_resource type="Script" path="res://windows/SplashSignaller.cs" id="3_21cjx"]
+[ext_resource type="Script" uid="uid://cmfgcx1eq52vb" path="res://windows/SplashScreen.cs" id="1_pyv87"]
+[ext_resource type="PackedScene" uid="uid://dqaolryrgmuu2" path="res://UI/logo.tscn" id="2_hbqhi"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_3tg3v"]
 bg_color = Color(0.952941, 0.431373, 0.423529, 1)
@@ -20,7 +19,7 @@ texture = SubResource("GradientTexture2D_874nh")
 ProgressBar/styles/background = SubResource("StyleBoxFlat_3tg3v")
 ProgressBar/styles/fill = SubResource("StyleBoxTexture_w57dy")
 
-[node name="MarginContainer" type="MarginContainer"]
+[node name="SplashScreen" type="MarginContainer" node_paths=PackedStringArray("SplashProgressBar", "SplashProgrssBarLabel")]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -28,7 +27,9 @@ grow_horizontal = 2
 grow_vertical = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
-script = ExtResource("1_uoam6")
+script = ExtResource("1_pyv87")
+SplashProgressBar = NodePath("MarginContainer/ProgressBar")
+SplashProgrssBarLabel = NodePath("MarginContainer/ProgressBarText")
 
 [node name="Logo" parent="." instance=ExtResource("2_hbqhi")]
 layout_mode = 2
@@ -50,15 +51,10 @@ step = 1.0
 rounded = true
 show_percentage = false
 
-[node name="pbartext" type="Label" parent="MarginContainer"]
+[node name="ProgressBarText" type="Label" parent="MarginContainer"]
 layout_mode = 2
 size_flags_horizontal = 4
 text = "hello"
 
 [node name="SplashSignaller" type="Control" parent="."]
 layout_mode = 2
-script = ExtResource("3_21cjx")
-
-[connection signal="FinishLoading" from="SplashSignaller" to="." method="_on_splash_signaller_finish_loading"]
-[connection signal="PbarLabel" from="SplashSignaller" to="." method="_on_splash_signaller_pbar_label"]
-[connection signal="UpdatePbar" from="SplashSignaller" to="." method="_on_splash_signaller_update_pbar"]

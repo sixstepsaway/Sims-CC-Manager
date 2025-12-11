@@ -1,0 +1,31 @@
+[gd_scene load_steps=11 format=3 uid="uid://ba186xeo08ifu"]
+
+[ext_resource type="Script" uid="uid://b6yx50ewa2jxt" path="res://addons/CustomDataGrid/DataGrid/DataGrid.cs" id="1_jjbf6"]
+[ext_resource type="PackedScene" uid="uid://durdr7xt6rssc" path="res://addons/CustomDataGrid/DataGrid/DataGridHeaderRow.tscn" id="2_snwym"]
+[ext_resource type="PackedScene" uid="uid://dj8a7dqmry2ly" path="res://addons/CustomDataGrid/DataGrid/DataGridHeaderCell.tscn" id="3_1vtix"]
+[ext_resource type="PackedScene" uid="uid://bvk41nvc6rq1u" path="res://addons/CustomDataGrid/DataGrid/DataGridCell.tscn" id="4_yhx6s"]
+[ext_resource type="PackedScene" uid="uid://b40b3grp0owkb" path="res://addons/CustomDataGrid/DataGrid/DataGridHeaderSizeAdjuster.tscn" id="5_lnhut"]
+[ext_resource type="PackedScene" uid="uid://1rtsedrb1s3e" path="res://addons/CustomDataGrid/DataGrid/DataGridIconOption.tscn" id="6_3m3ye"]
+[ext_resource type="PackedScene" uid="uid://pqlyp7m4dn4s" path="res://addons/CustomDataGrid/DataGrid/DataGridUI.tscn" id="7_o4u7g"]
+[ext_resource type="PackedScene" uid="uid://dul6s4kg6vo8m" path="res://addons/CustomDataGrid/DataGrid/DataGridRowUI.tscn" id="8_7315o"]
+[ext_resource type="PackedScene" uid="uid://c6aq48wrtsrfd" path="res://addons/CustomDataGrid/DataGrid/HeaderClickMenuHolder.tscn" id="9_n5ske"]
+[ext_resource type="PackedScene" uid="uid://bd21mxrlxaas2" path="res://addons/CustomDataGrid/DataGrid/DataGridSubRowUI.tscn" id="10_1vtix"]
+
+[node name="DataGrid" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_jjbf6")
+HeaderRowPS = ExtResource("2_snwym")
+HeaderCellPS = ExtResource("3_1vtix")
+DataGridCellPS = ExtResource("4_yhx6s")
+SizeAdjusterPS = ExtResource("5_lnhut")
+IconOptionPS = ExtResource("6_3m3ye")
+DataGridUIScene = ExtResource("7_o4u7g")
+DataGridRowUIScene = ExtResource("8_7315o")
+HeaderMenuHolder = ExtResource("9_n5ske")
+DataGridSubRowUIScene = ExtResource("10_1vtix")
+MenusTextSize = 50

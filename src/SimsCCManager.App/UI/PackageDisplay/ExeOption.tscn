@@ -1,0 +1,116 @@
+[gd_scene load_steps=8 format=3 uid="uid://cvd7b36hwtfmf"]
+
+[ext_resource type="Script" uid="uid://dk812bfxklk2p" path="res://UI/PackageDisplay/ExeOption.cs" id="1_3twhb"]
+[ext_resource type="Texture2D" uid="uid://bvsroafqogyd0" path="res://assets/images/s4.png" id="1_mr3yy"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_4ve48"]
+bg_color = Color(0.6, 0.6, 0.6, 0)
+border_width_top = 2
+border_width_bottom = 2
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_feqby"]
+bg_color = Color(0.6, 0.6, 0.6, 0)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_rrhm5"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_dtxwg"]
+bg_color = Color(0.6, 0.6, 0.6, 0)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.933333, 0.933333, 0.933333, 1)
+border_blend = true
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_pq7r4"]
+bg_color = Color(0.6, 0.6, 0.6, 0)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.8, 0.709804, 0.87451, 1)
+border_blend = true
+
+[node name="Exe_Option" type="MarginContainer" node_paths=PackedStringArray("ExeIcon", "ExeName", "ExeExe", "ExeLocation", "button", "Normalpanel", "SelectedPanel")]
+custom_minimum_size = Vector2(262, 75)
+size_flags_horizontal = 3
+theme_override_constants/margin_left = 0
+script = ExtResource("1_3twhb")
+ExeIcon = NodePath("MarginContainer/Hbox/Exe_Icon/TextureRect")
+ExeName = NodePath("MarginContainer/Hbox/VBoxContainer/Exe_Name/Label")
+ExeExe = NodePath("MarginContainer/Hbox/VBoxContainer/Exe_Ex/Label")
+ExeLocation = NodePath("MarginContainer/Hbox/VBoxContainer/Exe_Location/Label")
+button = NodePath("ExeChoice_Button")
+Normalpanel = NodePath("Panel_Norm")
+SelectedPanel = NodePath("Panel_Current")
+metadata/ExeID = ""
+
+[node name="Panel_Norm" type="Panel" parent="."]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_4ve48")
+
+[node name="Panel_Current" type="Panel" parent="."]
+visible = false
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_feqby")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 2
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="Hbox" type="HBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+
+[node name="Exe_Icon" type="MarginContainer" parent="MarginContainer/Hbox"]
+custom_minimum_size = Vector2(65, 65)
+layout_mode = 2
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 5
+theme_override_constants/margin_bottom = 3
+
+[node name="TextureRect" type="TextureRect" parent="MarginContainer/Hbox/Exe_Icon"]
+layout_mode = 2
+texture = ExtResource("1_mr3yy")
+expand_mode = 3
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/Hbox"]
+layout_mode = 2
+alignment = 1
+
+[node name="Exe_Name" type="MarginContainer" parent="MarginContainer/Hbox/VBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="MarginContainer/Hbox/VBoxContainer/Exe_Name"]
+layout_mode = 2
+text = "TheSims4"
+
+[node name="Exe_Ex" type="MarginContainer" parent="MarginContainer/Hbox/VBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="MarginContainer/Hbox/VBoxContainer/Exe_Ex"]
+layout_mode = 2
+text = "thesims4.exe"
+
+[node name="Exe_Location" type="MarginContainer" parent="MarginContainer/Hbox/VBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="MarginContainer/Hbox/VBoxContainer/Exe_Location"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 8
+text = "c:\\Program Files\\OriginGames\\The Sims 4"
+
+[node name="ExeChoice_Button" type="Button" parent="."]
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxEmpty_rrhm5")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_dtxwg")
+theme_override_styles/hover = SubResource("StyleBoxFlat_pq7r4")
+theme_override_styles/disabled = SubResource("StyleBoxEmpty_rrhm5")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_rrhm5")
