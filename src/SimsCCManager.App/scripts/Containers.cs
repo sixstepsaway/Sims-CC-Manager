@@ -10,6 +10,7 @@ using System.Xml.Serialization;
 using SimsCCManager.Debugging;
 using SimsCCManager.Globals;
 using SimsCCManager.OptionLists;
+using SimsCCManager.PackageReaders;
 
 namespace SimsCCManager.Containers
 {
@@ -372,20 +373,6 @@ namespace SimsCCManager.Containers
     }
 
 
-    public class Sims2Data
-    {
-        
-    }
-    public class Sims3Data
-    {
-        
-    }
-    public class Sims4Data
-    {
-        
-    }
-
-
 
 
 
@@ -565,6 +552,23 @@ namespace SimsCCManager.Containers
         [XmlIgnore]
         public int LoadOrder { get; set; }
 
+        private ISimsData _packagedata;
+        public ISimsData PackageData {
+            get
+            {
+                if (Game == SimsGames.Sims2)
+                {
+                    return _packagedata as Sims2Data;
+                } else
+                {
+                    return _packagedata;
+                }                
+            } 
+            set
+            {
+                _packagedata = value;
+            }
+        }
         
         public void WriteXML()
         {
@@ -612,6 +616,122 @@ namespace SimsCCManager.Containers
         }
 
     }
+
+
+    public interface ISimsData
+    {
+        public string FileLocation {get; set;}
+        public string Title {get; set;}
+        public string Description {get; set;}
+        public string Type {get;}
+
+        public List<FunctionSortList> FunctionSort {get; set;}
+        public string GUID {get; set;}        
+
+        void Serialize();        
+
+    }
+
+    public class Sims2Data : ISimsData
+    {
+        public string FileLocation {get; set;}
+        public string Title {get; set;}
+        public string Description {get; set;}
+        public string Type {
+            get { if (!string.IsNullOrEmpty(FunctionSort[0].Subcategory))
+                {
+                    return string.Format("{0}/{1}", FunctionSort[0].Category, FunctionSort[0].Subcategory);
+                } else
+                {
+                    return FunctionSort[0].Category; 
+                }
+            }
+        }
+
+        public List<FunctionSortList> FunctionSort {get; set;} = new();
+        public string GUID {get; set;}
+        public GMDCData GMDCDataBlock {get; set;}
+
+        public void Serialize()
+        {
+            XmlSerializer InfoSerializer = new XmlSerializer(typeof(Sims2Data));
+            using (var writer = new StreamWriter(string.Format("{0}.xml", FileLocation)))
+            {
+                InfoSerializer.Serialize(writer, this);
+            }
+        }
+
+        public override string ToString()
+        {
+            StringBuilder sb = new();
+            foreach (FunctionSortList function in FunctionSort)
+            {
+                if (!string.IsNullOrEmpty(function.Subcategory))
+                {
+                    sb.AppendLine(string.Format("{0}", function.Category));
+                } else
+                {
+                    sb.AppendLine(string.Format("{0}/{1}", function.Category, function.Subcategory));
+                }
+                
+            }
+            return string.Format("{0}: {1}\n{2}", Title, Description, sb.ToString());
+        }
+    }
+    public class Sims3Data : ISimsData
+    {
+        public string FileLocation {get; set;}
+        public string Title {get; set;}
+        public string Description {get; set;}
+        public string Type {
+            get { if (!string.IsNullOrEmpty(FunctionSort[0].Subcategory))
+                {
+                    return string.Format("{0}/{1}", FunctionSort[0].Category, FunctionSort[0].Subcategory);
+                } else
+                {
+                    return FunctionSort[0].Category; 
+                }
+            }
+        }
+
+        public List<FunctionSortList> FunctionSort {get; set;} = new();
+        public string GUID {get; set;}
+        public void Serialize()
+        {
+            //throw new NotImplementedException();
+        }
+    }
+    
+    public class Sims4Data : ISimsData
+    {
+        public string FileLocation {get; set;}
+        public string Title {get; set;}
+        public string Description {get; set;}
+        public string Type {
+            get { if (!string.IsNullOrEmpty(FunctionSort[0].Subcategory))
+                {
+                    return string.Format("{0}/{1}", FunctionSort[0].Category, FunctionSort[0].Subcategory);
+                } else
+                {
+                    return FunctionSort[0].Category; 
+                }
+            }
+        }
+
+        public List<FunctionSortList> FunctionSort {get; set;} = new();
+        public string GUID {get; set;}
+        public void Serialize()
+        {
+            //throw new NotImplementedException();
+        }
+    }
+
+
+
+
+
+
+
 
     public class SimsDownload : ISimsFile
     {
@@ -998,6 +1118,12 @@ namespace SimsCCManager.Containers
         [Description("Autumn Apparel Kit")]
         AutumnApparelKit
     }
+
+    
+
+
+
+
 
     public class VFSFiles
     {

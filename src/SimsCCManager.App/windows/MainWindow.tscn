@@ -1,4 +1,4 @@
-[gd_scene load_steps=23 format=3 uid="uid://dsflv6ica77kt"]
+[gd_scene load_steps=25 format=3 uid="uid://dsflv6ica77kt"]
 
 [ext_resource type="Script" uid="uid://crjixgpgv7u48" path="res://windows/MainWindow.cs" id="1_88poc"]
 [ext_resource type="PackedScene" uid="uid://bnwk8hgw5n5uj" path="res://windows/SplashScreen.tscn" id="2_44weo"]
@@ -15,6 +15,7 @@
 [ext_resource type="Texture2D" uid="uid://bwpht08dh3nma" path="res://assets/images/tumblr_4096_black-1914164580.png" id="9_vc3gp"]
 [ext_resource type="Texture2D" uid="uid://bchdaw51l2qxm" path="res://assets/images/itch-io-icon-md-2372909491.png" id="11_6646j"]
 [ext_resource type="FontFile" uid="uid://bob4v2pndpu0q" path="res://assets/fonts/Convergence/Convergence-Regular.ttf" id="16_bw2rg"]
+[ext_resource type="PackedScene" uid="uid://co0gkpc2bm4hh" path="res://tools/snapshotter/snapshotter.tscn" id="17_bw2rg"]
 [ext_resource type="Theme" uid="uid://elq77dslte5a" path="res://themes/ManageCategories_buttons.tres" id="17_ok2fl"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_uic8o"]
@@ -36,7 +37,10 @@ ProgressBar/styles/fill = SubResource("StyleBoxTexture_26dce")
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_1hsbu"]
 
-[node name="MainWindow" type="MarginContainer" node_paths=PackedStringArray("SocialsButtons", "Labels", "MainColors", "Footer", "FDPopupWindow", "FDMoreInfoButton", "FDYesButton", "FDNoButton")]
+[sub_resource type="ViewportTexture" id="ViewportTexture_bw2rg"]
+viewport_path = NodePath("SubViewport")
+
+[node name="MainWindow" type="MarginContainer" node_paths=PackedStringArray("SocialsButtons", "Labels", "MainColors", "Footer", "FooterVersionLabel", "FooterStateLabel", "FDPopupWindow", "FDMoreInfoButton", "FDYesButton", "FDNoButton", "snapshotter")]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -51,13 +55,16 @@ PackageDisplayPS = ExtResource("4_63i11")
 LoadingScreenPS = ExtResource("5_l26s6")
 TooltipPS = ExtResource("6_4fg3a")
 SocialsButtons = [NodePath("Footer/FooterInternalMargins/SocialsButtons/TwitterButton"), NodePath("Footer/FooterInternalMargins/SocialsButtons/KofiButton"), NodePath("Footer/FooterInternalMargins/SocialsButtons/GithubButton"), NodePath("Footer/FooterInternalMargins/SocialsButtons/DiscordButton"), NodePath("Footer/FooterInternalMargins/SocialsButtons/TumblrButton"), NodePath("Footer/FooterInternalMargins/SocialsButtons/ItchButton")]
-Labels = [NodePath("Footer/FooterInternalMargins/FooterHbox/Version_Label")]
+Labels = [NodePath("Footer/FooterInternalMargins/FooterHbox/HBoxContainer/Version_Label_Name"), NodePath("Footer/FooterInternalMargins/FooterHbox/HBoxContainer/Version_Label_Alpha"), NodePath("Footer/FooterInternalMargins/FooterHbox/HBoxContainer/Version_Label_Version")]
 MainColors = [NodePath("Footer/FooterColor")]
 Footer = NodePath("Footer")
+FooterVersionLabel = NodePath("Footer/FooterInternalMargins/FooterHbox/HBoxContainer/Version_Label_Version")
+FooterStateLabel = NodePath("Footer/FooterInternalMargins/FooterHbox/HBoxContainer/Version_Label_Alpha")
 FDPopupWindow = NodePath("Window")
 FDMoreInfoButton = NodePath("Window/MarginContainer/MarginContainer/VBoxContainer/HBoxContainer2/MarginContainer/Button")
 FDYesButton = NodePath("Window/MarginContainer/MarginContainer/VBoxContainer/HBoxContainer/Yes_Button")
 FDNoButton = NodePath("Window/MarginContainer/MarginContainer/VBoxContainer/HBoxContainer/No_Button")
+snapshotter = NodePath("Window2/Snapshotter")
 
 [node name="Footer" type="MarginContainer" parent="."]
 layout_mode = 2
@@ -78,11 +85,40 @@ theme_override_constants/margin_bottom = 5
 custom_minimum_size = Vector2(0, 55)
 layout_mode = 2
 
-[node name="Version_Label" type="Label" parent="Footer/FooterInternalMargins/FooterHbox"]
+[node name="HBoxContainer" type="HBoxContainer" parent="Footer/FooterInternalMargins/FooterHbox"]
+layout_mode = 2
+
+[node name="Version_Label_Name" type="Label" parent="Footer/FooterInternalMargins/FooterHbox/HBoxContainer"]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("3_quaxr")
 theme_override_font_sizes/font_size = 30
-text = "Sims CC Manager | Alpha 1.0"
+text = "Sims CC Manager"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="VSeparator" type="VSeparator" parent="Footer/FooterInternalMargins/FooterHbox/HBoxContainer"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+size_flags_vertical = 4
+
+[node name="Version_Label_Alpha" type="Label" parent="Footer/FooterInternalMargins/FooterHbox/HBoxContainer"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_quaxr")
+theme_override_font_sizes/font_size = 30
+text = "Alpha"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="VSeparator3" type="VSeparator" parent="Footer/FooterInternalMargins/FooterHbox/HBoxContainer"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+size_flags_vertical = 4
+
+[node name="Version_Label_Version" type="Label" parent="Footer/FooterInternalMargins/FooterHbox/HBoxContainer"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_quaxr")
+theme_override_font_sizes/font_size = 30
+text = "1.0"
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -266,6 +302,24 @@ text = "Yes"
 layout_mode = 2
 theme = ExtResource("17_ok2fl")
 text = "No"
+
+[node name="SubViewport" type="SubViewport" parent="."]
+
+[node name="Window2" type="Window" parent="."]
+oversampling_override = 1.0
+position = Vector2i(40, 100)
+size = Vector2i(512, 512)
+
+[node name="Snapshotter" parent="Window2" instance=ExtResource("17_bw2rg")]
+
+[node name="TextureRect" type="TextureRect" parent="Window2"]
+visible = false
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = SubResource("ViewportTexture_bw2rg")
 
 [editable path="Footer/FooterInternalMargins/SocialsButtons/TwitterButton"]
 [editable path="Footer/FooterInternalMargins/SocialsButtons/KofiButton"]

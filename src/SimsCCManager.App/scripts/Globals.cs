@@ -16,6 +16,8 @@ namespace SimsCCManager.Globals
 {
     public class GlobalVariables
     {
+        public static string State = "Alpha";
+        public static string CurrentVersion = "0.1";
         public static string AppName = "Sims CC Manager";
         public static string MyDocuments = System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments);
         public static string AppFolder {

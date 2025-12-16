@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Xml.Serialization;
 
 public partial class MainMenu : MarginContainer
 {
@@ -79,12 +80,17 @@ public partial class MainMenu : MarginContainer
 
     private void DevClicked()
     {
-        List<string> files = Directory.GetFiles(@"O:\Godot Projects\SimsCCManager\Test").ToList();
-        for (int i = 0; i < files.Count; i++)
-        {
-            SimsPackageReader sims2PackageReader = new();
-            sims2PackageReader.ReadPackage(files[i]);
-        }
+        //List<string> files = Directory.EnumerateFiles(@"O:\Godot Projects\SimsCCManager\Test", "*.package", SearchOption.AllDirectories).ToList();
+       // for (int i = 0; i < files.Count; i++)
+        //{
+            SimsPackageReader sims2PackageReader = new();            
+            //sims2PackageReader.ReadPackage(files[i]);           
+            sims2PackageReader.ReadPackage(@"O:\Godot Projects\SimsCCManager\Test\MLC-KFCBucketToilet.package");
+            GlobalVariables.mainWindow.snapshotter.BuildMesh((sims2PackageReader.SimsData as Sims2Data).GMDCDataBlock);
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0}", sims2PackageReader.ToString()));
+        //}
+        
+        
     }
 
 

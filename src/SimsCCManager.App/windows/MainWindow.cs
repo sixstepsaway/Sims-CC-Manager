@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Reflection.PortableExecutable;
 using System.Threading;
 using System.Xml.Serialization;
@@ -39,6 +40,10 @@ public partial class MainWindow : MarginContainer
 
     [Export]
     MarginContainer Footer;
+    [Export]
+    Label FooterVersionLabel;
+    [Export]
+    Label FooterStateLabel;
 
     [ExportCategory("Files Detected Window")]
     [Export]
@@ -50,6 +55,8 @@ public partial class MainWindow : MarginContainer
     
     [Export]
     Button FDNoButton;
+    [Export]
+    public Snapshotter snapshotter;
 
 
 
@@ -90,7 +97,9 @@ public partial class MainWindow : MarginContainer
 
         FDYesButton.Pressed += () => RemoveResidualFiles(true);
         FDNoButton.Pressed += () => RemoveResidualFiles(false);
-        
+
+        FooterVersionLabel.Text = GlobalVariables.CurrentVersion;
+        FooterStateLabel.Text = GlobalVariables.State;        
     }
 
     private void RemoveResidualFiles(bool Delete)
@@ -190,6 +199,7 @@ public partial class MainWindow : MarginContainer
             CallDeferred(nameof(IncrementPbar), 1);
             CallDeferred(nameof(ChangePbarLabel), string.Format("Checking for environment"));
             Thread.Sleep(20);
+            CheckLatestVersion();
             if (!Directory.Exists(GlobalVariables.AppFolder))
             {
                 Directory.CreateDirectory(GlobalVariables.AppFolder);
@@ -309,6 +319,23 @@ public partial class MainWindow : MarginContainer
     private void CloseMainMenu()
     {
         mainMenu.CloseMainMenu();
+    }
+
+    private void CheckLatestVersion(){
+        string VersionURL = "https://raw.githubusercontent.com/sixstepsaway/Sims-CC-Manager/refs/heads/main/Version.txt";
+
+        WebClient VersionClient = new WebClient();
+        Stream stream = VersionClient.OpenRead(VersionURL);
+        StreamReader reader = new StreamReader(stream);
+        String content = reader.ReadToEnd();
+
+        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Latest version: {0}", content));
+        if (GlobalVariables.CurrentVersion != content) {
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("New version available!"));
+        } else
+        {
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Running latest version."));
+        }
     }
 
     private void FinishedLoading()
