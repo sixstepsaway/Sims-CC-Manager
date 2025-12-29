@@ -80,8 +80,7 @@ public partial class GameStartControls : MarginContainer
 
     private void Play()
     {
-        FilesLinked = 
-        PackageDisplay.LinkFiles();
+        FilesLinked = PackageDisplay.LinkFiles();
     }
 
 

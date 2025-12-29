@@ -1,1 +1,0 @@
-"Sims CC Manager.console.exe" > log.log

@@ -7,6 +7,7 @@ using SimsCCManager.SettingsSystem;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -26,11 +27,27 @@ public partial class AllModsContainer : MarginContainer
     [Export]
     OptionButton SearchOptions;
     [Export]
-    DataGrid DataGrid;
+    public DataGrid DataGrid;
     [Export]
     MarginContainer GridContainer;
     [Export]
     PackedScene RightClickMenuPS;
+    [Export]
+    CustomCheckButton SwapDisplaysCheck;
+    [Export] 
+    ThumbnailGrid ThumbGrid;
+
+
+    private bool _viewswap;
+    public bool ViewSwap
+    {
+        get { return _viewswap; }
+        set { _viewswap = value; 
+        ThumbGrid.Visible = value;
+        DataGrid.Visible = !value;
+        }
+    }
+
 
     public List<Category> Categories { get { return packageDisplay.ThisInstance.Categories; }}
     /*public List<SimsPackage> Packages { 
@@ -194,7 +211,24 @@ public partial class AllModsContainer : MarginContainer
         DataGrid.MiniGridItemAdd += ChangeLinkedItemsAdd;
         DataGrid.MiniGridItemRemove += ChangeLinkedItemsRemove;
         DataGrid.MakeRCMenu += (menu) => ShowRCMenu(menu); 
+
+        SwapDisplaysCheck.CheckToggled += (v) => ViewFlipped(v);
+
+        
+        ThumbGrid.BackgroundColor = GlobalVariables.LoadedTheme.BackgroundColor;
+        ThumbGrid.ItemBackgroundColor = GlobalVariables.LoadedTheme.DataGridA;
+        ThumbGrid.AccentColor = GlobalVariables.LoadedTheme.AccentColor;
+        ThumbGrid.TextColor = GlobalVariables.LoadedTheme.MainTextColor;
+        ThumbGrid.SelectedColor = GlobalVariables.LoadedTheme.DataGridSelected;
+
+
     }
+
+    private void ViewFlipped(bool v)
+    {
+        ViewSwap = v;
+    }
+
 
     private void ShowRCMenu(HeaderClickMenuHolder menu)
     {
@@ -279,7 +313,7 @@ public partial class AllModsContainer : MarginContainer
 
     private void PackagesChanged()
     {
-        throw new NotImplementedException();
+        //throw new NotImplementedException();
     }
 
     public void UpdateProfilePackages()
@@ -502,7 +536,9 @@ public partial class AllModsContainer : MarginContainer
     }
 
     public void CreateDataGrid()
-    {    
+    {   
+        //ThumbGrid.packageDisplay = packageDisplay;        
+        //ThumbGrid.MakeItems();
         SetSearchOptions();
         DataGrid.MinigridPath = packageDisplay.ThisInstance.InstanceFolders.InstancePackagesFolder;
         SearchBox.TextSubmitted += (text) => SearchedMods(text);
@@ -529,6 +565,7 @@ public partial class AllModsContainer : MarginContainer
         DataGrid.PassLog += (log) => LogPassed(log);
         //DataGrid.PaneSize = GridContainer.Size;
         CreateRows();
+
     }
 
     private void LogPassed(string log)
@@ -754,59 +791,59 @@ public partial class AllModsContainer : MarginContainer
 
     private void ToggleRoot()
     {
-        foreach (SimsPackage package in SelectedPackages)
+        for (int i = 0; i < SelectedPackages.Count; i++)
         {
-            package.RootMod = !rcm.MostlyRoot;
-            if (package.RootMod)
+            SelectedPackages[i].RootMod = !rcm.MostlyRoot;
+            if (SelectedPackages[i].RootMod)
             {
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Changing package {0} to root. Searching {1} for info files to delete.", package.FileName, package.Location));
-                package.IsDirectory = false;
-                foreach (string info in Directory.EnumerateFiles(package.Location, "*.info", SearchOption.AllDirectories))
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Changing package {0} to root. Searching {1} for info files to delete.", SelectedPackages[i].FileName, SelectedPackages[i].Location));
+                SelectedPackages[i].IsDirectory = false;
+                foreach (string info in Directory.EnumerateFiles(SelectedPackages[i].Location, "*.info", SearchOption.AllDirectories))
                 {
                     if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Deleting {0}", info));
                     File.Delete(info);
                 }
-                package.LinkedFiles.Clear();
-                package.LinkedFolders.Clear();
-                package.LinkedPackageFolders.Clear();
-                package.LinkedPackages.Clear();
-                DataGridRow rowdata = DataGrid.RowData.First(x => x.Identifier == package.Identifier);
-                rowdata = UpdateRow(rowdata, package);
+                SelectedPackages[i].LinkedFiles.Clear();
+                SelectedPackages[i].LinkedFolders.Clear();
+                SelectedPackages[i].LinkedPackageFolders.Clear();
+                SelectedPackages[i].LinkedPackages.Clear();
+                DataGridRow rowdata = DataGrid.RowData.First(x => x.Identifier == SelectedPackages[i].Identifier);
+                rowdata = UpdateRow(rowdata, SelectedPackages[i]);
                 DataGrid.UpdateRow(rowdata);
                 
                 
             } else
             {
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Changing package {0} to not root.", package.FileName));
-                if (Directory.Exists(package.Location)) package.IsDirectory = true;
-                SelectedPackages[SelectedPackages.IndexOf(package)] = InstanceControllers.GetSubDirectoriesPackage(packageDisplay.ThisInstance, package.Location, package);
-                DataGridRow rowdata = DataGrid.RowData.First(x => x.Identifier == package.Identifier);
-                rowdata = UpdateRow(rowdata, package, package.IsDirectory);
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Changing package {0} to not root.", SelectedPackages[i].FileName));
+                if (Directory.Exists(SelectedPackages[i].Location)) SelectedPackages[i].IsDirectory = true;
+                SelectedPackages[SelectedPackages.IndexOf(SelectedPackages[i])] = InstanceControllers.GetSubDirectoriesPackage(packageDisplay.ThisInstance, SelectedPackages[i].Location, SelectedPackages[i]);
+                DataGridRow rowdata = DataGrid.RowData.First(x => x.Identifier == SelectedPackages[i].Identifier);
+                rowdata = UpdateRow(rowdata, SelectedPackages[i], SelectedPackages[i].IsDirectory);
                 DataGrid.UpdateRow(rowdata);
             }
-            package.WriteXML();
+            SelectedPackages[i].WriteXML();
         }
     }
 
     private void ToggleOutOfDate()
     {
-        foreach (SimsPackage package in SelectedPackages)
+        for (int i = 0; i < SelectedPackages.Count; i++)
         {
-            package.OutOfDate = rcm.MostlyUpdated;            
-            package.WriteXML();
-            DataGridRow rowdata = DataGrid.RowData.First(x => x.Identifier == package.Identifier);
-            rowdata = UpdateRow(rowdata, package);
+            SelectedPackages[i].OutOfDate = rcm.MostlyUpdated;            
+            SelectedPackages[i].WriteXML();
+            DataGridRow rowdata = DataGrid.RowData.First(x => x.Identifier == SelectedPackages[i].Identifier);
+            rowdata = UpdateRow(rowdata, SelectedPackages[i]);
             DataGrid.UpdateRow(rowdata);
         }
     }
     private void ToggleFave()
     {
-        foreach (SimsPackage package in SelectedPackages)
+        for (int i = 0; i < SelectedPackages.Count; i++)
         {
-            package.Favorite = !rcm.MostlyFave;            
-            package.WriteXML();
-            DataGridRow rowdata = DataGrid.RowData.First(x => x.Identifier == package.Identifier);
-            rowdata = UpdateRow(rowdata, package);
+            SelectedPackages[i].Favorite = !rcm.MostlyFave;            
+            SelectedPackages[i].WriteXML();
+            DataGridRow rowdata = DataGrid.RowData.First(x => x.Identifier == SelectedPackages[i].Identifier);
+            rowdata = UpdateRow(rowdata, SelectedPackages[i]);
             DataGrid.UpdateRow(rowdata);
         }
     }

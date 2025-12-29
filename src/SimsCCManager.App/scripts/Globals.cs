@@ -1,21 +1,25 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime;
+using System.Security.Principal;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
 using Microsoft.Win32;
 using SimsCCManager.Containers;
 using SimsCCManager.Debugging;
 using SimsCCManager.OptionLists;
+using SimsCCManager.PackageReaders;
 using SimsCCManager.SettingsSystem;
 
 namespace SimsCCManager.Globals
 {
     public class GlobalVariables
     {
+        public static bool IsElevated => new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator);
         public static string State = "Alpha";
         public static string CurrentVersion = "0.1";
         public static string AppName = "Sims CC Manager";
@@ -37,8 +41,9 @@ namespace SimsCCManager.Globals
         public static string AppFolderDebug = Path.Combine(MyDocuments, string.Format("{0}_Debug", AppName));
         public static string InstallDirectory = System.Environment.CurrentDirectory;
 
-        public static bool DebugMode = true;
-        public static bool PortableMode = false;
+        public static bool DebugMode { get { if (LoadedSettings != null) return LoadedSettings.DebugMode; else return false; }}
+        public static bool PortableMode { get { if (LoadedSettings != null) return LoadedSettings.PortableMode; else return false; }}
+        public static bool DebugToConsole = false;
         public static bool LoggedIn = false;
         public static bool GameRunning = false;
         public static string ffmpeg = Path.Combine(InstallDirectory, "tools\\ffmpeg\\bin\\ffmpeg.exe");
@@ -425,39 +430,70 @@ namespace SimsCCManager.Globals
             if (File.Exists(GlobalVariables.MovedItemsFile)) File.Delete(GlobalVariables.MovedItemsFile);
         }
 
+        public static List<Task> runningTasks = new();
+
         public static GameInstance LoadInstanceFiles(GameInstance gameInstance)
         {
             foreach (string file in Directory.GetFiles(gameInstance.InstanceFolders.InstancePackagesFolder))
             {
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Found: {0}", file));
-                FileInfo fi = new(file);
-                if (GlobalVariables.SimsFileExtensions.Contains(fi.Extension))
-                {
-                    SimsPackage simsPackage = ReadPackage(file, gameInstance, fi);                    
-                    gameInstance.Files.Add(simsPackage);
-                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Added: {0}", file));
-                }
-                GlobalVariables.mainWindow.IncrementLoadingScreen(1, fi.Name);
+                Task t = Task.Run(() => {
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Found: {0}", file));
+                    FileInfo fi = new(file);
+                    if (GlobalVariables.SimsFileExtensions.Contains(fi.Extension))
+                    {
+                        SimsPackage simsPackage = ReadPackage(file, gameInstance, fi);                    
+                        gameInstance.Files.Add(simsPackage);                        
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Added: {0}", file));
+                        int incBy = 1;
+                        if (simsPackage.IsDirectory)
+                        {
+                            if (simsPackage.LinkedFiles.Count > 0) incBy += simsPackage.LinkedFiles.Count;
+                            if (simsPackage.LinkedFolders.Count > 0) incBy += simsPackage.LinkedFolders.Count;
+                        }
+                        GlobalVariables.mainWindow.IncrementLoadingScreen(incBy, fi.Name.Replace(".info", ""));
+                    } else
+                    {
+                        GlobalVariables.mainWindow.IncrementLoadingScreen(1, fi.Name.Replace(".info", ""));
+                    }                    
+                });
+                runningTasks.Add(t);
             }
             foreach (string file in Directory.GetDirectories(gameInstance.InstanceFolders.InstancePackagesFolder))
             {
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Found: {0}", file));
-                DirectoryInfo fi = new(file);
-                SimsPackage simsPackage = ReadPackage(file, gameInstance, fi);                
-                gameInstance.Files.Add(simsPackage);
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Added: {0}", file));
-                
-                if (!simsPackage.RootMod) gameInstance = GetSubDirectories(gameInstance, file, simsPackage);
-                
-                GlobalVariables.mainWindow.IncrementLoadingScreen(1, fi.Name);
+                Task t = Task.Run(() => {
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Found: {0}", file));
+                    DirectoryInfo fi = new(file);
+                    SimsPackage simsPackage = ReadPackage(file, gameInstance, fi);                
+                    gameInstance.Files.Add(simsPackage);
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Added: {0}", file));
+                    
+                    if (!simsPackage.RootMod) gameInstance = GetSubDirectories(gameInstance, file, simsPackage);
+                    
+                    int incBy = 1;
+                    if (simsPackage.IsDirectory)
+                    {
+                        if (simsPackage.LinkedFiles.Count > 0) incBy += simsPackage.LinkedFiles.Count;
+                        if (simsPackage.LinkedFolders.Count > 0) incBy += simsPackage.LinkedFolders.Count;
+                    }
+                    GlobalVariables.mainWindow.IncrementLoadingScreen(incBy, fi.Name.Replace(".info", ""));
+                });
+                runningTasks.Add(t);
             }
             foreach (string file in Directory.GetFiles(gameInstance.InstanceFolders.InstanceDownloadsFolder))
             {
-                FileInfo f = new(file);
-                SimsDownload simsDownload = ReadDownload(file, f);
-                gameInstance.Files.Add(simsDownload);
-                GlobalVariables.mainWindow.IncrementLoadingScreen(1, f.Name);
+                Task t = Task.Run(() => {
+                    FileInfo f = new(file);
+                    SimsDownload simsDownload = ReadDownload(file, f);
+                    gameInstance.Files.Add(simsDownload);
+                    GlobalVariables.mainWindow.IncrementLoadingScreen(1, f.Name.Replace(".info", ""));
+                });
+                runningTasks.Add(t);
             }   
+
+            while (runningTasks.Any(x => !x.IsCompleted))
+            {
+                
+            }
             return gameInstance;      
         }
 
@@ -484,11 +520,29 @@ namespace SimsCCManager.Globals
                             }
                         } else
                         {
-                            subpackage.IsDirectory = true;
+                            subpackage.IsDirectory = false;
                             subpackage.StandAlone = false; 
                             subpackage.FileName = fi.Name;
                             subpackage.Game = gameInstance.GameChoice;
+                            switch (subpackage.Game)
+                            {
+                                case SimsGames.Sims2:
+                                subpackage.Sims2Data = new();
+                                break;
+                                case SimsGames.Sims3:
+                                subpackage.Sims3Data = new();
+                                break;
+                                case SimsGames.Sims4:
+                                subpackage.Sims4Data = new();
+                                break;
+                            }
                             subpackage.Location = file;
+                            if (File.Exists(subpackage.Location))
+                            {
+                                SimsPackageReader simsPackageReader = new();
+                                simsPackageReader.ReadPackage(subpackage.Location);
+                                subpackage.PackageData = simsPackageReader.SimsData;
+                            }
                             subpackage.DateAdded = DateTime.Now;
                             subpackage.DateUpdated = DateTime.Now;
                             subpackage.WriteXML();
@@ -527,6 +581,18 @@ namespace SimsCCManager.Globals
                             subpackage.StandAlone = false; 
                             subpackage.FileName = fi.Name;
                             subpackage.Game = gameInstance.GameChoice;
+                            switch (subpackage.Game)
+                            {
+                                case SimsGames.Sims2:
+                                subpackage.Sims2Data = new();
+                                break;
+                                case SimsGames.Sims3:
+                                subpackage.Sims3Data = new();
+                                break;
+                                case SimsGames.Sims4:
+                                subpackage.Sims4Data = new();
+                                break;
+                            }
                             subpackage.Location = file;
                             subpackage.DateAdded = DateTime.Now;
                             subpackage.DateUpdated = DateTime.Now;
@@ -564,8 +630,18 @@ namespace SimsCCManager.Globals
                     }
                     
                     if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Added: {0}", file));
-                }
-                GlobalVariables.mainWindow.IncrementLoadingScreen(1, fi.Name);
+                    int incBy = 1;
+                    if (simsPackage.IsDirectory)
+                    {
+                        if (simsPackage.LinkedFiles.Count > 0) incBy += simsPackage.LinkedFiles.Count;
+                        if (simsPackage.LinkedFolders.Count > 0) incBy += simsPackage.LinkedFolders.Count;
+                    }
+                    GlobalVariables.mainWindow.IncrementLoadingScreen(incBy, fi.Name.Replace(".info", ""));
+                } else
+                {                    
+                    GlobalVariables.mainWindow.IncrementLoadingScreen(1, fi.Name.Replace(".info", ""));
+                }               
+                
             }
             foreach (string file in Directory.GetDirectories(directory))
             {
@@ -584,7 +660,13 @@ namespace SimsCCManager.Globals
                 
                 gameInstance.Files.Add(simsPackage);
                 if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Added: {0}", file));            
-                GlobalVariables.mainWindow.IncrementLoadingScreen(1, fi.Name);
+                int incBy = 1;
+                if (simsPackage.IsDirectory)
+                {
+                    if (simsPackage.LinkedFiles.Count > 0) incBy += simsPackage.LinkedFiles.Count;
+                    if (simsPackage.LinkedFolders.Count > 0) incBy += simsPackage.LinkedFolders.Count;
+                }
+                GlobalVariables.mainWindow.IncrementLoadingScreen(incBy, fi.Name.Replace(".info", ""));
                 if (!simsPackage.RootMod && simsPackage.StandAlone) gameInstance = GetSubDirectories(gameInstance, file, simsPackage);
             }
             return gameInstance;
@@ -663,14 +745,23 @@ namespace SimsCCManager.Globals
                 }
                 simsPackage.FileName = fi.Name;
                 simsPackage.Game = loadedinstance.GameChoice;
+                switch (simsPackage.Game)
+                {
+                    case SimsGames.Sims2:
+                    simsPackage.Sims2Data = new();
+                    break;
+                    case SimsGames.Sims3:
+                    simsPackage.Sims3Data = new();
+                    break;
+                    case SimsGames.Sims4:
+                    simsPackage.Sims4Data = new();
+                    break;
+                }
                 simsPackage.Location = file;
                 simsPackage.DateAdded = DateTime.Now;
                 simsPackage.DateUpdated = DateTime.Now;
                 simsPackage.WriteXML();
             }
-
-            
-
             return simsPackage;
         }
 
@@ -699,7 +790,28 @@ namespace SimsCCManager.Globals
                 }
                 simsPackage.FileName = fi.Name;
                 simsPackage.Game = loadedinstance.GameChoice;
+                switch (simsPackage.Game)
+                {
+                    case SimsGames.Sims2:
+                    simsPackage.Sims2Data = new();
+                    break;
+                    case SimsGames.Sims3:
+                    simsPackage.Sims3Data = new();
+                    break;
+                    case SimsGames.Sims4:
+                    simsPackage.Sims4Data = new();
+                    break;
+                }
                 simsPackage.Location = file;
+                SimsPackageReader simsPackageReader = new();
+                simsPackageReader.ReadPackage(simsPackage.Location);
+                simsPackage.PackageData = simsPackageReader.SimsData;                
+                if (simsPackageReader.PackageGame != loadedinstance.GameChoice)
+                {
+                    simsPackage.Game = simsPackageReader.PackageGame;
+                    simsPackage.WrongGame = true;
+                }
+                simsPackageReader.Dispose();
                 simsPackage.DateAdded = DateTime.Now;
                 simsPackage.DateUpdated = DateTime.Now;
                 simsPackage.WriteXML();

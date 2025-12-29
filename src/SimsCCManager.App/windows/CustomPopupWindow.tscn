@@ -1,0 +1,91 @@
+[gd_scene load_steps=5 format=3 uid="uid://bvm2atrydtgg6"]
+
+[ext_resource type="Script" uid="uid://w3jk13bva0rk" path="res://windows/CustomPopupWindow.cs" id="1_3s6f3"]
+[ext_resource type="FontFile" uid="uid://bob4v2pndpu0q" path="res://assets/fonts/Convergence/Convergence-Regular.ttf" id="1_7npse"]
+[ext_resource type="Theme" uid="uid://elq77dslte5a" path="res://themes/ManageCategories_buttons.tres" id="2_3s6f3"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_1hsbu"]
+
+[node name="CustomPopupWindow" type="Window" node_paths=PackedStringArray("BGColor", "WindowMessage", "YesButton", "NoButton")]
+oversampling_override = 1.0
+title = "Virtual Files Detected"
+initial_position = 2
+size = Vector2i(415, 235)
+force_native = true
+script = ExtResource("1_3s6f3")
+BGColor = NodePath("MarginContainer/BgColor")
+WindowMessage = NodePath("MarginContainer/MarginContainer/VBoxContainer/HBoxContainer2/RichTextLabel")
+YesButton = NodePath("MarginContainer/MarginContainer/VBoxContainer/HBoxContainer/Yes_Button")
+NoButton = NodePath("MarginContainer/MarginContainer/VBoxContainer/HBoxContainer/No_Button")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="BgColor" type="ColorRect" parent="MarginContainer"]
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 15
+theme_override_constants/margin_top = 15
+theme_override_constants/margin_right = 15
+theme_override_constants/margin_bottom = 15
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/MarginContainer"]
+layout_mode = 2
+
+[node name="HBoxContainer2" type="VBoxContainer" parent="MarginContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="RichTextLabel" type="RichTextLabel" parent="MarginContainer/MarginContainer/VBoxContainer/HBoxContainer2"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_colors/default_color = Color(0, 0, 0, 1)
+theme_override_fonts/normal_font = ExtResource("1_7npse")
+text = "SCCM did not close cleanly, and residual virtual files have been detected in Sims folders. 
+
+Do you want to clear these files now?
+
+(Uncleared files can cause issues running the game!)"
+
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer/MarginContainer/VBoxContainer/HBoxContainer2"]
+visible = false
+layout_mode = 2
+size_flags_horizontal = 8
+
+[node name="Label" type="Label" parent="MarginContainer/MarginContainer/VBoxContainer/HBoxContainer2/MarginContainer"]
+layout_mode = 2
+size_flags_horizontal = 8
+theme_override_colors/font_color = Color(0.1955201, 0.4599418, 0.7154591, 1)
+theme_override_fonts/font = ExtResource("1_7npse")
+theme_override_font_sizes/font_size = 13
+text = "More information"
+horizontal_alignment = 2
+
+[node name="Button" type="Button" parent="MarginContainer/MarginContainer/VBoxContainer/HBoxContainer2/MarginContainer"]
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxEmpty_1hsbu")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_1hsbu")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_1hsbu")
+theme_override_styles/disabled = SubResource("StyleBoxEmpty_1hsbu")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_1hsbu")
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+alignment = 1
+
+[node name="Yes_Button" type="Button" parent="MarginContainer/MarginContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+theme = ExtResource("2_3s6f3")
+text = "OK"
+
+[node name="No_Button" type="Button" parent="MarginContainer/MarginContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+theme = ExtResource("2_3s6f3")
+text = "No"

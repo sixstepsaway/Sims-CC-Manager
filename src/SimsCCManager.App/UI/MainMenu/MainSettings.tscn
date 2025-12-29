@@ -12,7 +12,7 @@
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_uk27k"]
 bg_color = Color(0.6, 0.6, 0.6, 0.529412)
 
-[node name="MainSettings" type="MarginContainer" node_paths=PackedStringArray("BackgroundNode", "Labels", "ThemeOptions", "DebugModeCheck", "RestrictCPUCheck", "LoadLatestCheck", "ShowTaliCheck", "CloseSettingsButton", "AddTheme", "DeleteTheme")]
+[node name="MainSettings" type="MarginContainer" node_paths=PackedStringArray("BackgroundNode", "Labels", "ThemeOptions", "DebugModeCheck", "PortableModeCheck", "RestrictCPUCheck", "LoadLatestCheck", "ShowTaliCheck", "CloseSettingsButton", "AddTheme", "DeleteTheme")]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -26,6 +26,7 @@ BackgroundNode = NodePath("MarginContainer/MarginContainer2/Background")
 Labels = [NodePath("MarginContainer/VBoxContainer/HBoxContainer2/Label"), NodePath("MarginContainer/VBoxContainer/DebugMode_Setting/DebugMode_Label"), NodePath("MarginContainer/VBoxContainer/RestrictCPU_Setting/RestrictCPU_Label"), NodePath("MarginContainer/VBoxContainer/AutomaticallyLoadLatestInstance_Setting/AutomaticallyLoadLatestInstance_Label"), NodePath("MarginContainer/VBoxContainer/ShowTali_Setting/ShowTali_Label")]
 ThemeOptions = NodePath("MarginContainer/VBoxContainer/HBoxContainer2/OptionButton")
 DebugModeCheck = NodePath("MarginContainer/VBoxContainer/DebugMode_Setting/DebugMode_Check")
+PortableModeCheck = NodePath("MarginContainer/VBoxContainer/PortableMode_Setting/PortableMode_Check")
 RestrictCPUCheck = NodePath("MarginContainer/VBoxContainer/RestrictCPU_Setting/RestrictCPU_Check")
 LoadLatestCheck = NodePath("MarginContainer/VBoxContainer/AutomaticallyLoadLatestInstance_Setting/AutomaticallyLoadLatestInstance_Check")
 ShowTaliCheck = NodePath("MarginContainer/VBoxContainer/ShowTali_Setting/ShowTali_Check")
@@ -94,6 +95,16 @@ layout_mode = 2
 text = "Debug Mode"
 
 [node name="DebugMode_Check" parent="MarginContainer/VBoxContainer/DebugMode_Setting" instance=ExtResource("3_vatd5")]
+layout_mode = 2
+
+[node name="PortableMode_Setting" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="PortableMode_Label" type="Label" parent="MarginContainer/VBoxContainer/PortableMode_Setting"]
+layout_mode = 2
+text = "Portable Mode"
+
+[node name="PortableMode_Check" parent="MarginContainer/VBoxContainer/PortableMode_Setting" instance=ExtResource("3_vatd5")]
 layout_mode = 2
 
 [node name="RestrictCPU_Setting" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]

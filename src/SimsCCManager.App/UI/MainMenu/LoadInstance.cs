@@ -175,9 +175,17 @@ public partial class LoadInstance : MarginContainer
 
         if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Loaded instance {0}. Current profile: {1}", gameInstance.InstanceName, gameInstance.LoadedProfile.ProfileName));
 
-        List<string> files = Directory.EnumerateFiles(gameInstance.InstanceFolders.InstancePackagesFolder, "*.*", SearchOption.AllDirectories).ToList();
+        List<string> files = Directory.EnumerateFiles(gameInstance.InstanceFolders.InstancePackagesFolder, "*.*", SearchOption.AllDirectories).Where(x => x.Contains(".package") || x.Contains(".ts4script")).ToList();
+        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Found {0} files to be read into grid.", files.Count));
         List<string> downloadfiles = Directory.EnumerateFiles(gameInstance.InstanceFolders.InstanceDownloadsFolder, "*.*", SearchOption.AllDirectories).ToList();
-        int pbarmax = files.Count + downloadfiles.Count + 50;
+        
+        int fileCount = files.Count;
+        int dFileCount = downloadfiles.Count;
+        
+        int pbarmax = fileCount + 30;
+
+        
+
 
 
         GlobalVariables.mainWindow.LoadingPackageDisplayStart(pbarmax);
@@ -189,11 +197,6 @@ public partial class LoadInstance : MarginContainer
             GlobalVariables.mainWindow.IncrementLoadingScreen(10, "Loading packages...");    
             pbarval += 10;
             gameInstance = InstanceControllers.LoadInstanceFiles(gameInstance);
-            for (int i = pbarval; i < 100; i++)
-            {
-                Thread.Sleep(10);
-                GlobalVariables.mainWindow.IncrementLoadingScreen(i, "Final checks...");
-            }             
             CallDeferred(nameof(FinishLoading));
         }){IsBackground = true}.Start();
     }

@@ -1,4 +1,4 @@
-[gd_scene load_steps=25 format=3 uid="uid://dsflv6ica77kt"]
+[gd_scene load_steps=23 format=3 uid="uid://dsflv6ica77kt"]
 
 [ext_resource type="Script" uid="uid://crjixgpgv7u48" path="res://windows/MainWindow.cs" id="1_88poc"]
 [ext_resource type="PackedScene" uid="uid://bnwk8hgw5n5uj" path="res://windows/SplashScreen.tscn" id="2_44weo"]
@@ -15,7 +15,6 @@
 [ext_resource type="Texture2D" uid="uid://bwpht08dh3nma" path="res://assets/images/tumblr_4096_black-1914164580.png" id="9_vc3gp"]
 [ext_resource type="Texture2D" uid="uid://bchdaw51l2qxm" path="res://assets/images/itch-io-icon-md-2372909491.png" id="11_6646j"]
 [ext_resource type="FontFile" uid="uid://bob4v2pndpu0q" path="res://assets/fonts/Convergence/Convergence-Regular.ttf" id="16_bw2rg"]
-[ext_resource type="PackedScene" uid="uid://co0gkpc2bm4hh" path="res://tools/snapshotter/snapshotter.tscn" id="17_bw2rg"]
 [ext_resource type="Theme" uid="uid://elq77dslte5a" path="res://themes/ManageCategories_buttons.tres" id="17_ok2fl"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_uic8o"]
@@ -37,10 +36,7 @@ ProgressBar/styles/fill = SubResource("StyleBoxTexture_26dce")
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_1hsbu"]
 
-[sub_resource type="ViewportTexture" id="ViewportTexture_bw2rg"]
-viewport_path = NodePath("SubViewport")
-
-[node name="MainWindow" type="MarginContainer" node_paths=PackedStringArray("SocialsButtons", "Labels", "MainColors", "Footer", "FooterVersionLabel", "FooterStateLabel", "FDPopupWindow", "FDMoreInfoButton", "FDYesButton", "FDNoButton", "snapshotter")]
+[node name="MainWindow" type="MarginContainer" node_paths=PackedStringArray("SocialsButtons", "Labels", "MainColors", "Footer", "FooterVersionLabel", "FooterStateLabel", "FDPopupWindow", "FDMoreInfoButton", "FDYesButton", "FDNoButton")]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -64,7 +60,6 @@ FDPopupWindow = NodePath("Window")
 FDMoreInfoButton = NodePath("Window/MarginContainer/MarginContainer/VBoxContainer/HBoxContainer2/MarginContainer/Button")
 FDYesButton = NodePath("Window/MarginContainer/MarginContainer/VBoxContainer/HBoxContainer/Yes_Button")
 FDNoButton = NodePath("Window/MarginContainer/MarginContainer/VBoxContainer/HBoxContainer/No_Button")
-snapshotter = NodePath("Window2/Snapshotter")
 
 [node name="Footer" type="MarginContainer" parent="."]
 layout_mode = 2
@@ -302,24 +297,6 @@ text = "Yes"
 layout_mode = 2
 theme = ExtResource("17_ok2fl")
 text = "No"
-
-[node name="SubViewport" type="SubViewport" parent="."]
-
-[node name="Window2" type="Window" parent="."]
-oversampling_override = 1.0
-position = Vector2i(40, 100)
-size = Vector2i(512, 512)
-
-[node name="Snapshotter" parent="Window2" instance=ExtResource("17_bw2rg")]
-
-[node name="TextureRect" type="TextureRect" parent="Window2"]
-visible = false
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-texture = SubResource("ViewportTexture_bw2rg")
 
 [editable path="Footer/FooterInternalMargins/SocialsButtons/TwitterButton"]
 [editable path="Footer/FooterInternalMargins/SocialsButtons/KofiButton"]

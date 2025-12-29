@@ -1,0 +1,207 @@
+[gd_scene load_steps=12 format=3 uid="uid://bni0s53myiito"]
+
+[ext_resource type="Texture2D" uid="uid://lkd4nvq2po11" path="res://assets/images/floorATSmiscbrick001a.package_0.jpg" id="1_llw8o"]
+[ext_resource type="Script" uid="uid://cq0xvl01tqig2" path="res://UI/PackageDisplay/ThumbnailGrid/ThumbnailGridItem.cs" id="1_yyji0"]
+[ext_resource type="Texture2D" uid="uid://d08ycpo6imm84" path="res://assets/images/s2.png" id="2_p8wmr"]
+[ext_resource type="Texture2D" uid="uid://cdnxqocgy3qn0" path="res://assets/images/s3.png" id="3_60qeh"]
+[ext_resource type="Texture2D" uid="uid://bvsroafqogyd0" path="res://assets/images/s4.png" id="4_kublc"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_xe552"]
+bg_color = Color(0.6, 0.6, 0.6, 0)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_7lf2g"]
+corner_radius_top_left = 15
+corner_radius_top_right = 15
+corner_radius_bottom_right = 15
+corner_radius_bottom_left = 15
+
+[sub_resource type="ViewportTexture" id="ViewportTexture_yyji0"]
+viewport_path = NodePath("VBoxContainer/ThumbnailImage_RenderVersion/Panel/SubViewport")
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_or5p8"]
+bg_color = Color(0.6, 0.6, 0.6, 0)
+border_width_left = 5
+border_width_top = 5
+border_width_right = 5
+border_width_bottom = 5
+border_color = Color(1, 1, 1, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_yyji0"]
+bg_color = Color(0.6, 0.6, 0.6, 0)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 1, 1, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_yyji0"]
+
+[node name="ThumbGridItem" type="MarginContainer" node_paths=PackedStringArray("ThumbnailSubviewerVersion", "ThumbnailImageVersion", "SelectedBox", "HoveredBox", "ItemName", "BorderColorRect", "BGColorRect", "SelectedColorRect", "HoveredColorRect", "ImageContainer", "SubviewportContainer", "subViewport", "ThumbnailImage", "button")]
+custom_minimum_size = Vector2(150, 170)
+script = ExtResource("1_yyji0")
+ThumbnailSubviewerVersion = NodePath("VBoxContainer/ThumbnailImage_RenderVersion")
+ThumbnailImageVersion = NodePath("VBoxContainer/ThumbnailImage_JPGVersion")
+SelectedBox = NodePath("IsSelected")
+HoveredBox = NodePath("IsHovered")
+ItemName = NodePath("VBoxContainer/MarginContainer2/Label")
+BorderColorRect = NodePath("Panel2/ItemBorder")
+BGColorRect = NodePath("Panel/ItemBackground")
+SelectedColorRect = NodePath("IsSelected/Panel/SelectedColor")
+HoveredColorRect = NodePath("IsHovered/Panel/HoveredColor")
+ImageContainer = NodePath("VBoxContainer/ThumbnailImage_JPGVersion")
+SubviewportContainer = NodePath("VBoxContainer/ThumbnailImage_RenderVersion")
+Sims2Image = ExtResource("2_p8wmr")
+Sims3Image = ExtResource("3_60qeh")
+Sims4Image = ExtResource("4_kublc")
+subViewport = NodePath("VBoxContainer/ThumbnailImage_RenderVersion/Panel/SubViewport")
+ThumbnailImage = NodePath("VBoxContainer/ThumbnailImage_JPGVersion/Panel/ThumbnailImage")
+button = NodePath("Button")
+
+[node name="Panel" type="Panel" parent="."]
+clip_children = 1
+layout_mode = 2
+
+[node name="ItemBackground" type="ColorRect" parent="Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.47007585, 0.47007585, 0.47007585, 1)
+
+[node name="Panel2" type="Panel" parent="."]
+clip_children = 1
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_xe552")
+
+[node name="ItemBorder" type="ColorRect" parent="Panel2"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.8132577, 0.8132577, 0.81325763, 1)
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="ThumbnailImage_JPGVersion" type="MarginContainer" parent="VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="Panel" type="Panel" parent="VBoxContainer/ThumbnailImage_JPGVersion"]
+clip_children = 1
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_7lf2g")
+
+[node name="ThumbnailImage" type="TextureRect" parent="VBoxContainer/ThumbnailImage_JPGVersion/Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("1_llw8o")
+expand_mode = 3
+
+[node name="ThumbnailImage_RenderVersion" type="MarginContainer" parent="VBoxContainer"]
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="Panel" type="Panel" parent="VBoxContainer/ThumbnailImage_RenderVersion"]
+clip_children = 1
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_7lf2g")
+
+[node name="ThumbnailImage" type="TextureRect" parent="VBoxContainer/ThumbnailImage_RenderVersion/Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = SubResource("ViewportTexture_yyji0")
+expand_mode = 3
+
+[node name="SubViewport" type="SubViewport" parent="VBoxContainer/ThumbnailImage_RenderVersion/Panel"]
+
+[node name="MarginContainer2" type="MarginContainer" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_top = -5
+theme_override_constants/margin_right = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="Label" type="Label" parent="VBoxContainer/MarginContainer2"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 8
+text = "Item Name"
+horizontal_alignment = 1
+vertical_alignment = 1
+text_overrun_behavior = 3
+
+[node name="IsSelected" type="MarginContainer" parent="."]
+visible = false
+layout_mode = 2
+
+[node name="Panel" type="Panel" parent="IsSelected"]
+clip_children = 1
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_or5p8")
+
+[node name="SelectedColor" type="ColorRect" parent="IsSelected/Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="IsHovered" type="MarginContainer" parent="."]
+layout_mode = 2
+
+[node name="Panel" type="Panel" parent="IsHovered"]
+clip_children = 1
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_yyji0")
+
+[node name="HoveredColor" type="ColorRect" parent="IsHovered/Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Button" type="Button" parent="."]
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxEmpty_yyji0")
+theme_override_styles/normal_mirrored = SubResource("StyleBoxEmpty_yyji0")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_yyji0")
+theme_override_styles/pressed_mirrored = SubResource("StyleBoxEmpty_yyji0")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_yyji0")
+theme_override_styles/hover_mirrored = SubResource("StyleBoxEmpty_yyji0")
+theme_override_styles/hover_pressed = SubResource("StyleBoxEmpty_yyji0")
+theme_override_styles/hover_pressed_mirrored = SubResource("StyleBoxEmpty_yyji0")
+theme_override_styles/disabled = SubResource("StyleBoxEmpty_yyji0")
+theme_override_styles/disabled_mirrored = SubResource("StyleBoxEmpty_yyji0")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_yyji0")

@@ -75,7 +75,7 @@ namespace SimsCCManager.Debugging
                 {
                     locker.ReleaseWriterLock();
                 } 
-                GlobalVariables.mainWindow.WriteGDPrint(statement);
+                if (GlobalVariables.DebugToConsole) GlobalVariables.mainWindow.WriteGDPrint(statement);
         }
 
         private static void JustWrite(string statement)
@@ -91,7 +91,7 @@ namespace SimsCCManager.Debugging
                 {
                     locker.ReleaseWriterLock();
                 } 
-                GlobalVariables.mainWindow.WriteGDPrint(statement);
+                if (GlobalVariables.DebugToConsole) GlobalVariables.mainWindow.WriteGDPrint(statement);
         }
 
         private static void CreateLog(string statement, string lineNumber, string filepath)
@@ -113,7 +113,7 @@ namespace SimsCCManager.Debugging
                 {
                     locker.ReleaseWriterLock();
                 }
-                GlobalVariables.mainWindow.WriteGDPrint(statement);
+                if (GlobalVariables.DebugToConsole) GlobalVariables.mainWindow.WriteGDPrint(statement);
         }
     
         public static void WriteExceptionReport(StringBuilder statement){

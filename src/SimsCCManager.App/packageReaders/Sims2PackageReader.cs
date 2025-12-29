@@ -1,17 +1,23 @@
 using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
+using System.Drawing;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Numerics;
 using System.Runtime.ExceptionServices;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks.Dataflow;
 using System.Xml;
 using System.Xml.Linq;
 using System.Xml.Serialization;
+using System.Xml.XPath;
 using MoreLinq.Extensions;
 using SimsCCManager.Containers;
 using SimsCCManager.Debugging;
@@ -309,55 +315,78 @@ namespace SimsCCManager.PackageReaders
             new FunctionSortList(){FlagNum = 1, FunctionSubsortNum = 40, Category = "Pools"},
             new FunctionSortList(){FlagNum = 8, FunctionSubsortNum = 8, Category = "Gates"},
             new FunctionSortList(){FlagNum = 1, FunctionSubsortNum = 800, Category = "Elevator"},
-            new FunctionSortList(){Category = "Wall", Subcategory = "Wallpaper"}//,
-            //new FunctionSortList(){Category = "Wall", Subcategory = "Paneling"},
-            //new FunctionSortList(){Category = "Wall", Subcategory = "Brick"},
-            //new FunctionSortList(){Category = "Wall", Subcategory = "Masonry"},
-            //new FunctionSortList(){Category = "Wall", Subcategory = "Siding"},
-            //new FunctionSortList(){Category = "Wall", Subcategory = "Poured"},
-            //new FunctionSortList(){Category = "Wall", Subcategory = "Paint"},
-            //new FunctionSortList(){Category = "Wall", Subcategory = "Tile"},
-            //new FunctionSortList(){Category = "Wall", Subcategory = "Poured"},
-            //new FunctionSortList(){Category = "Wall", Subcategory = "Poured"},
-            //new FunctionSortList(){Category = "Wall", Subcategory = "Misc"}
+            new FunctionSortList(){Category = "Wall", Subcategory = "Wallpaper"},
+            new FunctionSortList(){Category = "Wall", Subcategory = "Paneling"},
+            new FunctionSortList(){Category = "Wall", Subcategory = "Brick"},
+            new FunctionSortList(){Category = "Wall", Subcategory = "Masonry"},
+            new FunctionSortList(){Category = "Wall", Subcategory = "Siding"},
+            new FunctionSortList(){Category = "Wall", Subcategory = "Poured"},
+            new FunctionSortList(){Category = "Wall", Subcategory = "Paint"},
+            new FunctionSortList(){Category = "Wall", Subcategory = "Tile"},
+            new FunctionSortList(){Category = "Wall", Subcategory = "Poured"},
+            new FunctionSortList(){Category = "Wall", Subcategory = "Other"},
+            new FunctionSortList(){Category = "Wall"},
+            new FunctionSortList(){Category = "Floor", Subcategory = "Tile"},
+            new FunctionSortList(){Category = "Floor", Subcategory = "Lino"},
+            new FunctionSortList(){Category = "Floor", Subcategory = "Carpet"},
+            new FunctionSortList(){Category = "Floor", Subcategory = "Wood"},
+            new FunctionSortList(){Category = "Floor", Subcategory = "Poured"},
+            new FunctionSortList(){Category = "Floor", Subcategory = "Stone"},
+            new FunctionSortList(){Category = "Floor", Subcategory = "Brick"},
+            new FunctionSortList(){Category = "Floor", Subcategory = "Other"},
+            new FunctionSortList(){Category = "Floor", Subcategory = "0"},
+            new FunctionSortList(){Category = "Floor"},
+            new FunctionSortList(){Category = "TerrainPaint", Subcategory = "Dirt"},
+            new FunctionSortList(){Category = "TerrainPaint", Subcategory = "Gravel"},
+            new FunctionSortList(){Category = "TerrainPaint", Subcategory = "Grass"},
+            new FunctionSortList(){Category = "TerrainPaint"}
         };
-    
+
 
     }
-    public class SimsPackageReader
-    {        
+    public class SimsPackageReader : IDisposable
+    {
         public ISimsData SimsData
         {
-            set { if (PackageGame == SimsGames.Sims2)
+            set
+            {
+                if (PackageGame == SimsGames.Sims2)
                 {
                     Sims2Data = value as Sims2Data;
-                } else if (PackageGame == SimsGames.Sims3)
+                }
+                else if (PackageGame == SimsGames.Sims3)
                 {
                     Sims3Data = value as Sims3Data;
-                } else if (PackageGame == SimsGames.Sims4)
+                }
+                else if (PackageGame == SimsGames.Sims4)
                 {
                     Sims4Data = value as Sims4Data;
-                } else
+                }
+                else
                 {
                     return;
                 }
             }
-            get { if (PackageGame == SimsGames.Sims2)
+            get
+            {
+                if (PackageGame == SimsGames.Sims2)
                 {
                     return Sims2Data;
-                } else if (PackageGame == SimsGames.Sims3)
+                }
+                else if (PackageGame == SimsGames.Sims3)
                 {
                     return Sims3Data;
-                } else
+                }
+                else
                 {
                     return Sims4Data;
                 }
             }
         }
 
-        private Sims2Data Sims2Data;
-        private Sims3Data Sims3Data;
-        private Sims4Data Sims4Data;
+        public Sims2Data Sims2Data;
+        public Sims3Data Sims3Data;
+        public Sims4Data Sims4Data;
 
         public SimsGames PackageGame;
 
@@ -365,11 +394,14 @@ namespace SimsCCManager.PackageReaders
         public string DBPF
         {
             get { return _dbpf; }
-            set { _dbpf = value;
-            if (value == "DBPF")
+            set
+            {
+                _dbpf = value;
+                if (value == "DBPF")
                 {
                     IsBroken = false;
-                } else
+                }
+                else
                 {
                     IsBroken = true;
                 }
@@ -380,29 +412,31 @@ namespace SimsCCManager.PackageReaders
         public uint MinorVersion
         {
             get { return _minorversion; }
-            set { _minorversion = value; 
-            switch (value)
+            set
+            {
+                _minorversion = value;
+                switch (value)
                 {
                     case 1: //minor is 1
                         if (MajorVersion == 1) PackageGame = SimsGames.Sims2;
                         if (MajorVersion == 2) PackageGame = SimsGames.Sims4;
-                    break;
+                        break;
 
                     case 2: // minor is 2
                         if (MajorVersion == 1) PackageGame = SimsGames.Sims2;
-                    break;
-                    
+                        break;
+
                     case 0: //minor is 0
                         switch (MajorVersion)
                         {
                             case 2:
                                 PackageGame = SimsGames.Sims3;
-                            break;
+                                break;
                             case 3:
                                 PackageGame = SimsGames.SimCity5;
-                            break;
+                                break;
                         }
-                    break;
+                        break;
 
                 }
             }
@@ -412,7 +446,7 @@ namespace SimsCCManager.PackageReaders
         public bool IsBroken = false;
         MemoryStream msPackage;
         BinaryReader packagereader;
-        FileInfo fileinfo;
+        public FileInfo fileinfo;
 
         uint IndexMajorVersion;
         uint IndexMinorVersion;
@@ -435,22 +469,23 @@ namespace SimsCCManager.PackageReaders
                 case SimsGames.Sims2:
                     SimsData = new Sims2Data() { FileLocation = file };
                     ReadSims2Package();
-                break;
+                    break;
 
                 case SimsGames.Sims3:
                     SimsData = new Sims3Data() { FileLocation = file };
+
                     ReadSims3Package();
                     //run package reader
-                break;
+                    break;
 
                 case SimsGames.Sims4:
                     SimsData = new Sims4Data() { FileLocation = file };
                     ReadSims4Package();
                     //run package reader
-                break;
+                    break;
 
             }
-            
+
         }
 
 
@@ -473,7 +508,7 @@ namespace SimsCCManager.PackageReaders
         List<IndexEntry> IndexData = new();
 
         public void ReadSims2Package()
-        {            
+        {
             if (MinorVersion == 2) IndexMajorLocation = 24;
             if (MinorVersion == 0) IndexMajorLocation = 32;
             //packagereader.BaseStream.Position = IndexMajorLocation;
@@ -481,24 +516,24 @@ namespace SimsCCManager.PackageReaders
             DateCreated = packagereader.ReadUInt32();
             DateModified = packagereader.ReadUInt32();
             IndexMajorVersion = packagereader.ReadUInt32();
-            
+
             IndexCount = packagereader.ReadUInt32();
-            
+
             IndexOffset = packagereader.ReadUInt32();
-            
+
             IndexSize = packagereader.ReadUInt32();
             //packagereader.BaseStream.Position = IndexMinorLocation;
             HolesCount = packagereader.ReadUInt32();
             HolesOffset = packagereader.ReadUInt32();
             HolesSize = packagereader.ReadUInt32();
 
-            IndexMinorVersion = packagereader.ReadUInt32() -1;
+            IndexMinorVersion = packagereader.ReadUInt32() - 1;
 
             Encoding.UTF8.GetString(packagereader.ReadBytes(32));
 
             //move to the index location
             packagereader.BaseStream.Position = ChunkOffset + IndexOffset;
-            if (IndexCount == 0) 
+            if (IndexCount == 0)
             {
                 IsBroken = true;
                 if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("File {0} has 0 index entries. Broken. Returning.", fileinfo.Name));
@@ -509,26 +544,29 @@ namespace SimsCCManager.PackageReaders
 
             for (int i = 0; i < IndexCount; i++)
             {
-                
+
                 IndexEntry holderEntry = new IndexEntry();
                 holderEntry.TypeID = packagereader.ReadUInt32().ToString("X8");
-                
+
                 holderEntry.GroupID = packagereader.ReadUInt32().ToString("X8");
                 holderEntry.InstanceID = packagereader.ReadUInt32().ToString("X8");
-                
+
                 InstanceIDs.Add(holderEntry.InstanceID.ToString());
-                
-                if ((IndexMajorVersion == 7) && (IndexMinorVersion == 1)) {
+
+                if ((IndexMajorVersion == 7) && (IndexMinorVersion == 1))
+                {
                     holderEntry.InstanceID2 = packagereader.ReadUInt32().ToString("X8");
-                } else {
+                }
+                else
+                {
                     holderEntry.InstanceID2 = "00000000";
                 }
                 holderEntry.Offset = packagereader.ReadUInt32();
-                
+
                 holderEntry.FileSize = packagereader.ReadUInt32();
-                
-                holderEntry.TrueSize = 0;
-                
+
+                holderEntry.UncompressedSize = 0;
+
                 holderEntry.IsCompressed = false;
 
                 holderEntry.EntryIDX = i;
@@ -536,13 +574,14 @@ namespace SimsCCManager.PackageReaders
                 IndexData.Add(holderEntry);
 
                 //if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0}", holderEntry.ToString()));
-                
+
             }
 
 
 
             //read types
-            if (IndexData.Exists(x => x.EntryType == "DIR")){
+            if (IndexData.Exists(x => x.EntryType == "DIR"))
+            {
                 List<IndexEntry> dirs = IndexData.Where(x => x.EntryType == "DIR").ToList();
                 foreach (IndexEntry dir in dirs)
                 {
@@ -554,10 +593,10 @@ namespace SimsCCManager.PackageReaders
                     {
                         NumRecords = dir.FileSize / 20;
                     }
-                    else 
+                    else
                     {
                         NumRecords = dir.FileSize / 16;
-                    } 
+                    }
 
                     for (int i = 0; i < NumRecords; i++)
                     {
@@ -569,82 +608,259 @@ namespace SimsCCManager.PackageReaders
                         holderEntry.InstanceID = packagereader.ReadUInt32().ToString("X8");
                         InstanceIDs.Add(holderEntry.InstanceID.ToString());
                         if (IndexMajorVersion == 7 && IndexMinorVersion == 1) holderEntry.InstanceID2 = packagereader.ReadUInt32().ToString("X8");
-                        myFilesize = packagereader.ReadUInt32();                        
-         
+                        myFilesize = packagereader.ReadUInt32();
+
                         if (IndexData.Any(x => x.CompleteID == holderEntry.CompleteID))
                         {
                             IndexEntry entry = IndexData.First(x => x.CompleteID == holderEntry.CompleteID);
-                            if (IndexMajorVersion == 7 && IndexMinorVersion == 1)
-                            {
-                                if (entry.InstanceID2 == holderEntry.InstanceID2)
-                                {
-                                    entry.IsCompressed = true;
-                                    entry.FileSize = myFilesize;
-                                }
-                            } else
-                            {
-                                entry.IsCompressed = true;
-                                entry.TrueSize = myFilesize;
-                            }
-                            //if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("File {0}, Entry from records: {1}", fileinfo.Name, entry.ToString())); 
-                            
-                        }                        
+                            entry.IsCompressed = true;
+                            entry.UncompressedSize = myFilesize;
+                        }
                     }
                 }
             }
 
             ListEntries(IndexData);
 
+
             if (IndexData.Exists(x => x.EntryType == "CTSS"))
             {
                 S2ReadCTSS(IndexData.First(x => x.EntryType == "CTSS"));
-                 
 
-            } else if (IndexData.Exists(x => x.EntryType == "XOBJ"))
+            }
+            else if (IndexData.Exists(x => x.EntryType == "XOBJ"))
             {
                 S2ReadXOBJ(IndexData.First(x => x.EntryType == "XOBJ"));
-                
             }
-
             if (IndexData.Exists(x => x.EntryType == "OBJD"))
             {
                 S2ReadOBJD(IndexData.First(x => x.EntryType == "OBJD"));
             }
-
             if (IndexData.Exists(x => x.EntryType == "GMDC"))
             {
-                S2ReadGMDC(IndexData.First(x => x.EntryType == "GMDC"));
+                int c = 0;
+                foreach (IndexEntry entry in IndexData.Where(x => x.EntryType == "GMDC"))
+                {
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Reading {0} GMDC #{1}", fileinfo.Name, c));
+                    S2ReadGMDC(entry);
+                    c++;
+                }
+
+            }
+            if (IndexData.Exists(x => x.EntryType == "MMAT"))
+            {
+                foreach (IndexEntry entry in IndexData.Where(x => x.EntryType == "MMAT"))
+                {
+                    S2ReadMMAT(entry);
+                }
+            }
+            if (IndexData.Exists(x => x.EntryType == "XFLR"))
+            {
+                foreach (IndexEntry entry in IndexData.Where(x => x.EntryType == "XFLR"))
+                {
+                    S2ReadXFLR(entry);
+                }
             }
 
-            
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("SimsData: {0}", SimsData.ToString()));
-            SimsData.Serialize();
-            
+            if (IndexData.Exists(x => x.EntryType == "TXTR"))
+            {
+                int c = 0;
+                foreach (IndexEntry entry in IndexData.Where(x => x.EntryType == "TXTR"))
+                {
+                    S2ReadTXTR(entry, c);
+                    c++;
+                }
+            }
 
+            if (IndexData.Any(x => x.EntryType == "MMAT") && !IndexData.Any(x => x.EntryType == "GMDC"))
+            {
+                if (SimsData.FunctionSort.Count != 0)
+                {
+                    if (SimsData.FunctionSort[0].Category.Equals("wall", StringComparison.CurrentCultureIgnoreCase) || SimsData.FunctionSort[0].Category.Equals("floor", StringComparison.CurrentCultureIgnoreCase) || SimsData.FunctionSort[0].Category.Equals("terrainpaint", StringComparison.CurrentCultureIgnoreCase))
+                    {
+                        //no
+                    }
+                    else
+                    {
+                        SimsData.Recolor = true;
+                    }
+                }
+                else
+                {
+                    SimsData.Recolor = true;
+                }
+
+            }
+            else if (IndexData.Any(x => x.EntryType == "GMDC"))
+            {
+                SimsData.Mesh = true;
+            }
+
+            if (Sims2Data.MMATDataBlock.Count != 0)
+            {
+                //if (string.IsNullOrEmpty(Sims2Data.GUID)) Sims2Data.GUID = Sims2Data.MMATDataBlock[0].ObjectGUID;
+                if (!string.IsNullOrEmpty(Sims2Data.MMATDataBlock[0]?.ObjectGUID) && (string.IsNullOrEmpty(Sims2Data.GUID) || Sims2Data.GUID == "N/a")) Sims2Data.GUID = Sims2Data.MMATDataBlock[0].ObjectGUID;
+            }
+
+            if (IndexData.Any(x => x.EntryType == "BHAV") && IndexData.Any(x => x.EntryType == "BCON") && IndexData.Any(x => x.EntryType == "TTAB") && IndexData.Any(x => x.EntryType == "OBJf"))
+            {
+                SimsData.Mesh = false;
+                SimsData.Recolor = false;
+                SimsData.GameMod = true;
+            }
+
+            SimsData.IndexEntries = IndexData;
+
+
+            //if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("SimsData: {0}", SimsData.ToString()));
+            //SimsData.Serialize();
+        }
+
+
+
+        public void S2ReadTXTR(IndexEntry entry, int txtrc)
+        {
+            S2ReadTXTRChunk txtr;
+
+            packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
+            int cFileSize = packagereader.ReadInt32();
+            string cTypeID = packagereader.ReadUInt16().ToString("X4");
+            if (cTypeID == "FB10")
+            {
+                byte[] tempBytes = packagereader.ReadBytes(3);
+                uint cFullSize = Sims2EntryReaders.QFSLengthToInt(tempBytes);
+                DecryptByteStream decompressed = new DecryptByteStream(Sims2EntryReaders.Uncompress(packagereader.ReadBytes(cFileSize), cFullSize, 0));
+                txtr = new(decompressed, fileinfo, txtrc);
+
+            }
+            else
+            {
+                packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
+                txtr = new(packagereader, fileinfo, txtrc);
+            }
+            (SimsData as Sims2Data).TXTRDataBlock.Add(txtr.TXTRData);
+            if (!string.IsNullOrEmpty(txtr.TXTRData.GUID) && (string.IsNullOrEmpty(Sims2Data.GUID) || Sims2Data.GUID == "N/a")) Sims2Data.GUID = txtr.TXTRData.GUID;
 
         }
+        public void S2ReadXFLR(IndexEntry entry)
+        {
+            S2ReadXFLRChunk xflr = new();
+
+            packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
+            int cFileSize = packagereader.ReadInt32();
+            string cTypeID = packagereader.ReadUInt16().ToString("X4");
+            if (cTypeID == "FB10")
+            {
+                byte[] tempBytes = packagereader.ReadBytes(3);
+                uint cFullSize = Sims2EntryReaders.QFSLengthToInt(tempBytes);
+                string cpfTypeID = packagereader.ReadUInt32().ToString("X8");
+                if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
+                {
+                    xflr = new(packagereader);
+                }
+                else
+                {
+                    packagereader.BaseStream.Position = ChunkOffset + entry.Offset + 9;
+                    DecryptByteStream decompressed = new DecryptByteStream(Sims2EntryReaders.Uncompress(packagereader.ReadBytes(cFileSize), cFullSize, 0));
+                    if (cpfTypeID == "E750E0E2")
+                    {
+                        // Read first four bytes
+                        cpfTypeID = decompressed.ReadUInt32().ToString("X8");
+                        if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
+                        {
+                            xflr = new(decompressed);
+                        }
+                    }
+                    else
+                    {
+                        xflr = new(decompressed, true);
+                    }
+                }
+            }
+
+            (SimsData as Sims2Data).XFLRDataBlock = xflr.XFLRData;
+            if (xflr.XFLRData.Type == "terrainPaint")
+            {
+                if (Sims2PackageStatics.Sims2BuildFunctionSortList.Any(x => x.Category.Equals(xflr.XFLRData.Type, StringComparison.CurrentCultureIgnoreCase) && x.Subcategory.Equals(xflr.XFLRData.SoundSuffix, StringComparison.CurrentCultureIgnoreCase)))
+                {
+                    (SimsData as Sims2Data).FunctionSort.Add(Sims2PackageStatics.Sims2BuildFunctionSortList.First(x => x.Category.Equals(xflr.XFLRData.Type, StringComparison.CurrentCultureIgnoreCase) && x.Subcategory.Equals(xflr.XFLRData.SoundSuffix, StringComparison.CurrentCultureIgnoreCase)));
+                }
+                else
+                {
+                    (SimsData as Sims2Data).FunctionSort.Add(new() { Category = "Terrain" });
+                }
+            }
+        }
+
+        public void S2ReadMMAT(IndexEntry entry)
+        {
+            S2ReadMMATChunk mmat = new();
+
+            packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
+            int cFileSize = packagereader.ReadInt32();
+            string cTypeID = packagereader.ReadUInt16().ToString("X4");
+            if (cTypeID == "FB10")
+            {
+                byte[] tempBytes = packagereader.ReadBytes(3);
+                uint cFullSize = Sims2EntryReaders.QFSLengthToInt(tempBytes);
+                string cpfTypeID = packagereader.ReadUInt32().ToString("X8");
+                if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
+                {
+                    mmat = new(packagereader);
+                }
+                else
+                {
+                    packagereader.BaseStream.Position = ChunkOffset + entry.Offset + 9;
+                    DecryptByteStream decompressed = new DecryptByteStream(Sims2EntryReaders.Uncompress(packagereader.ReadBytes(cFileSize), cFullSize, 0));
+                    if (cpfTypeID == "E750E0E2")
+                    {
+                        // Read first four bytes
+                        cpfTypeID = decompressed.ReadUInt32().ToString("X8");
+                        if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
+                        {
+                            mmat = new(decompressed);
+                        }
+                    }
+                    else
+                    {
+                        mmat = new(decompressed, true);
+                    }
+                }
+            }
+
+            (SimsData as Sims2Data).MMATDataBlock.Add(mmat.MMATData);
+        }
+
 
         public void S2ReadGMDC(IndexEntry entry)
         {
             S2ReadGMDCChunk gmdc;
 
             packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
-            int cFileSize = packagereader.ReadInt32();
-            string cTypeID = packagereader.ReadUInt16().ToString("X4");
-            if (cTypeID == "FB10") 
+            if (entry.IsCompressed)
             {
-                byte[] tempBytes = packagereader.ReadBytes(3);
-                uint cFullSize = Sims2EntryReaders.QFSLengthToInt(tempBytes);
-                DecryptByteStream decompressed = new DecryptByteStream(Sims2EntryReaders.Uncompress(packagereader.ReadBytes(cFileSize), cFullSize, 0));
-                gmdc = new(decompressed);
-            } 
-            else 
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0} GMDC is compressed!", fileinfo.Name));
+
+                List<byte> bytes = new();
+                while (packagereader.BaseStream.Length > packagereader.BaseStream.Position)
+                {
+                    bytes.Add(packagereader.ReadByte());
+                }
+
+
+                byte[] decompressedByte = Sims2Tools.DBPF.Utils.Decompressor.Decompress([.. bytes], entry.UncompressedSize * 5);
+
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Normal byte length: {0}, decompressed byte length: {1}", bytes.ToArray().Length, decompressedByte.Length));
+
+
+                BinaryReader binaryReader = new(new MemoryStream(decompressedByte));
+                gmdc = new(binaryReader);
+            }
+            else
             {
-                packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
                 gmdc = new(packagereader);
             }
-            (SimsData as Sims2Data).GMDCDataBlock = gmdc.GMDCData;
-
+            (SimsData as Sims2Data).GMDCDataBlock.Add(gmdc.GMDCData);
         }
 
         public void S2ReadCTSS(IndexEntry entry)
@@ -653,26 +869,26 @@ namespace SimsCCManager.PackageReaders
             packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
             int cFileSize = packagereader.ReadInt32();
             string cTypeID = packagereader.ReadUInt16().ToString("X4");
-            if (cTypeID == "FB10") 
+            if (cTypeID == "FB10")
             {
                 byte[] tempBytes = packagereader.ReadBytes(3);
                 uint cFullSize = Sims2EntryReaders.QFSLengthToInt(tempBytes);
                 DecryptByteStream decompressed = new DecryptByteStream(Sims2EntryReaders.Uncompress(packagereader.ReadBytes(cFileSize), cFullSize, 0));
                 cts = new(decompressed);
-            } 
-            else 
+            }
+            else
             {
                 packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
                 cts = new(packagereader);
             }
             if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("File {0}. CTSS: {1}", fileinfo.Name, cts.ToString()));
             SimsData.Title = cts.Title;
-            SimsData.Description = cts.Description; 
+            SimsData.Description = cts.Description;
         }
 
         public void S2ReadOBJD(IndexEntry entry)
-        {            
-            S2ReadOBJDChunk objd;    
+        {
+            S2ReadOBJDChunk objd;
             packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
             int cFileSize = packagereader.ReadInt32();
             string cTypeID = packagereader.ReadUInt16().ToString("X4");
@@ -682,43 +898,47 @@ namespace SimsCCManager.PackageReaders
                 uint cFullSize = Sims2EntryReaders.QFSLengthToInt(tempBytes);
                 DecryptByteStream decompressed = new DecryptByteStream(Sims2EntryReaders.Uncompress(packagereader.ReadBytes(cFileSize), cFullSize, 0));
                 objd = new(decompressed);
-                
-            } else { 
+
+            }
+            else
+            {
                 packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
                 objd = new(packagereader);
             }
             //if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("File {0}. OBJD: {1}", fileinfo.Name, objd.ToString()));
             SimsData.FunctionSort = objd.FunctionSort;
-            SimsData.GUID = objd.ObjectGUID; 
-            
-
-
+            SimsData.GUID = objd.ObjectGUID;
         }
         public void S2ReadXOBJ(IndexEntry entry)
-        {            
-            S2ReadXOBJChunk xobj = new();    
-            
+        {
+            S2ReadXOBJChunk xobj = new();
+
             packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
             int cFileSize = packagereader.ReadInt32();
             string cTypeID = packagereader.ReadUInt16().ToString("X4");
-            if (cTypeID == "FB10"){
+            if (cTypeID == "FB10")
+            {
                 byte[] tempBytes = packagereader.ReadBytes(3);
                 uint cFullSize = Sims2EntryReaders.QFSLengthToInt(tempBytes);
                 string cpfTypeID = packagereader.ReadUInt32().ToString("X8");
-                if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0")){
+                if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
+                {
                     xobj = new(packagereader);
-                } else {
+                }
+                else
+                {
                     packagereader.BaseStream.Position = ChunkOffset + entry.Offset + 9;
                     DecryptByteStream decompressed = new DecryptByteStream(Sims2EntryReaders.Uncompress(packagereader.ReadBytes(cFileSize), cFullSize, 0));
                     if (cpfTypeID == "E750E0E2")
                     {
                         // Read first four bytes
-                        cpfTypeID = decompressed.ReadUInt32().ToString("X8");                        
-                        if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0")) 
+                        cpfTypeID = decompressed.ReadUInt32().ToString("X8");
+                        if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
                         {
-                            xobj = new(decompressed);                            
-                        } 
-                    } else 
+                            xobj = new(decompressed);
+                        }
+                    }
+                    else
                     {
                         xobj = new(decompressed, true);
                     }
@@ -727,28 +947,33 @@ namespace SimsCCManager.PackageReaders
 
             if (xobj.Category != null)
             {
-                if (Sims2PackageStatics.Sims2BuildFunctionSortList.Any(x => x.Category.Equals(xobj.Type, StringComparison.CurrentCultureIgnoreCase))){
+                if (Sims2PackageStatics.Sims2BuildFunctionSortList.Any(x => x.Category.Equals(xobj.Type, StringComparison.CurrentCultureIgnoreCase)))
+                {
                     SimsData.FunctionSort.Add(Sims2PackageStatics.Sims2BuildFunctionSortList.First(x => x.Category.Equals(xobj.Type, StringComparison.CurrentCultureIgnoreCase)));
-                } 
+                }
             }
             if (xobj.Title != null) SimsData.Title = xobj.Title;
             if (xobj.Description != null) SimsData.Description = xobj.Description;
             if (xobj.Type != null)
             {
-                if (Sims2PackageStatics.Sims2BuildFunctionSortList.Any(x => x.Category.Equals(xobj.Type, StringComparison.CurrentCultureIgnoreCase))){
-                    SimsData.FunctionSort.Add(Sims2PackageStatics.Sims2BuildFunctionSortList.First(x => x.Category.Equals(xobj.Type, StringComparison.CurrentCultureIgnoreCase)));
-                } 
+                if (Sims2PackageStatics.Sims2BuildFunctionSortList.Any(x => x.Category.Equals(xobj.Type, StringComparison.CurrentCultureIgnoreCase) && (x.Subcategory.Equals(xobj.Subsort, StringComparison.CurrentCultureIgnoreCase) || x.Subcategory.Equals(xobj.Subtype, StringComparison.CurrentCultureIgnoreCase))))
+                {
+                    if (!Sims2Data.FunctionSort.Contains(Sims2PackageStatics.Sims2BuildFunctionSortList.First(x => x.Category.Equals(xobj.Type, StringComparison.CurrentCultureIgnoreCase))))
+                    {
+                        SimsData.FunctionSort.Add(Sims2PackageStatics.Sims2BuildFunctionSortList.First(x => x.Category.Equals(xobj.Type, StringComparison.CurrentCultureIgnoreCase)));
+                    }
+                }
             }
             if (xobj.ObjectGUID != null) SimsData.GUID = xobj.ObjectGUID;
-            
 
-            
 
-            
 
-            
-            
-            
+
+
+
+
+
+
 
             //if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("File: {0}, {1}", fileinfo.Name, xobj.ToString()));            
         }
@@ -761,11 +986,11 @@ namespace SimsCCManager.PackageReaders
 
         public void ReadSims3Package()
         {
-            
+            return;
         }
         public void ReadSims4Package()
         {
-            
+            return;
         }
 
 
@@ -795,10 +1020,1001 @@ namespace SimsCCManager.PackageReaders
             return string.Format("{0} is for game {1}", fileinfo.Name, PackageGame);
         }
 
+        public void Dispose()
+        {
+           msPackage.Dispose();
+           packagereader.Dispose();           
+           Sims2Data = new();
+           Sims3Data = new();
+           Sims4Data = new();
+           SimsData = Sims2Data;
+           
+        }
+    }
+
+    public struct S2ReadTXTRChunk
+    {
+        public TXTRData TXTRData = new();
+        public FileInfo file;
+        private List<uint> Mips = new();
+        public S2ReadTXTRChunk(BinaryReader readFile, FileInfo fileInfo, int txtrc)
+        {
+            file = fileInfo;
+            uint CreatorID;
+            uint FormatFlag;
+            readFile.ReadBytes(16);
+            byte namelength = readFile.ReadByte();
+            string blockName = CleanInput(Encoding.UTF8.GetString(readFile.ReadBytes(namelength)));
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("BlockName: {0}", blockName));
+            string BlockID = readFile.ReadUInt32().ToString("X8");
+            uint BlockVersion = readFile.ReadUInt32(); // 7, 8, or 9
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("TXTR BlockName: {0}, Block ID: {1}, Block Version: {2}", blockName, BlockID, BlockVersion));
+            byte resourceIDlength = readFile.ReadByte();
+            string resourceID = CleanInput(Encoding.UTF8.GetString(readFile.ReadBytes(resourceIDlength)));
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("ResourceID: {0}", resourceID));
+            readFile.ReadBytes(8);
+            byte filenamelength = readFile.ReadByte();
+            TXTRData.FullTXTRName = Encoding.UTF8.GetString(readFile.ReadBytes(filenamelength));
+            if (!string.IsNullOrEmpty(TXTRData.TextureName)) if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Full Filename: {0}, Guid: {1}, Texture Name: {2}", TXTRData.FullTXTRName, TXTRData.GUID, TXTRData.TextureName));
+            TXTRData.TextureWidth = readFile.ReadUInt32();
+            TXTRData.TextureHeight = readFile.ReadUInt32();
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Height: {0}, Width: {1}", TXTRData.TextureHeight, TXTRData.TextureWidth));
+            TXTRData.FormatCode = readFile.ReadUInt32();
+            TXTRData.MipMapLevels = readFile.ReadUInt32();
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Image stored as Format {0}, Mipmaps: {1}", TXTRData.FormatCode, TXTRData.MipMapLevels));
+            uint Purpose = readFile.ReadUInt16();
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Purpose: {0}", Purpose));
+            uint unknown2 = readFile.ReadUInt16();
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Unknown2 that should be 3f80,4040,4000: {0}", unknown2.ToString("X4")));
+            uint OuterLoopCount = readFile.ReadUInt32();
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Outer loops: {0}", OuterLoopCount));
+            uint unknown3 = readFile.ReadUInt32();
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("This should be 0: {0}", unknown3));
+            uint InnerLoopCount = 0;
+            if (BlockVersion == 9)
+            {
+                byte repfilename = readFile.ReadByte();
+                string repeatFileName = Encoding.UTF8.GetString(readFile.ReadBytes(repfilename));
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Repeat File Name: {0}", repeatFileName));
+            }
+            for (int o = 0; o < OuterLoopCount; o++)
+            {
+                if (BlockVersion != 9)
+                {
+                    InnerLoopCount = TXTRData.MipMapLevels;
+                }
+                else if (BlockVersion == 9)
+                {
+                    InnerLoopCount = readFile.ReadUInt32();
+                }
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Inner Loops: {0}", InnerLoopCount));
+                for (int i = 0; i < InnerLoopCount; i++)
+                {
+                    byte DataType = readFile.ReadByte();
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("DataType: {0}", DataType));
+                    uint ImageDataSize = 0;
+                    if (DataType == 1)
+                    {
+                        byte len = readFile.ReadByte();
+                        string LIFOfile = Encoding.UTF8.GetString(readFile.ReadBytes(len));
+                    }
+                    else
+                    {
+                        bool mipmaps = false;
+                        //if (TXTRData.MipMapLevels > 1) mipmaps = true;
+                        ImageDataSize = readFile.ReadUInt32();
+                        InterpretMipSize(TXTRData.MipMapLevels);
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Image Data Size: {0}", ImageDataSize));
+                        if (ImageDataSize >= Mips[0])
+                        {
+                            if (TXTRData.FormatCode == 1)
+                            {
+                                TXTRData.Texture = Godot.Image.CreateFromData((int)TXTRData.TextureWidth, (int)TXTRData.TextureHeight, mipmaps, Godot.Image.Format.Rgba8, readFile.ReadBytes((int)ImageDataSize));
+                                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Saved Image (Type: {0}, Name: {1}) to TXTRData. Size: {2}", TXTRData.FormatCode, TXTRData.FullTXTRName, TXTRData.Texture.GetDataSize()));
+                                //texture.SavePng(string.Format("{0}_{1}.dds", fileInfo.FullName, txtrc));                                
+                            }
+                            else if (TXTRData.FormatCode == 2)
+                            {
+                                TXTRData.Texture = Godot.Image.CreateFromData((int)TXTRData.TextureWidth, (int)TXTRData.TextureHeight, mipmaps, Godot.Image.Format.Rgb8, readFile.ReadBytes((int)ImageDataSize));
+                                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Saved Image (Type: {0}, Name: {1}) to TXTRData. Size: {2}", TXTRData.FormatCode, TXTRData.FullTXTRName, TXTRData.Texture.GetDataSize()));
+                                //texture.SavePng(string.Format("{0}_{1}.png", fileInfo.FullName, txtrc));
+                            }
+                            else if (TXTRData.FormatCode == 4)
+                            {
+                                TXTRData.Texture = Godot.Image.CreateFromData((int)TXTRData.TextureWidth, (int)TXTRData.TextureHeight, mipmaps, Godot.Image.Format.Dxt1, readFile.ReadBytes((int)ImageDataSize));
+                                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Saved Image (Type: {0}, Name: {1}) to TXTRData. Size: {2}", TXTRData.FormatCode, TXTRData.FullTXTRName, TXTRData.Texture.GetDataSize()));
+                                //texture.SavePng(string.Format("{0}_{1}.png", fileInfo.FullName, txtrc));
+                            }
+                            else if (TXTRData.FormatCode == 5)
+                            {
+                                TXTRData.Texture = Godot.Image.CreateFromData((int)TXTRData.TextureWidth, (int)TXTRData.TextureHeight, mipmaps, Godot.Image.Format.Dxt3, readFile.ReadBytes((int)ImageDataSize));
+                                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Saved Image (Type: {0}, Name: {1}) to TXTRData. Size: {2}", TXTRData.FormatCode, TXTRData.FullTXTRName, TXTRData.Texture.GetDataSize()));
+                                //texture.SavePng(string.Format("{0}_{1}.png", fileInfo.FullName, txtrc));
+                            }
+                            else if (TXTRData.FormatCode == 6)
+                            {
+                                TXTRData.Texture = Godot.Image.CreateFromData((int)TXTRData.TextureWidth, (int)TXTRData.TextureHeight, mipmaps, Godot.Image.Format.R8, readFile.ReadBytes((int)ImageDataSize));
+                                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Saved Image (Type: {0}, Name: {1}) to TXTRData. Size: {2}", TXTRData.FormatCode, TXTRData.FullTXTRName, TXTRData.Texture.GetDataSize()));
+                                //texture.SavePng(string.Format("{0}_{1}.png", fileInfo.FullName, txtrc));
+                            }
+                            else if (TXTRData.FormatCode == 8)
+                            {
+                                TXTRData.Texture = Godot.Image.CreateFromData((int)TXTRData.TextureWidth, (int)TXTRData.TextureHeight, mipmaps, Godot.Image.Format.Dxt5, readFile.ReadBytes((int)ImageDataSize));
+                                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Saved Image (Type: {0}, Name: {1}) to TXTRData. Size: {2}", TXTRData.FormatCode, TXTRData.FullTXTRName, TXTRData.Texture.GetDataSize()));
+                                //texture.SavePng(string.Format("{0}_{1}.png", fileInfo.FullName, txtrc));
+                            }
+                        }
+                        else
+                        {
+                            readFile.ReadBytes((int)ImageDataSize);
+                        }
+                    }
+                }
+                if (BlockVersion == 7)
+                {
+                    CreatorID = readFile.ReadUInt32();
+                }
+                else
+                {
+                    CreatorID = readFile.ReadUInt32();
+                    FormatFlag = readFile.ReadUInt32();
+                }
+            }
+        }
+        public S2ReadTXTRChunk(DecryptByteStream readFile, FileInfo fileInfo, int txtrc)
+        {
+            file = fileInfo;
+            uint CreatorID;
+            uint FormatFlag;
+            readFile.ReadBytes(16);
+            byte namelength = readFile.ReadByte();
+            string blockName = CleanInput(Encoding.UTF8.GetString(readFile.ReadBytes(namelength)));
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("BlockName: {0}", blockName));
+            string BlockID = readFile.ReadUInt32().ToString("X8");
+            uint BlockVersion = readFile.ReadUInt32(); // 7, 8, or 9
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("TXTR BlockName: {0}, Block ID: {1}, Block Version: {2}", blockName, BlockID, BlockVersion));
+            byte resourceIDlength = readFile.ReadByte();
+            string resourceID = CleanInput(Encoding.UTF8.GetString(readFile.ReadBytes(resourceIDlength)));
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("ResourceID: {0}", resourceID));
+            readFile.ReadBytes(8);
+            byte filenamelength = readFile.ReadByte();
+            TXTRData.FullTXTRName = Encoding.UTF8.GetString(readFile.ReadBytes(filenamelength));
+            if (!string.IsNullOrEmpty(TXTRData.TextureName)) if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Full Filename: {0}, Guid: {1}, Texture Name: {2}", TXTRData.FullTXTRName, TXTRData.GUID, TXTRData.TextureName));
+            TXTRData.TextureWidth = readFile.ReadUInt32();
+            TXTRData.TextureHeight = readFile.ReadUInt32();
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Height: {0}, Width: {1}", TXTRData.TextureHeight, TXTRData.TextureWidth));
+            TXTRData.FormatCode = readFile.ReadUInt32();
+            TXTRData.MipMapLevels = readFile.ReadUInt32();
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Image stored as Format {0}, Mipmaps: {1}", TXTRData.FormatCode, TXTRData.MipMapLevels));
+            uint Purpose = readFile.ReadUInt16();
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Purpose: {0}", Purpose));
+            uint unknown2 = readFile.ReadUInt16();
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Unknown2 that should be 3f80,4040,4000: {0}", unknown2.ToString("X4")));
+            uint OuterLoopCount = readFile.ReadUInt32();
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Outer loops: {0}", OuterLoopCount));
+            uint unknown3 = readFile.ReadUInt32();
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("This should be 0: {0}", unknown3));
+            uint InnerLoopCount = 0;
+            if (BlockVersion == 9)
+            {
+                byte repfilename = readFile.ReadByte();
+                string repeatFileName = Encoding.UTF8.GetString(readFile.ReadBytes(repfilename));
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Repeat File Name: {0}", repeatFileName));
+            }
+            for (int o = 0; o < OuterLoopCount; o++)
+            {
+                if (BlockVersion != 9)
+                {
+                    InnerLoopCount = TXTRData.MipMapLevels;
+                }
+                else if (BlockVersion == 9)
+                {
+                    InnerLoopCount = readFile.ReadUInt32();
+                }
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Inner Loops: {0}", InnerLoopCount));
+                for (int i = 0; i < InnerLoopCount; i++)
+                {
+                    byte DataType = readFile.ReadByte();
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("DataType: {0}", DataType));
+                    uint ImageDataSize = 0;
+                    if (DataType == 1)
+                    {
+                        byte len = readFile.ReadByte();
+                        string LIFOfile = Encoding.UTF8.GetString(readFile.ReadBytes(len));
+                    }
+                    else
+                    {
+                        bool mipmaps = false;
+                        //if (TXTRData.MipMapLevels > 1) mipmaps = true;
+                        ImageDataSize = readFile.ReadUInt32();
+                        InterpretMipSize(TXTRData.MipMapLevels);
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Image Data Size: {0}", ImageDataSize));
+                        if (ImageDataSize >= Mips[0])
+                        {
+                            if (TXTRData.FormatCode == 1)
+                            {
+                                TXTRData.Texture = Godot.Image.CreateFromData((int)TXTRData.TextureWidth, (int)TXTRData.TextureHeight, mipmaps, Godot.Image.Format.Rgba8, readFile.ReadBytes((uint)ImageDataSize));
+                                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Saved Image (Type: {0}, Name: {1}) to TXTRData. Size: {2}", TXTRData.FormatCode, TXTRData.FullTXTRName, TXTRData.Texture.GetDataSize()));
+                                //texture.SavePng(string.Format("{0}_{1}.dds", fileInfo.FullName, txtrc));                                
+                            }
+                            else if (TXTRData.FormatCode == 2)
+                            {
+                                TXTRData.Texture = Godot.Image.CreateFromData((int)TXTRData.TextureWidth, (int)TXTRData.TextureHeight, mipmaps, Godot.Image.Format.Rgb8, readFile.ReadBytes((uint)ImageDataSize));
+                                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Saved Image (Type: {0}, Name: {1}) to TXTRData. Size: {2}", TXTRData.FormatCode, TXTRData.FullTXTRName, TXTRData.Texture.GetDataSize()));
+                                //texture.SavePng(string.Format("{0}_{1}.png", fileInfo.FullName, txtrc));
+                            }
+                            else if (TXTRData.FormatCode == 4)
+                            {
+                                TXTRData.Texture = Godot.Image.CreateFromData((int)TXTRData.TextureWidth, (int)TXTRData.TextureHeight, mipmaps, Godot.Image.Format.Dxt1, readFile.ReadBytes((uint)ImageDataSize));
+                                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Saved Image (Type: {0}, Name: {1}) to TXTRData. Size: {2}", TXTRData.FormatCode, TXTRData.FullTXTRName, TXTRData.Texture.GetDataSize()));
+                                //texture.SavePng(string.Format("{0}_{1}.png", fileInfo.FullName, txtrc));
+                            }
+                            else if (TXTRData.FormatCode == 5)
+                            {
+                                TXTRData.Texture = Godot.Image.CreateFromData((int)TXTRData.TextureWidth, (int)TXTRData.TextureHeight, mipmaps, Godot.Image.Format.Dxt3, readFile.ReadBytes((uint)ImageDataSize));
+                                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Saved Image (Type: {0}, Name: {1}) to TXTRData. Size: {2}", TXTRData.FormatCode, TXTRData.FullTXTRName, TXTRData.Texture.GetDataSize()));
+                                //texture.SavePng(string.Format("{0}_{1}.png", fileInfo.FullName, txtrc));
+                            }
+                            else if (TXTRData.FormatCode == 6)
+                            {
+                                TXTRData.Texture = Godot.Image.CreateFromData((int)TXTRData.TextureWidth, (int)TXTRData.TextureHeight, mipmaps, Godot.Image.Format.R8, readFile.ReadBytes((uint)ImageDataSize));
+                                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Saved Image (Type: {0}, Name: {1}) to TXTRData. Size: {2}", TXTRData.FormatCode, TXTRData.FullTXTRName, TXTRData.Texture.GetDataSize()));
+                                //texture.SavePng(string.Format("{0}_{1}.png", fileInfo.FullName, txtrc));
+                            }
+                            else if (TXTRData.FormatCode == 8)
+                            {
+                                TXTRData.Texture = Godot.Image.CreateFromData((int)TXTRData.TextureWidth, (int)TXTRData.TextureHeight, mipmaps, Godot.Image.Format.Dxt5, readFile.ReadBytes((uint)ImageDataSize));
+                                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Saved Image (Type: {0}, Name: {1}) to TXTRData. Size: {2}", TXTRData.FormatCode, TXTRData.FullTXTRName, TXTRData.Texture.GetDataSize()));
+                                //texture.SavePng(string.Format("{0}_{1}.png", fileInfo.FullName, txtrc));
+                            }
+                        }
+                        else
+                        {
+                            readFile.ReadBytes((uint)ImageDataSize);
+                        }
+
+                    }
+                }
+                if (BlockVersion == 7)
+                {
+                    CreatorID = readFile.ReadUInt32();
+                }
+                else
+                {
+                    CreatorID = readFile.ReadUInt32();
+                    FormatFlag = readFile.ReadUInt32();
+                }
+            }
+        }
+
+
+        public void InterpretMipSize(uint mips)
+        {
+            Mips = new();
+            //uint size = 0;
+            uint fullSize = 0;
+            //int division = 0;
+
+            if (TXTRData.FormatCode == 1)
+            {
+                fullSize = TXTRData.TextureWidth * TXTRData.TextureHeight * 4;
+            }
+            else if (TXTRData.FormatCode == 2)
+            {
+                fullSize = TXTRData.TextureWidth * TXTRData.TextureHeight * 3;
+            }
+            else if (TXTRData.FormatCode == 4)
+            {
+                fullSize = TXTRData.TextureWidth * TXTRData.TextureHeight / 2;
+            }
+            else if (TXTRData.FormatCode == 5)
+            {
+                fullSize = TXTRData.TextureWidth * TXTRData.TextureHeight;
+            }
+            else if (TXTRData.FormatCode == 6)
+            {
+                fullSize = TXTRData.TextureWidth * TXTRData.TextureHeight;
+            }
+            else
+            {
+                fullSize = TXTRData.TextureWidth * TXTRData.TextureHeight;
+            }
+            //size += fullSize;
+
+            //uint prev = fullSize;
+
+            Mips.Add(fullSize);
+
+            for (uint i = 1; i < mips; i++)
+            {
+                uint width = TXTRData.TextureWidth;
+                uint height = TXTRData.TextureHeight;
+                if (i > 1)
+                {
+                    for (int s = 1; s < i; s++)
+                    {
+                        width /= 2;
+                        height /= 2;
+                    }
+                    uint sum = 0;
+                    if (TXTRData.FormatCode == 1)
+                    {
+                        sum = width * height * 4;
+                    }
+                    else if (TXTRData.FormatCode == 2)
+                    {
+                        sum = width * height * 3;
+                    }
+                    else if (TXTRData.FormatCode == 4)
+                    {
+                        sum = width * height / 2;
+                    }
+                    else if (TXTRData.FormatCode == 5)
+                    {
+                        sum = width * height;
+                    }
+                    else
+                    {
+                        sum = width * height;
+                    }
+                    Mips.Add(sum);
+                }
+            }
+
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Mips:"));
+
+            foreach (uint m in Mips)
+            {
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0}", m));
+            }
+
+        }
+
+
+
+
+
+
+
+
+        static string CleanInput(string strIn)
+        {
+            // Replace invalid characters with empty strings.
+            try
+            {
+                return Regex.Replace(strIn, @"[^\s\w\.@-]", "",
+                                        RegexOptions.None, TimeSpan.FromSeconds(1.5));
+            }
+            // If we timeout when replacing invalid characters,
+            // we should return Empty.
+            catch (RegexMatchTimeoutException)
+            {
+                return String.Empty;
+            }
+        }
+    }
+
+    public struct S2ReadXFLRChunk
+    {
+        public XFLRData XFLRData = new();
+
+        private void DebugFinish()
+        {
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Type: {0}, Sound: {1}", XFLRData.Type, XFLRData.SoundSuffix));
+        }
+
+        public S2ReadXFLRChunk(BinaryReader readFile)
+        {
+            uint NumItems = readFile.ReadUInt32();
+            // Read the items
+            for (int i = 0; i < NumItems; i++)
+            {
+                // Get type of the item
+                string dataType = readFile.ReadUInt32().ToString("X8");
+                uint nameLength = readFile.ReadUInt32();
+                string fieldName = Encoding.UTF8.GetString(readFile.ReadBytes((int)nameLength));
+
+                uint fieldValueInt = 0;
+                uint fieldValueFloat = 0;
+                string fieldValueString = "";
+                bool fieldValueBool = false;
+
+                switch (dataType)
+                {
+                    // Int
+                    case "EB61E4F7":
+                        fieldValueInt = readFile.ReadUInt32();
+                        break;
+                    // Int #2 - Not Used
+                    case "0C264712":
+                        fieldValueInt = readFile.ReadUInt32();
+                        break;
+                    // String
+                    case "0B8BEA18":
+                        uint stringLength = readFile.ReadUInt32();
+                        fieldValueString = Encoding.UTF8.GetString(readFile.ReadBytes((int)stringLength));
+                        break;
+                    // Float
+                    case "ABC78708":
+                        // Ignore for now
+                        fieldValueFloat = readFile.ReadUInt32();
+                        break;
+                    // Boolean
+                    case "CBA908E1":
+                        fieldValueBool = readFile.ReadBoolean();
+                        break;
+                }
+
+                switch (fieldName.ToLower())
+                {
+                    case "brushwidth":
+                        XFLRData.BrushWidth = fieldValueInt;
+                        break;
+                    case "cost":
+                        XFLRData.Cost = fieldValueInt;
+                        break;
+                    case "crapscore":
+                        XFLRData.CrapScore = fieldValueFloat;
+                        break;
+                    case "depreciated":
+                        XFLRData.Depreciated = (int)fieldValueInt;
+                        break;
+                    case "description":
+                        XFLRData.Description = fieldValueString;
+                        break;
+                    case "guid":
+                        XFLRData.Guid = fieldValueInt.ToString("X8");
+                        break;
+                    case "name":
+                        XFLRData.Name = fieldValueString;
+                        break;
+                    case "nicenessmultiplier":
+                        XFLRData.NicenessMultiplier = fieldValueFloat;
+                        break;
+                    case "resourcegroupid":
+                        XFLRData.ResourceGroupID = fieldValueInt;
+                        break;
+                    case "resourceid":
+                        XFLRData.ResourceID = fieldValueInt;
+                        break;
+                    case "resourcerestypeid":
+                        XFLRData.ResourceResTypeID = fieldValueInt;
+                        break;
+                    case "showincatalog":
+                        XFLRData.ShowInCatalog = fieldValueInt.ToString("X8");
+                        break;
+                    case "soundsuffix":
+                        XFLRData.SoundSuffix = fieldValueString;
+                        break;
+                    case "stringsetgroupid":
+                        XFLRData.StringSetGroupID = fieldValueInt;
+                        break;
+                    case "stringsetid":
+                        XFLRData.StringSetID = fieldValueInt;
+                        break;
+                    case "stringsetrestypeid":
+                        XFLRData.StringSetResTypeID = fieldValueInt;
+                        break;
+                    case "texturetname":
+                        XFLRData.TextureTName = fieldValueString;
+                        break;
+                    case "type":
+                        XFLRData.Type = fieldValueString;
+                        break;
+                    case "version":
+                        XFLRData.Version = fieldValueInt;
+                        break;
+
+                }
+            }
+            DebugFinish();
+        }
+
+        public S2ReadXFLRChunk(DecryptByteStream readFile)
+        {
+            readFile.ReadUInt16();
+            uint NumItems = readFile.ReadUInt32();
+            // Read the items
+            for (int i = 0; i < NumItems; i++)
+            {
+                // Get type of the item
+                string dataType = readFile.ReadUInt32().ToString("X8");
+                uint nameLength = readFile.ReadUInt32();
+                string fieldName = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
+
+                uint fieldValueInt = 0;
+                string fieldValueString = "";
+                uint fieldValueFloat = 0;
+                bool fieldValueBool = false;
+
+                switch (dataType)
+                {
+                    // Int
+                    case "EB61E4F7":
+                        fieldValueInt = readFile.ReadUInt32();
+                        break;
+                    // Int #2 - Not Used
+                    case "0C264712":
+                        fieldValueInt = readFile.ReadUInt32();
+                        break;
+                    // String
+                    case "0B8BEA18":
+                        uint stringLength = readFile.ReadUInt32();
+                        fieldValueString = Encoding.UTF8.GetString(readFile.ReadBytes(stringLength));
+                        break;
+                    // Float
+                    case "ABC78708":
+                        // Ignore for now
+                        fieldValueFloat = readFile.ReadUInt32();
+                        break;
+                    // Boolean
+                    case "CBA908E1":
+                        fieldValueBool = readFile.ReadBoolean();
+                        break;
+                }
+
+                switch (fieldName.ToLower())
+                {
+                    case "brushwidth":
+                        XFLRData.BrushWidth = fieldValueInt;
+                        break;
+                    case "cost":
+                        XFLRData.Cost = fieldValueInt;
+                        break;
+                    case "crapscore":
+                        XFLRData.CrapScore = fieldValueFloat;
+                        break;
+                    case "depreciated":
+                        XFLRData.Depreciated = (int)fieldValueInt;
+                        break;
+                    case "description":
+                        XFLRData.Description = fieldValueString;
+                        break;
+                    case "guid":
+                        XFLRData.Guid = fieldValueInt.ToString("X8");
+                        break;
+                    case "name":
+                        XFLRData.Name = fieldValueString;
+                        break;
+                    case "nicenessmultiplier":
+                        XFLRData.NicenessMultiplier = fieldValueFloat;
+                        break;
+                    case "resourcegroupid":
+                        XFLRData.ResourceGroupID = fieldValueInt;
+                        break;
+                    case "resourceid":
+                        XFLRData.ResourceID = fieldValueInt;
+                        break;
+                    case "resourcerestypeid":
+                        XFLRData.ResourceResTypeID = fieldValueInt;
+                        break;
+                    case "showincatalog":
+                        XFLRData.ShowInCatalog = fieldValueInt.ToString("X8");
+                        break;
+                    case "soundsuffix":
+                        XFLRData.SoundSuffix = fieldValueString;
+                        break;
+                    case "stringsetgroupid":
+                        XFLRData.StringSetGroupID = fieldValueInt;
+                        break;
+                    case "stringsetid":
+                        XFLRData.StringSetID = fieldValueInt;
+                        break;
+                    case "stringsetrestypeid":
+                        XFLRData.StringSetResTypeID = fieldValueInt;
+                        break;
+                    case "texturetname":
+                        XFLRData.TextureTName = fieldValueString;
+                        break;
+                    case "type":
+                        XFLRData.Type = fieldValueString;
+                        break;
+                    case "version":
+                        XFLRData.Version = fieldValueInt;
+                        break;
+                }
+            }
+            DebugFinish();
+        }
+
+        public S2ReadXFLRChunk(DecryptByteStream readFile, bool xml)
+        {
+            XmlTextReader xmlDoc = new XmlTextReader(new StringReader(Encoding.UTF8.GetString(readFile.GetEntireStream())));
+            bool inDesc = false;
+            string inAttrDesc = "";
+            while (xmlDoc.Read())
+            {
+                if (xmlDoc.NodeType == XmlNodeType.Element)
+                {
+                    if (xmlDoc.Name == "AnyString") inDesc = true;
+                    if (xmlDoc.Name == "AnyUint32") inDesc = true;
+                }
+                if (xmlDoc.NodeType == XmlNodeType.EndElement)
+                {
+                    inDesc = false;
+                    inAttrDesc = "";
+                }
+                if (inDesc == true)
+                {
+                    if (xmlDoc.AttributeCount > 0)
+                    {
+                        while (xmlDoc.MoveToNextAttribute())
+                        {
+                            switch (xmlDoc.Value.ToLower())
+                            {
+                                case "brushwidth":
+                                case "cost":
+                                case "crapscore":
+                                case "depreciated":
+                                case "description":
+                                case "guid":
+                                case "name":
+                                case "nicenessmultiplier":
+                                case "resourcegroupid":
+                                case "resourceid":
+                                case "resourcerestypeid":
+                                case "showincatalog":
+                                case "soundsuffix":
+                                case "stringsetgroupid":
+                                case "stringsetid":
+                                case "stringsetrestypeid":
+                                case "texturetname":
+                                case "type":
+                                case "version":
+                                    inAttrDesc = xmlDoc.Value;
+                                    break;
+                            }
+                        }
+                    }
+                }
+                if (xmlDoc.NodeType == XmlNodeType.Text)
+                {
+                    if (inAttrDesc != "")
+                    {
+                        switch (inAttrDesc.ToLower())
+                        {
+                            case "brushwidth":
+                                XFLRData.BrushWidth = uint.Parse(xmlDoc.Value);
+                                break;
+                            case "cost":
+                                XFLRData.Cost = uint.Parse(xmlDoc.Value);
+                                break;
+                            case "crapscore":
+                                XFLRData.CrapScore = float.Parse(xmlDoc.Value);
+                                break;
+                            case "depreciated":
+                                XFLRData.Depreciated = int.Parse(xmlDoc.Value);
+                                break;
+                            case "description":
+                                XFLRData.Description = xmlDoc.Value;
+                                break;
+                            case "guid":
+                                XFLRData.Guid = xmlDoc.Value;
+                                break;
+                            case "name":
+                                XFLRData.Name = xmlDoc.Value;
+                                break;
+                            case "nicenessmultiplier":
+                                XFLRData.NicenessMultiplier = float.Parse(xmlDoc.Value);
+                                break;
+                            case "resourcegroupid":
+                                XFLRData.ResourceGroupID = uint.Parse(xmlDoc.Value);
+                                break;
+                            case "resourceid":
+                                XFLRData.ResourceID = uint.Parse(xmlDoc.Value);
+                                break;
+                            case "resourcerestypeid":
+                                XFLRData.ResourceResTypeID = uint.Parse(xmlDoc.Value);
+                                break;
+                            case "showincatalog":
+                                XFLRData.ShowInCatalog = xmlDoc.Value;
+                                break;
+                            case "soundsuffix":
+                                XFLRData.SoundSuffix = xmlDoc.Value;
+                                break;
+                            case "stringsetgroupid":
+                                XFLRData.StringSetGroupID = uint.Parse(xmlDoc.Value);
+                                break;
+                            case "stringsetid":
+                                XFLRData.StringSetID = uint.Parse(xmlDoc.Value);
+                                break;
+                            case "stringsetrestypeid":
+                                XFLRData.StringSetResTypeID = uint.Parse(xmlDoc.Value);
+                                break;
+                            case "texturetname":
+                                XFLRData.TextureTName = xmlDoc.Value;
+                                break;
+                            case "type":
+                                XFLRData.Type = xmlDoc.Value;
+                                break;
+                        }
+                    }
+                }
+            }
+            DebugFinish();
+        }
+    }
+
+    public struct S2ReadMMATChunk
+    {
+        public MMATData MMATData = new();
+
+
+        public S2ReadMMATChunk(BinaryReader readFile)
+        {
+            uint NumItems = readFile.ReadUInt32();
+            // Read the items
+            for (int i = 0; i < NumItems; i++)
+            {
+                // Get type of the item
+                string dataType = readFile.ReadUInt32().ToString("X8");
+                uint nameLength = readFile.ReadUInt32();
+                string fieldName = Encoding.UTF8.GetString(readFile.ReadBytes((int)nameLength));
+
+                uint fieldValueInt = 0;
+                uint fieldValueFloat = 0;
+                string fieldValueString = "";
+                bool fieldValueBool = false;
+
+                switch (dataType)
+                {
+                    // Int
+                    case "EB61E4F7":
+                        fieldValueInt = readFile.ReadUInt32();
+                        break;
+                    // Int #2 - Not Used
+                    case "0C264712":
+                        fieldValueInt = readFile.ReadUInt32();
+                        break;
+                    // String
+                    case "0B8BEA18":
+                        uint stringLength = readFile.ReadUInt32();
+                        fieldValueString = Encoding.UTF8.GetString(readFile.ReadBytes((int)stringLength));
+                        break;
+                    // Float
+                    case "ABC78708":
+                        // Ignore for now
+                        fieldValueFloat = readFile.ReadUInt32();
+                        break;
+                    // Boolean
+                    case "CBA908E1":
+                        fieldValueBool = readFile.ReadBoolean();
+                        break;
+                }
+
+                switch (fieldName.ToLower())
+                {
+                    case "creator":
+                        MMATData.Creator = fieldValueString;
+                        break;
+                    case "defaultmaterial":
+                        MMATData.DefaultMaterial = fieldValueBool;
+                        break;
+                    case "family":
+                        MMATData.Family = fieldValueString;
+                        break;
+                    case "flags":
+                        MMATData.Flags = fieldValueInt.ToString();
+                        break;
+                    case "materialstateflags":
+                        MMATData.MaterialStateFlags = fieldValueInt.ToString();
+                        break;
+                    case "modelname":
+                        MMATData.ModelName = fieldValueString;
+                        break;
+                    case "name":
+                        MMATData.Name = fieldValueString;
+                        break;
+                    case "objectguid":
+                        MMATData.ObjectGUID = fieldValueInt.ToString("X8");
+                        break;
+                    case "objectstateindex":
+                        MMATData.ObjectStateIndex = fieldValueInt.ToString();
+                        break;
+                    case "subsetname":
+                        MMATData.SubsetName = fieldValueString;
+                        break;
+                    case "type":
+                        MMATData.Type = fieldValueString;
+                        break;
+                }
+            }
+        }
+
+        public S2ReadMMATChunk(DecryptByteStream readFile)
+        {
+            readFile.ReadUInt16();
+            uint NumItems = readFile.ReadUInt32();
+            // Read the items
+            for (int i = 0; i < NumItems; i++)
+            {
+                // Get type of the item
+                string dataType = readFile.ReadUInt32().ToString("X8");
+                uint nameLength = readFile.ReadUInt32();
+                string fieldName = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
+
+                uint fieldValueInt = 0;
+                string fieldValueString = "";
+                uint fieldValueFloat = 0;
+                bool fieldValueBool = false;
+
+                switch (dataType)
+                {
+                    // Int
+                    case "EB61E4F7":
+                        fieldValueInt = readFile.ReadUInt32();
+                        break;
+                    // Int #2 - Not Used
+                    case "0C264712":
+                        fieldValueInt = readFile.ReadUInt32();
+                        break;
+                    // String
+                    case "0B8BEA18":
+                        uint stringLength = readFile.ReadUInt32();
+                        fieldValueString = Encoding.UTF8.GetString(readFile.ReadBytes(stringLength));
+                        break;
+                    // Float
+                    case "ABC78708":
+                        // Ignore for now
+                        fieldValueFloat = readFile.ReadUInt32();
+                        break;
+                    // Boolean
+                    case "CBA908E1":
+                        fieldValueBool = readFile.ReadBoolean();
+                        break;
+                }
+
+                switch (fieldName.ToLower())
+                {
+                    case "creator":
+                        MMATData.Creator = fieldValueString;
+                        break;
+                    case "defaultmaterial":
+                        MMATData.DefaultMaterial = fieldValueBool;
+                        break;
+                    case "family":
+                        MMATData.Family = fieldValueString;
+                        break;
+                    case "flags":
+                        MMATData.Flags = fieldValueInt.ToString();
+                        break;
+                    case "materialstateflags":
+                        MMATData.MaterialStateFlags = fieldValueInt.ToString();
+                        break;
+                    case "modelname":
+                        MMATData.ModelName = fieldValueString;
+                        break;
+                    case "name":
+                        MMATData.Name = fieldValueString;
+                        break;
+                    case "objectguid":
+                        MMATData.ObjectGUID = fieldValueInt.ToString("X8");
+                        break;
+                    case "objectstateindex":
+                        MMATData.ObjectStateIndex = fieldValueInt.ToString();
+                        break;
+                    case "subsetname":
+                        MMATData.SubsetName = fieldValueString;
+                        break;
+                    case "type":
+                        MMATData.Type = fieldValueString;
+                        break;
+                }
+            }
+        }
+
+        public S2ReadMMATChunk(DecryptByteStream readFile, bool xml)
+        {
+            XmlTextReader xmlDoc = new XmlTextReader(new StringReader(Encoding.UTF8.GetString(readFile.GetEntireStream())));
+            bool inDesc = false;
+            string inAttrDesc = "";
+            while (xmlDoc.Read())
+            {
+                if (xmlDoc.NodeType == XmlNodeType.Element)
+                {
+                    if (xmlDoc.Name == "AnyString") inDesc = true;
+                    if (xmlDoc.Name == "AnyUint32") inDesc = true;
+                }
+                if (xmlDoc.NodeType == XmlNodeType.EndElement)
+                {
+                    inDesc = false;
+                    inAttrDesc = "";
+                }
+                if (inDesc == true)
+                {
+                    if (xmlDoc.AttributeCount > 0)
+                    {
+                        while (xmlDoc.MoveToNextAttribute())
+                        {
+                            switch (xmlDoc.Value.ToLower())
+                            {
+                                case "creator":
+                                case "defaultmaterial":
+                                case "family":
+                                case "flags":
+                                case "materialstateflags":
+                                case "modelname":
+                                case "name":
+                                case "objectguid":
+                                case "objectstateindex":
+                                case "subsetname":
+                                case "type":
+                                    inAttrDesc = xmlDoc.Value;
+                                    break;
+                            }
+                        }
+                    }
+                }
+                if (xmlDoc.NodeType == XmlNodeType.Text)
+                {
+                    if (inAttrDesc != "")
+                    {
+                        switch (inAttrDesc.ToLower())
+                        {
+                            case "creator":
+                                MMATData.Creator = xmlDoc.Value;
+                                break;
+                            case "defaultmaterial":
+                                MMATData.SetDefaultMaterial(xmlDoc.Value);
+                                break;
+                            case "family":
+                                MMATData.Family = xmlDoc.Value;
+                                break;
+                            case "flags":
+                                MMATData.Flags = xmlDoc.Value;
+                                break;
+                            case "materialstateflags":
+                                MMATData.MaterialStateFlags = xmlDoc.Value;
+                                break;
+                            case "modelname":
+                                MMATData.ModelName = xmlDoc.Value;
+                                break;
+                            case "name":
+                                MMATData.Name = xmlDoc.Value;
+                                break;
+                            case "objectguid":
+                                MMATData.ObjectGUID = xmlDoc.Value;
+                                break;
+                            case "objectstateindex":
+                                MMATData.ObjectStateIndex = xmlDoc.Value;
+                                break;
+                            case "subsetname":
+                                MMATData.SubsetName = xmlDoc.Value;
+                                break;
+                            case "type":
+                                MMATData.Type = xmlDoc.Value;
+                                break;
+                        }
+                    }
+                }
+            }
+        }
     }
 
     public struct S2ReadGMDCChunk
     {
+        public List<string> Identities = new()
+        {
+            "1C4AFC56",
+            "5C4AFC5C",
+            "7C4DEE82",
+            "CB6F3A6A",
+            "CB7206A1",
+            "EB720693",
+            "3B83078B",
+            "5B830781",
+            "BB8307AB",
+            "DB830795",
+            "9BB38AFB",
+            "3BD70105",
+            "FBD70111",
+            "89D92BA0",
+            "69D92B93",
+            "5CF2CFE1",
+            "DCF2CFDC",
+            "114113C3",
+            "114113CD"
+        };
         public Dictionary<string, string> Types = new()
         {
             { "1C4AFC56", "Blend Indices" },
@@ -829,31 +2045,35 @@ namespace SimsCCManager.PackageReaders
         public List<GMDCSubset> Subsets = new();
         public GMDCData GMDCData = new();
 
-        public S2ReadGMDCChunk(BinaryReader readFile)
+        uint Version;
+
+        BinaryReader readFile;
+
+        public S2ReadGMDCChunk(BinaryReader reader)
         {
-            
+            readFile = reader;
             uint language = readFile.ReadUInt16();
             uint stringstyle = readFile.ReadUInt16();
             uint repeatvalue = readFile.ReadUInt32();
             uint indexvalue = readFile.ReadUInt32();
             uint filetype = readFile.ReadUInt32();
             byte namelength = readFile.ReadByte();
-            string gmdcn = Encoding.UTF8.GetString(readFile.ReadBytes(namelength)); 
+            string gmdcn = Encoding.UTF8.GetString(readFile.ReadBytes(namelength));
             uint blockID = readFile.ReadUInt32();
-            uint Version = readFile.ReadUInt32();
+            Version = readFile.ReadUInt32();
             byte resourcenamelength = readFile.ReadByte();
-            string resourceName = Encoding.UTF8.GetString(readFile.ReadBytes(resourcenamelength)); 
+            string resourceName = Encoding.UTF8.GetString(readFile.ReadBytes(resourcenamelength));
             uint resourceID = readFile.ReadUInt32();
             uint resourceversion = readFile.ReadUInt32();
             byte filenamelength = readFile.ReadByte();
-            string filename = Encoding.UTF8.GetString(readFile.ReadBytes(filenamelength)); 
-            
-            
+            string filename = Encoding.UTF8.GetString(readFile.ReadBytes(filenamelength));
 
-			if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Version: {0}. FileName: {1}", Version, filename));
+
+
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Version: {0}. FileName: {1}", Version, filename));
             // all above works
             //most meshses use version 4, apparently
-            
+
 
             uint NumRecs = readFile.ReadUInt32();
             if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("NumRecs:{0}", NumRecs));
@@ -863,25 +2083,44 @@ namespace SimsCCManager.PackageReaders
                 GMDCElement element = new();
                 element.Index = i;
                 //uint number = readFile.ReadUInt32();
-                uint id = readFile.ReadUInt32();
+                element.Number = readFile.ReadUInt32();
                 element.Identity = readFile.ReadUInt32().ToString("X8");
+                if (Identities.Contains(element.Identity))
+                {
+                    Types.TryGetValue(element.Identity, out string Type);
+                    element.IdentityName = Type;
+                }
                 uint RepeatCount = readFile.ReadUInt32();
                 //readFile.ReadUInt32();
                 element.BlockFormat = readFile.ReadUInt32();
                 element.SetFormat = readFile.ReadUInt32();
-                
-                
-                
+
+
+
                 element.BlockSize = readFile.ReadUInt32();
-                element.BlockStart = readFile.BaseStream.Position;
+                element.ElementLocation = readFile.BaseStream.Position;
 
-                readFile.ReadBytes((int)element.BlockSize);
+                if (element.BlockSize != 0)
+                {
+                    var e = ReadElement(element);
+                    IElements.Add(e);
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(e.ToString());
+                }
+                else
+                {
+                    element.ItemCount = readFile.ReadUInt32();
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(element.ToString());
+                    IElements.Add(element);
+                }
 
-                element.ItemCount = readFile.ReadUInt32();
+
+                //readFile.ReadBytes((int)element.BlockSize);
+
+                //
 
                 //if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Identity: {0}, Block Format: {1}, Set Format: {2}, BlockSize: {3}, ItemCount: {4}", element.Identity, element.BlockFormat, element.SetFormat, element.BlockSize, element.ItemCount));
 
-                IElements.Add(element);                
+
             }
 
             //get linkages
@@ -891,14 +2130,15 @@ namespace SimsCCManager.PackageReaders
             {
                 GMDCLinkage linkage = new();
                 linkage.IndexCount = readFile.ReadUInt32();
-                linkage.BlockStart = readFile.BaseStream.Position;
-                
+                //linkage.BlockStart = readFile.BaseStream.Position;
+
                 for (int c = 0; c < linkage.IndexCount; c++)
                 {
                     if (Version == 4)
                     {
                         linkage.IndexValues.Add(readFile.ReadUInt16());
-                    } else
+                    }
+                    else
                     {
                         linkage.IndexValues.Add(readFile.ReadUInt32());
                     }
@@ -913,7 +2153,8 @@ namespace SimsCCManager.PackageReaders
                     if (Version == 4)
                     {
                         linkage.SubmodelIndexValues.Add(readFile.ReadUInt16());
-                    } else
+                    }
+                    else
                     {
                         linkage.SubmodelIndexValues.Add(readFile.ReadUInt32());
                     }
@@ -926,7 +2167,8 @@ namespace SimsCCManager.PackageReaders
                     if (Version == 4)
                     {
                         linkage.NormalsIndexValues.Add(readFile.ReadUInt16());
-                    } else
+                    }
+                    else
                     {
                         linkage.NormalsIndexValues.Add(readFile.ReadUInt32());
                     }
@@ -938,7 +2180,8 @@ namespace SimsCCManager.PackageReaders
                     if (Version == 4)
                     {
                         linkage.UVIndexValues.Add(readFile.ReadUInt16());
-                    } else
+                    }
+                    else
                     {
                         linkage.UVIndexValues.Add(readFile.ReadUInt32());
                     }
@@ -956,9 +2199,9 @@ namespace SimsCCManager.PackageReaders
             {
                 GMDCGroup group = new();
                 group.PrimitiveType = readFile.ReadUInt32();
-                group.LinkIndex = readFile.ReadUInt32();                
+                group.LinkIndex = readFile.ReadUInt32();
                 byte objectNameLength = readFile.ReadByte();
-                group.ObjectName = Encoding.UTF8.GetString(readFile.ReadBytes(objectNameLength)); 
+                group.ObjectName = Encoding.UTF8.GetString(readFile.ReadBytes(objectNameLength));
                 group.FaceCount = readFile.ReadUInt32();
                 int gg = 0;
                 Godot.Vector3 face = new();
@@ -969,22 +2212,27 @@ namespace SimsCCManager.PackageReaders
                         if (gg == 0)
                         {
                             face.X = readFile.ReadUInt16();
-                        } else if (gg == 1)
+                        }
+                        else if (gg == 1)
                         {
                             face.Y = readFile.ReadUInt16();
-                        } else if (gg == 2)
+                        }
+                        else if (gg == 2)
                         {
                             face.Z = readFile.ReadUInt16();
-                        }                
-                    } else
+                        }
+                    }
+                    else
                     {
                         if (gg == 0)
                         {
                             face.X = readFile.ReadUInt32();
-                        } else if (gg == 1)
+                        }
+                        else if (gg == 1)
                         {
                             face.Y = readFile.ReadUInt32();
-                        } else if (gg == 2)
+                        }
+                        else if (gg == 2)
                         {
                             face.Z = readFile.ReadUInt32();
                         }
@@ -993,13 +2241,14 @@ namespace SimsCCManager.PackageReaders
                     {
                         group.Faces.Add(face);
                         gg = 0;
-                    } else
+                    }
+                    else
                     {
                         gg++;
                     }
                 }
 
-                group.OpacityAmount = readFile.ReadUInt32();
+                group.OpacityAmount = readFile.ReadUInt32().ToString("X8");
                 if (Version != 1)
                 {
                     uint subsetCount = readFile.ReadUInt32();
@@ -1008,7 +2257,8 @@ namespace SimsCCManager.PackageReaders
                         if (Version == 4)
                         {
                             group.ModelSubsetReference.Add(readFile.ReadUInt16());
-                        } else
+                        }
+                        else
                         {
                             group.ModelSubsetReference.Add(readFile.ReadUInt32());
                         }
@@ -1017,7 +2267,7 @@ namespace SimsCCManager.PackageReaders
                 Groups.Add(group);
             }
 
-            uint blockcount = readFile.ReadUInt32();
+            /*uint blockcount = readFile.ReadUInt32();
             for (int i = 0; i < blockcount; i++)
             {
                 TransformMatrix matrix = new();
@@ -1098,189 +2348,130 @@ namespace SimsCCManager.PackageReaders
                     }
                 }
                 Subsets.Add(subset);
-            }
-
-
-
-
-
-
-
-
-            List<GMDCElement> Elements = IElements.OfType<GMDCElement>().ToList();
-
-            for (int i = 0; i < Elements.Count; i++)
-            {        
-                readFile.BaseStream.Position = Elements[i].BlockStart;        
-                
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Identity: {0}, Block Format: {1}, Set Format: {2}, BlockSize: {3}, ItemCount: {4}, List Length: {5}, Length: {6}", Elements[i].Identity, Elements[i].BlockFormat, Elements[i].SetFormat, Elements[i].BlockSize, Elements[i].ItemCount, Elements[i].ListLength, Elements[i].Length));
-                if (Elements[i].BlockSize != 0)
-                {
-                   switch (Elements[i].Identity)
-                    {
-                        case "5B830781":
-                            GMDCElementVertices element = new();
-                            element = Elements[i].ConvertTo(element);
-                            element.Vertices = ReadVector3Chunk(Elements[i], readFile);
-                            IElements[i] = element;
-                        break;
-                        case "3B83078B": 
-                        
-                            GMDCElementNormals element0 = new();
-                            element0 = Elements[i].ConvertTo(element0);
-                            element0.Normals = ReadVector3Chunk(Elements[i], readFile);
-                            IElements[i] = element0;
-                        break;
-                        case "BB8307AB": 
-                            GMDCElementUVCoordinates element1 = new();
-                            element1 = Elements[i].ConvertTo(element1);
-                            element1.UVCoordinates = ReadVector2Chunk(Elements[i], readFile);
-                            IElements[i] = element1;
-                        break;
-                        case "DB830795": 
-                            //ignore
-                        break;
-                        case "7C4DEE82": 
-                            GMDCElementTargetIndices element2 = new();
-                            element2 = Elements[i].ConvertTo(element2);
-                            element2.TargetIndices = ReadVector3Chunk(Elements[i], readFile);
-                            IElements[i] = element2;
-                        break;
-                        case "FBD70111": 
-                            GMDCElementBoneAssignments element3 = new();
-                            element3 = Elements[i].ConvertTo(element3);
-                            element3.BoneAssignments = ReadUIntChunk(Elements[i], readFile);
-                            IElements[i] = element3;
-                        break;
-                        case "3BD70105": 
-                            switch (Elements[i].Length)
-                            {
-                                case 1:
-                                    GMDCElementSkinV1 element4 = new();
-                            element4 = Elements[i].ConvertTo(element4);
-                            element4.SkinV1 = ReadUIntChunk(Elements[i], readFile);
-                            IElements[i] = element4;
-                                break;
-                                case 2:
-                                    GMDCElementSkinV2 element5 = new();
-                            element5 = Elements[i].ConvertTo(element5);
-                            element5.SkinV2 = ReadVector2Chunk(Elements[i], readFile);
-                            IElements[i] = element5;
-                                break;
-                                case 3:
-                                    GMDCElementSkinV3 element6 = new();
-                            element6 = Elements[i].ConvertTo(element6);
-                            element6.SkinV3 = ReadVector3Chunk(Elements[i], readFile);
-                            IElements[i] = element6;
-                                break;
-                            }
-                        break;
-                        case "5CF2CFE1": 
-                            GMDCElementMorphVertexDeltas element7 = new();
-                            element7 = Elements[i].ConvertTo(element7);
-                            element7.MorphVertexDeltas = ReadVector3Chunk(Elements[i], readFile);
-                            IElements[i] = element7;
-                        break;
-                        case "CB6F3A6A": 
-                            GMDCElementMorphNormalDeltas element8 = new();
-                            element8 = Elements[i].ConvertTo(element8);
-                            element8.MorphNormalDeltas = ReadVector3Chunk(Elements[i], readFile);
-                            IElements[i] = element8;
-                        break;
-                        case "DCF2CFDC": 
-                            GMDCElementMorphVertexMap element9 = new();
-                            element9 = Elements[i].ConvertTo(element9);
-                            element9.MorphVertexMap = ReadUIntChunk(Elements[i], readFile);
-                            IElements[i] = element9;
-                        break;
-                        case "89D92BA0": 
-                            GMDCElementBumpMapNormals element10 = new();
-                            element10 = Elements[i].ConvertTo(element10);
-                            element10.BumpMapNormals = ReadVector3Chunk(Elements[i], readFile);
-                            IElements[i] = element10;
-                        break;
-                    } 
-                }                                               
-            }
+            }*/
 
             GMDCData.Groups = Groups;
-            GMDCData.Elements = IElements;
+            GMDCData.ToElements(IElements);
             GMDCData.Linkages = Linkages;
             GMDCData.Model = Model;
             GMDCData.Subsets = Subsets;
         }
-        public S2ReadGMDCChunk(DecryptByteStream readFile)
+
+        private IGMDCElement ReadItems(IGMDCElement element)
         {
-            uint language = readFile.ReadUInt16();
-            uint stringstyle = readFile.ReadUInt16();
-            uint repeatvalue = readFile.ReadUInt32();
-            uint indexvalue = readFile.ReadUInt32();
-            uint filetype = readFile.ReadUInt32();
-            byte namelength = readFile.ReadByte();
-            string gmdcn = Encoding.UTF8.GetString(readFile.ReadBytes(namelength)); 
-            uint blockID = readFile.ReadUInt32();
-            uint Version = readFile.ReadUInt32();
-            byte resourcenamelength = readFile.ReadByte();
-            string resourceName = Encoding.UTF8.GetString(readFile.ReadBytes(resourcenamelength)); 
-            uint resourceID = readFile.ReadUInt32();
-            uint resourceversion = readFile.ReadUInt32();
-            byte filenamelength = readFile.ReadByte();
-            string filename = Encoding.UTF8.GetString(readFile.ReadBytes(filenamelength)); 
-            
-            
-
-			if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Version: {0}. FileName: {1}", Version, filename));
-            // all above works
-            //most meshses use version 4, apparently
-            
-
-            uint NumRecs = readFile.ReadUInt32();
-
-            for (int i = 0; i < NumRecs; i++)
+            if (element.ItemCount > 0)
             {
-                //uint number = readFile.ReadUInt32();
-                //uint id = readFile.ReadUInt32();
-                string Identity = readFile.ReadUInt32().ToString("X8");
-                uint RepeatCount = readFile.ReadUInt32();
-                uint BlockFormat = readFile.ReadUInt32();
-                //
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Blockformat: {0}, Identity: {1}", BlockFormat, Identity));
-
-
-                /*uint SetGroup = readFile.ReadUInt32();
-
-
-                uint BlockSize = readFile.ReadUInt32();
-
-                int length = readFile.ReadUInt32() / (4 * BlockSize);
-
-                byte[] Block = readFile.ReadBytes(BlockSize); 
-                uint ItemCount = readFile.ReadUInt32();
-                
-                List<uint> Array = new();
-
-                if (Version == 4)
+                for (int i = 0; i < element.ItemCount; i++)
                 {
-                    for (int o = 0; o < ItemCount; o++)
+                    if (Version == 4)
                     {
-                        Array.Add(readFile.ReadUInt16());
+                        readFile.ReadUInt16();
                     }
-                    
-                } else
-                {
-                    for (int o = 0; o < ItemCount; o++)
+                    else
                     {
-                        Array.Add(readFile.ReadUInt32());
+                        readFile.ReadUInt32();
                     }
                 }
-
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Record {0}: Identity: {1}, RepCount: {2}, Blockformat: {3}, SetGroup: {4}, BlockSize: {5}, ItemCount: {6}", i, Identity, RepeatCount, BlockFormat, SetGroup, BlockSize, ItemCount ));*/
             }
-            
+            return element;
+        }
+
+        private IGMDCElement ReadElement(GMDCElement element)
+        {
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Identity: {0}, Block Format: {1}, Set Format: {2}, BlockSize: {3}, ItemCount: {4}, List Length: {5}, Length: {6}", element.Identity, element.BlockFormat, element.SetFormat, element.BlockSize, element.ItemCount, element.ListLength, element.Length));
+            if (element.BlockSize != 0)
+            {
+                switch (element.Identity)
+                {
+                    case "5B830781":
+                        GMDCElementVertices element00 = new();
+                        element00 = element.ConvertTo(element00);
+                        element00.Vertices = ReadVector3Chunk(element);
+                        element00.ItemCount = readFile.ReadUInt32();
+                        return ReadItems(element00);
+                    case "3B83078B":
+
+                        GMDCElementNormals element0 = new();
+                        element0 = element.ConvertTo(element0);
+                        element0.Normals = ReadVector3Chunk(element);
+                        element0.ItemCount = readFile.ReadUInt32();
+                        return ReadItems(element0);
+                    case "BB8307AB":
+                        GMDCElementUVCoordinates element1 = new();
+                        element1 = element.ConvertTo(element1);
+                        element1.UVCoordinates = ReadVector2Chunk(element);
+                        element1.ItemCount = readFile.ReadUInt32();
+                        return ReadItems(element1);
+                    case "DB830795":
+                        //ignore
+                        break;
+                    case "7C4DEE82":
+                        GMDCElementTargetIndices element2 = new();
+                        element2 = element.ConvertTo(element2);
+                        element2.TargetIndices = ReadVector3Chunk(element);
+                        element2.ItemCount = readFile.ReadUInt32();
+                        return ReadItems(element2);
+                    case "FBD70111":
+                        GMDCElementBoneAssignments element3 = new();
+                        element3 = element.ConvertTo(element3);
+                        element3.BoneAssignments = ReadUIntChunk(element);
+                        element3.ItemCount = readFile.ReadUInt32();
+                        return ReadItems(element3);
+                    case "3BD70105":
+                        switch (element.Length)
+                        {
+                            case 1:
+                                GMDCElementSkinV1 element4 = new();
+                                element4 = element.ConvertTo(element4);
+                                element4.SkinV1 = ReadUIntChunk(element);
+                                element4.ItemCount = readFile.ReadUInt32();
+                                return ReadItems(element4);
+                            case 2:
+                                GMDCElementSkinV2 element5 = new();
+                                element5 = element.ConvertTo(element5);
+                                element5.SkinV2 = ReadVector2Chunk(element);
+                                element5.ItemCount = readFile.ReadUInt32();
+                                return ReadItems(element5);
+                            case 3:
+                                GMDCElementSkinV3 element6 = new();
+                                element6 = element.ConvertTo(element6);
+                                element6.SkinV3 = ReadVector3Chunk(element);
+                                element6.ItemCount = readFile.ReadUInt32();
+                                return ReadItems(element6);
+                        }
+                        break;
+                    case "5CF2CFE1":
+                        GMDCElementMorphVertexDeltas element7 = new();
+                        element7 = element.ConvertTo(element7);
+                        element7.MorphVertexDeltas = ReadVector3Chunk(element);
+                        element7.ItemCount = readFile.ReadUInt32();
+                        return ReadItems(element7);
+                    case "CB6F3A6A":
+                        GMDCElementMorphNormalDeltas element8 = new();
+                        element8 = element.ConvertTo(element8);
+                        element8.MorphNormalDeltas = ReadVector3Chunk(element);
+                        element8.ItemCount = readFile.ReadUInt32();
+                        return ReadItems(element8);
+                    case "DCF2CFDC":
+                        GMDCElementMorphVertexMap element9 = new();
+                        element9 = element.ConvertTo(element9);
+                        element9.MorphVertexMap = ReadUIntChunk(element);
+                        element9.ItemCount = readFile.ReadUInt32();
+                        return ReadItems(element9);
+                    case "89D92BA0":
+                        GMDCElementBumpMapNormals element10 = new();
+                        element10 = element.ConvertTo(element10);
+                        element10.BumpMapNormals = ReadVector3Chunk(element);
+                        element10.ItemCount = readFile.ReadUInt32();
+                        return ReadItems(element10);
+                }
+            }
+            readFile.ReadUInt32();
+            return new GMDCElement();
         }
 
 
-        private List<Godot.Vector3> ReadVector3Chunk(IGMDCElement element, BinaryReader readFile)
+        private List<Godot.Vector3> ReadVector3Chunk(IGMDCElement element)
         {
             List<Godot.Vector3> vector3list = new();
             for (int l = 0; l < element.ListLength; l++)
@@ -1289,34 +2480,38 @@ namespace SimsCCManager.PackageReaders
                 for (int j = 0; j < element.Length; j++)
                 {
                     if (element.BlockFormat == 4)
-                    {   
-                        switch (j)
-                        {
-                            case 0: 
-                                vector3.X = readFile.ReadUInt32(); 
-                            break;
-                            case 1: 
-                                vector3.Y = readFile.ReadUInt32(); 
-                            break;
-                            case 2: 
-                                vector3.Z = readFile.ReadUInt32(); 
-                            break;
-                        }                            
-                        
-                    } else
                     {
                         switch (j)
                         {
-                            case 0: 
-                                vector3.X = readFile.ReadUInt16(); 
-                            break;
-                            case 1: 
-                                vector3.Y = readFile.ReadUInt16(); 
-                            break;
-                            case 2: 
-                                vector3.Z = readFile.ReadUInt16(); 
-                            break;
-                        } 
+                            case 0:
+                                vector3.X = readFile.ReadInt32();
+                                break;
+                            case 1:
+                                vector3.Y = readFile.ReadInt32();
+                                break;
+                            case 2:
+                                vector3.Z = readFile.ReadInt32();
+                                break;
+                        }
+
+                    }
+                    else
+                    {
+                        switch (j)
+                        {
+                            case 0:
+                                //if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Pos before reading Single: {0}", readFile.BaseStream.Position));
+                                vector3.X = float.Parse(readFile.ReadSingle().ToString("0.######"));
+                                //if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Pos after reading Single: {0}", readFile.BaseStream.Position));
+
+                                break;
+                            case 1:
+                                vector3.Y = float.Parse(readFile.ReadSingle().ToString("0.######"));
+                                break;
+                            case 2:
+                                vector3.Z = float.Parse(readFile.ReadSingle().ToString("0.######"));
+                                break;
+                        }
                     }
                 }
                 vector3list.Add(vector3);
@@ -1324,7 +2519,7 @@ namespace SimsCCManager.PackageReaders
             return vector3list;
         }
 
-        private List<Godot.Vector2> ReadVector2Chunk(IGMDCElement element, BinaryReader readFile)
+        private List<Godot.Vector2> ReadVector2Chunk(IGMDCElement element)
         {
             List<Godot.Vector2> vector2list = new();
             for (int l = 0; l < element.ListLength; l++)
@@ -1333,28 +2528,29 @@ namespace SimsCCManager.PackageReaders
                 for (int j = 0; j < element.Length; j++)
                 {
                     if (element.BlockFormat == 4)
-                    {   
-                        switch (j)
-                        {
-                            case 0: 
-                                vector2.X = readFile.ReadUInt32(); 
-                            break;
-                            case 1: 
-                                vector2.Y = readFile.ReadUInt32(); 
-                            break;
-                        }                            
-                        
-                    } else
                     {
                         switch (j)
                         {
-                            case 0: 
-                                vector2.X = readFile.ReadUInt16(); 
-                            break;
-                            case 1: 
-                                vector2.Y = readFile.ReadUInt16(); 
-                            break;
-                        } 
+                            case 0:
+                                vector2.X = readFile.ReadInt32();
+                                break;
+                            case 1:
+                                vector2.Y = readFile.ReadInt32();
+                                break;
+                        }
+
+                    }
+                    else
+                    {
+                        switch (j)
+                        {
+                            case 0:
+                                vector2.X = readFile.ReadSingle();
+                                break;
+                            case 1:
+                                vector2.Y = readFile.ReadSingle();
+                                break;
+                        }
                     }
                 }
                 vector2list.Add(vector2);
@@ -1362,26 +2558,27 @@ namespace SimsCCManager.PackageReaders
             return vector2list;
         }
 
-        private List<uint> ReadUIntChunk(IGMDCElement element, BinaryReader readFile)
+        private List<float> ReadUIntChunk(IGMDCElement element)
         {
-            List<uint> uintlist = new();
+            List<float> intlist = new();
             for (int l = 0; l < element.ListLength; l++)
             {
-                uint uintdata = new();
+                float intdata = new();
                 for (int j = 0; j < element.Length; j++)
                 {
                     if (element.BlockFormat == 4)
-                    {                           
-                        uintdata = readFile.ReadUInt32();                         
-                    } else
                     {
-                        
-                        uintdata = readFile.ReadUInt16(); 
+                        intdata = readFile.ReadInt32();
+                    }
+                    else
+                    {
+
+                        intdata = readFile.ReadSingle();
                     }
                 }
-                uintlist.Add(uintdata);
+                intlist.Add(intdata);
             }
-            return uintlist;
+            return intlist;
         }
     }
 
@@ -1389,233 +2586,250 @@ namespace SimsCCManager.PackageReaders
     {
         public string Title;
         public string Description;
-        public string Type;
-        public string Subtype;
-        public string Category;
-        public string Subsort;
+        public string Type = "";
+        public string Subtype = "";
+        public string Category = "";
+        public string Subsort = "";
         public string ModelName;
         public string ObjectGUID;
         public string Creator;
         public string Age;
-        public string Gender;   
-        public S2ReadXOBJChunk(BinaryReader readFile) {
+        public string Gender;
+
+        public void DebugFinish()
+        {
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Type: {0}, Category: {1}, Subtype: {2}, Subsort: {3}", Type, Category, Subtype, Subsort));
+        }
+        public S2ReadXOBJChunk(BinaryReader readFile)
+        {
             uint NumItems = readFile.ReadUInt32();
             // Read the items
-			for (int i = 0; i < NumItems; i++)
-			{
-				// Get type of the item
-				string dataType = readFile.ReadUInt32().ToString("X8");
-				uint nameLength = readFile.ReadUInt32();
-				string fieldName = Encoding.UTF8.GetString(readFile.ReadBytes((int)nameLength));
+            for (int i = 0; i < NumItems; i++)
+            {
+                // Get type of the item
+                string dataType = readFile.ReadUInt32().ToString("X8");
+                uint nameLength = readFile.ReadUInt32();
+                string fieldName = Encoding.UTF8.GetString(readFile.ReadBytes((int)nameLength));
 
-				uint fieldValueInt = 0;
-				string fieldValueString = "";
+                uint fieldValueInt = 0;
+                string fieldValueString = "";
 
 
-				switch (dataType)
-				{
-						// Int
-					case "EB61E4F7":
-						fieldValueInt = readFile.ReadUInt32();
-						break;
-						// Int #2 - Not Used
-					case "0C264712":
-						fieldValueInt = readFile.ReadUInt32();
-						break;
-						// String
-					case "0B8BEA18":
-						uint stringLength = readFile.ReadUInt32();
-						fieldValueString = Encoding.UTF8.GetString(readFile.ReadBytes((int)stringLength));
-						break;
-						// Float
-					case "ABC78708":
-						// Ignore for now
-						uint fieldValueFloat = readFile.ReadUInt32();
-						break;
-						// Boolean
-					case "CBA908E1":
-						bool fieldValueBool = readFile.ReadBoolean();
-						break;
-				}
+                switch (dataType)
+                {
+                    // Int
+                    case "EB61E4F7":
+                        fieldValueInt = readFile.ReadUInt32();
+                        break;
+                    // Int #2 - Not Used
+                    case "0C264712":
+                        fieldValueInt = readFile.ReadUInt32();
+                        break;
+                    // String
+                    case "0B8BEA18":
+                        uint stringLength = readFile.ReadUInt32();
+                        fieldValueString = Encoding.UTF8.GetString(readFile.ReadBytes((int)stringLength));
+                        break;
+                    // Float
+                    case "ABC78708":
+                        // Ignore for now
+                        uint fieldValueFloat = readFile.ReadUInt32();
+                        break;
+                    // Boolean
+                    case "CBA908E1":
+                        bool fieldValueBool = readFile.ReadBoolean();
+                        break;
+                }
 
-				switch (fieldName)
-				{
-					case "name":
-						Title = fieldValueString;
-						break;
-					case "description":
-						Description = fieldValueString;
-						break;
-					case "type":
-						Type = fieldValueString;
-						break;
-					case "subtype":
-						Subtype = fieldValueInt.ToString();
-						break;
-					case "category":
-						Category = fieldValueInt.ToString();
-						break;
-					case "modelName":
-						ModelName = fieldValueString;
-						break;
-					case "objectGUID":
-						ObjectGUID = fieldValueInt.ToString("X8");
-						break;
-					case "creator":
-						Creator = fieldValueString;
-						break;
-					case "age":
-						Age = fieldValueInt.ToString();
-						break;
-					case "gender":
-						Gender = fieldValueInt.ToString();
-						break;
-				}
-			}
+                switch (fieldName)
+                {
+                    case "name":
+                        Title = fieldValueString;
+                        break;
+                    case "description":
+                        Description = fieldValueString;
+                        break;
+                    case "type":
+                        Type = fieldValueString;
+                        break;
+                    case "subtype":
+                        Subtype = fieldValueInt.ToString();
+                        break;
+                    case "subsort":
+                        Subtype = fieldValueInt.ToString();
+                        break;
+                    case "category":
+                        Category = fieldValueInt.ToString();
+                        break;
+                    case "modelName":
+                        ModelName = fieldValueString;
+                        break;
+                    case "objectGUID":
+                        ObjectGUID = fieldValueInt.ToString("X8");
+                        break;
+                    case "creator":
+                        Creator = fieldValueString;
+                        break;
+                    case "age":
+                        Age = fieldValueInt.ToString();
+                        break;
+                    case "gender":
+                        Gender = fieldValueInt.ToString();
+                        break;
+                }
+            }
+            DebugFinish();
         }
 
-        public S2ReadXOBJChunk(DecryptByteStream readFile) {
+        public S2ReadXOBJChunk(DecryptByteStream readFile)
+        {
             readFile.ReadUInt16();
             uint NumItems = readFile.ReadUInt32();
             // Read the items
-			for (int i = 0; i < NumItems; i++)
-			{
-				// Get type of the item
-				string dataType = readFile.ReadUInt32().ToString("X8");
-				uint nameLength = readFile.ReadUInt32();
-				string fieldName = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
+            for (int i = 0; i < NumItems; i++)
+            {
+                // Get type of the item
+                string dataType = readFile.ReadUInt32().ToString("X8");
+                uint nameLength = readFile.ReadUInt32();
+                string fieldName = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
 
-				uint fieldValueInt = 0;
-				string fieldValueString = "";
+                uint fieldValueInt = 0;
+                string fieldValueString = "";
 
 
-				switch (dataType)
-				{
-						// Int
-					case "EB61E4F7":
-						fieldValueInt = readFile.ReadUInt32();
-						break;
-						// Int #2 - Not Used
-					case "0C264712":
-						fieldValueInt = readFile.ReadUInt32();
-						break;
-						// String
-					case "0B8BEA18":
-						uint stringLength = readFile.ReadUInt32();
-						fieldValueString = Encoding.UTF8.GetString(readFile.ReadBytes(stringLength));
-						break;
-						// Float
-					case "ABC78708":
-						// Ignore for now
-						uint fieldValueFloat = readFile.ReadUInt32();
-						break;
-						// Boolean
-					case "CBA908E1":
-						bool fieldValueBool = readFile.ReadBoolean();
-						break;
-				}
+                switch (dataType)
+                {
+                    // Int
+                    case "EB61E4F7":
+                        fieldValueInt = readFile.ReadUInt32();
+                        break;
+                    // Int #2 - Not Used
+                    case "0C264712":
+                        fieldValueInt = readFile.ReadUInt32();
+                        break;
+                    // String
+                    case "0B8BEA18":
+                        uint stringLength = readFile.ReadUInt32();
+                        fieldValueString = Encoding.UTF8.GetString(readFile.ReadBytes(stringLength));
+                        break;
+                    // Float
+                    case "ABC78708":
+                        // Ignore for now
+                        uint fieldValueFloat = readFile.ReadUInt32();
+                        break;
+                    // Boolean
+                    case "CBA908E1":
+                        bool fieldValueBool = readFile.ReadBoolean();
+                        break;
+                }
 
-				switch (fieldName)
-				{
-					case "name":
-						Title = fieldValueString;
-						break;
-					case "description":
-						Description = fieldValueString;
-						break;
-					case "type":
-						Type = fieldValueString;
-						break;
-					case "subtype":
-						Subtype = fieldValueInt.ToString();
-						break;
-					case "category":
-						Category = fieldValueInt.ToString();
-						break;
-					case "modelName":
-						ModelName = fieldValueString;
-						break;
-					case "objectGUID":
-						ObjectGUID = fieldValueInt.ToString("X8");
-						break;
-					case "creator":
-						Creator = fieldValueString;
-						break;
-					case "age":
-						Age = fieldValueInt.ToString();
-						break;
-					case "gender":
-						Gender = fieldValueInt.ToString();
-						break;
-				}
-			}
+                switch (fieldName)
+                {
+                    case "name":
+                        Title = fieldValueString;
+                        break;
+                    case "description":
+                        Description = fieldValueString;
+                        break;
+                    case "type":
+                        Type = fieldValueString;
+                        break;
+                    case "subtype":
+                        Subtype = fieldValueInt.ToString();
+                        break;
+                    case "subsort":
+                        Subtype = fieldValueInt.ToString();
+                        break;
+                    case "category":
+                        Category = fieldValueInt.ToString();
+                        break;
+                    case "modelName":
+                        ModelName = fieldValueString;
+                        break;
+                    case "objectGUID":
+                        ObjectGUID = fieldValueInt.ToString("X8");
+                        break;
+                    case "creator":
+                        Creator = fieldValueString;
+                        break;
+                    case "age":
+                        Age = fieldValueInt.ToString();
+                        break;
+                    case "gender":
+                        Gender = fieldValueInt.ToString();
+                        break;
+                }
+            }
+            DebugFinish();
         }
 
-        public S2ReadXOBJChunk(DecryptByteStream readFile, bool xml) {
+        public S2ReadXOBJChunk(DecryptByteStream readFile, bool xml)
+        {
             XmlTextReader xmlDoc = new XmlTextReader(new StringReader(Encoding.UTF8.GetString(readFile.GetEntireStream())));
             bool inDesc = false;
             string inAttrDesc = "";
             while (xmlDoc.Read())
-			{
-				if (xmlDoc.NodeType == XmlNodeType.Element) 
-				{
-					if (xmlDoc.Name == "AnyString")	inDesc = true;
-					if (xmlDoc.Name == "AnyUint32") inDesc = true;
-				}
-				if (xmlDoc.NodeType == XmlNodeType.EndElement)
-				{
-					inDesc = false;
-					inAttrDesc = "";
-				}
-				if (inDesc == true)
-				{
-					if (xmlDoc.AttributeCount > 0) 
-					{
-						while (xmlDoc.MoveToNextAttribute())
-						{
-							switch (xmlDoc.Value)
-							{
-								case "description":
-								case "type":
-								case "name":
-								case "subsort":
-								case "subtype":
-								case "category":
-									inAttrDesc = xmlDoc.Value;
-									break;
-							}
-						}
-					}
-				}
-				if (xmlDoc.NodeType == XmlNodeType.Text)
-				{
-					if (inAttrDesc != "") 
-					{
-						switch (inAttrDesc)
-						{
-							case "subtype":
-								Subtype = xmlDoc.Value;
-								break;
-							case "subsort":
-								Subsort = xmlDoc.Value;
-								break;
-							case "category":
-								Category = xmlDoc.Value;
-								break;
-							case "name":
-								Title = xmlDoc.Value;
-								break;
-							case "type":
-								Type = xmlDoc.Value;
-								break;
-							case "description":
-								Description = xmlDoc.Value.Replace("\n", " ");
-								break;
-						}
-					}
-				}
-				//if ((this.title != "") && (this.description != "")) break;
-			}
+            {
+                if (xmlDoc.NodeType == XmlNodeType.Element)
+                {
+                    if (xmlDoc.Name == "AnyString") inDesc = true;
+                    if (xmlDoc.Name == "AnyUint32") inDesc = true;
+                }
+                if (xmlDoc.NodeType == XmlNodeType.EndElement)
+                {
+                    inDesc = false;
+                    inAttrDesc = "";
+                }
+                if (inDesc == true)
+                {
+                    if (xmlDoc.AttributeCount > 0)
+                    {
+                        while (xmlDoc.MoveToNextAttribute())
+                        {
+                            switch (xmlDoc.Value)
+                            {
+                                case "description":
+                                case "type":
+                                case "name":
+                                case "subsort":
+                                case "subtype":
+                                case "category":
+                                    inAttrDesc = xmlDoc.Value;
+                                    break;
+                            }
+                        }
+                    }
+                }
+                if (xmlDoc.NodeType == XmlNodeType.Text)
+                {
+                    if (inAttrDesc != "")
+                    {
+                        switch (inAttrDesc)
+                        {
+                            case "subtype":
+                                Subtype = xmlDoc.Value;
+                                break;
+                            case "subsort":
+                                Subsort = xmlDoc.Value;
+                                break;
+                            case "category":
+                                Category = xmlDoc.Value;
+                                break;
+                            case "name":
+                                Title = xmlDoc.Value;
+                                break;
+                            case "type":
+                                Type = xmlDoc.Value;
+                                break;
+                            case "description":
+                                Description = xmlDoc.Value.Replace("\n", " ");
+                                break;
+                        }
+                    }
+                }
+
+            }
+            DebugFinish();
         }
 
         public override string ToString()
@@ -1630,7 +2844,7 @@ namespace SimsCCManager.PackageReaders
         public byte[] FileName;
 
         public List<FunctionSortList> FunctionSort = new();
-        
+
         public uint Version;
         public uint InitialStackSize;
         public uint DefaultWallAdjacentFlags;
@@ -1649,175 +2863,185 @@ namespace SimsCCManager.PackageReaders
         public string OriginalGUID;
         public string ObjectModelGUID;
 
-        
+
         public S2ReadOBJDChunk(BinaryReader readFile)
         {
-            FileName = readFile.ReadBytes(64); 
-			Version = readFile.ReadUInt32();
-			InitialStackSize = readFile.ReadUInt16(); 
-			DefaultWallAdjacentFlags = readFile.ReadUInt16(); 
-			DefaultPlacementFlags = readFile.ReadUInt16(); 
-			DefaultWallPlacementFlags = readFile.ReadUInt16(); 
-			DefaultAllowedHeightFlags = readFile.ReadUInt16();
-			InteractionTableID = readFile.ReadUInt16(); 
-			InteractionGroup = readFile.ReadUInt16(); 
-			ObjectType = readFile.ReadUInt16(); 
-			MasterTileMasterId = readFile.ReadUInt16();
-			MasterTileSubIndex = readFile.ReadUInt16();
+            FileName = readFile.ReadBytes(64);
+            Version = readFile.ReadUInt32();
+            InitialStackSize = readFile.ReadUInt16();
+            DefaultWallAdjacentFlags = readFile.ReadUInt16();
+            DefaultPlacementFlags = readFile.ReadUInt16();
+            DefaultWallPlacementFlags = readFile.ReadUInt16();
+            DefaultAllowedHeightFlags = readFile.ReadUInt16();
+            InteractionTableID = readFile.ReadUInt16();
+            InteractionGroup = readFile.ReadUInt16();
+            ObjectType = readFile.ReadUInt16();
+            MasterTileMasterId = readFile.ReadUInt16();
+            MasterTileSubIndex = readFile.ReadUInt16();
 
-			// Only check further if this is a Master ID or single id
-			if ((MasterTileSubIndex == 65535) || (MasterTileMasterId == 0))
-			{
-				UseDefaultPlacementFlags = readFile.ReadUInt16();
-				LookAtScore = readFile.ReadUInt16(); 
-				ObjectGUID = readFile.ReadUInt32().ToString("X8");
-				// Skip stuff we don't need
-				readFile.ReadBytes(46);
-				RoomSortFlag = readFile.ReadUInt16();
-				int[] functionSortFlag = new int[1];
-				functionSortFlag[0] = (int)readFile.ReadUInt16();
-				BitArray functionSortFlags = new BitArray(functionSortFlag);
+            // Only check further if this is a Master ID or single id
+            if ((MasterTileSubIndex == 65535) || (MasterTileMasterId == 0))
+            {
+                UseDefaultPlacementFlags = readFile.ReadUInt16();
+                LookAtScore = readFile.ReadUInt16();
+                ObjectGUID = readFile.ReadUInt32().ToString("X8");
+                // Skip stuff we don't need
+                readFile.ReadBytes(46);
+                RoomSortFlag = readFile.ReadUInt16();
+                int[] functionSortFlag = new int[1];
+                functionSortFlag[0] = (int)readFile.ReadUInt16();
+                BitArray functionSortFlags = new BitArray(functionSortFlag);
 
                 int fsfn = 0;
-                foreach (var fsf in functionSortFlags){
+                foreach (var fsf in functionSortFlags)
+                {
                     fsfn++;
                 }
                 if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Function sort flag: {0}", fsfn));
 
 
-				// No function sort, check Build Mode Sort
-				if (functionSortFlag[0] == 0)                 
-				{
-					// Skip until we hit the Build Mode sort and EP
-					readFile.ReadBytes(46);
-					ExpansionFlag = readFile.ReadUInt16();
+                // No function sort, check Build Mode Sort
+                if (functionSortFlag[0] == 0)
+                {
+                    // Skip until we hit the Build Mode sort and EP
+                    readFile.ReadBytes(46);
+                    ExpansionFlag = readFile.ReadUInt16();
 
-					readFile.ReadBytes(8);
-					uint BuildModeType = readFile.ReadUInt16();
-					OriginalGUID = readFile.ReadUInt32().ToString("X8");
-					ObjectModelGUID = readFile.ReadUInt32().ToString("X8");
-					uint BuildModeSubsort = readFile.ReadUInt16();
+                    readFile.ReadBytes(8);
+                    uint BuildModeType = readFile.ReadUInt16();
+                    OriginalGUID = readFile.ReadUInt32().ToString("X8");
+                    ObjectModelGUID = readFile.ReadUInt32().ToString("X8");
+                    uint BuildModeSubsort = readFile.ReadUInt16();
 
                     if (Sims2PackageStatics.Sims2BuildFunctionSortList.Any(x => x.FlagNum == BuildModeType && x.FunctionSubsortNum == BuildModeSubsort))
                     {
                         FunctionSort.Add(Sims2PackageStatics.Sims2BuildFunctionSortList.First(x => x.FlagNum == BuildModeType && x.FunctionSubsortNum == BuildModeSubsort));
-                    } else
+                    }
+                    else
                     {
                         if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("NOT RECOGNIZED: BUILD MODE - Type: {0}, Subsort: {1}", BuildModeType, BuildModeSubsort));
                     }
-                     
-				} 
-				else 
-				{
-					readFile.ReadBytes(46);
-					uint ExpansionFlag = readFile.ReadUInt16();
 
-					readFile.ReadBytes(8);
-					uint BuildModeType = readFile.ReadUInt16();
-					OriginalGUID = readFile.ReadUInt32().ToString("X8");
-					ObjectModelGUID = readFile.ReadUInt32().ToString("X8");
-					uint BuildModeSubsort = readFile.ReadUInt16();
-					readFile.ReadBytes(38);
-					uint FunctionSubsort = readFile.ReadUInt16();
-                                         
+                }
+                else
+                {
+                    readFile.ReadBytes(46);
+                    uint ExpansionFlag = readFile.ReadUInt16();
 
-                    for (int f = 0; f < functionSortFlags.Length; f++){
+                    readFile.ReadBytes(8);
+                    uint BuildModeType = readFile.ReadUInt16();
+                    OriginalGUID = readFile.ReadUInt32().ToString("X8");
+                    ObjectModelGUID = readFile.ReadUInt32().ToString("X8");
+                    uint BuildModeSubsort = readFile.ReadUInt16();
+                    readFile.ReadBytes(38);
+                    uint FunctionSubsort = readFile.ReadUInt16();
+
+
+                    for (int f = 0; f < functionSortFlags.Length; f++)
+                    {
                         if (functionSortFlags[f]) // bitarray might have 100 entries but not all of them are "true". we only want the "true" one. eg; number 5 is true, so the flagnum is 5.
                         {
-                            if (Sims2PackageStatics.Sims2BuyFunctionSortList.Any(x => x.FlagNum == f && x.FunctionSubsortNum == FunctionSubsort)) {
+                            if (Sims2PackageStatics.Sims2BuyFunctionSortList.Any(x => x.FlagNum == f && x.FunctionSubsortNum == FunctionSubsort))
+                            {
                                 FunctionSort.Add(Sims2PackageStatics.Sims2BuyFunctionSortList.First(x => x.FlagNum == f && x.FunctionSubsortNum == FunctionSubsort));
-                            } else
+                            }
+                            else
                             {
                                 if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("NOT RECOGNIZED: BUY MODE - Flag Num: {0}, Subsort: {1}", f, FunctionSubsort));
                             }
-                        }                        
+                        }
                     }
-				}
-			}             
+                }
+            }
         }
         public S2ReadOBJDChunk(DecryptByteStream readFile)
         {
-            FileName = readFile.ReadBytes(64); 
-			Version = readFile.ReadUInt32();
-			InitialStackSize = readFile.ReadUInt16(); 
-			DefaultWallAdjacentFlags = readFile.ReadUInt16(); 
-			DefaultPlacementFlags = readFile.ReadUInt16(); 
-			DefaultWallPlacementFlags = readFile.ReadUInt16(); 
-			DefaultAllowedHeightFlags = readFile.ReadUInt16();
-			InteractionTableID = readFile.ReadUInt16(); 
-			InteractionGroup = readFile.ReadUInt16(); 
-			ObjectType = readFile.ReadUInt16(); 
-			MasterTileMasterId = readFile.ReadUInt16();
-			MasterTileSubIndex = readFile.ReadUInt16();
+            FileName = readFile.ReadBytes(64);
+            Version = readFile.ReadUInt32();
+            InitialStackSize = readFile.ReadUInt16();
+            DefaultWallAdjacentFlags = readFile.ReadUInt16();
+            DefaultPlacementFlags = readFile.ReadUInt16();
+            DefaultWallPlacementFlags = readFile.ReadUInt16();
+            DefaultAllowedHeightFlags = readFile.ReadUInt16();
+            InteractionTableID = readFile.ReadUInt16();
+            InteractionGroup = readFile.ReadUInt16();
+            ObjectType = readFile.ReadUInt16();
+            MasterTileMasterId = readFile.ReadUInt16();
+            MasterTileSubIndex = readFile.ReadUInt16();
 
-			// Only check further if this is a Master ID or single id
-			if ((MasterTileSubIndex == 65535) || (MasterTileMasterId == 0))
-			{
-				UseDefaultPlacementFlags = readFile.ReadUInt16();
-				LookAtScore = readFile.ReadUInt16(); 
-				ObjectGUID = readFile.ReadUInt32().ToString("X8");
-				// Skip stuff we don't need
-				readFile.ReadBytes(46);
-				RoomSortFlag = readFile.ReadUInt16();
-				int[] functionSortFlag = new int[1];
-				functionSortFlag[0] = (int)readFile.ReadUInt16();
-				BitArray functionSortFlags = new BitArray(functionSortFlag);
+            // Only check further if this is a Master ID or single id
+            if ((MasterTileSubIndex == 65535) || (MasterTileMasterId == 0))
+            {
+                UseDefaultPlacementFlags = readFile.ReadUInt16();
+                LookAtScore = readFile.ReadUInt16();
+                ObjectGUID = readFile.ReadUInt32().ToString("X8");
+                // Skip stuff we don't need
+                readFile.ReadBytes(46);
+                RoomSortFlag = readFile.ReadUInt16();
+                int[] functionSortFlag = new int[1];
+                functionSortFlag[0] = (int)readFile.ReadUInt16();
+                BitArray functionSortFlags = new BitArray(functionSortFlag);
 
                 int fsfn = 0;
-                foreach (var fsf in functionSortFlags){
+                foreach (var fsf in functionSortFlags)
+                {
                     fsfn++;
                 }
                 if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Function sort flag: {0}", fsfn));
 
 
-				// No function sort, check Build Mode Sort
-				if (functionSortFlag[0] == 0)                 
-				{
-					// Skip until we hit the Build Mode sort and EP
-					readFile.ReadBytes(46);
-					ExpansionFlag = readFile.ReadUInt16();
+                // No function sort, check Build Mode Sort
+                if (functionSortFlag[0] == 0)
+                {
+                    // Skip until we hit the Build Mode sort and EP
+                    readFile.ReadBytes(46);
+                    ExpansionFlag = readFile.ReadUInt16();
 
-					readFile.ReadBytes(8);
-					uint BuildModeType = readFile.ReadUInt16();
-					OriginalGUID = readFile.ReadUInt32().ToString("X8");
-					ObjectModelGUID = readFile.ReadUInt32().ToString("X8");
-					uint BuildModeSubsort = readFile.ReadUInt16();
+                    readFile.ReadBytes(8);
+                    uint BuildModeType = readFile.ReadUInt16();
+                    OriginalGUID = readFile.ReadUInt32().ToString("X8");
+                    ObjectModelGUID = readFile.ReadUInt32().ToString("X8");
+                    uint BuildModeSubsort = readFile.ReadUInt16();
 
                     if (Sims2PackageStatics.Sims2BuildFunctionSortList.Any(x => x.FlagNum == BuildModeType && x.FunctionSubsortNum == BuildModeSubsort))
                     {
                         FunctionSort.Add(Sims2PackageStatics.Sims2BuildFunctionSortList.First(x => x.FlagNum == BuildModeType && x.FunctionSubsortNum == BuildModeSubsort));
-                    } else
+                    }
+                    else
                     {
                         if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("NOT RECOGNIZED: BUILD MODE - Type: {0}, Subsort: {1}", BuildModeType, BuildModeSubsort));
                     }
-                     
-				} 
-				else 
-				{
-					readFile.ReadBytes(46);
-					uint ExpansionFlag = readFile.ReadUInt16();
 
-					readFile.ReadBytes(8);
-					uint BuildModeType = readFile.ReadUInt16();
-					OriginalGUID = readFile.ReadUInt32().ToString("X8");
-					ObjectModelGUID = readFile.ReadUInt32().ToString("X8");
-					uint BuildModeSubsort = readFile.ReadUInt16();
-					readFile.ReadBytes(38);
-					uint FunctionSubsort = readFile.ReadUInt16();
+                }
+                else
+                {
+                    readFile.ReadBytes(46);
+                    uint ExpansionFlag = readFile.ReadUInt16();
 
-                    for (int f = 0; f < functionSortFlags.Length; f++){
+                    readFile.ReadBytes(8);
+                    uint BuildModeType = readFile.ReadUInt16();
+                    OriginalGUID = readFile.ReadUInt32().ToString("X8");
+                    ObjectModelGUID = readFile.ReadUInt32().ToString("X8");
+                    uint BuildModeSubsort = readFile.ReadUInt16();
+                    readFile.ReadBytes(38);
+                    uint FunctionSubsort = readFile.ReadUInt16();
+
+                    for (int f = 0; f < functionSortFlags.Length; f++)
+                    {
                         if (functionSortFlags[f]) // bitarray might have 100 entries but not all of them are "true". we only want the "true" one. eg; number 5 is true, so the flagnum is 5.
                         {
-                            if (Sims2PackageStatics.Sims2BuyFunctionSortList.Any(x => x.FlagNum == f && x.FunctionSubsortNum == FunctionSubsort)) {
+                            if (Sims2PackageStatics.Sims2BuyFunctionSortList.Any(x => x.FlagNum == f && x.FunctionSubsortNum == FunctionSubsort))
+                            {
                                 FunctionSort.Add(Sims2PackageStatics.Sims2BuyFunctionSortList.First(x => x.FlagNum == f && x.FunctionSubsortNum == FunctionSubsort));
-                            } else
+                            }
+                            else
                             {
                                 if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("NOT RECOGNIZED: BUY MODE - Flag Num: {0}, Subsort: {1}", f, FunctionSubsort));
                             }
-                        }                        
+                        }
                     }
-				}
-			}           
+                }
+            }
         }
 
         public override string ToString()
@@ -1832,11 +3056,12 @@ namespace SimsCCManager.PackageReaders
                 if (string.IsNullOrEmpty(sort.Subcategory))
                 {
                     sorts.AppendLine(string.Format("{0}", sort.Category));
-                } else
-                {
-                   sorts.AppendLine(string.Format("{0}/{1}", sort.Category, sort.Subcategory)); 
                 }
-                
+                else
+                {
+                    sorts.AppendLine(string.Format("{0}/{1}", sort.Category, sort.Subcategory));
+                }
+
             }
             return sorts.ToString();
         }
@@ -1844,14 +3069,16 @@ namespace SimsCCManager.PackageReaders
         static string CleanInput(string strIn)
         {
             // Replace invalid characters with empty strings.
-            try {
-            return Regex.Replace(strIn, @"[^\s\w\.@-]", "",
-                                    RegexOptions.None, TimeSpan.FromSeconds(1.5));
+            try
+            {
+                return Regex.Replace(strIn, @"[^\s\w\.@-]", "",
+                                        RegexOptions.None, TimeSpan.FromSeconds(1.5));
             }
             // If we timeout when replacing invalid characters,
             // we should return Empty.
-            catch (RegexMatchTimeoutException) {
-            return String.Empty;
+            catch (RegexMatchTimeoutException)
+            {
+                return String.Empty;
             }
         }
     }
@@ -1859,53 +3086,53 @@ namespace SimsCCManager.PackageReaders
     public struct S2ReadCTSSChunk
     {
         public string Description;
-        public string Title; 
+        public string Title;
 
         public S2ReadCTSSChunk(BinaryReader readFile)
         {
             readFile.ReadBytes(64);
-			readFile.ReadUInt16();
+            readFile.ReadUInt16();
 
-			uint numStrings = readFile.ReadUInt16();
-			bool foundLang = false;
-            
-			for (int k = 0; k < numStrings; k++)
-			{
-				int langCode = Convert.ToInt32(readFile.ReadByte().ToString());
+            uint numStrings = readFile.ReadUInt16();
+            bool foundLang = false;
 
-				string blah = Sims2EntryReaders.ReadNullString(readFile);
-				string meep = Sims2EntryReaders.ReadNullString(readFile);
+            for (int k = 0; k < numStrings; k++)
+            {
+                int langCode = Convert.ToInt32(readFile.ReadByte().ToString());
 
-				if (langCode == 1) 
-				{
-					if (foundLang == true && !string.IsNullOrEmpty(blah)) { Description = blah.Replace("\n", " "); break; }
-					if (foundLang == false && !string.IsNullOrEmpty(blah)) { Title = blah.Replace("\n", " "); foundLang = true; }
-				}
+                string blah = Sims2EntryReaders.ReadNullString(readFile);
+                string meep = Sims2EntryReaders.ReadNullString(readFile);
 
-			}
+                if (langCode == 1)
+                {
+                    if (foundLang == true && !string.IsNullOrEmpty(blah)) { Description = blah.Replace("\n", " "); break; }
+                    if (foundLang == false && !string.IsNullOrEmpty(blah)) { Title = blah.Replace("\n", " "); foundLang = true; }
+                }
+
+            }
         }
 
         public S2ReadCTSSChunk(DecryptByteStream readFile)
         {
             readFile.SkipAhead(66);
 
-			uint numStrings = readFile.ReadUInt16();
-			bool foundLang = false;
-            
-			for (int k = 0; k < numStrings; k++)
-			{
-				byte[] langCode = readFile.ReadBytes(1);
+            uint numStrings = readFile.ReadUInt16();
+            bool foundLang = false;
 
-				string blah = readFile.GetNullString();
-				string meep = readFile.GetNullString();
+            for (int k = 0; k < numStrings; k++)
+            {
+                byte[] langCode = readFile.ReadBytes(1);
 
-				if (langCode[0] == 1) 
-				{
-					if (foundLang == true && !string.IsNullOrEmpty(blah)) { Description = blah.Replace("\n", " "); break; }
-					if (foundLang == false && !string.IsNullOrEmpty(blah)) { Title = blah.Replace("\n", " "); foundLang = true; }
-				}
+                string blah = readFile.GetNullString();
+                string meep = readFile.GetNullString();
 
-			}
+                if (langCode[0] == 1)
+                {
+                    if (foundLang == true && !string.IsNullOrEmpty(blah)) { Description = blah.Replace("\n", " "); break; }
+                    if (foundLang == false && !string.IsNullOrEmpty(blah)) { Title = blah.Replace("\n", " "); foundLang = true; }
+                }
+
+            }
         }
 
         public override string ToString()
@@ -1914,28 +3141,36 @@ namespace SimsCCManager.PackageReaders
         }
     }
 
-    public class DecryptByteStream{
+    public class DecryptByteStream
+    {
         private int currOffset = 0;
         private byte[] byteStream;
+        public BinaryReader reader;
 
-		public DecryptByteStream(byte[] inputBytes) 
+        public DecryptByteStream(byte[] inputBytes)
         {
             byteStream = inputBytes;
-        }
-        
-        public int Offset {
-            get{ return currOffset; }
-            set{ currOffset = value; }
+
+            reader = new(new MemoryStream(inputBytes));
         }
 
-        public void SkipAhead(int numToSkip) {
+        public int Offset
+        {
+            get { return currOffset; }
+            set { currOffset = value; }
+        }
+
+        public void SkipAhead(int numToSkip)
+        {
             this.Offset += numToSkip;
         }
 
-        public string GetNullString() {
+        public string GetNullString()
+        {
             string result = "";
             char c;
-            for (int i = 0; i < byteStream.Length; i++) {
+            for (int i = 0; i < byteStream.Length; i++)
+            {
                 if ((c = (char)byteStream[currOffset]) == 0) { currOffset++; break; }
                 result += c.ToString();
                 currOffset++;
@@ -1944,16 +3179,18 @@ namespace SimsCCManager.PackageReaders
             return result;
         }
 
-        public byte ReadByte(){
+        public byte ReadByte()
+        {
             byte result = new byte();
             if (currOffset > byteStream.Length) return result;
             result = byteStream[currOffset];
-            currOffset++; 
+            currOffset++;
             return result;
         }
 
-        public byte[] ReadBytes(uint count) {
-            byte[] result = new byte [count];
+        public byte[] ReadBytes(uint count)
+        {
+            byte[] result = new byte[count];
             for (int i = 0; i < count; i++)
             {
                 result[i] = byteStream[currOffset];
@@ -1963,11 +3200,29 @@ namespace SimsCCManager.PackageReaders
             return result;
         }
 
-        public uint ReadUInt32() {
+        public uint ReadUInt32()
+        {
             uint power = 1;
             uint result = 0;
 
-            for (int i = 0; i < 4; i++){
+            for (int i = 0; i < 4; i++)
+            {
+                if (currOffset > byteStream.Length) return result;
+                result += (byteStream[currOffset] * power);
+                power = power * 256;
+                currOffset++;
+            }
+            //if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("UInt32 Result: {0}", result));
+            return result;
+        }
+
+        public uint ReadUInt16()
+        {
+            uint power = 1;
+            uint result = 0;
+
+            for (int i = 0; i < 2; i++)
+            {
                 if (currOffset > byteStream.Length) return result;
                 result += (byteStream[currOffset] * power);
                 power = power * 256;
@@ -1976,33 +3231,22 @@ namespace SimsCCManager.PackageReaders
             return result;
         }
 
-        public uint ReadUInt16(){
-            uint power = 1;
-            uint result = 0;
-
-            for (int i = 0; i < 2; i++) {
-                if (currOffset > byteStream.Length) return result;
-                result += (byteStream[currOffset] * power);
-                power = power * 256;
-                currOffset++;
-            }
-            return result;
-        }
-
-        public bool ReadBoolean(){
+        public bool ReadBoolean()
+        {
             bool result = false;
             if (currOffset > byteStream.Length) return result;
 
             byte temp = byteStream[currOffset];
             currOffset++;
 
-            if (temp == 1) {result = true;}
-            else {result = false;}
+            if (temp == 1) { result = true; }
+            else { result = false; }
 
             return result;
         }
 
-        public string ReadString() {
+        public string ReadString()
+        {
             string result = "";
             //Get the first byte containing the string length
             if (currOffset > byteStream.Length) return result;
@@ -2027,13 +3271,13 @@ namespace SimsCCManager.PackageReaders
     public class Sims2EntryReaders
     {
         public static uint QFSLengthToInt(byte[] data)
-        {			
+        {
             // Converts a 3 byte length to a uint
             uint power = 1;
             uint result = 0;
             for (int i = data.Length; i > 0; i--)
             {
-                result += (data[i-1] * power);
+                result += (data[i - 1] * power);
                 power = power * 256;
             }
 
@@ -2041,104 +3285,104 @@ namespace SimsCCManager.PackageReaders
         }
 
         public static byte[] Uncompress(byte[] data, uint targetSize, int offset)
-		{			
-			byte[] uncdata = null;
-			int index = offset;			
+        {
+            byte[] uncdata = null;
+            int index = offset;
 
-			try 
-			{
-				uncdata = new Byte[targetSize];
-			} 
-			catch(Exception) 
-			{
-				uncdata = new Byte[0];
-			}
-			
-			int uncindex = 0;
-			int plaincount = 0;
-			int copycount = 0;
-			int copyoffset = 0;
-			Byte cc = 0;
-			Byte cc1 = 0;
-			Byte cc2 = 0;
-			Byte cc3 = 0;
-			int source;
-			
-			try 
-			{
-				while ((index<data.Length) && (data[index] < 0xfc))
-				{
-					cc = data[index++];
-				
-					if ((cc&0x80)==0)
-					{
-						cc1 = data[index++];
-						plaincount = (cc & 0x03);
-						copycount = ((cc & 0x1C) >> 2) + 3;
-						copyoffset = ((cc & 0x60) << 3) + cc1 +1;
-					} 
-					else if ((cc&0x40)==0)
-					{
-						cc1 = data[index++];
-						cc2 = data[index++];
-						plaincount = (cc1 & 0xC0) >> 6 ; 
-						copycount = (cc & 0x3F) + 4 ;
-						copyoffset = ((cc1 & 0x3F) << 8) + cc2 +1;							
-					} 
-					else if ((cc&0x20)==0)
-					{
-						cc1 = data[index++];
-						cc2 = data[index++];
-						cc3 = data[index++];
-						plaincount = (cc & 0x03);
-						copycount = ((cc & 0x0C) << 6) + cc3 + 5;
-						copyoffset = ((cc & 0x10) << 12) + (cc1 << 8) + cc2 +1;
-					} 
-					else 
-					{									
-						plaincount = (cc - 0xDF) << 2; 
-						copycount = 0;
-						copyoffset = 0;				
-					}
+            try
+            {
+                uncdata = new Byte[targetSize];
+            }
+            catch (Exception)
+            {
+                uncdata = new Byte[0];
+            }
 
-					for (int i=0; i<plaincount; i++) uncdata[uncindex++] = data[index++];
+            int uncindex = 0;
+            int plaincount = 0;
+            int copycount = 0;
+            int copyoffset = 0;
+            Byte cc = 0;
+            Byte cc1 = 0;
+            Byte cc2 = 0;
+            Byte cc3 = 0;
+            int source;
 
-					source = uncindex - copyoffset;	
-					for (int i=0; i<copycount; i++) uncdata[uncindex++] = uncdata[source++];
-				}
-			} 
-			catch(Exception ex)
-			{
-				throw ex;
-			} 
-			
+            try
+            {
+                while ((index < data.Length) && (data[index] < 0xfc))
+                {
+                    cc = data[index++];
 
-			if (index<data.Length) 
-			{
-				plaincount = (data[index++] & 0x03);
-				for (int i=0; i<plaincount; i++) 
-				{
-					if (uncindex>=uncdata.Length) break;
-					uncdata[uncindex++] = data[index++];
-				}
-			}
-			return uncdata;
-		}
+                    if ((cc & 0x80) == 0)
+                    {
+                        cc1 = data[index++];
+                        plaincount = (cc & 0x03);
+                        copycount = ((cc & 0x1C) >> 2) + 3;
+                        copyoffset = ((cc & 0x60) << 3) + cc1 + 1;
+                    }
+                    else if ((cc & 0x40) == 0)
+                    {
+                        cc1 = data[index++];
+                        cc2 = data[index++];
+                        plaincount = (cc1 & 0xC0) >> 6;
+                        copycount = (cc & 0x3F) + 4;
+                        copyoffset = ((cc1 & 0x3F) << 8) + cc2 + 1;
+                    }
+                    else if ((cc & 0x20) == 0)
+                    {
+                        cc1 = data[index++];
+                        cc2 = data[index++];
+                        cc3 = data[index++];
+                        plaincount = (cc & 0x03);
+                        copycount = ((cc & 0x0C) << 6) + cc3 + 5;
+                        copyoffset = ((cc & 0x10) << 12) + (cc1 << 8) + cc2 + 1;
+                    }
+                    else
+                    {
+                        plaincount = (cc - 0xDF) << 2;
+                        copycount = 0;
+                        copyoffset = 0;
+                    }
+
+                    for (int i = 0; i < plaincount; i++) uncdata[uncindex++] = data[index++];
+
+                    source = uncindex - copyoffset;
+                    for (int i = 0; i < copycount; i++) uncdata[uncindex++] = uncdata[source++];
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+
+
+            if (index < data.Length)
+            {
+                plaincount = (data[index++] & 0x03);
+                for (int i = 0; i < plaincount; i++)
+                {
+                    if (uncindex >= uncdata.Length) break;
+                    uncdata[uncindex++] = data[index++];
+                }
+            }
+            return uncdata;
+        }
 
         public static string ReadNullString(BinaryReader reader)
-		{
+        {
             string result = "";
-			char c;
-			for (int i = 0; i < reader.BaseStream.Length; i++) 
-			{
-				if ((c = (char) reader.ReadByte()) == 0) 
-				{
-					break;
-				}
-				result += c.ToString();
-			}
-			return result;
-		}
+            char c;
+            for (int i = 0; i < reader.BaseStream.Length; i++)
+            {
+                if ((c = (char)reader.ReadByte()) == 0)
+                {
+                    break;
+                }
+                result += c.ToString();
+            }
+            return result;
+        }
     }
 
 
@@ -2165,160 +3409,308 @@ namespace SimsCCManager.PackageReaders
         }
     }
 
-    public class EntryType {
+    public class EntryType
+    {
         /// <summary>
         /// For "types", for example Cas Parts or Geometry.
         /// </summary>
-        public string Tag {get; set;}
-        public string TypeID {get; set;}
-        public string Description {get; set;}
+        public string Tag { get; set; }
+        public string TypeID { get; set; }
+        public string Description { get; set; }
     }
 
-    public class FunctionSortList {
+    public class FunctionSortList
+    {
         /// <summary>
         /// Used for Sims 2 (I believe) function categorization. 
         /// </summary>
-        public int FlagNum {get; set;}
-        public int FunctionSubsortNum {get; set;}
-        public string Category {get; set;}
-        public string Subcategory {get; set;}
-    } 
+        public int FlagNum { get; set; }
+        public int FunctionSubsortNum { get; set; }
+        public string Category { get; set; }
+        public string Subcategory { get; set; }
+    }
 
     public class IndexEntry
     {
-        public string TypeID;
-        public string GroupID;
-        public string InstanceID;
+        public string TypeID { get; set; }
+        public string GroupID { get; set; }
+        public string InstanceID { get; set; }
+        private string _completeiddummy;
         public string CompleteID
         {
             get { return string.Format("{0}-{1}-{2}", TypeID, GroupID, InstanceID); }
+            set { _completeiddummy = value; }
         }
-        public string InstanceID2;
-        public uint Offset;
-        public uint FileSize;
-        public uint TrueSize;
-        public bool IsCompressed;        
-        public string Unused;
-        public int EntryIDX;
+        public string InstanceID2 { get; set; }
+        public uint Offset { get; set; }
+        public uint FileSize { get; set; }
+        public uint UncompressedSize { get; set; }
+        public bool IsCompressed { get; set; }
+        public string Unused { get; set; }
+        public int EntryIDX { get; set; }
+        private string _entrytypedummy;
 
         public string EntryType
         {
-            get { try
+            get
+            {
+                try
                 {
-                    return Sims2PackageStatics.Sims2EntryTypes.First(x => x.TypeID == TypeID).Tag; 
-                } catch
+                    return Sims2PackageStatics.Sims2EntryTypes.First(x => x.TypeID == TypeID).Tag;
+                }
+                catch
                 {
                     if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("TypeID doesn't have a matching entry: {0}", TypeID));
                     return "UNKNOWN";
-                } 
+                }
+            }
+            set
+            {
+                _entrytypedummy = value;
             }
         }
 
         public override string ToString()
         {
-            return string.Format("Index Entry: {0} - Location: {1}, FileSize: {2}, TrueSize: {3}, Compressed: {4}. Type: {5}", CompleteID, Offset, FileSize, TrueSize, IsCompressed, EntryType);
+            return string.Format("Index Entry: {0} - Location: {1}, FileSize: {2}, UncompressedSize: {3}, Compressed: {4}. Type: {5}", CompleteID, Offset, FileSize, UncompressedSize, IsCompressed, EntryType);
         }
-    }	
+    }
 
-    public class ByteReaders {
+    public class ByteReaders
+    {
         /// <summary>
         /// Repeatedly called methods.
         /// </summary>
 
-        public static MemoryStream ReadBytesToFile(string file){
+        public static MemoryStream ReadBytesToFile(string file)
+        {
             FileInfo f = new FileInfo(file);
             byte[] bit = new byte[f.Length];
             int bytes;
-			using (FileStream fsSource = new FileStream(file, FileMode.Open, FileAccess.Read))
-			{
-				for (int w = 0; w < f.Length; w++){
-                    bit[w] = (byte)fsSource.ReadByte();
-                }                
-				MemoryStream stream = new MemoryStream(bit);
-				return stream;
-			}
-		}
-
-		public static MemoryStream ReadBytesToFile(string file, int bytestoread){
-			byte[] bit = new byte[bytestoread];
-            int bytes;
-			using (FileStream fsSource = new FileStream(file, FileMode.Open, FileAccess.Read))
-			{
-				for (int w = 0; w < bytestoread; w++){
+            using (FileStream fsSource = new FileStream(file, FileMode.Open, FileAccess.Read))
+            {
+                for (int w = 0; w < f.Length; w++)
+                {
                     bit[w] = (byte)fsSource.ReadByte();
                 }
-				MemoryStream stream = new MemoryStream(bit);
-				return stream;
-			}
-		}
+                MemoryStream stream = new MemoryStream(bit);
+                return stream;
+            }
+        }
 
-        public static Byte[] ReadEntryBytes(BinaryReader reader, int memSize){
+        public static MemoryStream ReadBytesToFile(string file, int bytestoread)
+        {
+            byte[] bit = new byte[bytestoread];
+            int bytes;
+            using (FileStream fsSource = new FileStream(file, FileMode.Open, FileAccess.Read))
+            {
+                for (int w = 0; w < bytestoread; w++)
+                {
+                    bit[w] = (byte)fsSource.ReadByte();
+                }
+                MemoryStream stream = new MemoryStream(bit);
+                return stream;
+            }
+        }
+
+        public static Byte[] ReadEntryBytes(BinaryReader reader, int memSize)
+        {
             byte[] bit = new byte[memSize];
-            for (int w = 0; w < memSize; w++){
+            for (int w = 0; w < memSize; w++)
+            {
                 bit[w] = reader.ReadByte();
             }
             return bit;
         }
     }
 
-    public interface IGMDCElement
+    public class MMATData
     {
-        public int Index {get; set;}
-        public string Identity {get; set;}
-        public uint BlockFormat {get; set;}
-        public uint SetFormat {get; set;}
-        public uint BlockSize {get; set;}
-        public int Length { 
-            get { 
-            switch (BlockFormat)
-                {
-                    case 4: 
-                        //single float (4 byte length)
-                        return 1;
-                    case 1: 
-                        //paired floats (8 total bytes)
-                        return 2;
-                    case 2: 
-                        //triple floats (12 bytes total)
-                        return 3;
-                    default: 
-                        return 1;
-                }
+        public string Creator { get; set; }
+        public bool DefaultMaterial { get; set; }
+        public string Family { get; set; }
+        public string Flags { get; set; }
+        public string MaterialStateFlags { get; set; }
+        public string ModelName { get; set; }
+        public string Name { get; set; }
+        public string ObjectGUID { get; set; } = "";
+        public string ObjectStateIndex { get; set; }
+        public string SubsetName { get; set; }
+        public string Type { get; set; }
+
+        public void SetDefaultMaterial(string boolString)
+        {
+            switch (boolString.ToLower())
+            {
+                case "true":
+                    DefaultMaterial = true;
+                    break;
+                default:
+                    DefaultMaterial = false;
+                    break;
             }
         }
-        public int ListLength { get { return (int)(BlockSize / Length / 4); }}
-        public long BlockStart {get; set;}        
-        public uint ItemCount {get; set;}
+    }
+
+    public class TXTRData
+    {
+        public string FullTXTRName { get; set; }
+        public string GUID
+        {
+            get
+            {
+                if (FullTXTRName.Contains('!')) return FullTXTRName.Split('!')[0].TrimStart('#'); else return "N/a";
+            }
+        }
+        public string TextureName
+        {
+            get
+            {
+                if (FullTXTRName.Contains('!')) return FullTXTRName.Split('!')[1]; else return "N/a";
+            }
+        }
+
+        public uint TextureWidth { get; set; }
+        public uint TextureHeight { get; set; }
+        /*Image format codes: 
+        0=??? 
+        1=Raw A8 R8 G8 B8, total data size = width*height*4 
+        2=Raw R8 G8 B8, total data size = width*height*3 
+        3=??? 
+        4=DXT1 RGB (no alpha bit) total data size = width*height/2 
+        5=DXT3 ARGB, total data size = width*height 
+        6=Raw Grayscale, total data size = width*height 
+        7... = ???
+        8 - DXT5*/
+
+        public uint FormatCode { get; set; }
+        public uint MipMapLevels { get; set; }
+        private byte[] _imagedata;
+        public byte[] ImageData
+        {
+            get { if (Texture != null) return Texture.SavePngToBuffer(); else return []; }
+            set { if (value.Length != 0) Texture = DeserializeTexture(value); else _imagedata = value; }
+        }
+        [XmlIgnore]
+        private Godot.Image _texture;
+        [XmlIgnore]
+        public Godot.Image Texture
+        {
+            get { return _texture; }
+            set { _texture = ConvertTexture(value); }
+        }
+
+        private Godot.Image ConvertTexture(Godot.Image image)
+        {
+            if (image.GetFormat() != Godot.Image.Format.Rgb8)
+            {
+                if (image.IsCompressed())
+                {
+                    image.Decompress();
+                }
+                image.Convert(Godot.Image.Format.Rgb8);
+            }
+            else
+            {
+                if (!image.IsCompressed())
+                {
+                    image.Compress(Godot.Image.CompressMode.Astc);
+                }
+            }
+            return image;
+        }
+        private Godot.Image DeserializeTexture(byte[] data)
+        {
+            Godot.Image image = new();
+            image.LoadPngFromBuffer(data);
+            return image;
+        }
+    }
+
+    public class XFLRData
+    {
+        public uint BrushWidth { get; set; }
+        public uint Cost { get; set; }
+        public float CrapScore { get; set; }
+        public int Depreciated { get; set; }
+        public string Description { get; set; }
+        public string Guid { get; set; }
+        public string Name { get; set; }
+        public float NicenessMultiplier { get; set; }
+        public uint ResourceGroupID { get; set; }
+        public uint ResourceID { get; set; }
+        public uint ResourceResTypeID { get; set; }
+        public string ShowInCatalog { get; set; }
+        public string SoundSuffix { get; set; } = "";
+        public uint StringSetGroupID { get; set; }
+        public uint StringSetID { get; set; }
+        public uint StringSetResTypeID { get; set; }
+        public string TextureTName { get; set; }
+        public string Type { get; set; } = "";
+        public uint Version { get; set; }
+
+    }
+
+
+    public interface IGMDCElement
+    {
+        public int Index { get; set; }
+        public string Identity { get; set; }
+        public string IdentityName { get; set; }
+        public uint Number { get; set; }
+        public uint BlockFormat { get; set; }
+        public uint SetFormat { get; set; }
+        public uint BlockSize { get; set; }
+        public int Length
+        {
+            get
+            {
+                return BlockFormat switch
+                {
+                    4 => 1,//single float (4 byte length)
+                    1 => 2,//paired floats (8 total bytes)
+                    2 => 3,//triple floats (12 bytes total)
+                    _ => 1,
+                };
+            }
+        }
+        public int ListLength { get { return (int)(BlockSize / Length / 4); } }
+        public uint ItemCount { get; set; }
+        public long ElementLocation { get; set; }
     }
 
     public class GMDCElement : IGMDCElement
     {
-        public int Index {get; set;}
-        public string Identity {get; set;}
-        public uint BlockFormat {get; set;}
-        public uint SetFormat {get; set;}
-        public uint BlockSize {get; set;}
-        public int Length { 
-            get { 
-            switch (BlockFormat)
+        public int Index { get; set; }
+        public string Identity { get; set; }
+        public string IdentityName { get; set; }
+        public uint Number { get; set; }
+        public uint BlockFormat { get; set; }
+        public uint SetFormat { get; set; }
+        public uint BlockSize { get; set; }
+        public int Length
+        {
+            get
+            {
+                switch (BlockFormat)
                 {
-                    case 4: 
+                    case 4:
                         //single float (4 byte length)
                         return 1;
-                    case 1: 
+                    case 1:
                         //paired floats (8 total bytes)
                         return 2;
-                    case 2: 
+                    case 2:
                         //triple floats (12 bytes total)
                         return 3;
-                    default: 
+                    default:
                         return 1;
                 }
             }
         }
-        public int ListLength { get { return (int)(BlockSize / Length / 4); }}
-        public long BlockStart {get; set;}        
-        public uint ItemCount {get; set;}
+        public int ListLength { get { return (int)(BlockSize / Length / 4); } }
+        public uint ItemCount { get; set; }
+        public long ElementLocation { get; set; }
 
         public dynamic ConvertTo(dynamic type)
         {
@@ -2331,9 +3723,11 @@ namespace SimsCCManager.PackageReaders
                         BlockFormat = this.BlockFormat,
                         SetFormat = this.SetFormat,
                         BlockSize = this.BlockSize,
-                        BlockStart = this.BlockStart,
                         ItemCount = this.ItemCount,
-                        Index = this.Index
+                        Index = this.Index,
+                        ElementLocation = this.ElementLocation,
+                        IdentityName = this.IdentityName,
+                        Number = this.Number
 
                     };
                 case Type VarGMDCElementNormals when VarGMDCElementNormals == typeof(GMDCElementNormals):
@@ -2343,9 +3737,11 @@ namespace SimsCCManager.PackageReaders
                         BlockFormat = this.BlockFormat,
                         SetFormat = this.SetFormat,
                         BlockSize = this.BlockSize,
-                        BlockStart = this.BlockStart,
                         ItemCount = this.ItemCount,
-                        Index = this.Index
+                        Index = this.Index,
+                        ElementLocation = this.ElementLocation,
+                        IdentityName = this.IdentityName,
+                        Number = this.Number
                     };
                 case Type VarGMDCElementUVCoordinates when VarGMDCElementUVCoordinates == typeof(GMDCElementUVCoordinates):
                     return new GMDCElementUVCoordinates()
@@ -2354,9 +3750,11 @@ namespace SimsCCManager.PackageReaders
                         BlockFormat = this.BlockFormat,
                         SetFormat = this.SetFormat,
                         BlockSize = this.BlockSize,
-                        BlockStart = this.BlockStart,
                         ItemCount = this.ItemCount,
-                        Index = this.Index
+                        Index = this.Index,
+                        ElementLocation = this.ElementLocation,
+                        IdentityName = this.IdentityName,
+                        Number = this.Number
                     };
                 case Type VarGMDCElementTargetIndices when VarGMDCElementTargetIndices == typeof(GMDCElementTargetIndices):
                     return new GMDCElementTargetIndices()
@@ -2365,9 +3763,11 @@ namespace SimsCCManager.PackageReaders
                         BlockFormat = this.BlockFormat,
                         SetFormat = this.SetFormat,
                         BlockSize = this.BlockSize,
-                        BlockStart = this.BlockStart,
                         ItemCount = this.ItemCount,
-                        Index = this.Index
+                        Index = this.Index,
+                        ElementLocation = this.ElementLocation,
+                        IdentityName = this.IdentityName,
+                        Number = this.Number
                     };
                 case Type VarGMDCElementBoneAssignments when VarGMDCElementBoneAssignments == typeof(GMDCElementBoneAssignments):
                     return new GMDCElementBoneAssignments()
@@ -2376,9 +3776,11 @@ namespace SimsCCManager.PackageReaders
                         BlockFormat = this.BlockFormat,
                         SetFormat = this.SetFormat,
                         BlockSize = this.BlockSize,
-                        BlockStart = this.BlockStart,
                         ItemCount = this.ItemCount,
-                        Index = this.Index
+                        Index = this.Index,
+                        ElementLocation = this.ElementLocation,
+                        IdentityName = this.IdentityName,
+                        Number = this.Number
                     };
                 case Type VarGMDCElementSkinV1 when VarGMDCElementSkinV1 == typeof(GMDCElementSkinV1):
                     return new GMDCElementSkinV1()
@@ -2387,9 +3789,11 @@ namespace SimsCCManager.PackageReaders
                         BlockFormat = this.BlockFormat,
                         SetFormat = this.SetFormat,
                         BlockSize = this.BlockSize,
-                        BlockStart = this.BlockStart,
                         ItemCount = this.ItemCount,
-                        Index = this.Index
+                        Index = this.Index,
+                        ElementLocation = this.ElementLocation,
+                        IdentityName = this.IdentityName,
+                        Number = this.Number
                     };
                 case Type VarGMDCElementSkinV2 when VarGMDCElementSkinV2 == typeof(GMDCElementSkinV2):
                     return new GMDCElementSkinV2()
@@ -2398,9 +3802,11 @@ namespace SimsCCManager.PackageReaders
                         BlockFormat = this.BlockFormat,
                         SetFormat = this.SetFormat,
                         BlockSize = this.BlockSize,
-                        BlockStart = this.BlockStart,
                         ItemCount = this.ItemCount,
-                        Index = this.Index
+                        Index = this.Index,
+                        ElementLocation = this.ElementLocation,
+                        IdentityName = this.IdentityName,
+                        Number = this.Number
                     };
                 case Type VarGMDCElementSkinV3 when VarGMDCElementSkinV3 == typeof(GMDCElementSkinV3):
                     return new GMDCElementSkinV3()
@@ -2409,9 +3815,11 @@ namespace SimsCCManager.PackageReaders
                         BlockFormat = this.BlockFormat,
                         SetFormat = this.SetFormat,
                         BlockSize = this.BlockSize,
-                        BlockStart = this.BlockStart,
                         ItemCount = this.ItemCount,
-                        Index = this.Index
+                        Index = this.Index,
+                        ElementLocation = this.ElementLocation,
+                        IdentityName = this.IdentityName,
+                        Number = this.Number
                     };
                 case Type VarGMDCElementMorphVertexDeltas when VarGMDCElementMorphVertexDeltas == typeof(GMDCElementMorphVertexDeltas):
                     return new GMDCElementMorphVertexDeltas()
@@ -2420,9 +3828,11 @@ namespace SimsCCManager.PackageReaders
                         BlockFormat = this.BlockFormat,
                         SetFormat = this.SetFormat,
                         BlockSize = this.BlockSize,
-                        BlockStart = this.BlockStart,
                         ItemCount = this.ItemCount,
-                        Index = this.Index
+                        Index = this.Index,
+                        ElementLocation = this.ElementLocation,
+                        IdentityName = this.IdentityName,
+                        Number = this.Number
                     };
                 case Type VarGMDCElementMorphNormalDeltas when VarGMDCElementMorphNormalDeltas == typeof(GMDCElementMorphNormalDeltas):
                     return new GMDCElementMorphNormalDeltas()
@@ -2431,9 +3841,11 @@ namespace SimsCCManager.PackageReaders
                         BlockFormat = this.BlockFormat,
                         SetFormat = this.SetFormat,
                         BlockSize = this.BlockSize,
-                        BlockStart = this.BlockStart,
                         ItemCount = this.ItemCount,
-                        Index = this.Index
+                        Index = this.Index,
+                        ElementLocation = this.ElementLocation,
+                        IdentityName = this.IdentityName,
+                        Number = this.Number
                     };
                 case Type VarGMDCElementMorphVertexMap when VarGMDCElementMorphVertexMap == typeof(GMDCElementMorphVertexMap):
                     return new GMDCElementMorphVertexMap()
@@ -2442,427 +3854,669 @@ namespace SimsCCManager.PackageReaders
                         BlockFormat = this.BlockFormat,
                         SetFormat = this.SetFormat,
                         BlockSize = this.BlockSize,
-                        BlockStart = this.BlockStart,
                         ItemCount = this.ItemCount,
-                        Index = this.Index
+                        Index = this.Index,
+                        ElementLocation = this.ElementLocation,
+                        IdentityName = this.IdentityName,
+                        Number = this.Number
+                    };
+                case Type VarGMDCElementBumpNorms when VarGMDCElementBumpNorms == typeof(GMDCElementBumpMapNormals):
+                    return new GMDCElementBumpMapNormals()
+                    {
+                        Identity = this.Identity,
+                        BlockFormat = this.BlockFormat,
+                        SetFormat = this.SetFormat,
+                        BlockSize = this.BlockSize,
+                        ItemCount = this.ItemCount,
+                        Index = this.Index,
+                        ElementLocation = this.ElementLocation,
+                        IdentityName = this.IdentityName,
+                        Number = this.Number
                     };
                 default:
                     return new GMDCElement();
             }
         }
+
+        public override string ToString()
+        {
+            StringBuilder sb = new();
+            sb.Append(string.Format("Element Index: {0}, ", Index));
+            sb.Append(string.Format("Number: {0}, ", Number));
+            sb.Append(string.Format("Identity: {0} ({1}), ", Identity, IdentityName));
+            sb.Append(string.Format("BlockFormat: {0}, ", BlockFormat));
+            sb.Append(string.Format("SetFormat: {0}, ", SetFormat));
+            sb.Append(string.Format("BlockSize: {0}, ", BlockSize));
+            sb.Append(string.Format("ItemCount: {0}", ItemCount));
+            return sb.ToString();
+        }
     }
 
-    public class GMDCElementVertices : IGMDCElement { 
-        public int Index {get; set;}
-        public string Identity {get; set;}
-        public uint BlockFormat {get; set;}
-        public uint SetFormat {get; set;}
-        public uint BlockSize {get; set;}
-        public int Length { 
-            get { 
-            switch (BlockFormat)
+    public class GMDCElementVertices : IGMDCElement
+    {
+        public int Index { get; set; }
+        public string Identity { get; set; }
+        public string IdentityName { get; set; }
+        public uint Number { get; set; }
+        public uint BlockFormat { get; set; }
+        public uint SetFormat { get; set; }
+        public uint BlockSize { get; set; }
+        public int Length
+        {
+            get
+            {
+                switch (BlockFormat)
                 {
-                    case 4: 
+                    case 4:
                         //single float (4 byte length)
                         return 1;
-                    case 1: 
+                    case 1:
                         //paired floats (8 total bytes)
                         return 2;
-                    case 2: 
+                    case 2:
                         //triple floats (12 bytes total)
                         return 3;
-                    default: 
+                    default:
                         return 1;
                 }
             }
         }
-        public int ListLength { get { return (int)(BlockSize / Length / 4); }}
-        public long BlockStart {get; set;}        
-        public uint ItemCount {get; set;}
-        public List<Godot.Vector3> Vertices {get; set;} = new(); 
-        public int FaceCount { get {return Vertices.Count; }}
+        public int ListLength { get { return (int)(BlockSize / Length / 4); } }
+        public uint ItemCount { get; set; }
+        public List<Godot.Vector3> Vertices { get; set; } = new();
+        public int VerticesCount { get; set; }
+        public long ElementLocation { get; set; }
+        public override string ToString()
+        {
+            StringBuilder sb = new();
+            sb.Append(string.Format("Element Index: {0}, ", Index));
+            sb.Append(string.Format("Number: {0}, ", Number));
+            sb.Append(string.Format("Identity: {0} ({1}), ", Identity, IdentityName));
+            sb.Append(string.Format("BlockFormat: {0}, ", BlockFormat));
+            sb.Append(string.Format("SetFormat: {0}, ", SetFormat));
+            sb.Append(string.Format("BlockSize: {0}, ", BlockSize));
+            sb.Append(string.Format("ItemCount: {0}", ItemCount));
+            return sb.ToString();
+        }
     }
-    public class GMDCElementNormals : IGMDCElement { 
-        public int Index {get; set;}
-        public string Identity {get; set;}
-        public uint BlockFormat {get; set;}
-        public uint SetFormat {get; set;}
-        public uint BlockSize {get; set;}
-        public int Length { 
-            get { 
-            switch (BlockFormat)
+    public class GMDCElementNormals : IGMDCElement
+    {
+        public int Index { get; set; }
+        public string Identity { get; set; }
+        public string IdentityName { get; set; }
+        public uint Number { get; set; }
+        public uint BlockFormat { get; set; }
+        public uint SetFormat { get; set; }
+        public uint BlockSize { get; set; }
+        public int Length
+        {
+            get
+            {
+                switch (BlockFormat)
                 {
-                    case 4: 
+                    case 4:
                         //single float (4 byte length)
                         return 1;
-                    case 1: 
+                    case 1:
                         //paired floats (8 total bytes)
                         return 2;
-                    case 2: 
+                    case 2:
                         //triple floats (12 bytes total)
                         return 3;
-                    default: 
+                    default:
                         return 1;
                 }
             }
         }
-        public int ListLength { get { return (int)(BlockSize / Length / 4); }}
-        public long BlockStart {get; set;}        
-        public uint ItemCount {get; set;}
-        public List<Godot.Vector3> Normals {get; set;} = new(); 
+        public int ListLength { get { return (int)(BlockSize / Length / 4); } }
+        public uint ItemCount { get; set; }
+        public List<Godot.Vector3> Normals { get; set; } = new();
+        public long ElementLocation { get; set; }
+        public override string ToString()
+        {
+            StringBuilder sb = new();
+            sb.Append(string.Format("Element Index: {0}, ", Index));
+            sb.Append(string.Format("Number: {0}, ", Number));
+            sb.Append(string.Format("Identity: {0} ({1}), ", Identity, IdentityName));
+            sb.Append(string.Format("BlockFormat: {0}, ", BlockFormat));
+            sb.Append(string.Format("SetFormat: {0}, ", SetFormat));
+            sb.Append(string.Format("BlockSize: {0}, ", BlockSize));
+            sb.Append(string.Format("ItemCount: {0}", ItemCount));
+            return sb.ToString();
+        }
     }
-    public class GMDCElementUVCoordinates : IGMDCElement {
-        public int Index {get; set;}
-        public string Identity {get; set;}
-        public uint BlockFormat {get; set;}
-        public uint SetFormat {get; set;}
-        public uint BlockSize {get; set;}
-        public int Length { 
-            get { 
-            switch (BlockFormat)
+    public class GMDCElementUVCoordinates : IGMDCElement
+    {
+        public int Index { get; set; }
+        public string Identity { get; set; }
+        public string IdentityName { get; set; }
+        public uint Number { get; set; }
+        public uint BlockFormat { get; set; }
+        public uint SetFormat { get; set; }
+        public uint BlockSize { get; set; }
+        public int Length
+        {
+            get
+            {
+                switch (BlockFormat)
                 {
-                    case 4: 
+                    case 4:
                         //single float (4 byte length)
                         return 1;
-                    case 1: 
+                    case 1:
                         //paired floats (8 total bytes)
                         return 2;
-                    case 2: 
+                    case 2:
                         //triple floats (12 bytes total)
                         return 3;
-                    default: 
+                    default:
                         return 1;
                 }
             }
         }
-        public int ListLength { get { return (int)(BlockSize / Length / 4); }}
-        public long BlockStart {get; set;}        
-        public uint ItemCount {get; set;} 
-        public List<Godot.Vector2> UVCoordinates {get; set;} = new(); 
+        public int ListLength { get { return (int)(BlockSize / Length / 4); } }
+        public uint ItemCount { get; set; }
+        public List<Godot.Vector2> UVCoordinates { get; set; } = new();
+        public long ElementLocation { get; set; }
+        public override string ToString()
+        {
+            StringBuilder sb = new();
+            sb.Append(string.Format("Element Index: {0}, ", Index));
+            sb.Append(string.Format("Number: {0}, ", Number));
+            sb.Append(string.Format("Identity: {0} ({1}), ", Identity, IdentityName));
+            sb.Append(string.Format("BlockFormat: {0}, ", BlockFormat));
+            sb.Append(string.Format("SetFormat: {0}, ", SetFormat));
+            sb.Append(string.Format("BlockSize: {0}, ", BlockSize));
+            sb.Append(string.Format("ItemCount: {0}", ItemCount));
+            return sb.ToString();
+        }
     }
-    public class GMDCElementUVCoordinateDeltas : IGMDCElement { 
-        public int Index {get; set;}
-        public string Identity {get; set;}
-        public uint BlockFormat {get; set;}
-        public uint SetFormat {get; set;}
-        public uint BlockSize {get; set;}
-        public int Length { 
-            get { 
-            switch (BlockFormat)
+    public class GMDCElementUVCoordinateDeltas : IGMDCElement
+    {
+        public int Index { get; set; }
+        public string Identity { get; set; }
+        public string IdentityName { get; set; }
+        public uint Number { get; set; }
+        public uint BlockFormat { get; set; }
+        public uint SetFormat { get; set; }
+        public uint BlockSize { get; set; }
+        public int Length
+        {
+            get
+            {
+                switch (BlockFormat)
                 {
-                    case 4: 
+                    case 4:
                         //single float (4 byte length)
                         return 1;
-                    case 1: 
+                    case 1:
                         //paired floats (8 total bytes)
                         return 2;
-                    case 2: 
+                    case 2:
                         //triple floats (12 bytes total)
                         return 3;
-                    default: 
+                    default:
                         return 1;
                 }
             }
         }
-        public int ListLength { get { return (int)(BlockSize / Length / 4); }}
-        public long BlockStart {get; set;}        
-        public uint ItemCount {get; set;}
-        public List<uint> UVCoordinateDeltas {get; set;} = new(); 
+        public int ListLength { get { return (int)(BlockSize / Length / 4); } }
+        public uint ItemCount { get; set; }
+        public List<uint> UVCoordinateDeltas { get; set; } = new();
+        public long ElementLocation { get; set; }
+        public override string ToString()
+        {
+            StringBuilder sb = new();
+            sb.Append(string.Format("Element Index: {0}, ", Index));
+            sb.Append(string.Format("Number: {0}, ", Number));
+            sb.Append(string.Format("Identity: {0} ({1}), ", Identity, IdentityName));
+            sb.Append(string.Format("BlockFormat: {0}, ", BlockFormat));
+            sb.Append(string.Format("SetFormat: {0}, ", SetFormat));
+            sb.Append(string.Format("BlockSize: {0}, ", BlockSize));
+            sb.Append(string.Format("ItemCount: {0}", ItemCount));
+            return sb.ToString();
+        }
     }
-    public class GMDCElementTargetIndices : IGMDCElement { 
-        public int Index {get; set;}
-        public string Identity {get; set;}
-        public uint BlockFormat {get; set;}
-        public uint SetFormat {get; set;}
-        public uint BlockSize {get; set;}
-        public int Length { 
-            get { 
-            switch (BlockFormat)
+    public class GMDCElementTargetIndices : IGMDCElement
+    {
+        public int Index { get; set; }
+        public string Identity { get; set; }
+        public string IdentityName { get; set; }
+        public uint Number { get; set; }
+        public uint BlockFormat { get; set; }
+        public uint SetFormat { get; set; }
+        public uint BlockSize { get; set; }
+        public int Length
+        {
+            get
+            {
+                switch (BlockFormat)
                 {
-                    case 4: 
+                    case 4:
                         //single float (4 byte length)
                         return 1;
-                    case 1: 
+                    case 1:
                         //paired floats (8 total bytes)
                         return 2;
-                    case 2: 
+                    case 2:
                         //triple floats (12 bytes total)
                         return 3;
-                    default: 
+                    default:
                         return 1;
                 }
             }
         }
-        public int ListLength { get { return (int)(BlockSize / Length / 4); }}
-        public long BlockStart {get; set;}        
-        public uint ItemCount {get; set;}
-        public List<Godot.Vector3> TargetIndices {get; set;} = new(); 
+        public int ListLength { get { return (int)(BlockSize / Length / 4); } }
+        public uint ItemCount { get; set; }
+        public List<Godot.Vector3> TargetIndices { get; set; } = new();
+        public long ElementLocation { get; set; }
+        public override string ToString()
+        {
+            StringBuilder sb = new();
+            sb.Append(string.Format("Element Index: {0}, ", Index));
+            sb.Append(string.Format("Number: {0}, ", Number));
+            sb.Append(string.Format("Identity: {0} ({1}), ", Identity, IdentityName));
+            sb.Append(string.Format("BlockFormat: {0}, ", BlockFormat));
+            sb.Append(string.Format("SetFormat: {0}, ", SetFormat));
+            sb.Append(string.Format("BlockSize: {0}, ", BlockSize));
+            sb.Append(string.Format("ItemCount: {0}", ItemCount));
+            return sb.ToString();
+        }
     }
-    public class GMDCElementBoneAssignments : IGMDCElement { 
-        public int Index {get; set;}
-        public string Identity {get; set;}
-        public uint BlockFormat {get; set;}
-        public uint SetFormat {get; set;}
-        public uint BlockSize {get; set;}
-        public int Length { 
-            get { 
-            switch (BlockFormat)
+    public class GMDCElementBoneAssignments : IGMDCElement
+    {
+        public int Index { get; set; }
+        public string Identity { get; set; }
+        public string IdentityName { get; set; }
+        public uint Number { get; set; }
+        public uint BlockFormat { get; set; }
+        public uint SetFormat { get; set; }
+        public uint BlockSize { get; set; }
+        public int Length
+        {
+            get
+            {
+                switch (BlockFormat)
                 {
-                    case 4: 
+                    case 4:
                         //single float (4 byte length)
                         return 1;
-                    case 1: 
+                    case 1:
                         //paired floats (8 total bytes)
                         return 2;
-                    case 2: 
+                    case 2:
                         //triple floats (12 bytes total)
                         return 3;
-                    default: 
+                    default:
                         return 1;
                 }
             }
         }
-        public int ListLength { get { return (int)(BlockSize / Length / 4); }}
-        public long BlockStart {get; set;}        
-        public uint ItemCount {get; set;}
-        public List<uint> BoneAssignments {get; set;} = new(); 
+        public int ListLength { get { return (int)(BlockSize / Length / 4); } }
+        public uint ItemCount { get; set; }
+        public List<float> BoneAssignments { get; set; } = new();
+        public long ElementLocation { get; set; }
+        public override string ToString()
+        {
+            StringBuilder sb = new();
+            sb.Append(string.Format("Element Index: {0}, ", Index));
+            sb.Append(string.Format("Number: {0}, ", Number));
+            sb.Append(string.Format("Identity: {0} ({1}), ", Identity, IdentityName));
+            sb.Append(string.Format("BlockFormat: {0}, ", BlockFormat));
+            sb.Append(string.Format("SetFormat: {0}, ", SetFormat));
+            sb.Append(string.Format("BlockSize: {0}, ", BlockSize));
+            sb.Append(string.Format("ItemCount: {0}", ItemCount));
+            return sb.ToString();
+        }
     }
-    public class GMDCElementSkinV1 : IGMDCElement { 
-        public int Index {get; set;}
-        public string Identity {get; set;}
-        public uint BlockFormat {get; set;}
-        public uint SetFormat {get; set;}
-        public uint BlockSize {get; set;}
-        public int Length { 
-            get { 
-            switch (BlockFormat)
+    public class GMDCElementSkinV1 : IGMDCElement
+    {
+        public int Index { get; set; }
+        public string Identity { get; set; }
+        public string IdentityName { get; set; }
+        public uint Number { get; set; }
+        public uint BlockFormat { get; set; }
+        public uint SetFormat { get; set; }
+        public uint BlockSize { get; set; }
+        public int Length
+        {
+            get
+            {
+                switch (BlockFormat)
                 {
-                    case 4: 
+                    case 4:
                         //single float (4 byte length)
                         return 1;
-                    case 1: 
+                    case 1:
                         //paired floats (8 total bytes)
                         return 2;
-                    case 2: 
+                    case 2:
                         //triple floats (12 bytes total)
                         return 3;
-                    default: 
+                    default:
                         return 1;
                 }
             }
         }
-        public int ListLength { get { return (int)(BlockSize / Length / 4); }}
-        public long BlockStart {get; set;}        
-        public uint ItemCount {get; set;}
-        public List<uint> SkinV1 {get; set;} = new(); // can be any of the three formats. ugh.  
+        public int ListLength { get { return (int)(BlockSize / Length / 4); } }
+        public uint ItemCount { get; set; }
+        public List<float> SkinV1 { get; set; } = new(); // can be any of the three formats. ugh.  
+        public long ElementLocation { get; set; }
+        public override string ToString()
+        {
+            StringBuilder sb = new();
+            sb.Append(string.Format("Element Index: {0}, ", Index));
+            sb.Append(string.Format("Number: {0}, ", Number));
+            sb.Append(string.Format("Identity: {0} ({1}), ", Identity, IdentityName));
+            sb.Append(string.Format("BlockFormat: {0}, ", BlockFormat));
+            sb.Append(string.Format("SetFormat: {0}, ", SetFormat));
+            sb.Append(string.Format("BlockSize: {0}, ", BlockSize));
+            sb.Append(string.Format("ItemCount: {0}", ItemCount));
+            return sb.ToString();
+        }
     }
-    public class GMDCElementSkinV2 : IGMDCElement { 
-        public int Index {get; set;}
-        public string Identity {get; set;}
-        public uint BlockFormat {get; set;}
-        public uint SetFormat {get; set;}
-        public uint BlockSize {get; set;}
-        public int Length { 
-            get { 
-            switch (BlockFormat)
+    public class GMDCElementSkinV2 : IGMDCElement
+    {
+        public int Index { get; set; }
+        public string Identity { get; set; }
+        public string IdentityName { get; set; }
+        public uint Number { get; set; }
+        public uint BlockFormat { get; set; }
+        public uint SetFormat { get; set; }
+        public uint BlockSize { get; set; }
+        public int Length
+        {
+            get
+            {
+                switch (BlockFormat)
                 {
-                    case 4: 
+                    case 4:
                         //single float (4 byte length)
                         return 1;
-                    case 1: 
+                    case 1:
                         //paired floats (8 total bytes)
                         return 2;
-                    case 2: 
+                    case 2:
                         //triple floats (12 bytes total)
                         return 3;
-                    default: 
+                    default:
                         return 1;
                 }
             }
         }
-        public int ListLength { get { return (int)(BlockSize / Length / 4); }}
-        public long BlockStart {get; set;}        
-        public uint ItemCount {get; set;}
-        public List<Godot.Vector2> SkinV2 {get; set;} = new(); // can be any of the three formats. ugh.  
+        public int ListLength { get { return (int)(BlockSize / Length / 4); } }
+        public uint ItemCount { get; set; }
+        public List<Godot.Vector2> SkinV2 { get; set; } = new(); // can be any of the three formats. ugh.  
+        public long ElementLocation { get; set; }
+        public override string ToString()
+        {
+            StringBuilder sb = new();
+            sb.Append(string.Format("Element Index: {0}, ", Index));
+            sb.Append(string.Format("Number: {0}, ", Number));
+            sb.Append(string.Format("Identity: {0} ({1}), ", Identity, IdentityName));
+            sb.Append(string.Format("BlockFormat: {0}, ", BlockFormat));
+            sb.Append(string.Format("SetFormat: {0}, ", SetFormat));
+            sb.Append(string.Format("BlockSize: {0}, ", BlockSize));
+            sb.Append(string.Format("ItemCount: {0}", ItemCount));
+            return sb.ToString();
+        }
     }
-    public class GMDCElementSkinV3 : IGMDCElement { 
-        public int Index {get; set;}
-        public string Identity {get; set;}
-        public uint BlockFormat {get; set;}
-        public uint SetFormat {get; set;}
-        public uint BlockSize {get; set;}
-        public int Length { 
-            get { 
-            switch (BlockFormat)
+    public class GMDCElementSkinV3 : IGMDCElement
+    {
+        public int Index { get; set; }
+        public string Identity { get; set; }
+        public string IdentityName { get; set; }
+        public uint Number { get; set; }
+        public uint BlockFormat { get; set; }
+        public uint SetFormat { get; set; }
+        public uint BlockSize { get; set; }
+        public int Length
+        {
+            get
+            {
+                switch (BlockFormat)
                 {
-                    case 4: 
+                    case 4:
                         //single float (4 byte length)
                         return 1;
-                    case 1: 
+                    case 1:
                         //paired floats (8 total bytes)
                         return 2;
-                    case 2: 
+                    case 2:
                         //triple floats (12 bytes total)
                         return 3;
-                    default: 
+                    default:
                         return 1;
                 }
             }
         }
-        public int ListLength { get { return (int)(BlockSize / Length / 4); }}
-        public long BlockStart {get; set;}        
-        public uint ItemCount {get; set;}
-        public List<Godot.Vector3> SkinV3 {get; set;} = new(); // can be any of the three formats. ugh.  
+        public int ListLength { get { return (int)(BlockSize / Length / 4); } }
+        public uint ItemCount { get; set; }
+        public List<Godot.Vector3> SkinV3 { get; set; } = new(); // can be any of the three formats. ugh.
+        public long ElementLocation { get; set; }
+        public override string ToString()
+        {
+            StringBuilder sb = new();
+            sb.Append(string.Format("Element Index: {0}, ", Index));
+            sb.Append(string.Format("Number: {0}, ", Number));
+            sb.Append(string.Format("Identity: {0} ({1}), ", Identity, IdentityName));
+            sb.Append(string.Format("BlockFormat: {0}, ", BlockFormat));
+            sb.Append(string.Format("SetFormat: {0}, ", SetFormat));
+            sb.Append(string.Format("BlockSize: {0}, ", BlockSize));
+            sb.Append(string.Format("ItemCount: {0}", ItemCount));
+            return sb.ToString();
+        }
     }
-    public class GMDCElementMorphVertexDeltas : IGMDCElement { 
-        public int Index {get; set;}
-        public string Identity {get; set;}
-        public uint BlockFormat {get; set;}
-        public uint SetFormat {get; set;}
-        public uint BlockSize {get; set;}
-        public int Length { 
-            get { 
-            switch (BlockFormat)
+    public class GMDCElementMorphVertexDeltas : IGMDCElement
+    {
+        public int Index { get; set; }
+        public string Identity { get; set; }
+        public string IdentityName { get; set; }
+        public uint Number { get; set; }
+        public uint BlockFormat { get; set; }
+        public uint SetFormat { get; set; }
+        public uint BlockSize { get; set; }
+        public int Length
+        {
+            get
+            {
+                switch (BlockFormat)
                 {
-                    case 4: 
+                    case 4:
                         //single float (4 byte length)
                         return 1;
-                    case 1: 
+                    case 1:
                         //paired floats (8 total bytes)
                         return 2;
-                    case 2: 
+                    case 2:
                         //triple floats (12 bytes total)
                         return 3;
-                    default: 
+                    default:
                         return 1;
                 }
             }
         }
-        public int ListLength { get { return (int)(BlockSize / Length / 4); }}
-        public long BlockStart {get; set;}        
-        public uint ItemCount {get; set;}
-        public List<Godot.Vector3> MorphVertexDeltas {get; set;} = new(); 
+        public int ListLength { get { return (int)(BlockSize / Length / 4); } }
+        public uint ItemCount { get; set; }
+        public List<Godot.Vector3> MorphVertexDeltas { get; set; } = new();
+        public long ElementLocation { get; set; }
+        public override string ToString()
+        {
+            StringBuilder sb = new();
+            sb.Append(string.Format("Element Index: {0}, ", Index));
+            sb.Append(string.Format("Number: {0}, ", Number));
+            sb.Append(string.Format("Identity: {0} ({1}), ", Identity, IdentityName));
+            sb.Append(string.Format("BlockFormat: {0}, ", BlockFormat));
+            sb.Append(string.Format("SetFormat: {0}, ", SetFormat));
+            sb.Append(string.Format("BlockSize: {0}, ", BlockSize));
+            sb.Append(string.Format("ItemCount: {0}", ItemCount));
+            return sb.ToString();
+        }
     }
-    public class GMDCElementMorphNormalDeltas : IGMDCElement { 
-        public int Index {get; set;}
-        public string Identity {get; set;}
-        public uint BlockFormat {get; set;}
-        public uint SetFormat {get; set;}
-        public uint BlockSize {get; set;}
-        public int Length { 
-            get { 
-            switch (BlockFormat)
+    public class GMDCElementMorphNormalDeltas : IGMDCElement
+    {
+        public int Index { get; set; }
+        public string Identity { get; set; }
+        public string IdentityName { get; set; }
+        public uint Number { get; set; }
+        public uint BlockFormat { get; set; }
+        public uint SetFormat { get; set; }
+        public uint BlockSize { get; set; }
+        public int Length
+        {
+            get
+            {
+                switch (BlockFormat)
                 {
-                    case 4: 
+                    case 4:
                         //single float (4 byte length)
                         return 1;
-                    case 1: 
+                    case 1:
                         //paired floats (8 total bytes)
                         return 2;
-                    case 2: 
+                    case 2:
                         //triple floats (12 bytes total)
                         return 3;
-                    default: 
+                    default:
                         return 1;
                 }
             }
         }
-        public int ListLength { get { return (int)(BlockSize / Length / 4); }}
-        public long BlockStart {get; set;}        
-        public uint ItemCount {get; set;}
-        public List<Godot.Vector3> MorphNormalDeltas {get; set;} = new(); 
+        public int ListLength { get { return (int)(BlockSize / Length / 4); } }
+        public uint ItemCount { get; set; }
+        public List<Godot.Vector3> MorphNormalDeltas { get; set; } = new();
+        public long ElementLocation { get; set; }
+        public override string ToString()
+        {
+            StringBuilder sb = new();
+            sb.Append(string.Format("Element Index: {0}, ", Index));
+            sb.Append(string.Format("Number: {0}, ", Number));
+            sb.Append(string.Format("Identity: {0} ({1}), ", Identity, IdentityName));
+            sb.Append(string.Format("BlockFormat: {0}, ", BlockFormat));
+            sb.Append(string.Format("SetFormat: {0}, ", SetFormat));
+            sb.Append(string.Format("BlockSize: {0}, ", BlockSize));
+            sb.Append(string.Format("ItemCount: {0}", ItemCount));
+            return sb.ToString();
+        }
     }
-    public class GMDCElementMorphVertexMap : IGMDCElement { 
-        public int Index {get; set;}
-        public string Identity {get; set;}
-        public uint BlockFormat {get; set;}
-        public uint SetFormat {get; set;}
-        public uint BlockSize {get; set;}
-        public int Length { 
-            get { 
-            switch (BlockFormat)
+    public class GMDCElementMorphVertexMap : IGMDCElement
+    {
+        public int Index { get; set; }
+        public string Identity { get; set; }
+        public string IdentityName { get; set; }
+        public uint Number { get; set; }
+        public uint BlockFormat { get; set; }
+        public uint SetFormat { get; set; }
+        public uint BlockSize { get; set; }
+        public int Length
+        {
+            get
+            {
+                switch (BlockFormat)
                 {
-                    case 4: 
+                    case 4:
                         //single float (4 byte length)
                         return 1;
-                    case 1: 
+                    case 1:
                         //paired floats (8 total bytes)
                         return 2;
-                    case 2: 
+                    case 2:
                         //triple floats (12 bytes total)
                         return 3;
-                    default: 
+                    default:
                         return 1;
                 }
             }
         }
-        public int ListLength { get { return (int)(BlockSize / Length / 4); }}
-        public long BlockStart {get; set;}        
-        public uint ItemCount {get; set;}
-        public List<uint> MorphVertexMap {get; set;} = new(); 
+        public int ListLength { get { return (int)(BlockSize / Length / 4); } }
+        public uint ItemCount { get; set; }
+        public List<float> MorphVertexMap { get; set; } = new();
+        public long ElementLocation { get; set; }
+        public override string ToString()
+        {
+            StringBuilder sb = new();
+            sb.Append(string.Format("Element Index: {0}, ", Index));
+            sb.Append(string.Format("Number: {0}, ", Number));
+            sb.Append(string.Format("Identity: {0} ({1}), ", Identity, IdentityName));
+            sb.Append(string.Format("BlockFormat: {0}, ", BlockFormat));
+            sb.Append(string.Format("SetFormat: {0}, ", SetFormat));
+            sb.Append(string.Format("BlockSize: {0}, ", BlockSize));
+            sb.Append(string.Format("ItemCount: {0}", ItemCount));
+            return sb.ToString();
+        }
     }
-    public class GMDCElementBumpMapNormals : IGMDCElement { 
-        public int Index {get; set;}
-        public string Identity {get; set;}
-        public uint BlockFormat {get; set;}
-        public uint SetFormat {get; set;}
-        public uint BlockSize {get; set;}
-        public int Length { 
-            get { 
-            switch (BlockFormat)
+    public class GMDCElementBumpMapNormals : IGMDCElement
+    {
+        public int Index { get; set; }
+        public string Identity { get; set; }
+        public string IdentityName { get; set; }
+        public uint Number { get; set; }
+        public uint BlockFormat { get; set; }
+        public uint SetFormat { get; set; }
+        public uint BlockSize { get; set; }
+        public int Length
+        {
+            get
+            {
+                switch (BlockFormat)
                 {
-                    case 4: 
+                    case 4:
                         //single float (4 byte length)
                         return 1;
-                    case 1: 
+                    case 1:
                         //paired floats (8 total bytes)
                         return 2;
-                    case 2: 
+                    case 2:
                         //triple floats (12 bytes total)
                         return 3;
-                    default: 
+                    default:
                         return 1;
                 }
             }
         }
-        public int ListLength { get { return (int)(BlockSize / Length / 4); }}
-        public long BlockStart {get; set;}        
-        public uint ItemCount {get; set;}
-        public List<Godot.Vector3> BumpMapNormals {get; set;} = new(); 
+        public int ListLength { get { return (int)(BlockSize / Length / 4); } }
+        public uint ItemCount { get; set; }
+        public List<Godot.Vector3> BumpMapNormals { get; set; } = new();
+        public long ElementLocation { get; set; }
+        public override string ToString()
+        {
+            StringBuilder sb = new();
+            sb.Append(string.Format("Element Index: {0}, ", Index));
+            sb.Append(string.Format("Number: {0}, ", Number));
+            sb.Append(string.Format("Identity: {0} ({1}), ", Identity, IdentityName));
+            sb.Append(string.Format("BlockFormat: {0}, ", BlockFormat));
+            sb.Append(string.Format("SetFormat: {0}, ", SetFormat));
+            sb.Append(string.Format("BlockSize: {0}, ", BlockSize));
+            sb.Append(string.Format("ItemCount: {0}", ItemCount));
+            return sb.ToString();
+        }
     }
 
 
     public class GMDCLinkage
     {
-        public uint IndexCount {get; set;}
-        public long BlockStart {get; set;}        
-        public List<uint> IndexValues {get; set;} = new();
-        public uint ArraySize {get; set;}
-        public uint ActiveElements {get; set;}
-        public uint SubmodelVertexCount {get; set;}
-        public uint SubmodelNormalsCount {get; set;}
-        public uint SubmodelUVCount {get; set;}
-        public List<uint> SubmodelIndexValues {get; set;} = new();
-        public List<uint> NormalsIndexValues {get; set;} = new();
-        public List<uint> UVIndexValues {get; set;} = new();
-
-
-        public override string ToString()
-        {
-            return string.Format("IndexCount: {0}, Data Starts at: {1}. ArraySize: {2}, ActiveElements: {3}, SubmodelVertexCount: {4}, SubmodelNormalsCount: {5}, SubmodelUVCount: {6}", IndexCount, BlockStart, ArraySize, ActiveElements, SubmodelVertexCount, SubmodelNormalsCount, SubmodelUVCount);
-        }
+        public uint IndexCount { get; set; }
+        public List<uint> IndexValues { get; set; } = new();
+        public uint ArraySize { get; set; }
+        public uint ActiveElements { get; set; }
+        public uint SubmodelVertexCount { get; set; }
+        public uint SubmodelNormalsCount { get; set; }
+        public uint SubmodelUVCount { get; set; }
+        public List<uint> SubmodelIndexValues { get; set; } = new();
+        public List<uint> NormalsIndexValues { get; set; } = new();
+        public List<uint> UVIndexValues { get; set; } = new();
     }
 
     public class GMDCGroup
     {
-        public uint PrimitiveType {get; set;}
-        public uint LinkIndex {get; set;}
-        public string ObjectName {get; set;}
-        public uint FaceCount {get; set;}
-        public List<Godot.Vector3> Faces {get; set;} = new();
+        public uint PrimitiveType { get; set; }
+        public uint LinkIndex { get; set; }
+        public string ObjectName { get; set; }
+        public uint FaceCount { get; set; }
+        public List<Godot.Vector3> Faces { get; set; } = new();
 
-        public uint OpacityAmount {get; set;} //0xFFFFFFFF = full opacity, 0x0 = full transparency, < 16 for shadows
-        public List<uint> ModelSubsetReference {get; set;} = new();
+        public string OpacityAmount { get; set; } //0xFFFFFFFF = full opacity, 0x0 = full transparency, < 16 for shadows
+        public List<uint> ModelSubsetReference { get; set; } = new();
 
         public override string ToString()
         {
@@ -2872,57 +4526,311 @@ namespace SimsCCManager.PackageReaders
 
     public class TransformMatrix
     {
-        public uint QuaternionX {get; set;}
-        public uint QuaternionY {get; set;}
-        public uint QuaternionZ {get; set;}
-        public uint QuaternionW {get; set;}
-        public uint TransformX {get; set;}
-        public uint TransformY {get; set;}
-        public uint TransformZ {get; set;}
+        public uint QuaternionX { get; set; }
+        public uint QuaternionY { get; set; }
+        public uint QuaternionZ { get; set; }
+        public uint QuaternionW { get; set; }
+        public uint TransformX { get; set; }
+        public uint TransformY { get; set; }
+        public uint TransformZ { get; set; }
     }
 
     public class GMDCModel
     {
-        public List<TransformMatrix> TransformMatrices {get; set;} = new();
-        public List<NamePair> NamedPairs {get; set;} = new();
-        public List<Godot.Vector3> Verts {get; set;} = new();
-        public List<uint> Faces {get; set;} = new();
+        public List<TransformMatrix> TransformMatrices { get; set; } = new();
+        public List<NamePair> NamedPairs { get; set; } = new();
+        public List<Godot.Vector3> Verts { get; set; } = new();
+        public List<uint> Faces { get; set; } = new();
     }
 
     public class NamePair
     {
-        public string BlendGroupName {get; set;}
-        public string AssignedElementName {get; set;}
+        public string BlendGroupName { get; set; }
+        public string AssignedElementName { get; set; }
     }
 
     public class GMDCSubset
-    {        
-        public List<Godot.Vector3> Verts {get; set;} = new();
-        public List<uint> Faces {get; set;} = new();
+    {
+        public List<Godot.Vector3> Verts { get; set; } = new();
+        public List<uint> Faces { get; set; } = new();
     }
     public class GMDCData
     {
-        [XmlIgnore]
-        public IList<IGMDCElement> Elements {get; set;}
-
-        public List<GMDCElementVertices> GMDCElementVertices { get { return Elements.OfType<GMDCElementVertices>().ToList(); } }
-        public List<GMDCElementNormals> GMDCElementNormals { get { return Elements.OfType<GMDCElementNormals>().ToList(); } }
-        public List<GMDCElementUVCoordinates> GMDCElementUVCoordinates { get { return Elements.OfType<GMDCElementUVCoordinates>().ToList(); } }
-        public List<GMDCElementTargetIndices> GMDCElementTargetIndices { get { return Elements.OfType<GMDCElementTargetIndices>().ToList(); } }
-        public List<GMDCElementBoneAssignments> GMDCElementBoneAssignments { get { return Elements.OfType<GMDCElementBoneAssignments>().ToList(); } }
-        public List<GMDCElementSkinV1> GMDCElementSkinV1 { get { return Elements.OfType<GMDCElementSkinV1>().ToList(); } }
-        public List<GMDCElementSkinV2> GMDCElementSkinV2 { get { return Elements.OfType<GMDCElementSkinV2>().ToList(); } }
-        public List<GMDCElementSkinV3> GMDCElementSkinV3 { get { return Elements.OfType<GMDCElementSkinV3>().ToList(); } }
-        public List<GMDCElementMorphVertexDeltas> GMDCElementMorphVertexDeltas { get { return Elements.OfType<GMDCElementMorphVertexDeltas>().ToList(); } }
-        public List<GMDCElementMorphNormalDeltas> GMDCElementMorphNormalDeltas { get { return Elements.OfType<GMDCElementMorphNormalDeltas>().ToList(); } }
-        public List<GMDCElementMorphVertexMap> GMDCElementMorphVertexMap { get { return Elements.OfType<GMDCElementMorphVertexMap>().ToList(); } }
-        public List<GMDCElementBumpMapNormals> GMDCElementBumpMapNormals { get { return Elements.OfType<GMDCElementBumpMapNormals>().ToList(); } }
+        private List<GMDCElementVertices> _GMDCElementVertices;
+        public List<GMDCElementVertices> GMDCElementVertices
+        {
+            get
+            {                
+                return _GMDCElementVertices;
+            }
+            set
+            {
+                _GMDCElementVertices = value;
+            }
+        }
+        private List<GMDCElementNormals> _GMDCElementNormals;
+        public List<GMDCElementNormals> GMDCElementNormals
+        {
+            get
+            {
+                return _GMDCElementNormals;
+            }
+            set
+            {
+                _GMDCElementNormals = value;
+            }
+        }
+        private List<GMDCElementUVCoordinates> _GMDCElementUVCoordinates;
+        public List<GMDCElementUVCoordinates> GMDCElementUVCoordinates
+        {
+            get
+            {
+                
+                return _GMDCElementUVCoordinates;
+                
+            }
+            set
+            {
+                _GMDCElementUVCoordinates = value;
+            }
+        }
+        private List<GMDCElementTargetIndices> _GMDCElementTargetIndices;
+        public List<GMDCElementTargetIndices> GMDCElementTargetIndices
+        {
+            get
+            {
+                return _GMDCElementTargetIndices;                
+            }
+            set
+            {
+                _GMDCElementTargetIndices = value;
+            }
+        }
+        private List<GMDCElementBoneAssignments> _GMDCElementBoneAssignments;
+        public List<GMDCElementBoneAssignments> GMDCElementBoneAssignments
+        {
+            get
+            {
+                
+                    return _GMDCElementBoneAssignments;
+                
+            }
+            set
+            {
+                _GMDCElementBoneAssignments = value;
+            }
+        }
+        private List<GMDCElementSkinV1> _GMDCElementSkinV1;
+        public List<GMDCElementSkinV1> GMDCElementSkinV1
+        {
+            get
+            {
+                
+                    return _GMDCElementSkinV1;
+                
+            }
+            set
+            {
+                _GMDCElementSkinV1 = value;
+            }
+        }
+        private List<GMDCElementSkinV2> _GMDCElementSkinV2;
+        public List<GMDCElementSkinV2> GMDCElementSkinV2
+        {
+            get
+            {
+                
+                
+                    return _GMDCElementSkinV2;
+                
+            }
+            set
+            {
+                _GMDCElementSkinV2 = value;
+            }
+        }
+        private List<GMDCElementSkinV3> _GMDCElementSkinV3;
+        public List<GMDCElementSkinV3> GMDCElementSkinV3
+        {
+            get
+            {
+                
+                    return _GMDCElementSkinV3;
+                
+            }
+            set
+            {
+                _GMDCElementSkinV3 = value;
+            }
+        }
+        private List<GMDCElementMorphVertexDeltas> _GMDCElementMorphVertexDeltas;
+        public List<GMDCElementMorphVertexDeltas> GMDCElementMorphVertexDeltas
+        {
+            get
+            {
+                
+                    return _GMDCElementMorphVertexDeltas;
+                
+            }
+            set
+            {
+                _GMDCElementMorphVertexDeltas = value;
+            }
+        }
+        private List<GMDCElementMorphNormalDeltas> _GMDCElementMorphNormalDeltas;
+        public List<GMDCElementMorphNormalDeltas> GMDCElementMorphNormalDeltas
+        {
+            get
+            {
+                
+                    return _GMDCElementMorphNormalDeltas;
+                
+            }
+            set
+            {
+                _GMDCElementMorphNormalDeltas = value;
+            }
+        }
+        private List<GMDCElementMorphVertexMap> _GMDCElementMorphVertexMap;
+        public List<GMDCElementMorphVertexMap> GMDCElementMorphVertexMap
+        {
+            get
+            {
+                
+                
+                    return _GMDCElementMorphVertexMap;
+                
+            }
+            set
+            {
+                _GMDCElementMorphVertexMap = value;
+            }
+        }
+        private List<GMDCElementBumpMapNormals> _GMDCElementBumpMapNormals;
+        public List<GMDCElementBumpMapNormals> GMDCElementBumpMapNormals
+        {
+            get
+            {
+                
+                
+                    return _GMDCElementBumpMapNormals;
+                
+            }
+            set
+            {
+                _GMDCElementBumpMapNormals = value;
+            }
+        }
 
         public List<GMDCLinkage> Linkages = new();
         public List<GMDCGroup> Groups = new();
         public GMDCModel Model = new();
         public List<GMDCSubset> Subsets = new();
 
-    }
+        public void ToElements(IList<IGMDCElement> allElements)
+        {
+            GMDCElementVertices = allElements.OfType<GMDCElementVertices>().ToList();
+            GMDCElementNormals = allElements.OfType<GMDCElementNormals>().ToList();
+            GMDCElementUVCoordinates = allElements.OfType<GMDCElementUVCoordinates>().ToList();
+            GMDCElementTargetIndices = allElements.OfType<GMDCElementTargetIndices>().ToList();
+            GMDCElementBoneAssignments = allElements.OfType<GMDCElementBoneAssignments>().ToList();
+            GMDCElementSkinV1 = allElements.OfType<GMDCElementSkinV1>().ToList();
+            GMDCElementSkinV2 = allElements.OfType<GMDCElementSkinV2>().ToList();
+            GMDCElementSkinV3 = allElements.OfType<GMDCElementSkinV3>().ToList();
+            GMDCElementMorphVertexDeltas = allElements.OfType<GMDCElementMorphVertexDeltas>().ToList();
+            GMDCElementMorphNormalDeltas = allElements.OfType<GMDCElementMorphNormalDeltas>().ToList();
+            GMDCElementMorphVertexMap = allElements.OfType<GMDCElementMorphVertexMap>().ToList();
+            GMDCElementBumpMapNormals = allElements.OfType<GMDCElementBumpMapNormals>().ToList();
+        }
 
+        public IList<IGMDCElement> GetAllElements()
+        {
+            IList<IGMDCElement> elements = [];
+            if (GMDCElementVertices != null)
+            {
+                foreach (GMDCElementVertices e in GMDCElementVertices)
+                {
+                    elements.Add(e);
+                }
+            }
+            if (GMDCElementNormals != null)
+            {
+                foreach (GMDCElementNormals e in GMDCElementNormals)
+                {
+                    elements.Add(e);
+                }
+            }
+            if (GMDCElementUVCoordinates != null)
+            {
+                foreach (GMDCElementUVCoordinates e in GMDCElementUVCoordinates)
+                {
+                    elements.Add(e);
+                }
+            }
+            if (GMDCElementTargetIndices != null)
+            {
+                foreach (GMDCElementTargetIndices e in GMDCElementTargetIndices)
+                {
+                    elements.Add(e);
+                }
+            }
+            if (GMDCElementBoneAssignments != null)
+            {
+                foreach (GMDCElementBoneAssignments e in GMDCElementBoneAssignments)
+                {
+                    elements.Add(e);
+                }
+            }
+            if (GMDCElementSkinV1 != null)
+            {
+                foreach (GMDCElementSkinV1 e in GMDCElementSkinV1)
+                {
+                    elements.Add(e);
+                }
+            }
+            if (GMDCElementSkinV2 != null)
+            {
+                foreach (GMDCElementSkinV2 e in GMDCElementSkinV2)
+                {
+                    elements.Add(e);
+                }
+            }
+            if (GMDCElementSkinV3 != null)
+            {
+                foreach (GMDCElementSkinV3 e in GMDCElementSkinV3)
+                {
+                    elements.Add(e);
+                }
+            }
+            if (GMDCElementMorphVertexDeltas != null)
+            {
+                foreach (GMDCElementMorphVertexDeltas e in GMDCElementMorphVertexDeltas)
+                {
+                    elements.Add(e);
+                }
+            }
+            if (GMDCElementMorphNormalDeltas != null)
+            {
+                foreach (GMDCElementMorphNormalDeltas e in GMDCElementMorphNormalDeltas)
+                {
+                    elements.Add(e);
+                }
+            }
+            if (GMDCElementMorphVertexMap != null)
+            {
+                foreach (GMDCElementMorphVertexMap e in GMDCElementMorphVertexMap)
+                {
+                    elements.Add(e);
+                }
+            }
+            if (GMDCElementBumpMapNormals != null)
+            {
+                foreach (GMDCElementBumpMapNormals e in GMDCElementBumpMapNormals)
+                {
+                    elements.Add(e);
+                }
+            }
+            return elements;
+        }
+    }
 }

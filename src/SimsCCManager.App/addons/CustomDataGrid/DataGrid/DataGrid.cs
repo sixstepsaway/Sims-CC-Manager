@@ -122,6 +122,10 @@ public partial class DataGrid : Control
 		set { _scrollposition = value; }		
 	}
 
+
+	public delegate void RowCreatedEvent(string ItemReference);
+	public RowCreatedEvent RowCreated;
+
 	public bool BlockInput = false;
 
 
@@ -498,14 +502,16 @@ public partial class DataGrid : Control
 
 	private void CreateAllRows()
 	{		
-		for (int i = 0; i < RowData.Count; i++){	
-			GD.Print(string.Format("Creating row {0}: {1}", i, RowData[i].RowRef));
-			GD.Print(string.Format("Row {0} is even.", i));
-			RowData[i].Selected = false;
-			DataGridRowUi row = CreateRow(RowData[i], i);
-			GD.Print(string.Format("Created row {0}: {1}, Subgrid: {2}, {3}", i, RowData[i].RowRef, row.SubGrid, row.SubGridItems.Count));
-			AllRows.Add(row);
-		}
+		new Thread(() => {
+			for (int i = 0; i < RowData.Count; i++){	
+				PleasePassLog(string.Format("Creating row {0}: {1}", i, RowData[i].RowRef));
+				PleasePassLog(string.Format("Row {0} is even.", i));
+				RowData[i].Selected = false;
+				DataGridRowUi row = CreateRow(RowData[i], i);
+				PleasePassLog(string.Format("Created row {0}: {1}, Subgrid: {2}, {3}", i, RowData[i].RowRef, row.SubGrid, row.SubGridItems.Count));
+				AllRows.Add(row);			
+			}
+		}){IsBackground = true}.Start();		
 	}
 
 	public void RemoveRow(DataGridRow data)
@@ -1026,7 +1032,7 @@ public partial class DataGrid : Control
 
 		foreach (DataGridRow row in RowData)
 		{
-			GD.Print(string.Format("Row {0}: {1}", row.Idx, row.AdjustmentNumber));
+			PleasePassLog(string.Format("Row {0}: {1}", row.Idx, row.AdjustmentNumber));
 		}
 
 		if (RowData.Where(x => x.AdjustmentNumber == newnum).Any())
@@ -1261,17 +1267,17 @@ public partial class DataGrid : Control
 				}
 			}		
 			ScrollBarHeight = (hScrollBar.GetParent() as HBoxContainer).Size.Y;
-			GD.Print(string.Format("PaneSize: {0}, PaneHeight: {1}, RowHeight: {2}", PaneSize, PaneHeight, RowHeight));
+			PleasePassLog(string.Format("PaneSize: {0}, PaneHeight: {1}, RowHeight: {2}", PaneSize, PaneHeight, RowHeight));
 			RowsOnScreen = PaneHeight / RowHeight;
 			
 			RowHeight = (int)((PaneHeight - HeaderY) / Math.Floor(RowsOnScreen));
 			if (RowData != null) { 
 				PopulateRows(); 
 				SetScrollBar();
-				GD.Print("Populating.");
+				PleasePassLog("Populating.");
 			} else
 			{
-				GD.Print("Rowdata has no data.");
+				PleasePassLog("Rowdata has no data.");
 			}
 		}		
 	}
@@ -1286,7 +1292,7 @@ public partial class DataGrid : Control
 		} else {		
 			PleasePassLog(string.Format("Rows: {0}. Rows to show: {1}.", RowData.Count, (int)RowsOnScreen+1));	
 			MaxScroll = RowData.Count;// - (int)RowsOnScreen + 1;
-			GD.Print(string.Format("Max Scroll: {0}, RowData Count: {1}, RowsOnScreen: {2}", MaxScroll, RowData.Count, RowsOnScreen));
+			PleasePassLog(string.Format("Max Scroll: {0}, RowData Count: {1}, RowsOnScreen: {2}", MaxScroll, RowData.Count, RowsOnScreen));
 			int pages = (MaxScroll / (int)RowsOnScreen) * 2;
 			int minpage = (int)RowsOnScreen;
 			int pageunclamped = minpage - pages;
@@ -1305,11 +1311,11 @@ public partial class DataGrid : Control
 
 	private void WriteConsole(string statement, [CallerLineNumber] int lineNumber = 0, [CallerFilePath] string filePath = ""){
 		
-		GD.Print(string.Format("[L{0}: {1}]: {2}", lineNumber, new FileInfo(filePath).Name, statement));
+		PleasePassLog(string.Format("[L{0}: {1}]: {2}", lineNumber, new FileInfo(filePath).Name, statement));
 	}
 
 	private void WriteConsoleDeferred(string statement){
-		GD.Print(statement);
+		PleasePassLog(statement);
 	}
 
 	private void HeaderResized(int idx){

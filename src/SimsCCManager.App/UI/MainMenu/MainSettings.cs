@@ -20,6 +20,8 @@ public partial class MainSettings : MarginContainer
     [Export]
     CustomCheckButton DebugModeCheck;
     [Export]
+    CustomCheckButton PortableModeCheck;
+    [Export]
     CustomCheckButton RestrictCPUCheck;
     [Export]
     CustomCheckButton LoadLatestCheck;
@@ -45,6 +47,7 @@ public partial class MainSettings : MarginContainer
         RestrictCPUCheck.CheckToggled += (c) => CPURestrictToggled(c);
         LoadLatestCheck.CheckToggled += (l) => LoadLatestToggled(l);
         ShowTaliCheck.CheckToggled += (t) => TaliToggled(t);
+        PortableModeCheck.CheckToggled += (p) => PortableChecked(p);
         ThemeOptions.AddItem(GlobalVariables.LoadedSettings.LoadedTheme);
         foreach (string th in GlobalVariables.LoadedSettings.ThemeOptions)
         {
@@ -62,6 +65,14 @@ public partial class MainSettings : MarginContainer
 
         UpdateTheme();
     }
+
+    private void PortableChecked(bool p)
+    {
+        //GlobalVariables.PortableMode = p;
+        GlobalVariables.LoadedSettings.PortableMode = p;
+        GlobalVariables.LoadedSettings.SaveSettings();
+    }
+
 
     private void DeleteCurrentTheme()
     {
@@ -129,6 +140,7 @@ public partial class MainSettings : MarginContainer
     private void UpdateTheme()
     {
         DebugModeCheck.UpdateTheme();
+        PortableModeCheck.UpdateTheme();
         RestrictCPUCheck.UpdateTheme();
         LoadLatestCheck.UpdateTheme();
         ShowTaliCheck.UpdateTheme();
@@ -239,7 +251,7 @@ public partial class MainSettings : MarginContainer
 
     private void DebugModeToggled(bool d)
     {
-        GlobalVariables.DebugMode = d;
+        //GlobalVariables.DebugMode = d;
         GlobalVariables.LoadedSettings.DebugMode = d;
         GlobalVariables.LoadedSettings.SaveSettings();
     }
@@ -257,6 +269,7 @@ public partial class MainSettings : MarginContainer
         ShowTaliCheck.IsToggled = GlobalVariables.LoadedSettings.Tali;
         RestrictCPUCheck.IsToggled = GlobalVariables.LoadedSettings.CPURestrict;
         LoadLatestCheck.IsToggled = GlobalVariables.LoadedSettings.AutoLoad;
+        PortableModeCheck.IsToggled = GlobalVariables.LoadedSettings.PortableMode;
     }
 
 }

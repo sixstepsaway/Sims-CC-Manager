@@ -131,7 +131,7 @@ public partial class DataGridCell : Control
 				{
 					NumberHolder.Text = value.ToString();
 				}		
-				GD.Print(string.Format("Row {0} adj number: {1}", thisRow.OverallIndex, value));
+				//GD.Print(string.Format("Row {0} adj number: {1}", thisRow.OverallIndex, value));
 			}
 			if (CellOptions == CellOptions.Int || CellOptions == CellOptions.AdjustableNumber)
 			{
@@ -478,14 +478,14 @@ public partial class DataGridCell : Control
 				Toggle();
 			}
 		}
-		else if (IsMouseInCell() && CellOptions == CellOptions.Picture && !thumbnailvisible)
+		/*else if (IsMouseInCell() && CellOptions == CellOptions.Picture && !thumbnailvisible)
 		{
 			if (ThumbnailImage != null && AllowThumbs)
 			{
 				thumbnailvisible = true;
 				SpawnThumbnail();
 			}
-		}
+		}*/
 		else if (IsMouseInCell() && CellOptions == CellOptions.AdjustableNumber && !ShowNumberAdjusterControls)
 		{
 			if (@event is InputEventMouseButton mouseEvent)

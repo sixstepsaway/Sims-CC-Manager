@@ -3,14 +3,19 @@ using SimsCCManager.Containers;
 using SimsCCManager.Debugging;
 using SimsCCManager.Globals;
 using SimsCCManager.OptionLists;
+using SimsCCManager.PackageReaders;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Security.AccessControl;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Xml.Serialization;
 
 public partial class PackageDisplay : MarginContainer
@@ -47,6 +52,8 @@ public partial class PackageDisplay : MarginContainer
     public FileDialog AddExeDialog;
     [Export]
     public FileDialog AddFolderDialog;
+    [Export]
+    public CustomPopupWindow AdminWarningWindow;
 
     public ProfileManagement ProfileManagementWindow;
 
@@ -92,6 +99,11 @@ public partial class PackageDisplay : MarginContainer
 
     public override void _Ready()
     {
+        AdminWarningWindow.Visible = false;
+        AdminWarningWindow.NoButton.Visible = false;
+        AdminWarningWindow.YesButton.Pressed += () => AcceptAdminWarning();
+        AdminWarningWindow.WindowMessage.Text = "SCCM requires administrator access to your game folder to deploy root mods. Either reload the app with elevated permissions, disable root mods, or move your install out of protected folders.";
+        AdminWarningWindow.WindowTitle = "Elevated Permissions Required for Root";
         UIGameStartControls.PackageDisplay = this;
         GameRunningPopup.DisconnectFromGame += () => DisconnectGame();
         UIAllModsContainer.packageDisplay = this;
@@ -114,11 +126,7 @@ public partial class PackageDisplay : MarginContainer
         AddFolderDialog.DirSelected += (directory) => AddFolderToInstance(directory);
 
         if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("This instance has found {0} files.", ThisInstance.Files.Count));
-
-
         UIAllModsContainer.CreateDataGrid();
-
-
     }
 
     private void AddFolderToInstance(string directory)
@@ -216,6 +224,20 @@ public partial class PackageDisplay : MarginContainer
 
     private void EnabledFromProfile()
     {
+        List<EnabledPackages> remove = new();
+        foreach (EnabledPackages package in ThisInstance.LoadedProfile.EnabledPackages)
+        {
+            if (!ThisInstance.Files.Any(x => x.Identifier == package.PackageIdentifier))
+            {
+                remove.Add(package);
+            }
+        }
+        foreach (EnabledPackages p in remove)
+        {
+            ThisInstance.LoadedProfile.EnabledPackages.Remove(p);
+        }
+        
+        ThisInstance.WriteXML();
         foreach (SimsPackage pack in ThisInstance.Files.OfType<SimsPackage>())
         {
             if (ThisInstance.LoadedProfile.EnabledPackages.Where(x => x.PackageIdentifier == pack.Identifier).Any())
@@ -254,6 +276,11 @@ public partial class PackageDisplay : MarginContainer
         }
     }
 
+    private void AcceptAdminWarning()
+    {
+        AdminWarningWindow.Visible = false;
+    }
+
 
     public bool LinkFiles()
     {
@@ -261,6 +288,28 @@ public partial class PackageDisplay : MarginContainer
         {
             InstanceControllers.ClearInstance();
         }
+        if (!GlobalVariables.IsElevated)
+        {
+            if (ThisInstance.Files.OfType<SimsPackage>().Any(x => x.RootMod))
+            {            
+                try { var fs = new FileSecurity(ThisInstance.GameInstallFolder, AccessControlSections.All); }
+                catch (Exception e)
+                {                
+                    if (e.GetBaseException().GetType() == typeof(PrivilegeNotHeldException))
+                    {
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Elevation required for root mod access."));
+                        AdminWarningWindow.Visible = true;
+                        return false;
+                    } else
+                    {
+                        
+                    }               
+                }
+            }
+        }
+
+
+        
 
         string packageFolderLocation = "";
 

@@ -55,8 +55,6 @@ public partial class MainWindow : MarginContainer
     
     [Export]
     Button FDNoButton;
-    [Export]
-    public Snapshotter snapshotter;
 
 
 
@@ -249,7 +247,7 @@ public partial class MainWindow : MarginContainer
                 GlobalVariables.LoadedSettings = new();
                 GlobalVariables.LoadedSettings.SaveSettings();                
             }
-            GlobalVariables.DebugMode = GlobalVariables.LoadedSettings.DebugMode;            
+            //GlobalVariables.DebugMode = GlobalVariables.LoadedSettings.DebugMode;            
 
             if (Directory.Exists(GlobalVariables.ThemesFolder))
             {
@@ -351,7 +349,8 @@ public partial class MainWindow : MarginContainer
     } 
 
     public void LoadingPackageDisplayStart(int maxvalue = 100)
-    {               
+    {         
+        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Max Value for Pbar set to {0}", maxvalue));      
         loadingInstance = LoadingScreenPS.Instantiate() as LoadingInstance; 
         loadingInstance.progressBar.MaxValue = maxvalue;
         AddChild(loadingInstance);
@@ -368,26 +367,61 @@ public partial class MainWindow : MarginContainer
         {
             GlobalVariables.LoadedSettings.InstanceFolders.Add(new Instance() { InstanceLocation = instanceData.InstanceFolder, InstanceCreated = DateTime.Now, InstanceLastModified = DateTime.Now, InstanceName = instanceData.InstanceName, InstanceID = instanceData.InstanceID, Game = instanceData.GameChoice});
             GlobalVariables.LoadedSettings.SaveSettings();
-        }
-        
+        }        
         mainMenu.QueueFree();
         packageDisplay = PackageDisplayPS.Instantiate() as PackageDisplay;
         packageDisplay.ThisInstance = instanceData;
         AddChild(packageDisplay);
         MoveChild(Footer, GetChildCount());
+        int footerpos = Footer.GetIndex();
+        MoveChild(loadingInstance, footerpos-1);
+        WaitForDataGrid();
+    }
+
+    private void WaitForDataGrid()
+    {
+        new Thread(() =>
+        {
+            DataGrid dg = packageDisplay.UIAllModsContainer.DataGrid;
+            int rowsToMake = (int)dg.RowsOnScreen;
+            int rowsCount = dg.VisibleRows.Count;
+            while (dg.AllRows.Count < rowsToMake)
+            {
+                if (rowsToMake == 0) {
+                    rowsToMake = (int)dg.RowsOnScreen;                     
+                } else if (rowsCount != dg.VisibleRows.Count)
+                {
+                    IncrementLoadingScreen(1, "Creating data view...");
+                    rowsCount = dg.VisibleRows.Count;
+                }
+            }
+            for (int i = (int)loadingInstance.progressBar.Value; i < loadingInstance.progressBar.MaxValue; i++)
+            {
+                Thread.Sleep(10);
+                IncrementLoadingScreen(i, "Final checks...");
+            }
+            CallDeferred(nameof(FinishLoadingScreen));
+        }){IsBackground = true}.Start();
+    }
+
+    private void FinishLoadingScreen()
+    {        
         loadingInstance.QueueFree();
     }
 
     public void IncrementLoadingScreen(int amount, string text)
     {
+        
         CallDeferred(nameof(DeferredLoadingScreen), amount, text);
     }
 
     private void DeferredLoadingScreen(int amount, string text)
     {
+        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Loading screen incremented by {0}, and is now at {1}/{2} ({3}%)", amount, loadingInstance.progressBar.Value, loadingInstance.progressBar.MaxValue, ((loadingInstance.progressBar.MaxValue - loadingInstance.progressBar.Value) / loadingInstance.progressBar.MaxValue) * 100));
         loadingInstance.progressBar.Value += amount;
         loadingInstance.ProgressLabel.Text = text;
     }
+
 
     public void WriteGDPrint(string text)
     {

@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml.Serialization;
+using Godot;
 using SimsCCManager.Debugging;
 using SimsCCManager.Globals;
 using SimsCCManager.OptionLists;
@@ -545,20 +546,204 @@ namespace SimsCCManager.Containers
         public SimsGames Game {get; set;}
         public bool RootMod {get; set;}
         public bool OutOfDate {get; set;}
-        public bool Orphan {get; set;}
+        [XmlIgnore]
+        public bool GameMod { get { 
+            if (PackageData != null)
+            {
+            if (Game == SimsGames.Sims2)
+                {
+                    return Sims2Data.GameMod;
+                } else if (Game == SimsGames.Sims3)
+                {
+                    return Sims3Data.GameMod;
+                } else if (Game == SimsGames.Sims4)
+                {
+                    return Sims4Data.GameMod;
+                } else
+                {
+                    return false;
+                }
+            } else {
+                return false;
+            }
+        }
+            set
+            {                
+                if (Game == SimsGames.Sims2)
+                {
+                    Sims2Data.GameMod = value;
+                } else if (Game == SimsGames.Sims3)
+                {
+                    Sims3Data.GameMod = value;
+                } else if (Game == SimsGames.Sims4)
+                {
+                    Sims4Data.GameMod = value;
+                } else
+                {
+                    return;
+                }               
+            } 
+        }
+        [XmlIgnore]
+        public bool Mesh { get { 
+            if (PackageData != null)
+            {
+            if (Game == SimsGames.Sims2)
+                {
+                    return Sims2Data.Mesh;
+                } else if (Game == SimsGames.Sims3)
+                {
+                    return Sims3Data.Mesh;
+                } else if (Game == SimsGames.Sims4)
+                {
+                    return Sims4Data.Mesh;
+                } else
+                {
+                    return false;
+                }
+            }
+            else
+                {
+                    return false;
+                }
+        }
+            set
+            {                
+                if (Game == SimsGames.Sims2)
+                {
+                    Sims2Data.Mesh = value;
+                } else if (Game == SimsGames.Sims3)
+                {
+                    Sims3Data.Mesh = value;
+                } else if (Game == SimsGames.Sims4)
+                {
+                    Sims4Data.Mesh = value;
+                } else
+                {
+                    return;
+                }               
+            } 
+        
+        }
+        [XmlIgnore]
+        public bool Recolor { get { 
+            if (PackageData != null)
+            {
+            if (Game == SimsGames.Sims2)
+                {
+                    return Sims2Data.Recolor;
+                } else if (Game == SimsGames.Sims3)
+                {
+                    return Sims3Data.Recolor;
+                } else if (Game == SimsGames.Sims4)
+                {
+                    return Sims4Data.Recolor;
+                } else
+                {
+                    return false;
+                }
+            } else {
+                return false;
+            }
+        }
+            set
+            {                
+                if (Game == SimsGames.Sims2)
+                {
+                    Sims2Data.Recolor = value;
+                } else if (Game == SimsGames.Sims3)
+                {
+                    Sims3Data.Recolor = value;
+                } else if (Game == SimsGames.Sims4)
+                {
+                    Sims4Data.Recolor = value;
+                } else
+                {
+                    return;
+                }               
+            } 
+        }
+        [XmlIgnore]
+        public bool Orphan { get { 
+            if (PackageData != null)
+            {
+                if (Game == SimsGames.Sims2)
+                {
+                    return Sims2Data.Orphan;
+                } else if (Game == SimsGames.Sims3)
+                {
+                    return Sims3Data.Orphan;
+                } else if (Game == SimsGames.Sims4)
+                {
+                    return Sims4Data.Orphan;
+                } else
+                {
+                    return false;
+                }
+            } else { 
+                return false; 
+            }            
+        }
+            set
+            {                
+                if (Game == SimsGames.Sims2)
+                {
+                    Sims2Data.Orphan = value;
+                } else if (Game == SimsGames.Sims3)
+                {
+                    Sims3Data.Orphan = value;
+                } else if (Game == SimsGames.Sims4)
+                {
+                    Sims4Data.Orphan = value;
+                } else
+                {
+                    return;
+                }               
+            }        
+        }
+        [XmlIgnore]
+        public string ObjectGUID { get { 
+            if (PackageData != null)
+            {
+            if (Game == SimsGames.Sims2)
+                {
+                    return Sims2Data.GUID;
+                } else if (Game == SimsGames.Sims3)
+                {
+                    return Sims3Data.GUID;
+                } else if (Game == SimsGames.Sims4)
+                {
+                    return Sims4Data.GUID;
+                } else
+                {
+                    return string.Empty;
+                }
+            } else
+                {
+                    return "";
+                }
+        }}
         public bool Favorite {get; set;}
         [XmlIgnore]
         public bool IsEnabled { get; set; }
         [XmlIgnore]
         public int LoadOrder { get; set; }
 
+        [XmlIgnore]
         private ISimsData _packagedata;
+        [XmlIgnore]
         public ISimsData PackageData {
             get
             {
                 if (Game == SimsGames.Sims2)
                 {
                     return _packagedata as Sims2Data;
+                } else if (Game == SimsGames.Sims3)
+                {
+                    return _packagedata as Sims3Data;
+                } else if (Game == SimsGames.Sims4)
+                {
+                    return _packagedata as Sims4Data;
                 } else
                 {
                     return _packagedata;
@@ -569,7 +754,25 @@ namespace SimsCCManager.Containers
                 _packagedata = value;
             }
         }
+
         
+        public Sims2Data Sims2Data { get { return PackageData as Sims2Data; } set { PackageData = value; }}
+        public Sims3Data Sims3Data { get { return PackageData as Sims3Data; } set { PackageData = value; }}
+        public Sims4Data Sims4Data { get { return PackageData as Sims4Data; } set { PackageData = value; }}
+        
+        public bool ShouldSerializeSims2Data()
+        {            
+            return Game == SimsGames.Sims2;
+        }
+        public bool ShouldSerializeSims3Data()
+        {
+            return Game == SimsGames.Sims3;
+        }
+        public bool ShouldSerializeSims4Data()
+        {
+            return Game == SimsGames.Sims4;
+        }
+
         public void WriteXML()
         {
             if (File.Exists(this.InfoFile))
@@ -626,7 +829,14 @@ namespace SimsCCManager.Containers
         public string Type {get;}
 
         public List<FunctionSortList> FunctionSort {get; set;}
-        public string GUID {get; set;}        
+        public string GUID {get; set;}
+        public List<IndexEntry> IndexEntries {get; set;}
+
+        public bool Recolor {get; set;}    
+        public bool Mesh {get; set;}
+        public bool Orphan {get; set;}
+        public bool GameMod {get; set;}
+        
 
         void Serialize();        
 
@@ -649,8 +859,39 @@ namespace SimsCCManager.Containers
         }
 
         public List<FunctionSortList> FunctionSort {get; set;} = new();
-        public string GUID {get; set;}
-        public GMDCData GMDCDataBlock {get; set;}
+        private string _guid;
+        public string GUID {get
+            {
+                if (!string.IsNullOrEmpty(_guid))
+                {
+                    if (_guid.StartsWith("0x"))
+                    {
+                        return _guid.TrimPrefix("0x");
+                    } else
+                    {
+                        return _guid;
+                    }
+                } else
+                {
+                    return "";
+                }
+                
+            } set
+            {
+                _guid = value;
+            }
+        }
+        public bool Recolor {get; set;}    
+        public bool Mesh {get; set;}
+        public bool Orphan {get; set;}
+        public bool GameMod {get; set;}
+        public List<IndexEntry> IndexEntries {get; set;} = new();
+        public List<GMDCData> GMDCDataBlock {get; set;} = new();
+        public List<MMATData> MMATDataBlock {get; set;} = new();
+        public XFLRData XFLRDataBlock {get; set;} = new();
+        public List<TXTRData> TXTRDataBlock {get; set;} = new();
+
+        
 
         public void Serialize()
         {
@@ -664,18 +905,28 @@ namespace SimsCCManager.Containers
         public override string ToString()
         {
             StringBuilder sb = new();
-            foreach (FunctionSortList function in FunctionSort)
+            if (!string.IsNullOrEmpty(Title)) sb.Append(string.Format("Title: {0}, ", Title));
+            if (!string.IsNullOrEmpty(Description)) sb.Append(string.Format("Description: {0}, ", Description));
+            if (FunctionSort.Count > 0)
             {
-                if (!string.IsNullOrEmpty(function.Subcategory))
+                sb.Append("Function: ");
+                foreach (FunctionSortList function in FunctionSort)
                 {
-                    sb.AppendLine(string.Format("{0}", function.Category));
-                } else
-                {
-                    sb.AppendLine(string.Format("{0}/{1}", function.Category, function.Subcategory));
+                    if (!string.IsNullOrEmpty(function.Subcategory))
+                    {
+                        sb.AppendLine(string.Format("{0}", function.Category));
+                    } else
+                    {
+                        sb.AppendLine(string.Format("{0}/{1}", function.Category, function.Subcategory));
+                    }
+                    
                 }
-                
             }
-            return string.Format("{0}: {1}\n{2}", Title, Description, sb.ToString());
+            sb.AppendLine(string.Format("Recolor: {0}, ", Recolor));
+            sb.Append(string.Format("Mesh: {0}, ", Mesh));
+            sb.Append(string.Format("GUID: {0}, ", GUID));
+            
+            return sb.ToString();
         }
     }
     public class Sims3Data : ISimsData
@@ -695,7 +946,12 @@ namespace SimsCCManager.Containers
         }
 
         public List<FunctionSortList> FunctionSort {get; set;} = new();
-        public string GUID {get; set;}
+        public List<IndexEntry> IndexEntries {get; set;} = new();
+        public string GUID {get; set;} = "";
+        public bool Recolor {get; set;}    
+        public bool Mesh {get; set;}
+        public bool Orphan {get; set;}
+        public bool GameMod {get; set;}
         public void Serialize()
         {
             //throw new NotImplementedException();
@@ -719,7 +975,12 @@ namespace SimsCCManager.Containers
         }
 
         public List<FunctionSortList> FunctionSort {get; set;} = new();
-        public string GUID {get; set;}
+        public List<IndexEntry> IndexEntries {get; set;} = new();
+        public string GUID {get; set;} = "";
+        public bool Recolor {get; set;}    
+        public bool Mesh {get; set;}
+        public bool Orphan {get; set;}
+        public bool GameMod {get; set;}
         public void Serialize()
         {
             //throw new NotImplementedException();

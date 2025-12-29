@@ -1,10 +1,12 @@
-[gd_scene load_steps=15 format=3 uid="uid://55aunc3up5rf"]
+[gd_scene load_steps=17 format=3 uid="uid://55aunc3up5rf"]
 
 [ext_resource type="Script" uid="uid://biglkyj7fjd1m" path="res://UI/PackageDisplay/AllModsContainer.cs" id="1_07ull"]
 [ext_resource type="Theme" uid="uid://b4fe82i5mblf5" path="res://themes/packagedisplay_headers.tres" id="1_gmjrk"]
 [ext_resource type="Script" uid="uid://b6yx50ewa2jxt" path="res://addons/CustomDataGrid/DataGrid/DataGrid.cs" id="2_07ull"]
 [ext_resource type="PackedScene" uid="uid://ddcxne05qsers" path="res://UI/PackageDisplay/RightClickMenu.tscn" id="2_ea8ua"]
 [ext_resource type="FontFile" uid="uid://dbl0pkpxsvvww" path="res://assets/fonts/Livvic/Livvic-Medium.ttf" id="3_xitth"]
+[ext_resource type="PackedScene" uid="uid://cyfgp4vopp1cq" path="res://UI/Buttons/CustomCheckButton.tscn" id="4_ylio6"]
+[ext_resource type="PackedScene" uid="uid://cqwmdnxfu6311" path="res://UI/PackageDisplay/ThumbnailGrid/ThumbnailGrid.tscn" id="7_wdnan"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ea8ua"]
 content_margin_left = 5.0
@@ -86,7 +88,7 @@ OptionButton/styles/pressed = SubResource("StyleBoxFlat_1bilu")
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_3p7jc"]
 
-[node name="AllModsContainer" type="MarginContainer" node_paths=PackedStringArray("AllModsHeader", "AllModsModNumber", "SearchBox", "SearchOptions", "DataGrid", "GridContainer")]
+[node name="AllModsContainer" type="MarginContainer" node_paths=PackedStringArray("AllModsHeader", "AllModsModNumber", "SearchBox", "SearchOptions", "DataGrid", "GridContainer", "SwapDisplaysCheck", "ThumbGrid")]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -94,13 +96,15 @@ grow_horizontal = 2
 grow_vertical = 2
 size_flags_horizontal = 3
 script = ExtResource("1_07ull")
-AllModsHeader = NodePath("ContainerHeader/LabelPositioner/AllMods_Label")
-AllModsModNumber = NodePath("ContainerHeader/AllModsInfo_Label")
+AllModsHeader = NodePath("ContainerHeader/LabelPositioner/HBoxContainer/AllMods_Label")
+AllModsModNumber = NodePath("ContainerHeader/LabelPositioner/HBoxContainer/AllModsInfo_Label")
 SearchBox = NodePath("ContainerHeader/SearchPositioner/AllMods_SearchBox")
 SearchOptions = NodePath("ContainerHeader/SearchPositioner/OptionButton")
 DataGrid = NodePath("AllMods_Container/GridContainer/DataGrid")
 GridContainer = NodePath("AllMods_Container/GridContainer")
 RightClickMenuPS = ExtResource("2_ea8ua")
+SwapDisplaysCheck = NodePath("ContainerHeader/MarginContainer/GridTypeSwapCheckButton")
+ThumbGrid = NodePath("AllMods_Container/GridContainer/ThumbnailGrid")
 
 [node name="ContainerHeader" type="HBoxContainer" parent="."]
 layout_mode = 2
@@ -108,17 +112,21 @@ size_flags_vertical = 0
 
 [node name="LabelPositioner" type="MarginContainer" parent="ContainerHeader"]
 layout_mode = 2
+size_flags_horizontal = 3
 mouse_filter = 2
 theme_override_constants/margin_left = 30
 
-[node name="AllMods_Label" type="Label" parent="ContainerHeader/LabelPositioner"]
+[node name="HBoxContainer" type="HBoxContainer" parent="ContainerHeader/LabelPositioner"]
+layout_mode = 2
+
+[node name="AllMods_Label" type="Label" parent="ContainerHeader/LabelPositioner/HBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 0
 size_flags_vertical = 8
 theme = ExtResource("1_gmjrk")
 text = "All Mods"
 
-[node name="AllModsInfo_Label" type="Label" parent="ContainerHeader"]
+[node name="AllModsInfo_Label" type="Label" parent="ContainerHeader/LabelPositioner/HBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 1
@@ -126,6 +134,29 @@ theme = ExtResource("1_gmjrk")
 theme_override_font_sizes/font_size = 12
 horizontal_alignment = 1
 vertical_alignment = 1
+
+[node name="VSeparator" type="VSeparator" parent="ContainerHeader"]
+layout_mode = 2
+
+[node name="MarginContainer2" type="MarginContainer" parent="ContainerHeader"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_right = 10
+
+[node name="ThumbnailGrid" type="Label" parent="ContainerHeader/MarginContainer2"]
+layout_mode = 2
+size_flags_vertical = 1
+theme = ExtResource("1_gmjrk")
+theme_override_font_sizes/font_size = 12
+text = "Switch Grid Type"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="MarginContainer" type="MarginContainer" parent="ContainerHeader"]
+layout_mode = 2
+
+[node name="GridTypeSwapCheckButton" parent="ContainerHeader/MarginContainer" instance=ExtResource("4_ylio6")]
+layout_mode = 2
 
 [node name="SearchPositioner" type="HBoxContainer" parent="ContainerHeader"]
 layout_mode = 2
@@ -163,3 +194,7 @@ layout_mode = 2
 [node name="DataGrid" type="Control" parent="AllMods_Container/GridContainer"]
 layout_mode = 2
 script = ExtResource("2_07ull")
+
+[node name="ThumbnailGrid" parent="AllMods_Container/GridContainer" instance=ExtResource("7_wdnan")]
+visible = false
+layout_mode = 2

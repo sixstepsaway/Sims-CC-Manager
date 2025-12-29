@@ -1,4 +1,4 @@
-[gd_scene load_steps=19 format=3 uid="uid://c4rjghpqcjk60"]
+[gd_scene load_steps=20 format=3 uid="uid://c4rjghpqcjk60"]
 
 [ext_resource type="Script" uid="uid://da8nog1p33e81" path="res://UI/PackageDisplay.cs" id="1_i7mej"]
 [ext_resource type="PackedScene" uid="uid://uo2724xgb1uw" path="res://UI/Background.tscn" id="2_tqnmv"]
@@ -18,8 +18,9 @@
 [ext_resource type="PackedScene" uid="uid://brdr53bjv2rqf" path="res://UI/PackageDisplay/ProfileManagement.tscn" id="16_i7mej"]
 [ext_resource type="PackedScene" uid="uid://djy0ci67h1dkw" path="res://UI/PackageDisplay/CategoryManagement.tscn" id="17_dynkg"]
 [ext_resource type="PackedScene" uid="uid://wsoegap3c8q2" path="res://UI/PackageDisplay/ExeChoicePopupPanel.tscn" id="18_0266g"]
+[ext_resource type="PackedScene" uid="uid://bvm2atrydtgg6" path="res://windows/CustomPopupWindow.tscn" id="19_aasf2"]
 
-[node name="PackageDisplay" type="MarginContainer" node_paths=PackedStringArray("UIAllModsContainer", "UIDownloadsContainer", "UIPackageViewerContainer", "UIPackageManagementButtons", "UIProfilesManagement", "UIGameStartControls", "UISettingsAndHelpControls", "GameRunningPopup", "ExeChoicePopupPanel", "AddFilesDialog", "AddExeDialog", "AddFolderDialog")]
+[node name="PackageDisplay" type="MarginContainer" node_paths=PackedStringArray("UIAllModsContainer", "UIDownloadsContainer", "UIPackageViewerContainer", "UIPackageManagementButtons", "UIProfilesManagement", "UIGameStartControls", "UISettingsAndHelpControls", "GameRunningPopup", "ExeChoicePopupPanel", "AddFilesDialog", "AddExeDialog", "AddFolderDialog", "AdminWarningWindow")]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -40,6 +41,7 @@ CategoryManagementWindowPS = ExtResource("17_dynkg")
 AddFilesDialog = NodePath("AddFileDialog")
 AddExeDialog = NodePath("AddExeDialog")
 AddFolderDialog = NodePath("AddFolderDialog")
+AdminWarningWindow = NodePath("CustomPopupWindow")
 
 [node name="Background" parent="." instance=ExtResource("2_tqnmv")]
 layout_mode = 2
@@ -147,3 +149,7 @@ ok_button_text = "Select Current Folder"
 file_mode = 2
 access = 2
 use_native_dialog = true
+
+[node name="CustomPopupWindow" parent="." instance=ExtResource("19_aasf2")]
+visible = false
+force_native = false

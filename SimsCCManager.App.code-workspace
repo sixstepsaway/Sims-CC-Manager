@@ -1,0 +1,12 @@
+{
+	"folders": [
+		{
+			"path": "src/SimsCCManager.App"
+		}
+	],
+	"settings": {
+		"workbench.iconTheme": "vs-seti",
+		"godotTools.editorPath.godot4": "e:\\Applications\\-- GAMEDEV\\Godot_v4.4.1-stable_mono_win64\\Godot_v4.4.1-stable_mono_win64.exe",
+		"workbench.colorTheme": "Cute"
+	}
+}
