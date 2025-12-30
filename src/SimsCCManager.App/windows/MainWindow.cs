@@ -375,33 +375,22 @@ public partial class MainWindow : MarginContainer
         MoveChild(Footer, GetChildCount());
         int footerpos = Footer.GetIndex();
         MoveChild(loadingInstance, footerpos-1);
-        WaitForDataGrid();
     }
 
-    private void WaitForDataGrid()
-    {
+    public void DataGridFinishedLoading(){
         new Thread(() =>
-        {
-            DataGrid dg = packageDisplay.UIAllModsContainer.DataGrid;
-            int rowsToMake = (int)dg.RowsOnScreen;
-            int rowsCount = dg.VisibleRows.Count;
-            while (dg.AllRows.Count < rowsToMake)
+        {            
+            for (int i = (int)loadingInstance.progressBar.Value; i < (int)loadingInstance.progressBar.MaxValue; i++)
             {
-                if (rowsToMake == 0) {
-                    rowsToMake = (int)dg.RowsOnScreen;                     
-                } else if (rowsCount != dg.VisibleRows.Count)
-                {
-                    IncrementLoadingScreen(1, "Creating data view...");
-                    rowsCount = dg.VisibleRows.Count;
-                }
+                Thread.Sleep(1);
+                IncrementLoadingScreen(1, "Final checks...", "MainWindow: Final Checks");
             }
-            for (int i = (int)loadingInstance.progressBar.Value; i < loadingInstance.progressBar.MaxValue; i++)
-            {
-                Thread.Sleep(10);
-                IncrementLoadingScreen(i, "Final checks...");
-            }
-            CallDeferred(nameof(FinishLoadingScreen));
+            CallDeferred(nameof(FinishLoadingScreen));          
         }){IsBackground = true}.Start();
+    }
+
+    public void DeferredFinishLoadingScreen(){
+        CallDeferred(nameof(FinishLoadingScreen));   
     }
 
     private void FinishLoadingScreen()
@@ -409,15 +398,15 @@ public partial class MainWindow : MarginContainer
         loadingInstance.QueueFree();
     }
 
-    public void IncrementLoadingScreen(int amount, string text)
+    public void IncrementLoadingScreen(int amount, string text, string Source)
     {
         
-        CallDeferred(nameof(DeferredLoadingScreen), amount, text);
+        CallDeferred(nameof(DeferredLoadingScreen), amount, text, Source);
     }
 
-    private void DeferredLoadingScreen(int amount, string text)
+    private void DeferredLoadingScreen(int amount, string text, string Source)
     {
-        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Loading screen incremented by {0}, and is now at {1}/{2} ({3}%)", amount, loadingInstance.progressBar.Value, loadingInstance.progressBar.MaxValue, ((loadingInstance.progressBar.MaxValue - loadingInstance.progressBar.Value) / loadingInstance.progressBar.MaxValue) * 100));
+        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Loading screen incremented at {0} by {1} with message {2}, and is now at {3}/{4} ({5}%)", Source, amount, text, loadingInstance.progressBar.Value, loadingInstance.progressBar.MaxValue, ((loadingInstance.progressBar.MaxValue - loadingInstance.progressBar.Value) / loadingInstance.progressBar.MaxValue) * 100));
         loadingInstance.progressBar.Value += amount;
         loadingInstance.ProgressLabel.Text = text;
     }

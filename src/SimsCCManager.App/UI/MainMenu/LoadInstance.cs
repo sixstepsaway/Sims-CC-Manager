@@ -182,7 +182,7 @@ public partial class LoadInstance : MarginContainer
         int fileCount = files.Count;
         int dFileCount = downloadfiles.Count;
         
-        int pbarmax = fileCount + 30;
+        int pbarmax = fileCount *2 + 30;
 
         
 
@@ -192,9 +192,9 @@ public partial class LoadInstance : MarginContainer
 
         new Thread(() => {
         //content
-            GlobalVariables.mainWindow.IncrementLoadingScreen(10, "Loading instance..."); 
+            GlobalVariables.mainWindow.IncrementLoadingScreen(10, "Loading instance...", "LoadInstance: First"); 
             pbarval += 10;
-            GlobalVariables.mainWindow.IncrementLoadingScreen(10, "Loading packages...");    
+            GlobalVariables.mainWindow.IncrementLoadingScreen(10, "Loading packages...", "LoadInstance: Second");    
             pbarval += 10;
             gameInstance = InstanceControllers.LoadInstanceFiles(gameInstance);
             CallDeferred(nameof(FinishLoading));

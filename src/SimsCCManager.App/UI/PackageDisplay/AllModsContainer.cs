@@ -5,10 +5,12 @@ using SimsCCManager.Debugging;
 using SimsCCManager.Globals;
 using SimsCCManager.SettingsSystem;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
+using System.Drawing.Printing;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -36,6 +38,8 @@ public partial class AllModsContainer : MarginContainer
     CustomCheckButton SwapDisplaysCheck;
     [Export] 
     ThumbnailGrid ThumbGrid;
+
+    public bool FirstLoaded = false;
 
 
     private bool _viewswap;
@@ -211,6 +215,7 @@ public partial class AllModsContainer : MarginContainer
         DataGrid.MiniGridItemAdd += ChangeLinkedItemsAdd;
         DataGrid.MiniGridItemRemove += ChangeLinkedItemsRemove;
         DataGrid.MakeRCMenu += (menu) => ShowRCMenu(menu); 
+        DataGrid.DataGridFinishedFirstLoad += () => DataGridLoaded();
 
         SwapDisplaysCheck.CheckToggled += (v) => ViewFlipped(v);
 
@@ -220,8 +225,14 @@ public partial class AllModsContainer : MarginContainer
         ThumbGrid.AccentColor = GlobalVariables.LoadedTheme.AccentColor;
         ThumbGrid.TextColor = GlobalVariables.LoadedTheme.MainTextColor;
         ThumbGrid.SelectedColor = GlobalVariables.LoadedTheme.DataGridSelected;
+        
 
+    }
 
+    private void DataGridLoaded()
+    {
+        GlobalVariables.mainWindow.DataGridFinishedLoading();
+        DataGrid.DataChanged += (rowIdx, dataChanged, Item) => DataChanged(rowIdx, dataChanged, Item);
     }
 
     private void ViewFlipped(bool v)
@@ -318,14 +329,15 @@ public partial class AllModsContainer : MarginContainer
 
     public void UpdateProfilePackages()
     {
-        if (DataGrid.AllRows.Count != 0)
+        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Updating profile packages."));
+        if (DataGrid.VisibleRows.Count != 0)
         { 
             new Thread(() => {
 
             List<EnabledPackages> enabled = packageDisplay.ThisInstance.LoadedProfile.EnabledPackages;
             List<Guid> IDs = enabled.Select(x => x.PackageIdentifier).ToList();
-                   
-            Parallel.ForEach(DataGrid.AllRows, row =>
+
+            Parallel.ForEach(DataGrid.VisibleRows, row =>
             {
                 if (IDs.Contains(row.RowData.Identifier))
                 {
@@ -452,6 +464,7 @@ public partial class AllModsContainer : MarginContainer
             c++;
             newrow.Items.Add(item);
         }
+        if (!FirstLoaded) GlobalVariables.mainWindow.IncrementLoadingScreen(1, string.Format("Creating data for {0}", pack.FileName), "All Mods: Making Data");
         return newrow;
     }
 
@@ -509,30 +522,45 @@ public partial class AllModsContainer : MarginContainer
         return newrow;
     }
 
-
-
-
+    
+    
     public void CreateRows()
     {
-        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Creating rows"));
-        List<DataGridRow> rows = new();
-		int i = 0;
-        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Packages: {0}", Packages.Count));
-		foreach (SimsPackage pack in Packages){
-            if (pack.StandAlone)
-            {
-                DataGridRow newrow = CreateRow(pack, i);
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Row {0}: {1}", i, pack.FileName));
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("-- Is Subrow: {0}\n -- Has Subitems: {1}", newrow.SubRow, newrow.SubRowItems.Count));
-                rows.Add(newrow);
-                i++;
-            }
+        ConcurrentBag<Task> runningTasks = new();
+        int completedTasks = 0;
+        ConcurrentBag<DataGridRow> rows = new();
+        new Thread(() => {        
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Creating rows"));
             
-		}
-		if (rows.Count != 0) { 
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Adding {0} rows to grid.", rows.Count));
-            DataGrid.RowData = rows; 
-        }
+            int i = 0;
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Packages: {0}", Packages.Count));
+            foreach (SimsPackage pack in Packages){
+                if (pack.StandAlone)
+                {
+                    Task t = Task.Run( () => {
+                        DataGridRow newrow = CreateRow(pack, i);
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Row {0}: {1}", i, pack.FileName));
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("-- Is Subrow: {0}\n -- Has Subitems: {1}", newrow.SubRow, newrow.SubRowItems.Count));
+                        rows.Add(newrow);
+                        i++;
+                    });
+                    runningTasks.Add(t);
+                }            
+            }
+
+            while (runningTasks.Any(x => !x.IsCompleted)){
+                if (completedTasks != runningTasks.Count(x => x.IsCompleted)) {
+                    completedTasks = runningTasks.Count(x => x.IsCompleted);
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0} tasks in runningTasks, {1} completed", runningTasks.Count, completedTasks));
+                }
+            }
+
+            if (rows.Count != 0) { 
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Adding {0} rows to grid.", rows.Count));
+                DataGrid.RowData = rows.OrderBy(x => x.Idx).ToList(); 
+            }
+            FirstLoaded = true;
+        }){IsBackground = true}.Start();
     }
 
     public void CreateDataGrid()
@@ -557,7 +585,7 @@ public partial class AllModsContainer : MarginContainer
 
         DataGrid.Headers = DataGridHeaders;
         DataGrid.ItemSelected += (item) => ItemSelected(item);
-		DataGrid.DataChanged += (rowIdx, dataChanged, Item) => DataChanged(rowIdx, dataChanged, Item);
+		//DataGrid.DataChanged += (rowIdx, dataChanged, Item) => DataChanged(rowIdx, dataChanged, Item);
 		DataGrid.SelectionChanged += (SelectedRows, SelectedRowsIdxs) => SelectionChanged(SelectedRows, SelectedRowsIdxs);
 		DataGrid.MakeTooltip += (tooltip) => ShowTooltip(tooltip);
 		DataGrid.MakeRCMenu += (headerMenu) => CreateHeaderClickMenu(headerMenu);

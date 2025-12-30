@@ -235,7 +235,7 @@ public partial class NewInstance : MarginContainer
         GlobalVariables.mainWindow.LoadingPackageDisplayStart();
         new Thread(() => {
         //content
-            GlobalVariables.mainWindow.IncrementLoadingScreen(10, "Creating folders...");
+            GlobalVariables.mainWindow.IncrementLoadingScreen(10, "Creating folders...", "New Instance: First");
             currentInstance.InstanceFolders = new();
             if (PackagesFolderLE.Text.Contains("%INSTANCE%"))
             {
@@ -271,13 +271,13 @@ public partial class NewInstance : MarginContainer
             if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Instance DataCache Folder: {0}", currentInstance.InstanceFolders.InstanceDataFolder));
             currentInstance.CheckExisting();   
             currentInstance.BuildInstanceFolders();
-            GlobalVariables.mainWindow.IncrementLoadingScreen(10, "Checking game data...");
+            GlobalVariables.mainWindow.IncrementLoadingScreen(10, "Checking game data...", "New Instance: Game Data Check");
             currentInstance.MakeFolderTree();
-            GlobalVariables.mainWindow.IncrementLoadingScreen(10, "Checking game version...");
+            GlobalVariables.mainWindow.IncrementLoadingScreen(10, "Checking game version...", "New Instance: Game Version Check");
             currentInstance.GetGameVersion();            
-            GlobalVariables.mainWindow.IncrementLoadingScreen(10, "Saving instance information...");
+            GlobalVariables.mainWindow.IncrementLoadingScreen(10, "Saving instance information...", "New Instance: Instanec Info Check");
             currentInstance.CreateDefaults();
-            GlobalVariables.mainWindow.IncrementLoadingScreen(10, "Retrieving current data...");  
+            GlobalVariables.mainWindow.IncrementLoadingScreen(10, "Retrieving current data...", "New Instance: Current Data Check");  
             if (CreateFromCurrent) { 
                 currentInstance.LoadedProfile.LocalData = true;
                 currentInstance.LoadedProfile.LocalSaves = true;
@@ -289,7 +289,7 @@ public partial class NewInstance : MarginContainer
             for (int i = 60; i < 100; i++)
             {
                 Thread.Sleep(10);
-                GlobalVariables.mainWindow.IncrementLoadingScreen(i, "Final checks...");
+                GlobalVariables.mainWindow.IncrementLoadingScreen(i, "Final checks...", "New Instance: Final Checks");
             }             
             CallDeferred(nameof(FinishLoading));
         }){IsBackground = true}.Start();

@@ -430,7 +430,7 @@ namespace SimsCCManager.Globals
             if (File.Exists(GlobalVariables.MovedItemsFile)) File.Delete(GlobalVariables.MovedItemsFile);
         }
 
-        public static List<Task> runningTasks = new();
+        public static ConcurrentBag<Task> runningTasks = new();
 
         public static GameInstance LoadInstanceFiles(GameInstance gameInstance)
         {
@@ -450,10 +450,10 @@ namespace SimsCCManager.Globals
                             if (simsPackage.LinkedFiles.Count > 0) incBy += simsPackage.LinkedFiles.Count;
                             if (simsPackage.LinkedFolders.Count > 0) incBy += simsPackage.LinkedFolders.Count;
                         }
-                        GlobalVariables.mainWindow.IncrementLoadingScreen(incBy, fi.Name.Replace(".info", ""));
+                        GlobalVariables.mainWindow.IncrementLoadingScreen(incBy, fi.Name.Replace(".info", ""), "Globals: ReadPackages 1");
                     } else
                     {
-                        GlobalVariables.mainWindow.IncrementLoadingScreen(1, fi.Name.Replace(".info", ""));
+                        GlobalVariables.mainWindow.IncrementLoadingScreen(1, fi.Name.Replace(".info", ""), "Globals: ReadPackages 2");
                     }                    
                 });
                 runningTasks.Add(t);
@@ -475,7 +475,7 @@ namespace SimsCCManager.Globals
                         if (simsPackage.LinkedFiles.Count > 0) incBy += simsPackage.LinkedFiles.Count;
                         if (simsPackage.LinkedFolders.Count > 0) incBy += simsPackage.LinkedFolders.Count;
                     }
-                    GlobalVariables.mainWindow.IncrementLoadingScreen(incBy, fi.Name.Replace(".info", ""));
+                    GlobalVariables.mainWindow.IncrementLoadingScreen(incBy, fi.Name.Replace(".info", ""), "Globals: ReadPackages 3");
                 });
                 runningTasks.Add(t);
             }
@@ -485,7 +485,7 @@ namespace SimsCCManager.Globals
                     FileInfo f = new(file);
                     SimsDownload simsDownload = ReadDownload(file, f);
                     gameInstance.Files.Add(simsDownload);
-                    GlobalVariables.mainWindow.IncrementLoadingScreen(1, f.Name.Replace(".info", ""));
+                    GlobalVariables.mainWindow.IncrementLoadingScreen(1, f.Name.Replace(".info", ""), "Globals: ReadPackages 4");
                 });
                 runningTasks.Add(t);
             }   
@@ -636,10 +636,10 @@ namespace SimsCCManager.Globals
                         if (simsPackage.LinkedFiles.Count > 0) incBy += simsPackage.LinkedFiles.Count;
                         if (simsPackage.LinkedFolders.Count > 0) incBy += simsPackage.LinkedFolders.Count;
                     }
-                    GlobalVariables.mainWindow.IncrementLoadingScreen(incBy, fi.Name.Replace(".info", ""));
+                    GlobalVariables.mainWindow.IncrementLoadingScreen(incBy, fi.Name.Replace(".info", ""), "Globals: ReadPackages 5");
                 } else
                 {                    
-                    GlobalVariables.mainWindow.IncrementLoadingScreen(1, fi.Name.Replace(".info", ""));
+                    GlobalVariables.mainWindow.IncrementLoadingScreen(1, fi.Name.Replace(".info", ""), "Globals: ReadPackages 6");
                 }               
                 
             }
@@ -666,7 +666,7 @@ namespace SimsCCManager.Globals
                     if (simsPackage.LinkedFiles.Count > 0) incBy += simsPackage.LinkedFiles.Count;
                     if (simsPackage.LinkedFolders.Count > 0) incBy += simsPackage.LinkedFolders.Count;
                 }
-                GlobalVariables.mainWindow.IncrementLoadingScreen(incBy, fi.Name.Replace(".info", ""));
+                GlobalVariables.mainWindow.IncrementLoadingScreen(incBy, fi.Name.Replace(".info", ""), "Globals: ReadPackages 7");
                 if (!simsPackage.RootMod && simsPackage.StandAlone) gameInstance = GetSubDirectories(gameInstance, file, simsPackage);
             }
             return gameInstance;
