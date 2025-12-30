@@ -335,7 +335,7 @@ public partial class DataGrid : Control
 			} else {
 				ScrollPosition = v;
 				OnScrollBarDown(v);
-			} // BASICALLY, IF THE VALUE ISNT ONLY ONE UP OR DOWN, CREATE TASKS FOR EVERYTHING IN BETWEEN! 			
+			} // BASICALLY, IF THE VALUE ISNT ONLY ONE UP OR DOWN, RERUN! 			
 		} else { 
 			int last = ScrollPosition - 1;
 			if (v != last || v >= MaxScroll - RowsOnScreen){		
@@ -347,6 +347,8 @@ public partial class DataGrid : Control
 			}			
 		}		
     }
+
+
 
 	private void OnScrollBarDown(int pos)
     {	
@@ -620,66 +622,86 @@ public partial class DataGrid : Control
 			}		
 		}
 	}
-
+	List<DataGridRowUi> popRowOrdered = new();
     public void PopulateRows(){
-		
-		SetScrollBar();
-		
-		int rc = 0;
-		if (!Sorted){
-			foreach (DataGridRow row in RowData){
-				row.Idx = rc;
-				rc++;
+		new Thread(() => {
+			PleasePassLog(string.Format("Attempting to populate with rows from {0} rowdata.", RowData.Count));
+			if (Populating) { 
+				PleasePassLog(string.Format("(Rows: {0}): Already populating!", RowData.Count));
+				return;
 			}
-		} else {
-			foreach (DataGridRow row in CellsUnsorted){
-				row.Idx = rc;
-				rc++;
-			}
-		}
+			
+			Populating = true;
+			
+			ConcurrentBag<DataGridRowUi> rowsForVisible = new();
+			ConcurrentBag<Task> runningTasks = new();
+			int completedTasks = 0;
+			CallDeferred(nameof(SetScrollBar));
+			CallDeferred(nameof(ClearVisibleRows));
+			
+			/*int rc = 0;
+			if (!Sorted){
+				foreach (DataGridRow row in RowData){
+					row.Idx = rc;
+					rc++;
+				}
+			} else {
+				foreach (DataGridRow row in CellsUnsorted){
+					row.Idx = rc;
+					rc++;
+				}
+			}*/
 
-		if (LinkToggleToAdjustmentNumber){
-			CheckToggleNumbers();
-		}
-		
-		int rowsend = 0;
-		int rowsstart = 0;
-		rowsstart = ScrollPosition;
-		int rowsonscreenint = (int)RowsOnScreen;
-		rowsend = ScrollPosition + rowsonscreenint;
-		
-		foreach (DataGridRowUi row in VisibleRows){
-			row.VisibleOnScreen = false;
-			RowsHolder.RemoveChild(row);
-		}
-		VisibleRows.Clear();
-		if (RowsOnScreen > RowData.Count){
-			rowsend = RowData.Count;
-		} else if (ScrollPosition <= RowsOnScreen){
+			if (LinkToggleToAdjustmentNumber){
+				CheckToggleNumbers();
+			}
+			
+			int rowsend = 0;
+			int rowsstart = 0;
 			rowsstart = ScrollPosition;
-			rowsend = (int)RowsOnScreen + ScrollPosition;
-		}
-		for (int i = rowsstart; i < rowsend; i++){
-			DataGridRowUi row = CreateRow(RowData[i], i);
-			RowsHolder.AddChild(row);
-			VisibleRows.Add(row);
-		}
-		if (RowsOnScreen < RowData.Count){
-			dataGridUi.AllRowsContainer.SizeFlagsVertical = SizeFlags.ExpandFill;
-			RowsHolder.SizeFlagsVertical = SizeFlags.ExpandFill;
-		} else {
-			dataGridUi.AllRowsContainer.SizeFlagsVertical = SizeFlags.ShrinkBegin;
-			RowsHolder.SizeFlagsVertical = SizeFlags.ShrinkBegin;
-		}
-		if (!FirstLoaded){
-			FirstLoaded = true;
-			DataGridFinishedFirstLoad?.Invoke();
-		}		
+			int rowsonscreenint = (int)RowsOnScreen;
+			rowsend = ScrollPosition + rowsonscreenint;		
+
+			
+			if (RowsOnScreen > RowData.Count){
+				rowsend = RowData.Count;
+			} else if (ScrollPosition <= RowsOnScreen){
+				rowsstart = ScrollPosition;
+				rowsend = (int)RowsOnScreen + ScrollPosition;
+			}
+			
+			PleasePassLog(string.Format("Rows start: {0}, Rows End: {1}", rowsstart, rowsend));
+
+			List<DataGridRow> _rowdata = RowData.GetRange(rowsstart, (int)RowsOnScreen);
+
+			foreach (DataGridRow row in _rowdata){
+				Task t = Task.Run( () => {
+					PleasePassLog(string.Format("Creating row {0}: {1}", row.Idx, row.Identifier));
+					DataGridRowUi newrow = CreateRow(row, row.Idx);
+					rowsForVisible.Add(newrow);
+				});
+				runningTasks.Add(t);
+				
+				//RowsHolder.AddChild(row);
+				//VisibleRows.Add(row);
+			}
+
+
+			while (runningTasks.Any(x => !x.IsCompleted)){
+                if (completedTasks != runningTasks.Count(x => x.IsCompleted)) {
+                    completedTasks = runningTasks.Count(x => x.IsCompleted);
+                    PleasePassLog(string.Format("{0} tasks in DataGrid runningTasks, {1} completed", runningTasks.Count, completedTasks));
+                }
+            }
+
+			popRowOrdered = new();
+			popRowOrdered = rowsForVisible.OrderBy(x => x.RowData.Idx).ToList();
+			PleasePassLog(string.Format("Pop rows: {0}, Ordered: {1}", rowsForVisible.Count, popRowOrdered.Count));
+			CallDeferred(nameof(PopRowsDeferred));			
+		}){IsBackground = true}.Start();	
 	}
 
-	private void PopRowsDeferred(){
-		/*List<DataGridRowUi> popRowOrdered = popRows.OrderBy(x => x.RowData.Idx).ToList();
-		PleasePassLog(string.Format("Pop rows: {0}, Ordered: {1}", popRows.Count, popRowOrdered.Count));
+	private void PopRowsDeferred(){		
 		foreach (DataGridRowUi row in popRowOrdered){
 			RowsHolder.AddChild(row);
 			VisibleRows.Add(row);
@@ -695,7 +717,8 @@ public partial class DataGrid : Control
 		if (!FirstLoaded) {
 			FirstLoaded = true;
 			DataGridFinishedFirstLoad?.Invoke();
-		} */
+		}
+		Populating = false;
 	}
 
 	private void ClearVisibleRows(){
@@ -853,18 +876,6 @@ public partial class DataGrid : Control
 			MiniGrids.Add(minigrid);
 			minigrid.Visible = false;
 		}
-
-		/*RowsHolder.AddChild(row);
-		if (AtPosition != -1)
-		{
-			RowsHolder.MoveChild(row, AtPosition);
-			VisibleRows.Insert(AtPosition, row);
-		}
-		else
-		{
-			VisibleRows.Add(row);
-		}*/
-
 		return row;
 	}
 

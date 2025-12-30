@@ -182,7 +182,7 @@ public partial class LoadInstance : MarginContainer
         int fileCount = files.Count;
         int dFileCount = downloadfiles.Count;
         
-        int pbarmax = fileCount *2 + 30;
+        int pbarmax = fileCount + 50 + 30;
 
         
 

@@ -358,8 +358,8 @@ public partial class AllModsContainer : MarginContainer
             });            
         }){IsBackground = true}.Start();
 
-        } else
-            CreateRows();
+        }// else
+            //CreateRows();
         
     }
 
@@ -534,7 +534,7 @@ public partial class AllModsContainer : MarginContainer
             
             int i = 0;
             if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Packages: {0}", Packages.Count));
-            foreach (SimsPackage pack in Packages){
+            foreach (SimsPackage pack in Packages.OrderBy(x => x.FileName)){
                 if (pack.StandAlone)
                 {
                     Task t = Task.Run( () => {

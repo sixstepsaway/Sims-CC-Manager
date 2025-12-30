@@ -10,12 +10,6 @@
 [ext_resource type="Texture2D" uid="uid://c2y6dru3pqtcw" path="res://addons/CustomDataGrid/assets/twotone_keyboard_arrow_up_black_48dp.png" id="8_k5t6v"]
 [ext_resource type="Texture2D" uid="uid://b782fcy3xe4x0" path="res://addons/CustomDataGrid/assets/twotone_keyboard_arrow_down_black_48dp.png" id="9_f4qc8"]
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_uw5ip"]
-bg_color = Color(0.6, 0.6, 0.6, 0)
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.55, 0.55, 0.55, 0.482353)
-
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_wysmd"]
 
 [sub_resource type="Theme" id="Theme_kcnql"]
@@ -40,6 +34,12 @@ corner_radius_bottom_left = 3
 
 [sub_resource type="Theme" id="Theme_2c7yn"]
 Panel/styles/panel = SubResource("StyleBoxFlat_20ji7")
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_uw5ip"]
+bg_color = Color(0.6, 0.6, 0.6, 0)
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.55, 0.55, 0.55, 0.482353)
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_2mng4"]
 
@@ -84,15 +84,6 @@ ToggleSelectedColor = NodePath("ToggleOption/Checked/ColorRect")
 ToggleUnselectedColor = NodePath("ToggleOption/Unchecked/ColorRect")
 ToggleHoverColor = NodePath("ToggleOption/Hover/ColorRect")
 CustomContainer = NodePath("CustomContainer")
-
-[node name="Panel" type="Panel" parent="."]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_uw5ip")
 
 [node name="TextOption" type="MarginContainer" parent="."]
 visible = false
@@ -457,6 +448,16 @@ theme_override_constants/margin_bottom = 10
 layout_mode = 2
 expand_mode = 3
 stretch_mode = 5
+
+[node name="Panel" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_uw5ip")
 
 [node name="Button" type="Button" parent="."]
 visible = false
