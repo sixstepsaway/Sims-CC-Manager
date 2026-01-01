@@ -83,6 +83,11 @@ public partial class PackageDisplay : MarginContainer
     public VFSFiles VFSFileList = new();
 
 
+    private bool _lockinput;
+    public bool LockInput { get { return _lockinput; } 
+    set { _lockinput = value; 
+    UIAllModsContainer.DataGrid.BlockInput = value; }}
+
 
     public bool _gamerunning;
     public bool GameRunning
@@ -186,6 +191,7 @@ public partial class PackageDisplay : MarginContainer
             break;
             case 5:
                 if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0}: Manage categories pressed.", but));
+                LockInput = true;
                 OpenManageCategoriesWindow();
             break;
             case 6:
@@ -201,6 +207,8 @@ public partial class PackageDisplay : MarginContainer
         AddChild(categorymanagement);
         categorymanagement.CategoriesUpdated += () => CategoriesUpdated();
     }
+
+    
 
     private void CategoriesUpdated()
     {
@@ -256,6 +264,7 @@ public partial class PackageDisplay : MarginContainer
 
     private void OpenProfileManagementWindow()
     {
+        LockInput = true;
         ProfileManagement prof = ProfilesManagementWindowPS.Instantiate() as ProfileManagement;
         prof.packageDisplay = this;
         prof.ProfilesUpdated += () => ProfilesUpdated();

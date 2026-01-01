@@ -95,11 +95,10 @@ namespace DataGridContainers
         public List<DataGridCellIcons> RowIcons {get; set;} 
 
         private Color _backgroundcolor;
-        public Color BackgroundColor {
-            get { return _backgroundcolor; }
-            set { _backgroundcolor = value; 
-            TextColor = GetFGColor(value);}
-        }
+        public Color BackgroundColor {get; set;}
+
+        public Color TextColor {get; set;}
+        public bool UseCategoryColor {get; set;}
 
         private bool _toggled;
         public bool Toggled {
@@ -124,8 +123,6 @@ namespace DataGridContainers
         }
         public int AdjustmentIdx {get; set;} = -1;
         public int ToggledIdx {get; set;} = -1;
-
-        public Color TextColor {get; set;}
 
         public DataGridRow(){
             Headers = new();

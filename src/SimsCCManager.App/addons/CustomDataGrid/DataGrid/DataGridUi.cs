@@ -54,5 +54,10 @@ public partial class DataGridUi : MarginContainer
 		//GD.Print("Initializing data grid.");
 		//CreateFramework();		
 	}	
+
+	public void AddMinigrid(MiniGrid grid)
+	{
+		CallDeferred("add_child", grid);
+	}
 	
 }

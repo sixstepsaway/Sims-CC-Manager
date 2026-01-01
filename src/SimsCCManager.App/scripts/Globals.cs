@@ -545,6 +545,7 @@ namespace SimsCCManager.Globals
                             }
                             subpackage.DateAdded = DateTime.Now;
                             subpackage.DateUpdated = DateTime.Now;
+                            subpackage.PackageCategory = gameInstance.Categories.First(x => x.Name == "Default");
                             subpackage.WriteXML();
                         }
                         if (!package.LinkedPackages.Contains(subpackage) && !subpackage.StandAlone) package.LinkedPackages.Add(subpackage);
@@ -596,6 +597,7 @@ namespace SimsCCManager.Globals
                             subpackage.Location = file;
                             subpackage.DateAdded = DateTime.Now;
                             subpackage.DateUpdated = DateTime.Now;
+                            subpackage.PackageCategory = gameInstance.Categories.First(x => x.Name == "Default");
                             subpackage.WriteXML();
                         }
                         if (!package.LinkedPackageFolders.Contains(subpackage) && !subpackage.StandAlone) package.LinkedPackageFolders.Add(subpackage);
@@ -760,6 +762,7 @@ namespace SimsCCManager.Globals
                 simsPackage.Location = file;
                 simsPackage.DateAdded = DateTime.Now;
                 simsPackage.DateUpdated = DateTime.Now;
+                simsPackage.PackageCategory = loadedinstance.Categories.First(x => x.Name == "Default");
                 simsPackage.WriteXML();
             }
             return simsPackage;
@@ -805,7 +808,8 @@ namespace SimsCCManager.Globals
                 simsPackage.Location = file;
                 SimsPackageReader simsPackageReader = new();
                 simsPackageReader.ReadPackage(simsPackage.Location);
-                simsPackage.PackageData = simsPackageReader.SimsData;                
+                simsPackage.PackageData = simsPackageReader.SimsData;    
+                simsPackage.PackageCategory = loadedinstance.Categories.First(x => x.Name == "Default");            
                 if (simsPackageReader.PackageGame != loadedinstance.GameChoice)
                 {
                     simsPackage.Game = simsPackageReader.PackageGame;

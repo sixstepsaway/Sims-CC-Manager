@@ -1,8 +1,27 @@
-[gd_scene load_steps=9 format=3 uid="uid://dpecepynaf7d5"]
+[gd_scene load_steps=13 format=3 uid="uid://dpecepynaf7d5"]
 
 [ext_resource type="Theme" uid="uid://b4fe82i5mblf5" path="res://themes/packagedisplay_headers.tres" id="1_2yitw"]
+[ext_resource type="Script" uid="uid://q4q3fcmduq2x" path="res://UI/PackageDisplay/RenameItemsBox.cs" id="1_bvb50"]
 [ext_resource type="Texture2D" uid="uid://bfqqudt7sll4n" path="res://assets/icons/materialicons/twotone_refresh_black_48dp.png" id="2_bvb50"]
 [ext_resource type="Theme" uid="uid://elq77dslte5a" path="res://themes/ManageCategories_buttons.tres" id="3_ypnqs"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_vgm2j"]
+bg_color = Color(0.85, 0.85, 0.85, 0.2901961)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bekm5"]
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.38549247, 0.38549256, 0.38549227, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+expand_margin_left = 10.0
+expand_margin_top = 10.0
+expand_margin_right = 10.0
+expand_margin_bottom = 10.0
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_u43vk"]
 bg_color = Color(0.6, 0.6, 0.6, 0)
@@ -32,59 +51,94 @@ Button/styles/hover = SubResource("StyleBoxFlat_u43vk")
 Button/styles/normal = SubResource("StyleBoxFlat_atf2m")
 Button/styles/pressed = SubResource("StyleBoxFlat_8s3fj")
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_x16ux"]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_s1447"]
+bg_color = Color(0.6, 0.6, 0.6, 0)
+border_width_left = 3
+border_width_top = 4
+border_width_right = 5
+border_width_bottom = 4
+border_color = Color(0.450648, 0.450648, 0.450648, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_pk4a4"]
 bg_color = Color(0.6, 0.6, 0.6, 0)
 
-[node name="RenameItemsBox" type="MarginContainer"]
+[node name="RenameItemsBox" type="MarginContainer" node_paths=PackedStringArray("ItemContainer", "labels", "buttons", "GetInternals", "ButtonSpin", "ConfirmButton", "CancelButton")]
+offset_right = 1000.0
+offset_bottom = 750.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_bvb50")
+ItemContainer = NodePath("MarginContainer2/VBoxContainer/HBoxContainer2/MarginContainer/MarginContainer/ScrollContainer/VBoxContainer")
+labels = [NodePath("MarginContainer2/VBoxContainer/RenameFiles"), NodePath("MarginContainer2/VBoxContainer/RenameFiles2"), NodePath("MarginContainer2/VBoxContainer/HBoxContainer3/AllMods_Label")]
+buttons = [NodePath("MarginContainer2/VBoxContainer/HBoxContainer/Save_Button"), NodePath("MarginContainer2/VBoxContainer/HBoxContainer/Cancel_Button")]
+GetInternals = NodePath("MarginContainer2/VBoxContainer/HBoxContainer3/GetAllNamesBox/Button")
+ButtonSpin = NodePath("MarginContainer2/VBoxContainer/HBoxContainer3/GetAllNamesBox/ButtonSpin")
+ConfirmButton = NodePath("MarginContainer2/VBoxContainer/HBoxContainer/Save_Button")
+CancelButton = NodePath("MarginContainer2/VBoxContainer/HBoxContainer/Cancel_Button")
 
-[node name="ColorRect" type="ColorRect" parent="."]
-modulate = Color(1, 1, 1, 0.505882)
+[node name="Panel" type="Panel" parent="."]
 layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_vgm2j")
 
-[node name="MarginContainer" type="MarginContainer" parent="."]
+[node name="MarginContainer2" type="MarginContainer" parent="."]
 layout_mode = 2
 theme_override_constants/margin_left = 50
 theme_override_constants/margin_top = 50
 theme_override_constants/margin_right = 50
 theme_override_constants/margin_bottom = 125
 
-[node name="ColorRect" type="ColorRect" parent="MarginContainer"]
+[node name="Panel" type="Panel" parent="MarginContainer2"]
 layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_bekm5")
 
-[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer2"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 alignment = 1
 
-[node name="AllMods_Label" type="Label" parent="MarginContainer/VBoxContainer"]
+[node name="RenameFiles" type="Label" parent="MarginContainer2/VBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 4
 theme = ExtResource("1_2yitw")
-text = "Rename Mods or Press Button to Get Internal Name"
+theme_override_font_sizes/font_size = 26
+text = "Rename Files"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="HBoxContainer2" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
-layout_mode = 2
-alignment = 1
-
-[node name="AllMods_Label" type="Label" parent="MarginContainer/VBoxContainer/HBoxContainer2"]
+[node name="RenameFiles2" type="Label" parent="MarginContainer2/VBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 4
 theme = ExtResource("1_2yitw")
+text = "Rename manually or press button to get internal names"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HBoxContainer3" type="HBoxContainer" parent="MarginContainer2/VBoxContainer"]
+layout_mode = 2
+alignment = 1
+
+[node name="AllMods_Label" type="Label" parent="MarginContainer2/VBoxContainer/HBoxContainer3"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme = ExtResource("1_2yitw")
+theme_override_font_sizes/font_size = 12
 text = "Get All Names"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="GetAllNamesBox" type="MarginContainer" parent="MarginContainer/VBoxContainer/HBoxContainer2"]
+[node name="GetAllNamesBox" type="MarginContainer" parent="MarginContainer2/VBoxContainer/HBoxContainer3"]
 custom_minimum_size = Vector2(30, 30)
 layout_mode = 2
 
-[node name="ButtonSpin" type="Node2D" parent="MarginContainer/VBoxContainer/HBoxContainer2/GetAllNamesBox"]
+[node name="ButtonSpin" type="Node2D" parent="MarginContainer2/VBoxContainer/HBoxContainer3/GetAllNamesBox"]
 position = Vector2(15, 15)
 
-[node name="TextureRect" type="TextureRect" parent="MarginContainer/VBoxContainer/HBoxContainer2/GetAllNamesBox/ButtonSpin"]
+[node name="TextureRect" type="TextureRect" parent="MarginContainer2/VBoxContainer/HBoxContainer3/GetAllNamesBox/ButtonSpin"]
 clip_children = 1
 offset_left = -15.0
 offset_top = -15.0
@@ -94,7 +148,7 @@ texture = ExtResource("2_bvb50")
 expand_mode = 3
 metadata/_edit_use_anchors_ = true
 
-[node name="ColorRect" type="ColorRect" parent="MarginContainer/VBoxContainer/HBoxContainer2/GetAllNamesBox/ButtonSpin/TextureRect"]
+[node name="ColorRect" type="ColorRect" parent="MarginContainer2/VBoxContainer/HBoxContainer3/GetAllNamesBox/ButtonSpin/TextureRect"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -102,26 +156,52 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Button" type="Button" parent="MarginContainer/VBoxContainer/HBoxContainer2/GetAllNamesBox"]
+[node name="Button" type="Button" parent="MarginContainer2/VBoxContainer/HBoxContainer3/GetAllNamesBox"]
 layout_mode = 2
 theme = SubResource("Theme_ejbk3")
 
-[node name="ScrollContainer" type="ScrollContainer" parent="MarginContainer/VBoxContainer"]
-custom_minimum_size = Vector2(0, 350)
-layout_mode = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_x16ux")
-horizontal_scroll_mode = 0
-
-[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+[node name="HBoxContainer2" type="HBoxContainer" parent="MarginContainer2/VBoxContainer"]
 layout_mode = 2
 alignment = 1
 
-[node name="Rename_Button" type="Button" parent="MarginContainer/VBoxContainer/HBoxContainer"]
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer2/VBoxContainer/HBoxContainer2"]
+custom_minimum_size = Vector2(450, 0)
+layout_mode = 2
+
+[node name="Panel" type="Panel" parent="MarginContainer2/VBoxContainer/HBoxContainer2/MarginContainer"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_s1447")
+
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer2/VBoxContainer/HBoxContainer2/MarginContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="ScrollContainer" type="ScrollContainer" parent="MarginContainer2/VBoxContainer/HBoxContainer2/MarginContainer/MarginContainer"]
+custom_minimum_size = Vector2(0, 350)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_pk4a4")
+horizontal_scroll_mode = 0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer2/VBoxContainer/HBoxContainer2/MarginContainer/MarginContainer/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer2/VBoxContainer"]
+layout_mode = 2
+alignment = 1
+
+[node name="Save_Button" type="Button" parent="MarginContainer2/VBoxContainer/HBoxContainer"]
 layout_mode = 2
 theme = ExtResource("3_ypnqs")
-text = "Rename"
+text = "Save"
 
-[node name="Cancel_Button" type="Button" parent="MarginContainer/VBoxContainer/HBoxContainer"]
+[node name="Cancel_Button" type="Button" parent="MarginContainer2/VBoxContainer/HBoxContainer"]
 layout_mode = 2
 theme = ExtResource("3_ypnqs")
 text = "Cancel"

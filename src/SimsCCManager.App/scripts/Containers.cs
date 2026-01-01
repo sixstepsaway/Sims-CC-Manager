@@ -494,7 +494,20 @@ namespace SimsCCManager.Containers
                     } 
                 }
         }
-        public string Location {get; set;}
+        private string _location;
+        public string Location {
+            get {return _location; } 
+            set {
+                _location = value;
+                if (!IsDirectory && !RootMod)
+                {
+                    FileType = ContainerExtensions.TypeFromExtension(new FileInfo(Location).Extension);
+                } else if (IsDirectory)
+                {
+                    FileType = FileTypes.Folder;
+                }
+            }
+        }
         public string FileSize {
             get { 
                     if (Directory.Exists(Location))
@@ -508,25 +521,21 @@ namespace SimsCCManager.Containers
                 }
             }
         }
-        public FileTypes FileType {
-            get {
-                if (!IsDirectory && !RootMod)
-                {
-                    return ContainerExtensions.TypeFromExtension(new FileInfo(Location).Extension);
-                } else if (RootMod)
-                {
-                    return FileTypes.Root;
-                } else {
-                    return FileTypes.Folder;
-                }                
-            }
-        }
+        public FileTypes FileType { get; set; }
         public DateTime DateAdded {get; set;}
         public DateTime DateUpdated {get; set;}
         public string InstalledForVersion {get; set;}
         [XmlIgnore]
         public bool Selected {get; set;}
-        public bool IsDirectory {get; set;}
+        private bool _isdirectory;
+        public bool IsDirectory {
+            get { return _isdirectory; } 
+            set { _isdirectory = value; 
+            if (value)
+                {
+                    FileType = FileTypes.Folder;
+                }
+            }}
         public bool StandAlone {get; set;}
         public bool Broken {get; set;}
         public bool WrongGame {get; set;}
@@ -544,7 +553,18 @@ namespace SimsCCManager.Containers
 
         public string Image {get; set;}
         public SimsGames Game {get; set;}
-        public bool RootMod {get; set;}
+        private bool _rootmod;
+        public bool RootMod {get { return _rootmod; } set
+            {
+                _rootmod = value;
+                if (value) { 
+                    FileType = FileTypes.Root;
+                } else
+                {
+                    Location = _location;
+                }
+            }
+        }
         public bool OutOfDate {get; set;}
         [XmlIgnore]
         public bool GameMod { get { 

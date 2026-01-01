@@ -158,7 +158,7 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 horizontal_scroll_mode = 3
-vertical_scroll_mode = 0
+vertical_scroll_mode = 3
 
 [node name="AllRows" type="VBoxContainer" parent="VBoxContainer/HBoxContainer/Control/DataContainer"]
 layout_mode = 2

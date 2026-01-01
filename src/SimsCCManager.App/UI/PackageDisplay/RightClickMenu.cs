@@ -60,6 +60,8 @@ public partial class RightClickMenu : Node2D
     RcmItem Delete;
     [Export]
     RcmItem Notes;
+    
+    public bool Plural = false;
 
     private bool _folderselected;
     public bool FolderSelected {
@@ -154,18 +156,35 @@ public partial class RightClickMenu : Node2D
         items.Add(Notes);
         items.Add(Categories);
 
-        Rename.label.Text = "Rename";
-        Source.label.Text = "Source";
-        Creator.label.Text = "Creator";
-        Move.label.Text = "Move";
-        Delete.label.Text = "Delete";
-        Notes.label.Text = "Notes";
+        if (Plural)
+        {
+            Rename.label.Text = "Rename Files";
+            Source.label.Text = "Sources";
+            Creator.label.Text = "Creators";
+            Move.label.Text = "Move Files";
+            Delete.label.Text = "Delete Files";
+            Notes.label.Text = "Notes";
+        } else
+        {
+            Rename.label.Text = "Rename";
+            Source.label.Text = "Source";
+            Creator.label.Text = "Creator";
+            Move.label.Text = "Move";
+            Delete.label.Text = "Delete";
+            Notes.label.Text = "Notes";
+        }
+
+        
         Categories.label.Text = "Categories";
         Details.label.Text = "Edit Details";
+
         
         
         Categories.button.MouseEntered += () => CategoriesHover(true);
         Categories.button.MouseExited += () => CategoriesHover(false);
+        
+        Details.button.MouseEntered += () => DetailsHover(true);
+        Details.button.MouseExited += () => DetailsHover(false);
         
 
         UpdateTheme();
@@ -187,6 +206,12 @@ public partial class RightClickMenu : Node2D
 
 
     }
+
+    private void DetailsHover(bool v)
+    {
+        EditDetails.Visible = true;
+    }
+
 
     private void PressedButton(int i)
     {
@@ -223,7 +248,7 @@ public partial class RightClickMenu : Node2D
                 co.label.AddThemeColorOverride("font_color", cat.TextColor);
                 co.BGColor.Color = cat.Background;
                 co.button.Pressed += () => CategoryClicked(co);
-
+                co.category = cat;
 
                 Categorylist.AddChild(co);
                 categoryoptions.Add(co);
@@ -234,7 +259,11 @@ public partial class RightClickMenu : Node2D
     private void CategoryClicked(CategoryOption categoryOption)
     {
         if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Category {0} selected: {1}", categoryOption.label.Name, categoryOption.IsToggled ));
+        CategorySelected?.Invoke(categoryOption.category);
     }
+
+    public delegate void CategorySelectedEvent(Category category);
+    public CategorySelectedEvent CategorySelected;
 
 
     private void UpdateTheme()

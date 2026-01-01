@@ -64,7 +64,7 @@ public partial class CategoryManagement : MarginContainer
     bool EditingOld = false;
 
     public override void _Ready()
-    {
+    {                
         Buttons.Add(NewCategoryButton);
         Buttons.Add(EditCategoryButton);
         Buttons.Add(DupeCategoryButton);
@@ -104,7 +104,7 @@ public partial class CategoryManagement : MarginContainer
         if (MakingNew)
         {   
             string name = CategoryNameBox.Text;
-            if (packageDisplay.ThisInstance.Categories.Where(x => x.Name == name).Any())
+            if (packageDisplay.ThisInstance.Categories.Any(x => x.Name == name))
             {
                 name = IncCategoryName(name);
             }
@@ -112,7 +112,10 @@ public partial class CategoryManagement : MarginContainer
             category.Name = name;
             category.Description = CategoryDescriptionBox.Text;
             category.TextColor = TextColorPicker.Color;
-            category.Background = BGColorPicker.Color;
+            category.Background = BGColorPicker.Color;     
+            packageDisplay.ThisInstance.Categories.Add(category);
+            packageDisplay.ThisInstance.WriteXML();       
+            AddCategoryItem(category);
         } else if (EditingOld)
         {
             CategoryItem ci = CategoryItems.Where(x => x.IsSelected).First();
@@ -226,6 +229,7 @@ public partial class CategoryManagement : MarginContainer
 
     private void ClosePanel()
     {
+        packageDisplay.LockInput = false;
         QueueFree();
     }
 

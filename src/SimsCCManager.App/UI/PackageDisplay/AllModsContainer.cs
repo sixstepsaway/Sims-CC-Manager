@@ -13,6 +13,7 @@ using System.Diagnostics;
 using System.Drawing.Printing;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -38,6 +39,10 @@ public partial class AllModsContainer : MarginContainer
     CustomCheckButton SwapDisplaysCheck;
     [Export] 
     ThumbnailGrid ThumbGrid;
+    [Export]
+    PackedScene RenameItemsBoxPS;
+    [Export]
+    PackedScene PackageListItemPS;
 
     public bool FirstLoaded = false;
 
@@ -47,8 +52,8 @@ public partial class AllModsContainer : MarginContainer
     {
         get { return _viewswap; }
         set { _viewswap = value; 
-        ThumbGrid.Visible = value;
-        DataGrid.Visible = !value;
+            ThumbGrid.Visible = value;
+            DataGrid.Visible = !value;
         }
     }
 
@@ -80,6 +85,8 @@ public partial class AllModsContainer : MarginContainer
     public List<SimsPackage> SelectedPackages = new();
 
     RightClickMenu rcm;
+
+    RenameItemsBox rib;
 
     public List<string> Headers = new()
     {
@@ -127,6 +134,14 @@ public partial class AllModsContainer : MarginContainer
                 StartingWidth = 150,
                 Data = "Location",
                 Title = "Location",
+                Resizeable = true,
+                CellType = CellOptions.Text,
+                ShowHeader = true},
+			new DataGridHeader() { 
+                ContentType = DataGridContentType.Text,
+                StartingWidth = 150,
+                Data = "CategoryName",
+                Title = "Category",
                 Resizeable = true,
                 CellType = CellOptions.Text,
                 ShowHeader = true},
@@ -416,7 +431,7 @@ public partial class AllModsContainer : MarginContainer
     public DataGridRow CreateRow(SimsPackage pack, int i)
     {
         if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Adding {0} to DataGrid", pack.FileName));
-        DataGridRow newrow = new();        
+        DataGridRow newrow = new();      
         newrow.RowRef = pack.FileName;
         newrow.SubrowTextFirst = pack.FileName;
         newrow.SubrowTextSecond = pack.Location;
@@ -433,7 +448,9 @@ public partial class AllModsContainer : MarginContainer
         } else if (pack.FileType == FileTypes.Folder || pack.LinkedFiles.Count != 0 || pack.LinkedFolders.Count != 0)
         {
             newrow = CreateSubRow(newrow, pack);
-        }        
+        }
+
+        
         //icons must be cloned for this to work, so this method is the best way of doing it
         newrow.RowIcons = DataGrid.GetIcons(icons);			
         int c = 0;
@@ -463,6 +480,13 @@ public partial class AllModsContainer : MarginContainer
             item.ItemName = header.Data;
             c++;
             newrow.Items.Add(item);
+        }
+
+        if (pack.CategoryName != "Default")
+        {
+            newrow.UseCategoryColor = true;
+            newrow.BackgroundColor = pack.PackageCategory.Background;
+            newrow.TextColor = pack.PackageCategory.TextColor;
         }
         if (!FirstLoaded) GlobalVariables.mainWindow.IncrementLoadingScreen(1, string.Format("Creating data for {0}", pack.FileName), "All Mods: Making Data");
         return newrow;
@@ -557,7 +581,11 @@ public partial class AllModsContainer : MarginContainer
 
             if (rows.Count != 0) { 
                 if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Adding {0} rows to grid.", rows.Count));
-                DataGrid.RowData = rows.OrderBy(x => x.Idx).ToList(); 
+                List<DataGridRow> _rows = rows.OrderBy(x => x.RowRef).ToList();
+                for (int r = 0; r < _rows.Count; r++){
+                    _rows[r].Idx = r;
+                }
+                DataGrid.RowData = _rows;
             }
             FirstLoaded = true;
         }){IsBackground = true}.Start();
@@ -593,7 +621,6 @@ public partial class AllModsContainer : MarginContainer
         DataGrid.PassLog += (log) => LogPassed(log);
         //DataGrid.PaneSize = GridContainer.Size;
         CreateRows();
-
     }
 
     private void LogPassed(string log)
@@ -733,6 +760,8 @@ public partial class AllModsContainer : MarginContainer
                 if (SelectedPackages.Count != 0)
                 {
                     rcm = RightClickMenuPS.Instantiate() as RightClickMenu;
+                    if (SelectedPackages.Count > 1) rcm.Plural = true;
+                    rcm.CategorySelected += (c) => CategorySelected(c);
                     rcm.AllCategories = packageDisplay.ThisInstance.Categories;
                     rcm.packageDisplay = packageDisplay;
                     if (SelectedPackages.Count == 1)
@@ -811,47 +840,131 @@ public partial class AllModsContainer : MarginContainer
                         if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("RCM in window: {0}", new Rect2(rcm.MainContainer.Position, rcm.MainContainer.Size)));
                         rcm.Position = mousePos;
                     } 
-                }
-                
+                }                
             }
         }
     }
+
+    private void CategorySelected(Category c)
+    {
+        rcm.QueueFree();
+        for (int i = 0; i < SelectedPackages.Count; i++)
+        {
+            SelectedPackages[i].PackageCategory = c;
+            SelectedPackages[i].WriteXML();
+            DataGridRow rowdata = DataGrid.RowData.First(x => x.Identifier == SelectedPackages[i].Identifier);
+            rowdata.UseCategoryColor = true;
+            rowdata.BackgroundColor = c.Background;
+            rowdata.TextColor = c.TextColor;
+            rowdata = CreateRow(SelectedPackages[i], rowdata.Idx);
+            DataGrid.UpdateRow(rowdata);
+        }
+    }
+
 
     private void ToggleRoot()
     {
         for (int i = 0; i < SelectedPackages.Count; i++)
         {
-            SelectedPackages[i].RootMod = !rcm.MostlyRoot;
-            if (SelectedPackages[i].RootMod)
+            if (Directory.Exists(SelectedPackages[i].Location))
             {
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Changing package {0} to root. Searching {1} for info files to delete.", SelectedPackages[i].FileName, SelectedPackages[i].Location));
-                SelectedPackages[i].IsDirectory = false;
-                foreach (string info in Directory.EnumerateFiles(SelectedPackages[i].Location, "*.info", SearchOption.AllDirectories))
+                SelectedPackages[i].RootMod = !rcm.MostlyRoot;
+                if (SelectedPackages[i].RootMod)
                 {
-                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Deleting {0}", info));
-                    File.Delete(info);
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Changing package {0} to root. Searching {1} for info files to delete.", SelectedPackages[i].FileName, SelectedPackages[i].Location));
+                    SelectedPackages[i].IsDirectory = false;
+                    foreach (string info in Directory.EnumerateFiles(SelectedPackages[i].Location, "*.info", SearchOption.AllDirectories))
+                    {
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Deleting {0}", info));
+                        File.Delete(info);
+                    }
+                    SelectedPackages[i].LinkedFiles.Clear();
+                    SelectedPackages[i].LinkedFolders.Clear();
+                    SelectedPackages[i].LinkedPackageFolders.Clear();
+                    SelectedPackages[i].LinkedPackages.Clear();
+                    DataGridRow rowdata = DataGrid.RowData.First(x => x.Identifier == SelectedPackages[i].Identifier);
+                    SelectedPackages[i].WriteXML();
+                    rowdata = UpdateRow(rowdata, SelectedPackages[i]);
+                    DataGrid.UpdateRow(rowdata);
+                    
+                    
+                } else
+                {
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Changing package {0} to not root.", SelectedPackages[i].FileName));
+                    if (Directory.Exists(SelectedPackages[i].Location)) SelectedPackages[i].IsDirectory = true;
+                    SelectedPackages[SelectedPackages.IndexOf(SelectedPackages[i])] = InstanceControllers.GetSubDirectoriesPackage(packageDisplay.ThisInstance, SelectedPackages[i].Location, SelectedPackages[i]);
+                    DataGridRow rowdata = DataGrid.RowData.First(x => x.Identifier == SelectedPackages[i].Identifier);
+                    SelectedPackages[i].WriteXML();
+                    rowdata = UpdateRow(rowdata, SelectedPackages[i], SelectedPackages[i].IsDirectory);
+                    DataGrid.UpdateRow(rowdata);
                 }
-                SelectedPackages[i].LinkedFiles.Clear();
-                SelectedPackages[i].LinkedFolders.Clear();
-                SelectedPackages[i].LinkedPackageFolders.Clear();
-                SelectedPackages[i].LinkedPackages.Clear();
-                DataGridRow rowdata = DataGrid.RowData.First(x => x.Identifier == SelectedPackages[i].Identifier);
-                rowdata = UpdateRow(rowdata, SelectedPackages[i]);
-                DataGrid.UpdateRow(rowdata);
-                
                 
             } else
             {
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Changing package {0} to not root.", SelectedPackages[i].FileName));
-                if (Directory.Exists(SelectedPackages[i].Location)) SelectedPackages[i].IsDirectory = true;
-                SelectedPackages[SelectedPackages.IndexOf(SelectedPackages[i])] = InstanceControllers.GetSubDirectoriesPackage(packageDisplay.ThisInstance, SelectedPackages[i].Location, SelectedPackages[i]);
-                DataGridRow rowdata = DataGrid.RowData.First(x => x.Identifier == SelectedPackages[i].Identifier);
-                rowdata = UpdateRow(rowdata, SelectedPackages[i], SelectedPackages[i].IsDirectory);
-                DataGrid.UpdateRow(rowdata);
-            }
-            SelectedPackages[i].WriteXML();
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Root mods should be folders."));
+            }            
         }
     }
+
+    private void RenameFiles()
+    {
+        packageDisplay.LockInput = true;
+        rib = RenameItemsBoxPS.Instantiate() as RenameItemsBox;
+        rib.CancelButton.Pressed += () => CloseRenamePane();
+        rib.ConfirmButton.Pressed += () => RenameAllFiles();
+        rib.UpdateTheme();
+        foreach (SimsPackage package in SelectedPackages)
+        {
+            PackageListItem pli = PackageListItemPS.Instantiate() as PackageListItem;
+            pli.packageItem = package;
+            pli.NameBox.Text = package.FileName;
+            rib.Items.Add(pli);
+            rib.ItemContainer.AddChild(pli);            
+        }
+        packageDisplay.AddChild(rib);
+    }
+
+    private void RenameAllFiles()
+    {        
+        foreach (SimsPackage package in SelectedPackages)
+        {
+            PackageListItem pli = rib.Items.First(x => x.packageItem == package);
+            string parent = "";
+            string newname = "";
+            string extension = "";
+            if (package.IsDirectory)
+            {
+                DirectoryInfo di = new(package.Location);
+                parent = di.Parent.FullName;
+            } else
+            {
+                FileInfo fi = new(package.Location);
+                parent = fi.DirectoryName;
+                extension = fi.Extension;
+            }
+            newname = string.Format("{0}{1}", pli.NameBox.Text, extension);
+            //package.FileName = newname;
+            newname = Path.Combine(parent, newname);
+            //File.Delete(package.InfoFile);
+            //package.Location = newname;
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Pretending to rename file {0} to {1}", package.Location, newname));
+            //File.Move(package.Location, newname);
+            //package.WriteXML();
+            //DataGridRow rowdata = DataGrid.RowData.First(x => x.Identifier == package.Identifier);
+            //rowdata = UpdateRow(rowdata, package);
+            //DataGrid.UpdateRow(rowdata);
+        }
+        packageDisplay.LockInput = false;
+        rib.QueueFree();
+    }
+
+
+    private void CloseRenamePane()
+    {
+        packageDisplay.LockInput = false;
+        rib.QueueFree();
+    }
+
 
     private void ToggleOutOfDate()
     {
@@ -906,7 +1019,7 @@ public partial class AllModsContainer : MarginContainer
             break;
 
             case 5:
-            //Rename
+            RenameFiles();
             if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Pressed button {0}: Rename", i));
             break;
 

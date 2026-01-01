@@ -241,6 +241,7 @@ public partial class ProfileManagement : MarginContainer
 
     private void ClosePanel()
     {
+        packageDisplay.LockInput = false;
         QueueFree();
     }
 

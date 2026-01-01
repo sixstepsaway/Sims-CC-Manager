@@ -1,10 +1,8 @@
 [gd_scene load_steps=8 format=3 uid="uid://cqsrg0fwrld8s"]
 
+[ext_resource type="Script" uid="uid://b5abnpfw5r6kh" path="res://UI/PackageDisplay/PackageListItem.cs" id="1_43bur"]
 [ext_resource type="Theme" uid="uid://b4fe82i5mblf5" path="res://themes/packagedisplay_headers.tres" id="1_xfy36"]
 [ext_resource type="Texture2D" uid="uid://bfqqudt7sll4n" path="res://assets/icons/materialicons/twotone_refresh_black_48dp.png" id="2_c452k"]
-
-[sub_resource type="Resource" id="Resource_guav4"]
-metadata/__load_path__ = "res://UI/PackageDisplay_Elements/PackageListItem.cs"
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_4fyo0"]
 bg_color = Color(0.6, 0.6, 0.6, 0)
@@ -34,12 +32,12 @@ Button/styles/hover = SubResource("StyleBoxFlat_4fyo0")
 Button/styles/normal = SubResource("StyleBoxFlat_aljlb")
 Button/styles/pressed = SubResource("StyleBoxFlat_rb1a8")
 
-[node name="PackageListItem" type="HBoxContainer" node_paths=PackedStringArray("spinner", "packagebox", "button")]
+[node name="PackageListItem" type="HBoxContainer" node_paths=PackedStringArray("NameBox", "Button", "ButtonSpin")]
 alignment = 1
-script = SubResource("Resource_guav4")
-spinner = NodePath("MarginContainer/ButtonSpin")
-packagebox = NodePath("LineEdit")
-button = NodePath("MarginContainer/Button")
+script = ExtResource("1_43bur")
+NameBox = NodePath("LineEdit")
+Button = NodePath("MarginContainer/Button")
+ButtonSpin = NodePath("MarginContainer/ButtonSpin")
 
 [node name="LineEdit" type="LineEdit" parent="."]
 custom_minimum_size = Vector2(450, 0)

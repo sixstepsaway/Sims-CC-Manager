@@ -122,19 +122,19 @@ public partial class DataGridRowUi : MarginContainer
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{
-		RowSelectionButton.Pressed += () => RowSelectedButtonPressed();
+		if (RowSelectionButton != null) RowSelectionButton.Pressed += () => RowSelectedButtonPressed();
 
 	}
 
-    public void RowSelectedButtonPressed(bool SelectedToggle = false)
+	public void RowSelectedButtonPressed(bool SelectedToggle = false)
     {
 		if (!ToggleButtonHovered){
 			if (SelectedToggle){
 				Selected = true;
-				RowSelected.Invoke(OverallIndex, Selected);
+				RowSelected?.Invoke(OverallIndex, Selected);
 			} else {
 				Selected = !Selected;
-				RowSelected.Invoke(OverallIndex, Selected);
+				RowSelected?.Invoke(OverallIndex, Selected);
 			}
 
 			
@@ -147,12 +147,10 @@ public partial class DataGridRowUi : MarginContainer
 			}
 		}
 
-		if (IsSubGrid)
+		if (IsSubGrid && SubGrid != null)
 		{
-			ShowSubgrid?.Invoke(SubGrid, this);
-		}
-		
-        
+			if (!Datagrid.AreMultipleRowsSelected()) ShowSubgrid?.Invoke(SubGrid, this);
+		}        
     }
 
 	public void KillThumbnail(bool BlockThumbs)
