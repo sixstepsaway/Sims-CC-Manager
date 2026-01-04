@@ -1,0 +1,53 @@
+[gd_scene load_steps=5 format=3 uid="uid://dahgsygqxlwh4"]
+
+[ext_resource type="FontFile" uid="uid://2m7ci2r6uwu2" path="res://assets/fonts/Anek_Gurmukhi/AnekGurmukhi-VariableFont_wdth,wght.ttf" id="1_1mag0"]
+[ext_resource type="Script" uid="uid://82b3luxfxvie" path="res://UI/PackageDisplay/SubWindows/PackageViewerItem.cs" id="1_ydmb6"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ydmb6"]
+bg_color = Color(0.56494504, 0.60304415, 0.6660612, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.29079, 0.38269648, 0.42732337, 1)
+
+[sub_resource type="Theme" id="Theme_pft5s"]
+Label/colors/font_color = Color(0.099986, 0.099986, 0.099986, 1)
+Label/fonts/font = ExtResource("1_1mag0")
+
+[node name="MarginContainer" type="MarginContainer" node_paths=PackedStringArray("Key", "Value")]
+script = ExtResource("1_ydmb6")
+Key = NodePath("HBoxContainer/MarginContainer/key")
+Value = NodePath("HBoxContainer/MarginContainer2/value")
+
+[node name="Panel" type="Panel" parent="."]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_ydmb6")
+
+[node name="HBoxContainer" type="HBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/margin_left = 4
+theme_override_constants/margin_top = 4
+
+[node name="key" type="Label" parent="HBoxContainer/MarginContainer"]
+layout_mode = 2
+theme = SubResource("Theme_pft5s")
+theme_override_font_sizes/font_size = 14
+text = "FileName: "
+
+[node name="MarginContainer2" type="MarginContainer" parent="HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/margin_top = 4
+theme_override_constants/margin_right = 4
+
+[node name="value" type="Label" parent="HBoxContainer/MarginContainer2"]
+layout_mode = 2
+theme = SubResource("Theme_pft5s")
+theme_override_font_sizes/font_size = 12
+text = "package name is long and stupid but here we go"
+autowrap_mode = 2

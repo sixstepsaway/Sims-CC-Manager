@@ -10,7 +10,7 @@ public partial class DataGridRowUi : MarginContainer
 	/// The data grid row as displayed in the data grid.
 	/// </summary>
 	
-	public delegate void RowSelectedEvent(int idx, bool selected);
+	public delegate void RowSelectedEvent(bool selected);
 	public RowSelectedEvent RowSelected;
 	public delegate void RowEditedEvent(DataGridRowUi thisRow, DataGridCell cell);
 	public RowEditedEvent RowEdited;
@@ -131,10 +131,10 @@ public partial class DataGridRowUi : MarginContainer
 		if (!ToggleButtonHovered){
 			if (SelectedToggle){
 				Selected = true;
-				RowSelected?.Invoke(OverallIndex, Selected);
+				RowSelected?.Invoke(Selected);
 			} else {
 				Selected = !Selected;
-				RowSelected?.Invoke(OverallIndex, Selected);
+				RowSelected?.Invoke(Selected);
 			}
 
 			

@@ -3,6 +3,7 @@ using SimsCCManager.Globals;
 using SimsCCManager.SettingsSystem;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 public partial class RenameItemsBox : MarginContainer
 {
@@ -33,6 +34,21 @@ public partial class RenameItemsBox : MarginContainer
         foreach (PackageListItem pli in Items)
         {
             pli.GetInternalName();
+        }
+    }
+
+    public void CheckItems()
+    {
+        List<string> names = new();
+        foreach (PackageListItem item in Items)
+        {
+            if (names.Contains(item.NameBox.Text))
+            {
+                item.Warning = true;
+            } else
+            {
+                names.Add(item.NameBox.Text);
+            }            
         }
     }
 

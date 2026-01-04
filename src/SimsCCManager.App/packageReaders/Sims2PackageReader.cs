@@ -507,6 +507,7 @@ namespace SimsCCManager.PackageReaders
 
         List<IndexEntry> IndexData = new();
 
+
         public void ReadSims2Package()
         {
             if (MinorVersion == 2) IndexMajorLocation = 24;
@@ -670,9 +671,21 @@ namespace SimsCCManager.PackageReaders
                     S2ReadTXTR(entry, c);
                     c++;
                 }
+            }            
+
+            if (Sims2Data.MMATDataBlock.Count != 0)
+            {
+                //if (string.IsNullOrEmpty(Sims2Data.GUID)) Sims2Data.GUID = Sims2Data.MMATDataBlock[0].ObjectGUID;
+                if (!string.IsNullOrEmpty(Sims2Data.MMATDataBlock[0]?.ObjectGUID) && (string.IsNullOrEmpty(Sims2Data.GUID) || Sims2Data.GUID == "N/a")) Sims2Data.GUID = Sims2Data.MMATDataBlock[0].ObjectGUID;
             }
 
-            if (IndexData.Any(x => x.EntryType == "MMAT") && !IndexData.Any(x => x.EntryType == "GMDC"))
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Adding index entries to SimsData for {0}", fileinfo.Name));
+
+            SimsData.IndexEntries = IndexData;
+            SimsData.DictionaryEntries();
+
+            if (SimsData.EntryCount("GMDC") > 0) SimsData.Mesh = true;
+            if (SimsData.EntryCount("MMAT") > 0 && SimsData.EntryCount("GMDC") == 0)
             {
                 if (SimsData.FunctionSort.Count != 0)
                 {
@@ -689,31 +702,77 @@ namespace SimsCCManager.PackageReaders
                 {
                     SimsData.Recolor = true;
                 }
-
             }
-            else if (IndexData.Any(x => x.EntryType == "GMDC"))
-            {
-                SimsData.Mesh = true;
-            }
+            
+            if (SimsData.EntryCount("BHAV") > 0 
+            && SimsData.EntryCount("DIR") == 1 
+            && SimsData.EntryCount("GMDC") == 0) SimsData.IsGameMod();
 
-            if (Sims2Data.MMATDataBlock.Count != 0)
-            {
-                //if (string.IsNullOrEmpty(Sims2Data.GUID)) Sims2Data.GUID = Sims2Data.MMATDataBlock[0].ObjectGUID;
-                if (!string.IsNullOrEmpty(Sims2Data.MMATDataBlock[0]?.ObjectGUID) && (string.IsNullOrEmpty(Sims2Data.GUID) || Sims2Data.GUID == "N/a")) Sims2Data.GUID = Sims2Data.MMATDataBlock[0].ObjectGUID;
-            }
+            if (SimsData.EntryCount("bhav") > 0 
+            && SimsData.EntryCount("bcon") > 0 
+            && SimsData.EntryCount("dir") == 0 
+            && SimsData.EntryCount("gmdc") == 0 
+            && SimsData.EntryCount("objd") == 0) SimsData.IsGameMod();
+            
+            if (SimsData.EntryCount("bhav") > 0 
+            && SimsData.EntryCount("nref") > 0 
+            && SimsData.EntryCount("objd") > 0 
+            && SimsData.EntryCount("objf") > 0 
+            && SimsData.EntryCount("slot") > 0 
+            && SimsData.EntryTypes() == 5) SimsData.IsGameMod();
+            
+            if (SimsData.EntryCount("ttab") > 0 
+            && SimsData.EntryCount("ttas") > 0 
+            && SimsData.EntryTypes() == 2) SimsData.IsGameMod();
 
-            if (IndexData.Any(x => x.EntryType == "BHAV") && IndexData.Any(x => x.EntryType == "BCON") && IndexData.Any(x => x.EntryType == "TTAB") && IndexData.Any(x => x.EntryType == "OBJf"))
-            {
-                SimsData.Mesh = false;
-                SimsData.Recolor = false;
-                SimsData.GameMod = true;
-            }
+            if (SimsData.EntryCount("bhav") > 0 
+            && SimsData.EntryCount("ttas") > 0 
+            && SimsData.EntryCount("ttab") > 0 
+            && SimsData.EntryTypes() == 3) SimsData.IsGameMod();
 
-            SimsData.IndexEntries = IndexData;
+            if (SimsData.EntryCount("bhav") > 0 
+            && SimsData.EntryCount("ctss") > 0 
+            && SimsData.EntryCount("STR#") > 0  
+            && SimsData.EntryTypes() == 3) SimsData.IsGameMod(); 
+            
+            if (SimsData.EntryCount("bcon") > 0 
+            && SimsData.EntryTypes() == 1) SimsData.IsGameMod(); 
 
+            if (SimsData.EntryCount("bhav") > 0 
+            && SimsData.EntryTypes() == 1) SimsData.IsGameMod();
 
-            //if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("SimsData: {0}", SimsData.ToString()));
-            //SimsData.Serialize();
+            if (SimsData.EntryCount("bhav") > 0 
+            && SimsData.EntryCount("objf") > 0 
+            && SimsData.EntryTypes() == 2) SimsData.IsGameMod();
+            
+            if (SimsData.EntryCount("ttab") > 0 
+            && SimsData.EntryTypes() == 1) SimsData.IsGameMod(); 
+            
+            if (SimsData.EntryCount("cres") > 0 
+            && SimsData.EntryCount("STR#") > 0 
+            && SimsData.EntryTypes() == 2) SimsData.IsGameMod();
+            
+            if (SimsData.EntryCount("STR#") > 0 
+            && SimsData.EntryTypes() == 1) SimsData.IsGameMod();
+            
+            if (SimsData.EntryCount("objd") > 0 
+            && SimsData.EntryCount("objf") > 0 
+            && SimsData.EntryCount("slot") > 0 
+            && SimsData.EntryCount("nref") > 0 
+            && SimsData.EntryTypes() == 4) SimsData.IsGameMod();
+
+            if (SimsData.EntryCount("bhav") > 0 
+            && SimsData.EntryCount("ttab") > 0 
+            && SimsData.EntryCount("ttas") > 0 
+            && SimsData.EntryCount("STR#") > 0 
+            && SimsData.EntryTypes() == 4) SimsData.IsGameMod();
+            
+            if (SimsData.EntryCount("bhav") > 0 
+            && SimsData.EntryCount("STR#") > 0 
+            && SimsData.EntryCount("ttab") > 0 
+            && SimsData.EntryCount("ttas") > 0 
+            && SimsData.EntryCount("anim") > 0 
+            && SimsData.EntryTypes() == 5) SimsData.IsGameMod();
         }
 
 

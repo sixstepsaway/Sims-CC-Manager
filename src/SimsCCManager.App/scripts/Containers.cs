@@ -1,11 +1,14 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Reflection.Metadata.Ecma335;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using System.Xml.Serialization;
 using Godot;
 using SimsCCManager.Debugging;
@@ -775,6 +778,22 @@ namespace SimsCCManager.Containers
             }
         }
 
+        [XmlIgnore]
+        public Image PackageImage { get { 
+                if (Game == SimsGames.Sims2) {
+                    if (Sims2Data.TXTRDataBlock != null) {
+                        if (Sims2Data.TXTRDataBlock.Count > 0)
+                        {
+                            if (Sims2Data.TXTRDataBlock[0].Texture != null) {
+                                return Sims2Data.TXTRDataBlock[0].Texture; 
+                            }
+                        }                        
+                    }
+                }
+                return null;
+            }
+        }
+
         
         public Sims2Data Sims2Data { get { return PackageData as Sims2Data; } set { PackageData = value; }}
         public Sims3Data Sims3Data { get { return PackageData as Sims3Data; } set { PackageData = value; }}
@@ -851,6 +870,7 @@ namespace SimsCCManager.Containers
         public List<FunctionSortList> FunctionSort {get; set;}
         public string GUID {get; set;}
         public List<IndexEntry> IndexEntries {get; set;}
+        public List<EntryCount> IndexEntryCounts {get; set;}
 
         public bool Recolor {get; set;}    
         public bool Mesh {get; set;}
@@ -858,7 +878,14 @@ namespace SimsCCManager.Containers
         public bool GameMod {get; set;}
         
 
-        void Serialize();        
+        void Serialize();
+
+        int EntryCount(string entry);   
+
+        void IsGameMod();
+        
+        public int EntryTypes();
+        public void DictionaryEntries();
 
     }
 
@@ -905,12 +932,46 @@ namespace SimsCCManager.Containers
         public bool Mesh {get; set;}
         public bool Orphan {get; set;}
         public bool GameMod {get; set;}
-        public List<IndexEntry> IndexEntries {get; set;} = new();
+        
+        public List<IndexEntry> IndexEntries {get; set;}
+        
+
+        public void DictionaryEntries()
+        {
+            ConcurrentBag<EntryCount> entryCounts = new();
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Checking {0} indexentries against {1} types", IndexEntries.Count, Sims2PackageStatics.Sims2EntryTypes.Count));
+            Parallel.ForEach(Sims2PackageStatics.Sims2EntryTypes, entryType => 
+            {                   
+                int count = IndexEntries.Count(x => x.TypeID == entryType.TypeID);
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("File has {0} of entry {1}", count, entryType.Tag));
+                if (count != 0) entryCounts.Add(new() { EntryTag = entryType.Tag.ToUpper(), Count = count});
+            });
+            IndexEntryCounts = entryCounts.ToList();
+        }
+
+        public List<EntryCount> IndexEntryCounts {get; set;}
         public List<GMDCData> GMDCDataBlock {get; set;} = new();
         public List<MMATData> MMATDataBlock {get; set;} = new();
         public XFLRData XFLRDataBlock {get; set;} = new();
         public List<TXTRData> TXTRDataBlock {get; set;} = new();
 
+        public int EntryCount(string entry)
+        {
+            if (IndexEntryCounts.Any(x=>x.EntryTag == entry))
+            {
+                return IndexEntryCounts.First(x=>x.EntryTag == entry).Count;
+            } else
+            {
+                return 0;
+            }
+        }
+
+        public int EntryTypes()
+        {
+            return IndexEntryCounts.Count;
+        }
+
+        
         
 
         public void Serialize()
@@ -948,6 +1009,13 @@ namespace SimsCCManager.Containers
             
             return sb.ToString();
         }
+
+        public void IsGameMod()
+        {
+            Mesh = false;
+            Recolor = false;
+            GameMod = true;
+        }
     }
     public class Sims3Data : ISimsData
     {
@@ -966,7 +1034,17 @@ namespace SimsCCManager.Containers
         }
 
         public List<FunctionSortList> FunctionSort {get; set;} = new();
-        public List<IndexEntry> IndexEntries {get; set;} = new();
+        private List<IndexEntry> _indexentries;
+        public List<IndexEntry> IndexEntries {
+            get { return _indexentries; }
+            set { _indexentries = value; 
+                /*foreach (EntryType entryType in Sims2PackageStatics.Sims2EntryTypes)
+                {
+                    IndexEntryCounts.Add(entryType.Tag, value.Count(x => x.TypeID == entryType.TypeID));
+                }*/
+            }
+        }
+        public List<EntryCount> IndexEntryCounts {get; set;}
         public string GUID {get; set;} = "";
         public bool Recolor {get; set;}    
         public bool Mesh {get; set;}
@@ -975,6 +1053,26 @@ namespace SimsCCManager.Containers
         public void Serialize()
         {
             //throw new NotImplementedException();
+        }
+
+        public int EntryCount(string entry)
+        {
+            throw new NotImplementedException();
+        }
+        public void IsGameMod()
+        {
+            Mesh = false;
+            Recolor = false;
+            GameMod = true;
+        }
+        public int EntryTypes()
+        {
+            return IndexEntryCounts.Count;
+        }
+
+        public void DictionaryEntries()
+        {
+            throw new NotImplementedException();
         }
     }
     
@@ -995,7 +1093,17 @@ namespace SimsCCManager.Containers
         }
 
         public List<FunctionSortList> FunctionSort {get; set;} = new();
-        public List<IndexEntry> IndexEntries {get; set;} = new();
+        private List<IndexEntry> _indexentries;
+        public List<IndexEntry> IndexEntries {
+            get { return _indexentries; }
+            set { _indexentries = value; 
+                /*foreach (EntryType entryType in Sims2PackageStatics.Sims2EntryTypes)
+                {
+                    IndexEntryCounts.Add(entryType.Tag, value.Count(x => x.TypeID == entryType.TypeID));
+                }*/
+            }
+        }
+        public List<EntryCount> IndexEntryCounts {get; set;}
         public string GUID {get; set;} = "";
         public bool Recolor {get; set;}    
         public bool Mesh {get; set;}
@@ -1004,6 +1112,26 @@ namespace SimsCCManager.Containers
         public void Serialize()
         {
             //throw new NotImplementedException();
+        }
+
+        public int EntryCount(string entry)
+        {
+            throw new NotImplementedException();
+        }
+        public void IsGameMod()
+        {
+            Mesh = false;
+            Recolor = false;
+            GameMod = true;
+        }
+        public int EntryTypes()
+        {
+            return IndexEntryCounts.Count;
+        }
+
+        public void DictionaryEntries()
+        {
+            throw new NotImplementedException();
         }
     }
 
@@ -1425,6 +1553,12 @@ namespace SimsCCManager.Containers
     {
         public string LinkLocation {get; set;}
         public bool IsFolder {get; set;}
+    }
+
+    public class EntryCount
+    {
+        public string EntryTag {get; set;}
+        public int Count {get; set;}
     }
 
 }

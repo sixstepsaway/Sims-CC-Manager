@@ -132,6 +132,7 @@ public partial class PackageDisplay : MarginContainer
 
         if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("This instance has found {0} files.", ThisInstance.Files.Count));
         UIAllModsContainer.CreateDataGrid();
+        UIPackageViewerContainer.packageDisplay = this;
     }
 
     private void AddFolderToInstance(string directory)

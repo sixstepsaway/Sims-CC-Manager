@@ -1,14 +1,50 @@
-[gd_scene load_steps=5 format=3 uid="uid://5xhx8fvbykrg"]
+[gd_scene load_steps=12 format=3 uid="uid://5xhx8fvbykrg"]
 
 [ext_resource type="Theme" uid="uid://b4fe82i5mblf5" path="res://themes/packagedisplay_headers.tres" id="1_jevr1"]
 [ext_resource type="Script" uid="uid://ph6i1gxmwmad" path="res://UI/PackageDisplay/PackageViewerContainer.cs" id="1_mxfm6"]
-[ext_resource type="PackedScene" uid="uid://db2ljd672tk3d" path="res://UI/PackageDisplay/PackageViewer.tscn" id="2_mxfm6"]
+[ext_resource type="Texture2D" uid="uid://bucjsdv7htgdm" path="res://assets/images/dress_plain_coat.png" id="3_hjkl5"]
+[ext_resource type="PackedScene" uid="uid://co0gkpc2bm4hh" path="res://tools/snapshotter/snapshotter.tscn" id="3_hpqmj"]
+[ext_resource type="PackedScene" uid="uid://dahgsygqxlwh4" path="res://UI/PackageDisplay/SubWindows/PackageViewerItem.tscn" id="4_hpqmj"]
+[ext_resource type="Texture2D" uid="uid://dj7ahpu8kvako" path="res://assets/icons/materialicons/twotone_arrow_left_black_48dp.png" id="6_l52ft"]
+[ext_resource type="Texture2D" uid="uid://y0ejwlw8fjq" path="res://assets/icons/materialicons/twotone_arrow_right_black_48dp.png" id="7_1v2gr"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_3p7jc"]
 
-[node name="PackageViewerContainer" type="MarginContainer"]
+[sub_resource type="ViewportTexture" id="ViewportTexture_mxfm6"]
+viewport_path = NodePath("PackageViewer_Container/PackageViewer/HBoxContainer/VBoxContainer/MarginContainer/SubViewport")
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_l52ft"]
+bg_color = Color(0.7750634, 0.7750634, 0.7750633, 1)
+border_color = Color(0.7413847, 0.7413847, 0.7413843, 1)
+corner_radius_top_left = 50
+corner_radius_top_right = 50
+corner_radius_bottom_right = 50
+corner_radius_bottom_left = 50
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_1v2gr"]
+
+[node name="PackageViewerContainer" type="MarginContainer" node_paths=PackedStringArray("ItemList", "HeaderLabel", "ImageTextureRect", "SubviewportTexture", "ImageContainer", "Subviewport", "EnclosingBox", "ImageControls", "ImageBack", "ImageFw", "ButtonBackColor", "ButtonFwColor")]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 size_flags_vertical = 3
 script = ExtResource("1_mxfm6")
+ItemList = NodePath("PackageViewer_Container/PackageViewer/HBoxContainer/MarginContainer2/ScrollContainer3/VBoxContainer")
+HeaderLabel = NodePath("ContainerHeader/LabelPositioner/Label")
+ImageTextureRect = NodePath("PackageViewer_Container/PackageViewer/HBoxContainer/VBoxContainer/MarginContainer/TextureRect")
+SubviewportTexture = NodePath("PackageViewer_Container/PackageViewer/HBoxContainer/VBoxContainer/MarginContainer/TextureRect2")
+ImageContainer = NodePath("PackageViewer_Container/PackageViewer/HBoxContainer/VBoxContainer")
+Subviewport = NodePath("PackageViewer_Container/PackageViewer/HBoxContainer/VBoxContainer/MarginContainer/SubViewport")
+EnclosingBox = NodePath("PackageViewer_Container/PackageViewer")
+ImageControls = NodePath("PackageViewer_Container/PackageViewer/HBoxContainer/VBoxContainer/HBoxContainer")
+ImageBack = NodePath("PackageViewer_Container/PackageViewer/HBoxContainer/VBoxContainer/HBoxContainer/MarginContainer/Button")
+ImageFw = NodePath("PackageViewer_Container/PackageViewer/HBoxContainer/VBoxContainer/HBoxContainer/MarginContainer2/Button2")
+ButtonBackColor = NodePath("PackageViewer_Container/PackageViewer/HBoxContainer/VBoxContainer/HBoxContainer/MarginContainer/Panel/ColorRect")
+ButtonFwColor = NodePath("PackageViewer_Container/PackageViewer/HBoxContainer/VBoxContainer/HBoxContainer/MarginContainer2/Panel/ColorRect")
+PackageItemPS = ExtResource("4_hpqmj")
+SnapshotterPS = ExtResource("3_hpqmj")
 
 [node name="ContainerHeader" type="MarginContainer" parent="."]
 layout_mode = 2
@@ -35,9 +71,142 @@ mouse_filter = 2
 theme_override_constants/margin_top = 40
 
 [node name="Panel" type="Panel" parent="PackageViewer_Container"]
+visible = false
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_3p7jc")
 
-[node name="PackageViewer" parent="PackageViewer_Container" instance=ExtResource("2_mxfm6")]
+[node name="PackageViewer" type="MarginContainer" parent="PackageViewer_Container"]
 layout_mode = 2
-script = null
+
+[node name="HBoxContainer" type="HBoxContainer" parent="PackageViewer_Container/PackageViewer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="VBoxContainer" type="VBoxContainer" parent="PackageViewer_Container/PackageViewer/HBoxContainer"]
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="PackageViewer_Container/PackageViewer/HBoxContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 150)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="TextureRect" type="TextureRect" parent="PackageViewer_Container/PackageViewer/HBoxContainer/VBoxContainer/MarginContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+texture = ExtResource("3_hjkl5")
+expand_mode = 3
+
+[node name="TextureRect2" type="TextureRect" parent="PackageViewer_Container/PackageViewer/HBoxContainer/VBoxContainer/MarginContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+texture = SubResource("ViewportTexture_mxfm6")
+expand_mode = 3
+stretch_mode = 3
+
+[node name="SubViewport" type="SubViewport" parent="PackageViewer_Container/PackageViewer/HBoxContainer/VBoxContainer/MarginContainer"]
+own_world_3d = true
+transparent_bg = true
+size = Vector2i(256, 256)
+
+[node name="HBoxContainer" type="HBoxContainer" parent="PackageViewer_Container/PackageViewer/HBoxContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 25
+alignment = 1
+
+[node name="MarginContainer" type="MarginContainer" parent="PackageViewer_Container/PackageViewer/HBoxContainer/VBoxContainer/HBoxContainer"]
+custom_minimum_size = Vector2(35, 35)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+
+[node name="Panel" type="Panel" parent="PackageViewer_Container/PackageViewer/HBoxContainer/VBoxContainer/HBoxContainer/MarginContainer"]
+clip_children = 1
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_l52ft")
+
+[node name="ColorRect" type="ColorRect" parent="PackageViewer_Container/PackageViewer/HBoxContainer/VBoxContainer/HBoxContainer/MarginContainer/Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="TextureRect" type="TextureRect" parent="PackageViewer_Container/PackageViewer/HBoxContainer/VBoxContainer/HBoxContainer/MarginContainer"]
+layout_mode = 2
+texture = ExtResource("6_l52ft")
+expand_mode = 2
+
+[node name="Button" type="Button" parent="PackageViewer_Container/PackageViewer/HBoxContainer/VBoxContainer/HBoxContainer/MarginContainer"]
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxEmpty_1v2gr")
+theme_override_styles/normal_mirrored = SubResource("StyleBoxEmpty_1v2gr")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_1v2gr")
+theme_override_styles/pressed_mirrored = SubResource("StyleBoxEmpty_1v2gr")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_1v2gr")
+theme_override_styles/hover_mirrored = SubResource("StyleBoxEmpty_1v2gr")
+theme_override_styles/hover_pressed = SubResource("StyleBoxEmpty_1v2gr")
+theme_override_styles/hover_pressed_mirrored = SubResource("StyleBoxEmpty_1v2gr")
+theme_override_styles/disabled = SubResource("StyleBoxEmpty_1v2gr")
+theme_override_styles/disabled_mirrored = SubResource("StyleBoxEmpty_1v2gr")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_1v2gr")
+
+[node name="MarginContainer2" type="MarginContainer" parent="PackageViewer_Container/PackageViewer/HBoxContainer/VBoxContainer/HBoxContainer"]
+custom_minimum_size = Vector2(35, 35)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+
+[node name="Panel" type="Panel" parent="PackageViewer_Container/PackageViewer/HBoxContainer/VBoxContainer/HBoxContainer/MarginContainer2"]
+clip_children = 1
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_l52ft")
+
+[node name="ColorRect" type="ColorRect" parent="PackageViewer_Container/PackageViewer/HBoxContainer/VBoxContainer/HBoxContainer/MarginContainer2/Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="TextureRect" type="TextureRect" parent="PackageViewer_Container/PackageViewer/HBoxContainer/VBoxContainer/HBoxContainer/MarginContainer2"]
+layout_mode = 2
+texture = ExtResource("7_1v2gr")
+expand_mode = 2
+
+[node name="Button2" type="Button" parent="PackageViewer_Container/PackageViewer/HBoxContainer/VBoxContainer/HBoxContainer/MarginContainer2"]
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxEmpty_1v2gr")
+theme_override_styles/normal_mirrored = SubResource("StyleBoxEmpty_1v2gr")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_1v2gr")
+theme_override_styles/pressed_mirrored = SubResource("StyleBoxEmpty_1v2gr")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_1v2gr")
+theme_override_styles/hover_mirrored = SubResource("StyleBoxEmpty_1v2gr")
+theme_override_styles/hover_pressed = SubResource("StyleBoxEmpty_1v2gr")
+theme_override_styles/hover_pressed_mirrored = SubResource("StyleBoxEmpty_1v2gr")
+theme_override_styles/disabled = SubResource("StyleBoxEmpty_1v2gr")
+theme_override_styles/disabled_mirrored = SubResource("StyleBoxEmpty_1v2gr")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_1v2gr")
+
+[node name="MarginContainer2" type="MarginContainer" parent="PackageViewer_Container/PackageViewer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/margin_left = 2
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 2
+theme_override_constants/margin_bottom = 5
+
+[node name="ScrollContainer3" type="ScrollContainer" parent="PackageViewer_Container/PackageViewer/HBoxContainer/MarginContainer2"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="VBoxContainer" type="VBoxContainer" parent="PackageViewer_Container/PackageViewer/HBoxContainer/MarginContainer2/ScrollContainer3"]
+layout_mode = 2
+size_flags_horizontal = 3

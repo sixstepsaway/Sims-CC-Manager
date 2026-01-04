@@ -12,12 +12,28 @@ public partial class PackageListItem : HBoxContainer
     public Button Button;
     [Export]
     Node2D ButtonSpin;
+    [Export]
+    Panel WarningPanel;
+
+    private bool _warning;
+    public bool Warning
+    {
+        get { return _warning; }
+        set { _warning = value; 
+        WarningPanel.Visible = value;}
+    }
+
+
     bool InternalName = false;
 
     public override void _Ready()
     {
         Button.Pressed += () => PressedTheButton();
+        Warning = false;
     }
+
+    public delegate void GotNamesEvent();
+    public GotNamesEvent GotNames;
 
     private void PressedTheButton()
     {
@@ -39,7 +55,8 @@ public partial class PackageListItem : HBoxContainer
 
     public void GetInternalName()
     {
-        NameBox.Text = packageItem.PackageData.Title;        
+        NameBox.Text = packageItem.PackageData.Title; 
+        GotNames?.Invoke();       
     }
 
     public void ResetName()

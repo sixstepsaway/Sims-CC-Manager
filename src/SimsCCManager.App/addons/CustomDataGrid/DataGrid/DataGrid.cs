@@ -425,18 +425,22 @@ public partial class DataGrid : Control
 	private void RemoveRow(int rowRmvIdx)
 	{
 		PleasePassLog(string.Format("Removing row at {0}", rowRmvIdx));
-		//DataGridRowUi rowUi = row as DataGridRowUi;
-		//AllRows[rowRmvIdx].QueueFree();		
 		AllRows[rowRmvIdx].QueueFree();
 		VisibleRows.Remove(AllRows[rowRmvIdx]);
 		AllRows[rowRmvIdx] = new();
 	}
 
-	private void AddRow(int rowIdx, int pos)
+	private void AddRow(int rowIdx, int pos, bool atIndex = false)
 	{
 		PleasePassLog(string.Format("Adding row at {0}, {1} RowData entry", pos, rowIdx));
-		//DataGridRowUi rowui = row as DataGridRowUi;		
-		if (pos == 0) {
+		//DataGridRowUi rowui = row as DataGridRowUi;	
+		if (atIndex)
+		{
+			VisibleRows.Insert(pos, AllRows[rowIdx]);
+			RowsHolder.AddChild(AllRows[rowIdx]);
+			RowsHolder.MoveChild(AllRows[rowIdx], pos);
+		}	
+		else if (pos == 0) {
 			VisibleRows.Insert(0, AllRows[rowIdx]);
 			RowsHolder.AddChild(AllRows[rowIdx]);
 			RowsHolder.MoveChild(AllRows[rowIdx], 0);
@@ -544,6 +548,7 @@ public partial class DataGrid : Control
 		int totalidx = __headers.IndexOf(header);
 		__headers.Remove(header);
 		__headers.Insert(headerNewLocation, header);
+		HeadersChanged(__headers);
 		Headers = __headers;
 		List<DataGridRow> __rows = new();
 		__rows = RowData;
@@ -576,168 +581,16 @@ public partial class DataGrid : Control
 	}
 
 	public void UpdateRow(DataGridRow importedRowData, bool newSubrow = false)
-	{
-		if (VisibleRows.Any(x => x.RowData.Identifier == importedRowData.Identifier)){
-			DataGridRowUi row = VisibleRows.First(x => x.RowData.Identifier == importedRowData.Identifier);
-			RowData[RowData.IndexOf(RowData.First(x => x.Identifier == importedRowData.Identifier))] = importedRowData;
-			row.RowData = importedRowData;
-
-			row.Name = importedRowData.RowRef;	
-			row.Datagrid = this;
-
-			if (importedRowData.UseCategoryColor){
-				row.BackgroundColor = importedRowData.BackgroundColor;
-				row.TextColor = importedRowData.TextColor;	
-			}
-			
-			row.AdjustNumberOnlyIfToggled = LinkToggleToAdjustmentNumber;
-			int adjnum = 0;
-			int hc = 0;
-			row.ClearCells();
-			for (int i = 0; i < Headers.Count; i++)
-			{
-				if (Headers[i].ShowHeader)
-				{
-					Vector2 size = new(0, 0);
-					DataGridHeaderCell header = HeaderRow.HeaderCells[hc];
-					DataGridHeaderSizeAdjuster sizeadjuster = HeaderRow.HeaderSliders[hc];
-					DataGridCell cell = DataGridCellPS.Instantiate() as DataGridCell;
-					cell.CellOptions = Headers[i].CellType;
-					cell.thisRow = row;
-					cell.FirstLoaded = FirstLoaded;
-					cell.dataGrid = this;
-					cell.AccentColor = AccentColor;
-					cell.NumberAsBytes = Headers[i].NumberAsBytes;
-					if (cell.CellOptions == CellOptions.Icons)
-					{
-						cell.Icons = importedRowData.RowIcons;
-					}
-					if (cell.CellOptions == CellOptions.Toggle)
-					{
-						row.ToggleCell = cell;
-						bool toggleresult = ToBool(importedRowData.Items[i].ItemContent);
-						row.Toggled = toggleresult;
-						cell.ToggleToggled = toggleresult;
-						cell.ToggleFlipped += (w) => row.CellWasToggled(w);
-					}
-					if (cell.CellOptions == CellOptions.Picture)
-					{
-						row.ImageCell = cell;
-						size = new(Headers[i].PictureCellSize.X - 1, RowHeight);
-						cell.StartSize = size;
-						cell.SetSize(size);
-						cell.ImageLocation = importedRowData.Items[i].ItemContent;
-						cell.ImageSizer.Size = new(cell.StartSize.X - 15, cell.StartSize.Y - 15);
-						cell.ImageSizer.CustomMinimumSize = new(cell.StartSize.X - 15, cell.StartSize.Y - 15);
-						cell.ImageSizer.SetAnchorsAndOffsetsPreset(LayoutPreset.Center);
-					}
-					else if (cell.CellOptions == CellOptions.AdjustableNumber)
-					{
-						row.AdjustmentNumberCell = cell;
-						size = new(header.CellSize.X - 1, RowHeight);
-						cell.StartSize = size;
-						cell.SetSize(size);
-					}
-					else
-					{
-						size = new(header.CellSize.X, RowHeight);
-						cell.StartSize = size;
-						cell.SetSize(size);
-					}
-					if (cell.CellOptions == CellOptions.AdjustableNumber)
-					{
-						cell.NumberContent = importedRowData.AdjustmentNumber;
-						row.AdjustmentNumber = importedRowData.AdjustmentNumber;
-						row.NumAdjustmentCell = cell;
-						AdjustmentCellIdx = i;
-						cell.ToggleLinked = LinkToggleToAdjustmentNumber;
-					}
-					if (cell.CellOptions == CellOptions.Int)
-					{
-						cell.NumberContent = int.Parse(importedRowData.Items[i].ItemContent);
-					}
-					cell.TextContent = importedRowData.Items[i].ItemContent;
-					cell.Editable = Headers[i].ContentEditable;
-					cell.ToggleFlipped += (Toggle) => ToggleFlipped(Toggle, row.OverallIndex);
-					cell.Resizeable = Headers[i].Resizeable;
-					cell.AssociatedHeader = header;
-					cell.AssociatedHeaderSizer = sizeadjuster;
-					cell.ProduceTooltip += (t) => TooltipProduced(t);
-					row.AddCell(cell);
-					hc++;
-				}
-			}
-
-			if (newSubrow) {
-				row.IsSubGrid = true;
-				row.ShowSubgrid += (grid, row) => DisplaySubgrid(grid, row);
-				MiniGrid minigrid = MinigridScene.Instantiate() as MiniGrid;
-				minigrid.Size = new(PaneSize.X - (PaneSize.X * 0.1f), PaneSize.Y - (PaneSize.Y * 0.1f));
-				row.SubGrid = minigrid;
-				minigrid.addFiles.CurrentDir = MinigridPath;
-				minigrid.MiniGridRowIdx = row.OverallIndex;
-				minigrid.Row = row;
-				minigrid.CloseButton.Pressed += () => CloseMinigrid(minigrid);
-				int i = 0; 
-				minigrid.AddButton.ButtonClicked += () => MinigridAddItemToGroup(importedRowData, minigrid);
-				minigrid.RemoveButton.ButtonClicked += () => MinigridRemoveItemFromGroup(importedRowData, minigrid);
-					
-				foreach (DataGridRow rowitem in importedRowData.SubRowItems)
-				{
-					MiniGriditem mgi = MinigridItemPS.Instantiate() as MiniGriditem;
-					mgi.SelectButton.Pressed += () => MinigridItemPressed(minigrid, mgi);
-					mgi.RowData = rowitem;
-					minigrid.MinigridItems.Add(mgi);
-					mgi.TextOne.Text = rowitem.SubrowTextFirst;
-					mgi.TextTwo.Text = rowitem.SubrowTextSecond;
-					mgi.MgiIndex = i;
-					minigrid.ItemContainer.AddChild(mgi);		
-					i++;		
-				}
-				dataGridUi.AddMinigrid(minigrid);
-				minigrid.addFiles.FileSelected += (files) => MinigridFileSelected(files, minigrid); 
-				minigrid.addFiles.FilesSelected += (files) => MinigridFilesSelected(files, minigrid); 
-				MiniGrids.Add(minigrid);
-				minigrid.Visible = false;
-			} else if (importedRowData.SubRow)
-			{		
-				if (row.SubGrid == null)
-				{
-					row.IsSubGrid = true;
-					row.ShowSubgrid += (grid, row) => DisplaySubgrid(grid, row);
-					MiniGrid minigrid = MinigridScene.Instantiate() as MiniGrid;
-					minigrid.Size = new(PaneSize.X - (PaneSize.X * 0.1f), PaneSize.Y - (PaneSize.Y * 0.1f));
-					row.SubGrid = minigrid;
-					minigrid.addFiles.CurrentDir = MinigridPath;
-					minigrid.MiniGridRowIdx = row.OverallIndex;
-					minigrid.Row = row;
-					minigrid.CloseButton.Pressed += () => CloseMinigrid(minigrid);
-					int i = 0; 
-					minigrid.AddButton.ButtonClicked += () => MinigridAddItemToGroup(importedRowData, minigrid);
-					minigrid.RemoveButton.ButtonClicked += () => MinigridRemoveItemFromGroup(importedRowData, minigrid);
-						
-					foreach (DataGridRow rowitem in importedRowData.SubRowItems)
-					{
-						MiniGriditem mgi = MinigridItemPS.Instantiate() as MiniGriditem;
-						mgi.SelectButton.Pressed += () => MinigridItemPressed(minigrid, mgi);
-						mgi.RowData = rowitem;
-						minigrid.MinigridItems.Add(mgi);
-						mgi.TextOne.Text = rowitem.SubrowTextFirst;
-						mgi.TextTwo.Text = rowitem.SubrowTextSecond;
-						mgi.MgiIndex = i;
-						minigrid.ItemContainer.AddChild(mgi);		
-						i++;		
-					}
-					dataGridUi.AddMinigrid(minigrid);
-					minigrid.addFiles.FileSelected += (files) => MinigridFileSelected(files, minigrid); 
-					minigrid.addFiles.FilesSelected += (files) => MinigridFilesSelected(files, minigrid); 
-					MiniGrids.Add(minigrid);
-					minigrid.Visible = false;
-				} else
-				{
-					RefreshMinigrid(row.SubGrid);
-				}				
-			}		
+	{		
+		if (VisibleRows.Any(x => x.RowData.Identifier == importedRowData.Identifier))
+		{
+			DataGridRow ogdata = RowData.First(x => x.Identifier == importedRowData.Identifier);
+			importedRowData.Selected = ogdata.Selected;
+			RowData[RowData.IndexOf(ogdata)] = importedRowData;			
+			int idx = AllRows[importedRowData.Idx].GetIndex();
+			RemoveRow(importedRowData.Idx);
+			CreateRow(importedRowData, importedRowData.Idx);	
+			AddRow(importedRowData.Idx, idx, true);
 		}
 	}
 
@@ -807,7 +660,10 @@ public partial class DataGrid : Control
 			}*/
 
 			//PleasePassLog(string.Format("Pop rows: {0}, Ordered: {1}", rowsForVisible.Count, popRowOrdered.Count));
-			CallDeferred(nameof(PopRowsDeferred), rowsstart, (int)RowsOnScreen);			
+			CallDeferred(nameof(PopRowsDeferred), rowsstart, (int)RowsOnScreen);
+
+			
+
 			ScrollPosition = from;
 		}){IsBackground = true}.Start();	
 			
@@ -828,8 +684,7 @@ public partial class DataGrid : Control
 			PleasePassLog(string.Format("Adding row {0} to display.", i));
 			if (AllRows[i] == null) PleasePassLog(string.Format("Unfortunately row {0} was null.", i));
 			RowsHolder.AddChild(AllRows[i]);
-			VisibleRows.Add(AllRows[i]);
-			
+			VisibleRows.Add(AllRows[i]);			
 		}
 		if (RowsOnScreen < RowData.Count){
 			dataGridUi.AllRowsContainer.SizeFlagsVertical = SizeFlags.ExpandFill;
@@ -843,6 +698,18 @@ public partial class DataGrid : Control
 			FirstLoaded = true;
 			DataGridFinishedFirstLoad?.Invoke();
 		}
+		StringBuilder sb = new();
+		for (int i = 0; i < VisibleRows.Count; i++)
+		{
+			if (i < VisibleRows.Count)
+			{
+				sb.Append(string.Format("Row {0}, ", VisibleRows[i].OverallIndex));
+			} else
+			{
+				sb.Append(string.Format("Row {0}.", VisibleRows[i].OverallIndex));
+			}
+		}
+		PleasePassLog(string.Format("Visible rows contains: {0}", sb.ToString()));
 		Populating = false;
 	}
 
@@ -874,7 +741,7 @@ public partial class DataGrid : Control
 		row.AdjustmentNumberChanged += (x, c, n) => AdjustableNumberOneNumberChanged(x, c, n);
 		row.AdjustmentNumberChangedPropagate += (x, c) => AdjustmentNumberAdjusted(x, c);
 		row.OverallIndex = num;
-		row.RowSelected += (i, s) => RowSelected(i, s);
+		row.RowSelected += (s) => RowSelected(num, s);
 
 		if (importedRowData.UseCategoryColor)
 		{
@@ -1297,25 +1164,26 @@ public partial class DataGrid : Control
 	}
 
 	private void RowDataEdited(DataGridRow row, string i, int r, int c, int idx){
-		int itemidx = row.Items.IndexOf(row.Items.Where(x => x.ColumnNum == c).First());		
+		int itemidx = row.Items.IndexOf(row.Items.First(x => x.ColumnNum == c));		
 		InvokeDataChanged(row, Headers[itemidx].Data, itemidx);
 	}
 
     private void RowSelected(int SelectedItem, bool Selected)
     {
+		PleasePassLog(string.Format("Row selected: {0}", SelectedItem));
 		if (!ShiftHeld && !ControlHeld){
-			if (RowData[SelectedItem].Selected && RowData.Where(x => x.Selected).Count() > 1){
+			if (RowData[SelectedItem].Selected && RowData.Count(x => x.Selected) > 1){
 				//int s = 0;
 				for (int i = 0; i < RowData.Count; i++){
 					if(i != SelectedItem){
 						RowData[i].Selected = false;
 						if (VisibleRows.Any(x => x.OverallIndex == i)){
-							VisibleRows.Where(x => x.OverallIndex == i).First().Selected = false;
+							VisibleRows.First(x => x.OverallIndex == i).Selected = false;
 						}
 					} else {
 						RowData[i].Selected = true;
 						if (VisibleRows.Any(x => x.OverallIndex == i)){
-							VisibleRows.Where(x => x.OverallIndex == i).First().Selected = true;
+							VisibleRows.First(x => x.OverallIndex == i).Selected = true;
 						}
 					}
 				}
@@ -1325,21 +1193,21 @@ public partial class DataGrid : Control
 					if(i != SelectedItem){
 						RowData[i].Selected = false;
 						if (VisibleRows.Any(x => x.OverallIndex == i)){
-							VisibleRows.Where(x => x.OverallIndex == i).First().Selected = false;
+							VisibleRows.First(x => x.OverallIndex == i).Selected = false;
 						}
 					} else {
 						RowData[i].Selected = Selected;
 						if (VisibleRows.Any(x => x.OverallIndex == i)){
-							VisibleRows.Where(x => x.OverallIndex == i).First().Selected = Selected;
+							VisibleRows.First(x => x.OverallIndex == i).Selected = Selected;
 						}
 					}
 				}
 			}			
 		} else if (ShiftHeld){
 			if (RowData.Any(x => x.Selected)){
-				if (RowData.Where(x => x.Selected).Count() > 1){
-					int LastItem = RowData.IndexOf(RowData.Where(x => x.Selected).Last());
-					int FirstItem = RowData.IndexOf(RowData.Where(x => x.Selected).First());
+				if (RowData.Count(x => x.Selected) > 1){
+					int LastItem = RowData.IndexOf(RowData.Last(x => x.Selected));
+					int FirstItem = RowData.IndexOf(RowData.First(x => x.Selected));
 					if (PreviousSelection == LastItem){
 						if (SelectedItem < FirstItem) { 
 							ChangeSelection(SelectedItem, FirstItem, true);
@@ -1360,7 +1228,7 @@ public partial class DataGrid : Control
 						} 
 					}
 				} else {
-					int SingleSelected = RowData.IndexOf(RowData.Where(x => x.Selected).Last());
+					int SingleSelected = RowData.IndexOf(RowData.Last(x => x.Selected));
 					if (SingleSelected > SelectedItem){
 						ChangeSelection(SelectedItem, SingleSelected, true);
 					} else {
@@ -1379,8 +1247,7 @@ public partial class DataGrid : Control
 			SelectedRows = RowData.Where(x => x.Selected).ToList();
 		} else {
 			SelectedRows = new();
-		}
-		
+		}		
     }
 
 	private void ChangeSelection(int FirstRow, int LastRow, bool Selected){
@@ -1389,12 +1256,12 @@ public partial class DataGrid : Control
 			if(i <= LastRow && i >= FirstRow){
 				RowData[i].Selected = Selected;	
 				if (VisibleRows.Any(x => x.OverallIndex == i)){
-					VisibleRows.Where(x => x.OverallIndex == i).First().Selected = Selected;
+					VisibleRows.First(x => x.OverallIndex == i).Selected = Selected;
 				}								
 			} else {
 				RowData[i].Selected = false;
 				if (VisibleRows.Any(x => x.OverallIndex == i)){
-					VisibleRows.Where(x => x.OverallIndex == i).First().Selected = false;
+					VisibleRows.First(x => x.OverallIndex == i).Selected = false;
 				}
 			}		
 		}
@@ -2174,8 +2041,8 @@ public partial class DataGrid : Control
 				CellsUnsearched = RowData;
 			}
 			List<DataGridRow> searched = new();
-			int column = Headers.IndexOf(Headers.Where(x => x.Title == Header).First());			
-			if (CellsUnsearched.Where(x => x.Items[column].ItemContent.ToLower().Contains(SearchTerm.ToLower())).Any()){
+			int column = Headers.IndexOf(Headers.First(x => x.Title == Header));			
+			if (CellsUnsearched.Any(x => x.Items[column].ItemContent.ToLower().Contains(SearchTerm.ToLower()))){
 				searched = CellsUnsearched.Where(x => x.Items[column].ItemContent.ToLower().Contains(SearchTerm.ToLower())).ToList();
 			}			
 			RowData = searched;

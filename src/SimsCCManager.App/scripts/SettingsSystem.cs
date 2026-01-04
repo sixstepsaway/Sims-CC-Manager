@@ -55,18 +55,18 @@ namespace SimsCCManager.SettingsSystem
         }, new() {
             ThemeName = "Blossom",
             Identifier = Guid.Parse("a92902ea-3d8c-44ec-b858-b6111c0afa50"),
-            BackgroundColor = Godot.Color.FromHtml("EDE3E4"),
+            BackgroundColor = Godot.Color.FromHtml("ede3e4"),
             ButtonMain = Godot.Color.FromHtml("91586d"),
             ButtonHover = Godot.Color.FromHtml("c46ca2"),
             ButtonClick = Godot.Color.FromHtml("cb8dd3"),
-            DataGridA = Godot.Color.FromHtml("EAE1E6"),
-            DataGridB = Godot.Color.FromHtml("E9E0E7"),
-            DataGridSelected = Godot.Color.FromHtml("CABFC5"),
-            AccentColor = Godot.Color.FromHtml("C24D76"),
-            DataGridTextA = Godot.Color.FromHtml("DAA5C2"),
-            DataGridTextB = Godot.Color.FromHtml("AB8AA4"),
-            MainTextColor = Godot.Color.FromHtml("3F3536"),
-            HeaderTextColor = Godot.Color.FromHtml("9A7E88")
+            DataGridA = Godot.Color.FromHtml("eae1e6"),
+            DataGridTextA = Godot.Color.FromHtml("daa5c2"),
+            DataGridB = Godot.Color.FromHtml("e9e0e7"),
+            DataGridTextB = Godot.Color.FromHtml("ab8aa4"),
+            DataGridSelected = Godot.Color.FromHtml("cabfc5"),
+            AccentColor = Godot.Color.FromHtml("c24d76"),
+            MainTextColor = Godot.Color.FromHtml("3f3536"),
+            HeaderTextColor = Godot.Color.FromHtml("9a7e88"),
         }, new()
         {
             ThemeName = "Land of Ice",

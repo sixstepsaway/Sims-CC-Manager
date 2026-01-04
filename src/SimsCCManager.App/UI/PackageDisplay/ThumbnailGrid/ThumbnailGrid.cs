@@ -16,7 +16,7 @@ public partial class ThumbnailGrid : MarginContainer
 {
     public PackageDisplay packageDisplay;
     [Export]
-    HFlowContainer ThumbGrid;
+    GridContainer ThumbGrid;
     [Export]
     ColorRect BGColorRect;
     [Export]

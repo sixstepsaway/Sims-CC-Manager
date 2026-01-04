@@ -117,7 +117,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_3b7tn")
-ThumbGrid = NodePath("VBoxContainer/HBoxContainer/Control/MarginContainer/ThumbGrid")
+ThumbGrid = NodePath("")
 BGColorRect = NodePath("BackgroundColor")
 ThumbnailGridItemPS = ExtResource("1_aoyc0")
 SnapshotterPS = ExtResource("3_hd7b2")
@@ -144,7 +144,7 @@ layout_mode = 2
 horizontal_scroll_mode = 3
 vertical_scroll_mode = 3
 
-[node name="ThumbGrid" type="HFlowContainer" parent="VBoxContainer/HBoxContainer/Control/MarginContainer"]
+[node name="ThumbGrid" type="GridContainer" parent="VBoxContainer/HBoxContainer/Control/MarginContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3

@@ -1,8 +1,20 @@
-[gd_scene load_steps=8 format=3 uid="uid://cqsrg0fwrld8s"]
+[gd_scene load_steps=9 format=3 uid="uid://cqsrg0fwrld8s"]
 
 [ext_resource type="Script" uid="uid://b5abnpfw5r6kh" path="res://UI/PackageDisplay/PackageListItem.cs" id="1_43bur"]
 [ext_resource type="Theme" uid="uid://b4fe82i5mblf5" path="res://themes/packagedisplay_headers.tres" id="1_xfy36"]
 [ext_resource type="Texture2D" uid="uid://bfqqudt7sll4n" path="res://assets/icons/materialicons/twotone_refresh_black_48dp.png" id="2_c452k"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_43bur"]
+bg_color = Color(0.6, 0.6, 0.6, 0)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.8, 0, 0, 1)
+expand_margin_left = 2.0
+expand_margin_top = 2.0
+expand_margin_right = 2.0
+expand_margin_bottom = 2.0
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_4fyo0"]
 bg_color = Color(0.6, 0.6, 0.6, 0)
@@ -32,17 +44,28 @@ Button/styles/hover = SubResource("StyleBoxFlat_4fyo0")
 Button/styles/normal = SubResource("StyleBoxFlat_aljlb")
 Button/styles/pressed = SubResource("StyleBoxFlat_rb1a8")
 
-[node name="PackageListItem" type="HBoxContainer" node_paths=PackedStringArray("NameBox", "Button", "ButtonSpin")]
+[node name="PackageListItem" type="HBoxContainer" node_paths=PackedStringArray("NameBox", "Button", "ButtonSpin", "WarningPanel")]
 alignment = 1
 script = ExtResource("1_43bur")
-NameBox = NodePath("LineEdit")
+NameBox = NodePath("MarginContainer2/LineEdit")
 Button = NodePath("MarginContainer/Button")
 ButtonSpin = NodePath("MarginContainer/ButtonSpin")
+WarningPanel = NodePath("MarginContainer2/Panel")
 
-[node name="LineEdit" type="LineEdit" parent="."]
+[node name="MarginContainer2" type="MarginContainer" parent="."]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="LineEdit" type="LineEdit" parent="MarginContainer2"]
 custom_minimum_size = Vector2(450, 0)
 layout_mode = 2
 theme = ExtResource("1_xfy36")
+
+[node name="Panel" type="Panel" parent="MarginContainer2"]
+visible = false
+layout_mode = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_43bur")
 
 [node name="MarginContainer" type="MarginContainer" parent="."]
 custom_minimum_size = Vector2(30, 30)
