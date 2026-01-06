@@ -557,16 +557,16 @@ public partial class AllModsContainer : MarginContainer
             
             int i = 0;
             if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Packages: {0}", Packages.Count));
-            foreach (SimsPackage pack in Packages.OrderBy(x => x.FileName)){
+            foreach (SimsPackage pack in Packages.OrderBy(x => x.IsDirectory).ThenBy(x => x.FileName)){
                 if (pack.StandAlone)
                 {
                     Task t = Task.Run( () => {
                         DataGridRow newrow = CreateRow(pack, i);
                         if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Row {0}: {1}", i, pack.FileName));
                         if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("-- Is Subrow: {0}\n -- Has Subitems: {1}", newrow.SubRow, newrow.SubRowItems.Count));
-                        rows.Add(newrow);
-                        i++;
+                        rows.Add(newrow);                        
                     });
+                    i++;
                     runningTasks.Add(t);
                 }            
             }
@@ -1010,8 +1010,9 @@ public partial class AllModsContainer : MarginContainer
     private void ToggleFave()
     {
         for (int i = 0; i < SelectedItems.Count; i++)
-        {
+        {           
             SimsPackage package = Packages.First(x => x.Identifier == SelectedItems[i].Identifier);
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Marking item {0} as fave: {1}", i, package.FileName));
             package.Favorite = !rcm.MostlyFave;            
             package.WriteXML();
             DataGridRow rowdata = DataGrid.RowData.First(x => x.Identifier == package.Identifier);

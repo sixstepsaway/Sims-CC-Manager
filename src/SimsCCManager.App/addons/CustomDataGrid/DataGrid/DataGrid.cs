@@ -92,6 +92,8 @@ public partial class DataGrid : Control
 	public ConcurrentQueue<Task> ScrollerTasks = new();
 	private bool ScrollerTasksRunning = false;
 
+	public bool DarkMode = false;
+
 	//Color theme
 	List<ColorRect> Backgrounds = new();
 	//scrollbar button colors + scrollbar itself
@@ -192,6 +194,7 @@ public partial class DataGrid : Control
 	{
 		get { return new DataGridRowUi[RowData.Count]; }
 	}
+
 	private List<DataGridCellIcons> IconOptions = new();
 
 	//accessible settings
@@ -404,7 +407,7 @@ public partial class DataGrid : Control
 		{
 			int lastRow = scrollPos + (int)RowsOnScreen -1;
 			bool done = CreateRow(RowData[newRow], newRow);
-			RemoveRow(lastRow);		
+			RemoveRow(lastRow, -1);		
 			AddRow(newRow, 0);
 		}		
 		return Task.CompletedTask;
@@ -416,38 +419,57 @@ public partial class DataGrid : Control
 		if (newRow <= RowData.Count)
 		{
 			bool done = CreateRow(RowData[newRow], newRow);
-			RemoveRow(scrollPos-1);
-			AddRow(newRow, (int)RowsOnScreen);
+			RemoveRow(scrollPos, 0);
+			AddRow(newRow, -1);
 		}
 		return Task.CompletedTask;
 	}
 	
-	private void RemoveRow(int rowRmvIdx)
+	private void RemoveRow(int rowRmvIdx, int removeAt)
 	{
 		PleasePassLog(string.Format("Removing row at {0}", rowRmvIdx));
-		AllRows[rowRmvIdx].QueueFree();
-		VisibleRows.Remove(AllRows[rowRmvIdx]);
-		AllRows[rowRmvIdx] = new();
+		if (removeAt == 0)
+		{
+			RowsHolder.RemoveChild(VisibleRows[0]);
+			VisibleRows[0].QueueFree();
+			VisibleRows.Remove(VisibleRows[0]);		
+			AllRows[rowRmvIdx] = _allrows[rowRmvIdx];
+		} else if (removeAt == -1)
+		{
+			RowsHolder.RemoveChild(VisibleRows[^1]);
+			VisibleRows[^1].QueueFree();
+			VisibleRows.Remove(VisibleRows[^1]);		
+			AllRows[rowRmvIdx] = _allrows[rowRmvIdx];
+		} else
+		{
+			RowsHolder.RemoveChild(VisibleRows[removeAt]);
+			VisibleRows[removeAt].QueueFree();
+			VisibleRows.Remove(VisibleRows[removeAt]);		
+			AllRows[rowRmvIdx] = _allrows[rowRmvIdx];
+		}
+		
+		
 	}
 
-	private void AddRow(int rowIdx, int pos, bool atIndex = false)
+	private void AddRow(int rowIdx, int pos = -1)
 	{
 		PleasePassLog(string.Format("Adding row at {0}, {1} RowData entry", pos, rowIdx));
 		//DataGridRowUi rowui = row as DataGridRowUi;	
-		if (atIndex)
-		{
-			VisibleRows.Insert(pos, AllRows[rowIdx]);
-			RowsHolder.AddChild(AllRows[rowIdx]);
-			RowsHolder.MoveChild(AllRows[rowIdx], pos);
-		}	
-		else if (pos == 0) {
+		if (pos == 0) {
 			VisibleRows.Insert(0, AllRows[rowIdx]);
 			RowsHolder.AddChild(AllRows[rowIdx]);
 			RowsHolder.MoveChild(AllRows[rowIdx], 0);
-		} else
+		} else if (pos == -1)
 		{
 			VisibleRows.Add(AllRows[rowIdx]);
 			RowsHolder.AddChild(AllRows[rowIdx]);
+		} else 
+		{
+			DataGridRowUi row = AllRows[rowIdx];
+			VisibleRows.Insert(pos, row);
+			RowsHolder.AddChild(row);
+			PleasePassLog(string.Format("Moving child from {0} to {1}. Rowholder has {2} children.", row.GetIndex(), pos, RowsHolder.GetChildCount()));
+			RowsHolder.MoveChild(row, pos);
 		}
 	}
 
@@ -476,10 +498,20 @@ public partial class DataGrid : Control
 		int i = 0;
 		DataGridHeaderRow headerRow = HeaderRowPS.Instantiate() as DataGridHeaderRow;
 		headerRow.SetSize(new(headerRow.CurrentSize.X, HeaderY + 2));
-		headerRow.BackgroundColor1.Color = Color.FromHtml("ffffff");
-		Color c = Color.FromHtml("9696968d");
-		c.A = 141;
-		headerRow.BackgroundColor2.Color = c;
+		if (DarkMode)
+		{
+			headerRow.BackgroundColor1.Color = Color.FromHtml("2C2C2C");
+			Color c = Color.FromHtml("0E0E0E");
+			c.A = 141;
+			headerRow.BackgroundColor2.Color = c;
+		} else
+		{
+			headerRow.BackgroundColor1.Color = Color.FromHtml("F0F0F0");
+			Color c = Color.FromHtml("A6A6A6");
+			c.A = 141;
+			headerRow.BackgroundColor2.Color = c;
+		}
+		
 		foreach (DataGridHeader header in Headers){
 			if (header.ShowHeader){
 				DataGridHeaderCell headercell = HeaderCellPS.Instantiate() as DataGridHeaderCell;
@@ -499,6 +531,14 @@ public partial class DataGrid : Control
 				headercell.HeaderData = header.Data;
 				HeaderLabels.Add(headercell.HeaderLabel);
 				headercell.Blank = header.Blank;
+
+				if (DarkMode)
+				{
+					headercell.TextColor = Color.FromHtml("F0F0F0");
+				} else
+				{
+					headercell.TextColor = Color.FromHtml("0E0E0E");
+				}
 								
 				headercell.HeaderClicked += (i, d, r) => HeaderSorted(i, d, r);		
 				headercell.MainGrid = this;
@@ -582,15 +622,36 @@ public partial class DataGrid : Control
 
 	public void UpdateRow(DataGridRow importedRowData, bool newSubrow = false)
 	{		
+		PleasePassLog(string.Format("Checking VisibleRows for row {0}", importedRowData.Idx));
 		if (VisibleRows.Any(x => x.RowData.Identifier == importedRowData.Identifier))
-		{
+		{			
+			PleasePassLog(string.Format("Found row {0} in visible rows!", importedRowData.Idx));
 			DataGridRow ogdata = RowData.First(x => x.Identifier == importedRowData.Identifier);
 			importedRowData.Selected = ogdata.Selected;
-			RowData[RowData.IndexOf(ogdata)] = importedRowData;			
+			importedRowData.Idx = ogdata.Idx;
+			RowData[RowData.IndexOf(ogdata)] = importedRowData;	
+					
 			int idx = AllRows[importedRowData.Idx].GetIndex();
-			RemoveRow(importedRowData.Idx);
-			CreateRow(importedRowData, importedRowData.Idx);	
-			AddRow(importedRowData.Idx, idx, true);
+			int vidx = VisibleRows.IndexOf(AllRows[importedRowData.Idx]);
+
+			if (vidx == 13) PleasePassLog(string.Format("Ah yes. *daemonvoice* A cunt."));
+
+			PleasePassLog(string.Format("Row {0} is {1}, which is row {2} in Visible Rows ({3})", importedRowData.Idx, importedRowData.RowRef, vidx, VisibleRows[vidx].RowData.RowRef));
+
+			RemoveRow(importedRowData.Idx, vidx);
+
+			PleasePassLog(string.Format("Removing row {0} (spot {1}) from screen.", importedRowData.Idx, vidx));
+
+			CreateRow(importedRowData, importedRowData.Idx);
+
+			PleasePassLog(string.Format("Created new row {0} (spot {1}).", importedRowData.Idx, vidx));
+
+			AddRow(importedRowData.Idx, vidx);
+
+			PleasePassLog(string.Format("Adding row {0} to position {1}.", importedRowData.Idx, vidx));
+		} else
+		{
+			PleasePassLog(string.Format("Row {0} isn't a visible row, so we don't need to update one.", importedRowData.Idx));
 		}
 	}
 
@@ -680,11 +741,14 @@ public partial class DataGrid : Control
 			RowsHolder.RemoveChild(node);
 		}
 		VisibleRows.Clear();
+		int p = 0;
 		for (int i = start; i < end; i++){
 			PleasePassLog(string.Format("Adding row {0} to display.", i));
 			if (AllRows[i] == null) PleasePassLog(string.Format("Unfortunately row {0} was null.", i));
 			RowsHolder.AddChild(AllRows[i]);
-			VisibleRows.Add(AllRows[i]);			
+			RowsHolder.MoveChild(AllRows[i], p);
+			VisibleRows.Add(AllRows[i]);
+			p++;
 		}
 		if (RowsOnScreen < RowData.Count){
 			dataGridUi.AllRowsContainer.SizeFlagsVertical = SizeFlags.ExpandFill;
@@ -693,23 +757,21 @@ public partial class DataGrid : Control
 			dataGridUi.AllRowsContainer.SizeFlagsVertical = SizeFlags.ShrinkBegin;
 			RowsHolder.SizeFlagsVertical = SizeFlags.ShrinkBegin;
 		}
-		PleasePassLog(string.Format("{0} rows populated!", VisibleRows.Count));
 		if (!FirstLoaded) {
+			UpdateRow(VisibleRows[^1].RowData);
 			FirstLoaded = true;
+			/*for (int i = 0; i < Headers.Count; i++)
+			{
+				if (Headers[i].ShowHeader)
+				{
+					HeaderResized(i);
+					i++;
+				}
+			}*/
 			DataGridFinishedFirstLoad?.Invoke();
 		}
-		StringBuilder sb = new();
-		for (int i = 0; i < VisibleRows.Count; i++)
-		{
-			if (i < VisibleRows.Count)
-			{
-				sb.Append(string.Format("Row {0}, ", VisibleRows[i].OverallIndex));
-			} else
-			{
-				sb.Append(string.Format("Row {0}.", VisibleRows[i].OverallIndex));
-			}
-		}
-		PleasePassLog(string.Format("Visible rows contains: {0}", sb.ToString()));
+		
+		
 		Populating = false;
 	}
 
@@ -878,7 +940,7 @@ public partial class DataGrid : Control
 
 
 		AllRows[num] = row;
-		PleasePassLog(string.Format("Created a row and put it into AllRows at {0}", num));
+		PleasePassLog(string.Format("Created row {0} and put it into AllRows at {1}", importedRowData.Idx, num));
 
 		return true;
 	}
@@ -1156,7 +1218,7 @@ public partial class DataGrid : Control
     }
 
 	public bool AreMultipleRowsSelected(){
-		if (RowData.Any(x => x.Selected)){
+		if (RowData.Count(x => x.Selected) > 1){
 			return true;
 		} else {
 			return false;
@@ -1170,7 +1232,7 @@ public partial class DataGrid : Control
 
     private void RowSelected(int SelectedItem, bool Selected)
     {
-		PleasePassLog(string.Format("Row selected: {0}", SelectedItem));
+		PleasePassLog(string.Format("Row selected: {0} (Position: {1})", SelectedItem, VisibleRows.IndexOf(VisibleRows.First(x => x.RowData.Idx == SelectedItem))));
 		if (!ShiftHeld && !ControlHeld){
 			if (RowData[SelectedItem].Selected && RowData.Count(x => x.Selected) > 1){
 				//int s = 0;
@@ -1356,10 +1418,10 @@ public partial class DataGrid : Control
 		PleasePassLog(statement);
 	}
 
-	private void HeaderResized(int idx){
-		DataGridHeaderCell header = HeaderRow.HeaderCells[idx] as DataGridHeaderCell;			
+	private void HeaderResized(int idx){		
+		DataGridHeaderCell header = HeaderRow.HeaderCells[idx];			
 		foreach (DataGridRowUi row in VisibleRows){
-			row.Cells[idx].SetSize(new(header.CellSize.X, RowHeight));
+			if (row != null) row.Cells[idx].SetSize(new(header.CellSize.X, RowHeight));
 		}
 	}
 
@@ -1451,20 +1513,18 @@ public partial class DataGrid : Control
 
     private void OnScrollDown()
     {		
-		if (ScrollPosition != MaxScroll && ScrollPosition != MaxScroll - 1 && !VisibleRows.Any(x => x.RowData.Identifier == RowData[^1].Identifier))
-		{
-			vScrollBar.Value++;
-		}
+		double val = vScrollBar.Value;
+		val++;
+		if (val <= vScrollBar.MaxValue) vScrollBar.Value++;		
     }
 
 
 
     private void OnScrollUp()
     {
-		if (!VisibleRows.Any(x => x.RowData.Identifier == RowData[0].Identifier))
-		{			
-			vScrollBar.Value--;
-		}
+		double val = vScrollBar.Value;
+		val--;
+		if (val >= 0) vScrollBar.Value--;		
     }
 
 

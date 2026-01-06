@@ -30,6 +30,14 @@ public partial class DataGridHeaderCell : Control
 		}
 	}}
 
+	private Color _textcolor;
+	public Color TextColor
+	{
+		get { return _textcolor; }
+		set { _textcolor = value; 
+		HeaderLabel.AddThemeColorOverride("font_color", value); }
+	}
+
 	[Export]
 	public Label HeaderLabel;
 	[Export]
