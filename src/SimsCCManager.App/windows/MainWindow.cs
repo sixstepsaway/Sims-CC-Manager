@@ -57,6 +57,8 @@ public partial class MainWindow : MarginContainer
     Button FDNoButton;
 
 
+    bool InitialLoadComplete = false;
+
 
     bool WaitingPopupWindow = false;
 
@@ -196,8 +198,12 @@ public partial class MainWindow : MarginContainer
         {
             CallDeferred(nameof(IncrementPbar), 1);
             CallDeferred(nameof(ChangePbarLabel), string.Format("Checking for environment"));
+            
             Thread.Sleep(20);
-            CheckLatestVersion();
+            if (!Directory.Exists(GlobalVariables.LogFolder))
+            {
+                Directory.CreateDirectory(GlobalVariables.LogFolder);
+            }
             if (!Directory.Exists(GlobalVariables.AppFolder))
             {
                 Directory.CreateDirectory(GlobalVariables.AppFolder);
@@ -205,10 +211,6 @@ public partial class MainWindow : MarginContainer
             if (!Directory.Exists(GlobalVariables.TempFolder))
             {
                 Directory.CreateDirectory(GlobalVariables.TempFolder);
-            }
-            if (!Directory.Exists(GlobalVariables.LogFolder))
-            {
-                Directory.CreateDirectory(GlobalVariables.LogFolder);
             }
             if (!Directory.Exists(GlobalVariables.DataFolder))
             {
@@ -218,6 +220,8 @@ public partial class MainWindow : MarginContainer
             {
                 Directory.CreateDirectory(GlobalVariables.OverridesFolder);
             }
+
+            
             if (!Directory.Exists(GlobalVariables.ThemesFolder))
             {
                 CallDeferred(nameof(IncrementPbar), 1);
@@ -247,6 +251,7 @@ public partial class MainWindow : MarginContainer
                 GlobalVariables.LoadedSettings = new();
                 GlobalVariables.LoadedSettings.SaveSettings();                
             }
+            CheckLatestVersion();
             //GlobalVariables.DebugMode = GlobalVariables.LoadedSettings.DebugMode;            
 
             if (Directory.Exists(GlobalVariables.ThemesFolder))
@@ -320,20 +325,24 @@ public partial class MainWindow : MarginContainer
     }
 
     private void CheckLatestVersion(){
-        string VersionURL = "https://raw.githubusercontent.com/sixstepsaway/Sims-CC-Manager/refs/heads/main/Version.txt";
+        try { 
+            string VersionURL = "https://raw.githubusercontent.com/sixstepsaway/Sims-CC-Manager/refs/heads/main/Version.txt";
 
-        WebClient VersionClient = new WebClient();
-        Stream stream = VersionClient.OpenRead(VersionURL);
-        StreamReader reader = new StreamReader(stream);
-        String content = reader.ReadToEnd();
+            WebClient VersionClient = new WebClient();
+            Stream stream = VersionClient.OpenRead(VersionURL);
+            StreamReader reader = new StreamReader(stream);
+            String content = reader.ReadToEnd();
 
-        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Latest version: {0}", content));
-        if (GlobalVariables.CurrentVersion != content) {
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("New version available!"));
-        } else
-        {
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Running latest version."));
-        }
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Latest version: {0}", content));
+            if (GlobalVariables.CurrentVersion != content) {
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("New version available!"));
+            } else
+            {
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Running latest version."));
+            }
+        } catch (Exception e) { 
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Couldn't reach server to check version.")); 
+        }          
     }
 
     private void FinishedLoading()
@@ -380,10 +389,12 @@ public partial class MainWindow : MarginContainer
     public void DataGridFinishedLoading(){
         new Thread(() =>
         {            
-            for (int i = (int)loadingInstance.progressBar.Value; i < (int)loadingInstance.progressBar.MaxValue; i++)
-            {
-                Thread.Sleep(1);
-                IncrementLoadingScreen(1, "Final checks...", "MainWindow: Final Checks");
+            if (!InitialLoadComplete) {
+                for (int i = (int)loadingInstance.progressBar.Value; i < (int)loadingInstance.progressBar.MaxValue; i++)
+                {
+                    Thread.Sleep(1);
+                    IncrementLoadingScreen(1, "Final checks...", "MainWindow: Final Checks");
+                }
             }
             CallDeferred(nameof(FinishLoadingScreen));          
         }){IsBackground = true}.Start();
@@ -395,7 +406,10 @@ public partial class MainWindow : MarginContainer
 
     private void FinishLoadingScreen()
     {        
-        loadingInstance.QueueFree();
+        if (!InitialLoadComplete)  { 
+            loadingInstance.QueueFree();
+            InitialLoadComplete = true;
+        }
     }
 
     public void IncrementLoadingScreen(int amount, string text, string Source)
@@ -406,9 +420,11 @@ public partial class MainWindow : MarginContainer
 
     private void DeferredLoadingScreen(int amount, string text, string Source)
     {
-        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Loading screen incremented at {0} by {1} with message {2}, and is now at {3}/{4} ({5}%)", Source, amount, text, loadingInstance.progressBar.Value, loadingInstance.progressBar.MaxValue, ((loadingInstance.progressBar.MaxValue - loadingInstance.progressBar.Value) / loadingInstance.progressBar.MaxValue) * 100));
-        loadingInstance.progressBar.Value += amount;
-        loadingInstance.ProgressLabel.Text = text;
+        if (!InitialLoadComplete)  {
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Loading screen incremented at {0} by {1} with message {2}, and is now at {3}/{4} ({5}%)", Source, amount, text, loadingInstance.progressBar.Value, loadingInstance.progressBar.MaxValue, ((loadingInstance.progressBar.MaxValue - loadingInstance.progressBar.Value) / loadingInstance.progressBar.MaxValue) * 100));
+            loadingInstance.progressBar.Value += amount;
+            loadingInstance.ProgressLabel.Text = text;
+        }
     }
 
 
@@ -475,5 +491,6 @@ public partial class MainWindow : MarginContainer
         mainMenu = MainMenuPS.Instantiate() as MainMenu;
         AddChild(mainMenu);
         MoveChild(Footer, GetChildCount());
+        InitialLoadComplete = false;
     }
 }

@@ -3,6 +3,7 @@ using SimsCCManager.Containers;
 using SimsCCManager.Debugging;
 using SimsCCManager.Globals;
 using SimsCCManager.OptionLists;
+using SimsCCManager.SettingsSystem;
 using System;
 using System.Diagnostics;
 using System.Drawing;
@@ -28,6 +29,14 @@ public partial class GameStartControls : MarginContainer
     TopbarButton PlayButton;
     [Export]
     public Button GameChoiceDropDownButton;
+
+    [ExportCategory("Theme")]
+    [Export]
+    ColorRect BorderColor;
+    [Export]
+    ColorRect BGColor;
+    [Export]
+    ColorRect IconColor;
 
     bool CheckForGame = false;
 
@@ -293,5 +302,15 @@ public partial class GameStartControls : MarginContainer
             if (GlobalVariables.DebugMode) Logging.WriteDebugLog("Looks like the game closed!");
             return result;
         }
+    }
+
+    private void UpdateTheme()
+    {
+        SCCMTheme theme = GlobalVariables.LoadedTheme;
+        BGColor.Color = theme.BackgroundColor;
+        BorderColor.Color = theme.AccentColor;
+        IconColor.Color = theme.AccentColor;
+        ExeNameLabel.AddThemeColorOverride("font_color", theme.MainTextColor);
+        ExePathLabel.AddThemeColorOverride("font_color", theme.MainTextColor);
     }
 }

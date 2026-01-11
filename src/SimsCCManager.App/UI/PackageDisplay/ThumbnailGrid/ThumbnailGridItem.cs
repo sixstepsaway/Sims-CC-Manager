@@ -1,10 +1,11 @@
 using Godot;
 using SimsCCManager.Containers;
+using SimsCCManager.Globals;
 using System;
 
 public partial class ThumbnailGridItem : MarginContainer
 {
-    public SimsPackage PackageReference;
+    public GridItem PackageReference;
     [Export]
     public MarginContainer ThumbnailSubviewerVersion;
     [Export]
@@ -78,6 +79,19 @@ public partial class ThumbnailGridItem : MarginContainer
         ItemName.Text = value; }
     }
 
+    [Export]
+    Button LabelHoverButton;
+
+    private bool _labelhovered;
+    public bool LabelHovered
+    {
+        get { return _labelhovered; }
+        set { _labelhovered = value;
+        if (value) GlobalVariables.mainWindow.InstantiateTooltip(LabelText); else GlobalVariables.mainWindow.CancelTooltip();
+        }
+    }
+
+
     private Color _selectedcolor;
     public Color SelectedColor 
     { get { return _selectedcolor; }
@@ -103,11 +117,11 @@ public partial class ThumbnailGridItem : MarginContainer
     set { _backgroundcolor = value; 
     BGColorRect.Color = value; }}
 
-    public delegate void ItemSelectedEvent(bool Selected, SimsPackage package, ThumbnailGridItem item);
+    public delegate void ItemSelectedEvent(bool Selected, GridItem package, ThumbnailGridItem item);
     public ItemSelectedEvent ItemSelected;
 
-    private bool _isselected;
-    public bool IsSelected { get { return _isselected; } set { _isselected = value; SelectedBox.Visible = value; ItemSelected?.Invoke(value, PackageReference, this); }}
+    //private bool _isselected;
+    public bool IsSelected { get { return PackageReference.IsSelected; } set { PackageReference.IsSelected = value; SelectedBox.Visible = value; }}
 
     private bool _ishovered;
     public bool IsHovered { get { return _ishovered; } set { _ishovered = value; HoveredBox.Visible = value;}}
@@ -121,7 +135,18 @@ public partial class ThumbnailGridItem : MarginContainer
         button.Pressed += () => ItemPressed();
         button.MouseEntered += () => ItemHovered(true);
         button.MouseExited += () => ItemHovered(false);
+
+        LabelHoverButton.MouseEntered += () => LabelBHovered(true);
+        LabelHoverButton.MouseExited += () => LabelBHovered(false);
+
+        
     }
+
+    private void LabelBHovered(bool v)
+    {
+        LabelHovered = v;
+    }
+
 
     private void ItemHovered(bool v)
     {
@@ -131,6 +156,7 @@ public partial class ThumbnailGridItem : MarginContainer
     private void ItemPressed()
     {
         IsSelected = !IsSelected;
+        ItemSelected?.Invoke(IsSelected, PackageReference, this);
     }
 
 }

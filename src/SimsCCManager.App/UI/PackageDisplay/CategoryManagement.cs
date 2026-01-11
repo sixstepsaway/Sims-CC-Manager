@@ -1,5 +1,6 @@
 using Godot;
 using SimsCCManager.Containers;
+using SimsCCManager.Debugging;
 using SimsCCManager.Globals;
 using SimsCCManager.SettingsSystem;
 using System;
@@ -54,14 +55,19 @@ public partial class CategoryManagement : MarginContainer
 
     List<Button> Buttons = new(); 
 
+
+    bool ChangedHiddenCats = false;
+
     List<CategoryItem> CategoryItems = new();
 
-    public delegate void CategoriesUpdatedEvent();
+    public delegate void CategoriesUpdatedEvent(bool andClose);
     public CategoriesUpdatedEvent CategoriesUpdated;
 
 
     bool MakingNew = false;
     bool EditingOld = false;
+
+    List<SimsPackage> packages = new();
 
     public override void _Ready()
     {                
@@ -88,7 +94,7 @@ public partial class CategoryManagement : MarginContainer
 
         ConfirmButton.Pressed += () => CategoryChangeConfirm();
         CancelButton.Pressed += () => CategoryChangeCancel();
-
+        packages = [.. packageDisplay.ThisInstance.Files.OfType<SimsPackage>()];
     }
 
     private void CategoryChangeCancel()
@@ -118,10 +124,10 @@ public partial class CategoryManagement : MarginContainer
             AddCategoryItem(category);
         } else if (EditingOld)
         {
-            CategoryItem ci = CategoryItems.Where(x => x.IsSelected).First();
+            CategoryItem ci = CategoryItems.First(x => x.IsSelected);
             CategoryItems.Remove(ci);
             ci.QueueFree();
-            Category cat = packageDisplay.ThisInstance.Categories.Where(x => x.Name == ci.CategoryName.Text).First();
+            Category cat = packageDisplay.ThisInstance.Categories.First(x => x.Name == ci.CategoryName.Text);
             packageDisplay.ThisInstance.Categories.Remove(cat);
             cat.Name = CategoryNameBox.Text;
             cat.Description = CategoryDescriptionBox.Text;
@@ -132,14 +138,14 @@ public partial class CategoryManagement : MarginContainer
         MakingNew = false;
         EditingOld = false;
         MiniWindow.Visible = false;
-        CategoriesUpdated.Invoke();
+        CategoriesUpdated.Invoke(false);
     }
 
     private string IncCategoryName(string name, int inc = 0)
     {
         inc++;
         name = string.Format("{0} ({1})", name, inc);
-        if (packageDisplay.ThisInstance.Categories.Where(x => x.Name == name).Any())
+        if (packageDisplay.ThisInstance.Categories.Any(x => x.Name == name))
         {
             name = IncCategoryName(name, inc);
         }
@@ -154,22 +160,22 @@ public partial class CategoryManagement : MarginContainer
             //
         } else
         {
-            CategoryItem ci = CategoryItems.Where(x => x.IsSelected).First();
+            CategoryItem ci = CategoryItems.First(x => x.IsSelected);
             if (ci.CategoryName.Text != "Default")
             {
-                Category defaultCat = packageDisplay.ThisInstance.Categories.Where(x => x.Name == "Default").First();
-                Category category = packageDisplay.ThisInstance.Categories.Where(x => x.Name == ci.CategoryName.Text).First();
-                List<SimsPackage> packages = packageDisplay.ThisInstance.Files.OfType<SimsPackage>().ToList();
+                Category defaultCat = packageDisplay.ThisInstance.Categories.First(x => x.Name == "Default");
+                Category category = packageDisplay.ThisInstance.Categories.First(x => x.Name == ci.CategoryName.Text);
+                //List<SimsPackage> packages = packageDisplay.ThisInstance.Files.OfType<SimsPackage>().ToList();
                 List<SimsPackage> categorypackages = packages.Where(x => x.PackageCategory == category).ToList();
                 foreach (SimsPackage package in categorypackages)
                 {
                     package.PackageCategory = defaultCat;
-                }                
+                }
                 CategoryItems.Remove(ci);
                 ci.QueueFree();            
                 packageDisplay.ThisInstance.Categories.Remove(category);
                 packageDisplay.ThisInstance.WriteXML();
-                CategoriesUpdated.Invoke();
+                CategoriesUpdated.Invoke(false);
             }            
         }
     }
@@ -177,8 +183,8 @@ public partial class CategoryManagement : MarginContainer
 
     private void DupeCategory()
     {
-        CategoryItem ci = CategoryItems.Where(x => x.IsSelected).First();
-        Category cat = packageDisplay.ThisInstance.Categories.Where(x => x.Name == ci.CategoryName.Text).First();
+        CategoryItem ci = CategoryItems.First(x => x.IsSelected);
+        Category cat = packageDisplay.ThisInstance.Categories.First(x => x.Name == ci.CategoryName.Text);
         Category catCopy = new();
         catCopy.Background = cat.Background;
         catCopy.TextColor = cat.TextColor;
@@ -187,26 +193,50 @@ public partial class CategoryManagement : MarginContainer
         packageDisplay.ThisInstance.Categories.Add(catCopy);
         packageDisplay.ThisInstance.WriteXML();
         AddCategoryItem(catCopy);
-        CategoriesUpdated.Invoke();
+        CategoriesUpdated.Invoke(false);
     }
 
     private void AddCategoryItem(Category category)
-    {
+    {        
+        
+        int categorypackages = packages.Count(x => x.PackageCategory.Identifier == category.Identifier);
+        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Looking for packages in the {0} category. Checking for ID: {1}. Found {2}", category.Name, category.Identifier, categorypackages));
         CategoryItem ci = CategoryItemPS.Instantiate() as CategoryItem;
+        if (packageDisplay.HideCategoriesInGrid.Contains(category))
+        {
+            ci.IsChecked = true;
+        } else
+        {
+            ci.IsChecked = false;
+        }
         ci.CategoryName.Text = category.Name;
-        ci.PackageCount.Text = category.Packages.ToString();
+        ci.Identifier = category.Identifier;
+        ci.PackageCount.Text = categorypackages.ToString();
         ci.CategoryColor.Color = category.Background;
         ci.button.Pressed += () => CategoryItemClicked(ci);
+        ci.DontShowInGrid += (s) => ItemDontShowInGrid(ci, s);
         CategoryItems.Add(ci);
         CategoryList.AddChild(ci);
     }
 
+    private void ItemDontShowInGrid(CategoryItem ci, bool s)
+    {
+        Category cat = packageDisplay.ThisInstance.Categories.First(x => x.Name == ci.CategoryName.Text);
+        if (s)
+        {
+            packageDisplay.HideCategoriesInGrid.Add(cat);
+        } else
+        {
+            packageDisplay.HideCategoriesInGrid.Remove(cat);
+        }
+        ChangedHiddenCats = true;
+    }
 
     private void EditCategory()
     {
-        CategoryItem ci = CategoryItems.Where(x => x.IsSelected).First();
+        CategoryItem ci = CategoryItems.First(x => x.IsSelected);
         CategoryNameBox.Text = ci.Name;
-        Category editingcat = packageDisplay.ThisInstance.Categories.Where(x => x.Name == ci.CategoryName.Text).First();
+        Category editingcat = packageDisplay.ThisInstance.Categories.First(x => x.Name == ci.CategoryName.Text);
         CategoryDescriptionBox.Text = editingcat.Description;
         BGColorPicker.Color = editingcat.Background;
         TextColorPicker.Color = editingcat.TextColor;
@@ -230,20 +260,37 @@ public partial class CategoryManagement : MarginContainer
     private void ClosePanel()
     {
         packageDisplay.LockInput = false;
-        QueueFree();
+        if (ChangedHiddenCats)
+        {
+            CategoriesUpdated.Invoke(true);
+        } else
+        {
+            QueueFree();
+        }
+        CloseButton.Disabled = true;
+        
     }
 
 
     private void CategoryItemClicked(CategoryItem categoryItem)
     {
-        categoryItem.IsSelected = !categoryItem.IsSelected;
-        foreach (CategoryItem item in CategoryItems)
+        if (categoryItem.IsCursorInCheck())
         {
-            if (item != categoryItem)
+            categoryItem.FlipCheck();            
+            packageDisplay.ThisInstance.Categories.First(x => x.Identifier == categoryItem.Identifier).Hidden = categoryItem.IsChecked;
+            //packageDisplay.ThisInstance.WriteXML();
+            
+        } else
+        {
+            categoryItem.IsSelected = !categoryItem.IsSelected;
+            foreach (CategoryItem item in CategoryItems)
             {
-                item.IsSelected = false;
+                if (item != categoryItem)
+                {
+                    item.IsSelected = false;
+                }
             }
-        }
+        }        
     }
 
 

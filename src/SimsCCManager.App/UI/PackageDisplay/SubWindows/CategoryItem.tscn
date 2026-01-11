@@ -1,7 +1,8 @@
-[gd_scene load_steps=7 format=3 uid="uid://cqsw5fjta1myu"]
+[gd_scene load_steps=8 format=3 uid="uid://cqsw5fjta1myu"]
 
 [ext_resource type="FontFile" uid="uid://dtg02tgiyc1sy" path="res://assets/fonts/Averia_Sans_Libre/AveriaSansLibre-Light.ttf" id="1_c4u6x"]
 [ext_resource type="Script" uid="uid://b8f71cik0w34x" path="res://UI/PackageDisplay/SubWindows/CategoryItem.cs" id="1_qjet1"]
+[ext_resource type="PackedScene" uid="uid://cyfgp4vopp1cq" path="res://UI/Buttons/CustomCheckButton.tscn" id="3_8kao3"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_6q3kc"]
 bg_color = Color(0.6, 0.6, 0.6, 0)
@@ -26,7 +27,7 @@ Label/fonts/font = ExtResource("1_c4u6x")
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_7oqi7"]
 
-[node name="CategoryItem" type="MarginContainer" node_paths=PackedStringArray("Normal", "Highlight", "CategoryName", "PackageCount", "CategoryColor", "button")]
+[node name="CategoryItem" type="MarginContainer" node_paths=PackedStringArray("Normal", "Highlight", "CategoryName", "PackageCount", "CategoryColor", "button", "CheckButton")]
 theme_override_constants/margin_left = 5
 theme_override_constants/margin_top = 4
 theme_override_constants/margin_right = 7
@@ -38,6 +39,7 @@ CategoryName = NodePath("HBoxContainer/MarginContainer/CatName_Label")
 PackageCount = NodePath("HBoxContainer/MarginContainer2/PackagesCount_Label")
 CategoryColor = NodePath("HBoxContainer/MarginContainer3/MarginContainer/MarginContainer/CatColor")
 button = NodePath("Button")
+CheckButton = NodePath("HBoxContainer/MarginContainer4/CustomCheckButton")
 
 [node name="Panel_Norm" type="Panel" parent="."]
 layout_mode = 2
@@ -100,8 +102,19 @@ theme_override_constants/margin_bottom = 1
 layout_mode = 2
 color = Color(0.766719, 0.372844, 0.774744, 1)
 
+[node name="MarginContainer4" type="MarginContainer" parent="HBoxContainer"]
+custom_minimum_size = Vector2(50, 40)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_right = 10
+
+[node name="CustomCheckButton" parent="HBoxContainer/MarginContainer4" instance=ExtResource("3_8kao3")]
+layout_mode = 2
+
 [node name="Button" type="Button" parent="."]
 layout_mode = 2
+mouse_filter = 1
 theme_override_styles/normal = SubResource("StyleBoxEmpty_7oqi7")
 theme_override_styles/normal_mirrored = SubResource("StyleBoxEmpty_7oqi7")
 theme_override_styles/pressed = SubResource("StyleBoxEmpty_7oqi7")

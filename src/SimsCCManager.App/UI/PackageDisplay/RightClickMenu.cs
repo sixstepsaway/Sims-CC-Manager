@@ -27,9 +27,9 @@ public partial class RightClickMenu : Node2D
     [Export]
     ColorRect[] bordercolor;
     [Export]
-    MarginContainer CategoryOptions;
+    public MarginContainer CategoryOptions;
     [Export]
-    MarginContainer EditDetails;
+    public MarginContainer EditDetails;
     [Export]
     VBoxContainer Categorylist;
     [ExportGroup("Items")]
@@ -210,6 +210,7 @@ public partial class RightClickMenu : Node2D
     private void DetailsHover(bool v)
     {
         EditDetails.Visible = true;
+        CategoryOptions.Visible = false;
     }
 
 
@@ -222,6 +223,7 @@ public partial class RightClickMenu : Node2D
     private void CategoriesHover(bool v)
     {
         CategoryOptions.Visible = true;
+        EditDetails.Visible = false;
     }
 
     private void RefreshCategories()

@@ -36,8 +36,9 @@ public partial class AllModsContainer : MarginContainer
     [Export]
     PackedScene RightClickMenuPS;
     [Export]
+    PackedScene ThumbgridPS;
+    [Export]
     CustomCheckButton SwapDisplaysCheck;
-    [Export] 
     ThumbnailGrid ThumbGrid;
     [Export]
     PackedScene RenameItemsBoxPS;
@@ -46,17 +47,27 @@ public partial class AllModsContainer : MarginContainer
 
     public bool FirstLoaded = false;
 
+    public bool ThumbDisplayLoaded = false;
 
     private bool _viewswap;
     public bool ViewSwap
     {
         get { return _viewswap; }
         set { _viewswap = value; 
-            ThumbGrid.Visible = value;
-            DataGrid.Visible = !value;
+
+            if (ThumbDisplayLoaded)
+            {
+                ThumbGrid.Visible = value;
+                DataGrid.Visible = !value;
+            } else if (value)
+            {
+                LoadThumbGrid();
+            }
+            
         }
     }
 
+    
 
     public List<Category> Categories { get { return packageDisplay.ThisInstance.Categories; }}
     /*public List<SimsPackage> Packages { 
@@ -70,6 +81,15 @@ public partial class AllModsContainer : MarginContainer
     public List<SimsPackage> Packages { 
         get { return packageDisplay.ThisInstance.Files.OfType<SimsPackage>().ToList(); }
     }
+
+    
+	private List<DataGridRow> _hiddenrows;
+	public List<DataGridRow> HiddenRows
+	{
+		get { return _hiddenrows; }
+		set { _hiddenrows = value; 
+		DataGrid.HiddenRows = value; }
+	}
 
     private List<DataGridRow> _selecteditems;
 
@@ -228,13 +248,26 @@ public partial class AllModsContainer : MarginContainer
         SwapDisplaysCheck.CheckToggled += (v) => ViewFlipped(v);
 
         
+        
+        
+
+    }
+
+    private void LoadThumbGrid()
+    {
+        ThumbGrid = ThumbgridPS.Instantiate() as ThumbnailGrid;        
         ThumbGrid.BackgroundColor = GlobalVariables.LoadedTheme.BackgroundColor;
         ThumbGrid.ItemBackgroundColor = GlobalVariables.LoadedTheme.DataGridA;
         ThumbGrid.AccentColor = GlobalVariables.LoadedTheme.AccentColor;
         ThumbGrid.TextColor = GlobalVariables.LoadedTheme.MainTextColor;
         ThumbGrid.SelectedColor = GlobalVariables.LoadedTheme.DataGridSelected;
-        
+        ThumbGrid.packageDisplay = packageDisplay;        
+        ThumbGrid.PaneSize = GridContainer.Size;
+        GridContainer.AddChild(ThumbGrid);
 
+        ThumbGrid.MakeItems();
+        ThumbGrid.Visible = true;
+        DataGrid.Visible = false;
     }
 
     private void HeadersChanged(List<DataGridHeader> h)
@@ -436,7 +469,8 @@ public partial class AllModsContainer : MarginContainer
         newrow.SubrowTextSecond = pack.Location;
         newrow.Identifier = pack.Identifier;
         newrow.Headers = DataGridHeaders;     
-        newrow.Idx = i;        
+        newrow.OverallIdx = i;  
+        newrow.PopulatedIdx = i;      
         if (pack.IsEnabled){
             newrow.Toggled = true;
             newrow.AdjustmentNumber = pack.LoadOrder;
@@ -519,7 +553,7 @@ public partial class AllModsContainer : MarginContainer
             newrow.RowIcons[o].IconVisible = DataGrid.GetProperty(pack, newrow.RowIcons[o].IconData);
         }
         foreach (DataGridHeader header in DataGridHeaders){				
-            DataGridCellItem item = new() {RowNum = newrow.Idx, ColumnNum = c};
+            DataGridCellItem item = new() {RowNum = newrow.OverallIdx, ColumnNum = c};
             item.CellType = header.CellType;
             item.ContentType = header.ContentType;
             if (header.NumberAsBytes) item.NumberAsBytes = true;
@@ -560,14 +594,17 @@ public partial class AllModsContainer : MarginContainer
             foreach (SimsPackage pack in Packages.OrderBy(x => x.IsDirectory).ThenBy(x => x.FileName)){
                 if (pack.StandAlone)
                 {
-                    Task t = Task.Run( () => {
-                        DataGridRow newrow = CreateRow(pack, i);
-                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Row {0}: {1}", i, pack.FileName));
-                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("-- Is Subrow: {0}\n -- Has Subitems: {1}", newrow.SubRow, newrow.SubRowItems.Count));
-                        rows.Add(newrow);                        
-                    });
-                    i++;
-                    runningTasks.Add(t);
+                    if (!packageDisplay.HideCategoriesInGrid.Contains(pack.PackageCategory))
+                    {
+                        Task t = Task.Run( () => {
+                            DataGridRow newrow = CreateRow(pack, i);
+                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Row {0}: {1}", i, pack.FileName));
+                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("-- Is Subrow: {0}\n -- Has Subitems: {1}", newrow.SubRow, newrow.SubRowItems.Count));
+                            rows.Add(newrow);                        
+                        });
+                        i++;
+                        runningTasks.Add(t);
+                    }                     
                 }            
             }
 
@@ -582,7 +619,8 @@ public partial class AllModsContainer : MarginContainer
                 if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Adding {0} rows to grid.", rows.Count));
                 List<DataGridRow> _rows = rows.OrderBy(x => x.RowRef).ToList();
                 for (int r = 0; r < _rows.Count; r++){
-                    _rows[r].Idx = r;
+                    _rows[r].OverallIdx = r;
+                    _rows[r].PopulatedIdx = r;
                 }
                 DataGrid.RowData = _rows;
             }
@@ -590,10 +628,10 @@ public partial class AllModsContainer : MarginContainer
         }){IsBackground = true}.Start();
     }
 
+    
+
     public void CreateDataGrid()
     {   
-        //ThumbGrid.packageDisplay = packageDisplay;        
-        //ThumbGrid.MakeItems();
         SetSearchOptions();
         DataGrid.MinigridPath = packageDisplay.ThisInstance.InstanceFolders.InstancePackagesFolder;
         SearchBox.TextSubmitted += (text) => SearchedMods(text);
@@ -654,7 +692,7 @@ public partial class AllModsContainer : MarginContainer
         StringBuilder sb = new();
         foreach (DataGridRow row in SelectedItems)
         {
-            sb.Append(string.Format("{0}: {1}, ", row.Idx, row.RowRef));
+            sb.Append(string.Format("{0}: {1}, ", row.OverallIdx, row.RowRef));
         }
         if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Rows selected: {0}", sb.ToString()));
     }
@@ -757,6 +795,7 @@ public partial class AllModsContainer : MarginContainer
     {
         SCCMTheme theme = GlobalVariables.LoadedTheme;
         bool textLight = false;       
+        if (!theme.IsThemeLight()) DataGrid.DarkMode = true; else DataGrid.DarkMode = false;
         
         AllModsHeader.AddThemeColorOverride("font_color", theme.HeaderTextColor);
         AllModsModNumber.AddThemeColorOverride("font_color", theme.ButtonHover);
@@ -848,17 +887,42 @@ public partial class AllModsContainer : MarginContainer
                     float y = 0;
                     float rcmwidth = rcm.MainContainer.Size.X;
                     Rect2 rect2 = new(packageDisplay.GlobalPosition, packageDisplay.Size);
-                    Rect2 rcmrect = new(rcm.GlobalPosition, rcm.MainContainer.Size);
+                    Rect2 rcmrect = new(rcm.Position, rcm.MainContainer.Size);
+                    Vector2 bottomright = rcm.Position + rcm.MainContainer.Size; 
+
                     if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Windowrect: {0}", rect2.ToString()));
-                    if (!rect2.HasPoint(rcmrect.Size))
+                    if (!rect2.HasPoint(bottomright))
                     {   
-                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("RCM not in window: {0}", rcmrect));
-                        rcm.GlobalPosition = new(mousePos.X, mousePos.Y - rect2.End.DistanceTo(rcmrect.Size));
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("RCM not in window: {0}", bottomright));
+                        Vector2 distance = bottomright - rect2.Size;
+                        rcm.GlobalPosition = new(mousePos.X, mousePos.Y - distance.Y);
                     } else
                     {
-                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("RCM in window: {0}", rcmrect));
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("RCM in window: {0}", bottomright));
                         rcm.GlobalPosition = mousePos;
                     } 
+
+
+
+                    Vector2 edbottomright = rcm.EditDetails.GlobalPosition + rcm.EditDetails.Size; 
+                    if (!rect2.HasPoint(edbottomright))
+                    {   
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("RCM not in window: {0}", edbottomright));
+                        Vector2 distance = edbottomright - rect2.Size;
+                        rcm.EditDetails.GlobalPosition = new(rcm.EditDetails.GlobalPosition.X, rcm.EditDetails.GlobalPosition.Y - distance.Y);
+                    }
+
+                    
+                    Vector2 cbottomright = rcm.CategoryOptions.GlobalPosition + rcm.CategoryOptions.Size; 
+                    if (!rect2.HasPoint(cbottomright))
+                    {   
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("RCM not in window: {0}", cbottomright));
+                        Vector2 distance = cbottomright - rect2.Size;
+                        rcm.CategoryOptions.GlobalPosition = new(rcm.CategoryOptions.GlobalPosition.X, rcm.CategoryOptions.GlobalPosition.Y - distance.Y);
+                    }
+
+
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Mouse pos: {0}", mousePos));
                 }
             }
         }
@@ -876,7 +940,7 @@ public partial class AllModsContainer : MarginContainer
             rowdata.UseCategoryColor = true;
             rowdata.BackgroundColor = c.Background;
             rowdata.TextColor = c.TextColor;
-            rowdata = CreateRow(package, rowdata.Idx);
+            rowdata = CreateRow(package, rowdata.OverallIdx);
             DataGrid.UpdateRow(rowdata);
         }
     }
@@ -906,7 +970,7 @@ public partial class AllModsContainer : MarginContainer
                     package.LinkedPackages.Clear();
                     DataGridRow rowdata = DataGrid.RowData.First(x => x.Identifier == package.Identifier);
                     package.WriteXML();
-                    rowdata = CreateRow(package, rowdata.Idx);
+                    rowdata = CreateRow(package, rowdata.OverallIdx);
                     DataGrid.UpdateRow(rowdata);
                     
                     
@@ -918,7 +982,7 @@ public partial class AllModsContainer : MarginContainer
                     pack = InstanceControllers.GetSubDirectoriesPackage(packageDisplay.ThisInstance, pack.Location, pack);
                     DataGridRow rowdata = DataGrid.RowData.First(x => x.Identifier == pack.Identifier);
                     pack.WriteXML();
-                    rowdata = CreateRow(pack, rowdata.Idx);
+                    rowdata = CreateRow(pack, rowdata.OverallIdx);
                     DataGrid.UpdateRow(rowdata);
                 }
                 
@@ -979,7 +1043,7 @@ public partial class AllModsContainer : MarginContainer
                 package.Location = newname;
                 package.WriteXML();
                 DataGridRow rowdata = DataGrid.RowData.First(x => x.Identifier == package.Identifier);
-                rowdata = CreateRow(package, rowdata.Idx);
+                rowdata = CreateRow(package, rowdata.OverallIdx);
                 DataGrid.UpdateRow(rowdata);
             }            
         }

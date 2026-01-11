@@ -260,5 +260,10 @@ namespace SimsCCManager.SettingsSystem
         {
             return this.GetType().GetProperty(propName).GetValue(this, null);
         }
+
+        public bool IsThemeLight()
+        {
+            if (BackgroundColor.Luminance < 0.5) return true; else return false;
+        }
     }
 }

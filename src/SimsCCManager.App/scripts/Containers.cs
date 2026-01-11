@@ -387,6 +387,8 @@ namespace SimsCCManager.Containers
         public Godot.Color Background {get; set;} = Godot.Color.FromHtml("FFFFFF");
         public Godot.Color TextColor {get; set;} = Godot.Color.FromHtml("000000");
         public int Packages {get; set;}
+        [XmlIgnore]
+        public bool Hidden {get; set;}
     }
 
     public class Executable {

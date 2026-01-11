@@ -105,8 +105,9 @@ SearchOptions = NodePath("ContainerHeader/SearchPositioner/OptionButton")
 DataGrid = NodePath("AllMods_Container/GridContainer/DataGrid")
 GridContainer = NodePath("AllMods_Container/GridContainer")
 RightClickMenuPS = ExtResource("2_ea8ua")
+ThumbgridPS = ExtResource("7_wdnan")
 SwapDisplaysCheck = NodePath("ContainerHeader/MarginContainer/GridTypeSwapCheckButton")
-ThumbGrid = NodePath("AllMods_Container/GridContainer/ThumbnailGrid")
+ThumbGrid = NodePath("")
 RenameItemsBoxPS = ExtResource("3_0tei2")
 PackageListItemPS = ExtResource("4_1bilu")
 
@@ -198,7 +199,3 @@ layout_mode = 2
 [node name="DataGrid" type="Control" parent="AllMods_Container/GridContainer"]
 layout_mode = 2
 script = ExtResource("2_07ull")
-
-[node name="ThumbnailGrid" parent="AllMods_Container/GridContainer" instance=ExtResource("7_wdnan")]
-visible = false
-layout_mode = 2

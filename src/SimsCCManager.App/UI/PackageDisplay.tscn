@@ -20,7 +20,7 @@
 [ext_resource type="PackedScene" uid="uid://wsoegap3c8q2" path="res://UI/PackageDisplay/ExeChoicePopupPanel.tscn" id="18_0266g"]
 [ext_resource type="PackedScene" uid="uid://bvm2atrydtgg6" path="res://windows/CustomPopupWindow.tscn" id="19_aasf2"]
 
-[node name="PackageDisplay" type="MarginContainer" node_paths=PackedStringArray("UIAllModsContainer", "UIDownloadsContainer", "UIPackageViewerContainer", "UIPackageManagementButtons", "UIProfilesManagement", "UIGameStartControls", "UISettingsAndHelpControls", "GameRunningPopup", "ExeChoicePopupPanel", "AddFilesDialog", "AddExeDialog", "AddFolderDialog", "AdminWarningWindow")]
+[node name="PackageDisplay" type="MarginContainer" node_paths=PackedStringArray("UIAllModsContainer", "UIDownloadsContainer", "UIPackageViewerContainer", "UIPackageManagementButtons", "UIProfilesManagement", "UIGameStartControls", "UISettingsAndHelpControls", "GameRunningPopup", "ExeChoicePopupPanel", "WhereAllModsContainerLives", "AddFilesDialog", "AddExeDialog", "AddFolderDialog", "AdminWarningWindow")]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -36,8 +36,10 @@ UIGameStartControls = NodePath("MainWindowSizer/TopPanels/GameStartControls")
 UISettingsAndHelpControls = NodePath("MainWindowSizer/TopPanels/SettingsAndHelpControls")
 GameRunningPopup = NodePath("GameRunningPopup")
 ExeChoicePopupPanel = NodePath("ExeChoice_PopupPanel")
+WhereAllModsContainerLives = NodePath("MainWindowSizer/MainPanels/HSplitContainer")
 ProfilesManagementWindowPS = ExtResource("16_i7mej")
 CategoryManagementWindowPS = ExtResource("17_dynkg")
+UIAllModsPS = ExtResource("3_io27h")
 AddFilesDialog = NodePath("AddFileDialog")
 AddExeDialog = NodePath("AddExeDialog")
 AddFolderDialog = NodePath("AddFolderDialog")

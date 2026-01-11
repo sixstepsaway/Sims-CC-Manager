@@ -68,7 +68,8 @@ namespace DataGridContainers
     public class DataGridRow {
         public string RowRef {get; set;}
         public Guid Identifier {get; set;}
-        public int Idx {get; set;}
+        public int OverallIdx {get; set;}
+        public int PopulatedIdx {get; set;}
         public List<DataGridHeader> Headers {get; set;}
         public bool SubRow {get; set;} = false;
 
@@ -130,7 +131,7 @@ namespace DataGridContainers
             Selected = false;
             RowIcons = new();
             AdjustmentNumber = -1;
-            Idx = -1;
+            OverallIdx = -1;
             Items.CollectionChanged += (x, y) => ItemsChanged(x, y);
         }
 
@@ -143,7 +144,7 @@ namespace DataGridContainers
 
         private void ItemChangedReturn(string i, int r, int c)
         {
-            ItemsWereChanged?.Invoke(this, i, r, c, Idx);
+            ItemsWereChanged?.Invoke(this, i, r, c, OverallIdx);
         }
 
         public delegate void ItemsWereChangedEvent (DataGridRow row, string i, int r, int c, int idx);

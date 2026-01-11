@@ -34,6 +34,7 @@ public partial class CustomCheckButton : MarginContainer
     public override void _Ready()
     {
         ButtonClicker.Pressed += () => ButtonClicked();
+        UpdateTheme();
     }
 
     private void ButtonClicked()

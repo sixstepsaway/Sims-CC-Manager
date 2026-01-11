@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3 uid="uid://dolbjbnv8hxy2"]
+[gd_scene load_steps=11 format=3 uid="uid://dolbjbnv8hxy2"]
 
 [ext_resource type="Script" uid="uid://ks4gkye0klkm" path="res://UI/PackageDisplay/GameStartControls.cs" id="1_4hxal"]
 [ext_resource type="Texture2D" uid="uid://d1216ob5rait5" path="res://assets/icons/materialicons/twotone_arrow_drop_down_black_48dp.png" id="1_jj24v"]
@@ -7,7 +7,7 @@
 [ext_resource type="Texture2D" uid="uid://dtc02rko6kqee" path="res://assets/icons/materialicons/twotone_play_arrow_black_48dp.png" id="4_wtfji"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_yu83b"]
-bg_color = Color(0.333333, 0.294118, 0.34902, 1)
+bg_color = Color(0.33413333, 0.294, 0.35, 0)
 border_width_left = 2
 border_width_top = 2
 border_width_right = 2
@@ -18,8 +18,23 @@ corner_radius_top_right = 5
 corner_radius_bottom_right = 5
 corner_radius_bottom_left = 5
 
-[sub_resource type="Theme" id="Theme_lhcnj"]
+[sub_resource type="Theme" id="Theme_jj24v"]
 Panel/styles/panel = SubResource("StyleBoxFlat_yu83b")
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_4hxal"]
+bg_color = Color(0.33413333, 0.294, 0.35, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.8, 0.670588, 0.847059, 1)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+
+[sub_resource type="Theme" id="Theme_7lsfw"]
+Panel/styles/panel = SubResource("StyleBoxFlat_4hxal")
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_sw8eu"]
 bg_color = Color(0.184314, 0.184314, 0.192157, 1)
@@ -28,7 +43,7 @@ corner_radius_top_right = 3
 corner_radius_bottom_right = 3
 corner_radius_bottom_left = 3
 
-[node name="GameStartControls" type="MarginContainer" node_paths=PackedStringArray("ExeNameLabel", "ExePathLabel", "ExeIcon", "PlayButton", "GameChoiceDropDownButton")]
+[node name="GameStartControls" type="MarginContainer" node_paths=PackedStringArray("ExeNameLabel", "ExePathLabel", "ExeIcon", "PlayButton", "GameChoiceDropDownButton", "BorderColor", "BGColor", "IconColor")]
 size_flags_horizontal = 4
 size_flags_vertical = 4
 script = ExtResource("1_4hxal")
@@ -37,10 +52,37 @@ ExePathLabel = NodePath("HBoxContainer/Name_Container/VBoxContainer/ExeExe_Label
 ExeIcon = NodePath("HBoxContainer/ExeIcon_Container/HBoxContainer/MarginContainer/ExeIcon_Image")
 PlayButton = NodePath("HBoxContainer/PlayButton_Container/Play_Button")
 GameChoiceDropDownButton = NodePath("HBoxContainer/ExeIcon_Container/HBoxContainer/MarginContainer3/GameChoice_Dropdown")
+BorderColor = NodePath("Panel/ColorRect")
+BGColor = NodePath("Panel2/ColorRect2")
+IconColor = NodePath("HBoxContainer/ExeIcon_Container/HBoxContainer/MarginContainer3/MarginContainer/TextureRect/ColorRect")
 
 [node name="Panel" type="Panel" parent="."]
+clip_children = 1
 layout_mode = 2
-theme = SubResource("Theme_lhcnj")
+theme = SubResource("Theme_jj24v")
+
+[node name="ColorRect" type="ColorRect" parent="Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.8, 0.67058825, 0.84705883, 1)
+
+[node name="Panel2" type="Panel" parent="."]
+clip_children = 1
+layout_mode = 2
+theme = SubResource("Theme_7lsfw")
+
+[node name="ColorRect2" type="ColorRect" parent="Panel2"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.33333334, 0.29411766, 0.34901962, 1)
 
 [node name="HBoxContainer" type="HBoxContainer" parent="."]
 layout_mode = 2

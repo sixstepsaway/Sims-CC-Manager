@@ -1,45 +1,10 @@
-[gd_scene load_steps=29 format=3 uid="uid://cqwmdnxfu6311"]
+[gd_scene load_steps=15 format=3 uid="uid://cqwmdnxfu6311"]
 
 [ext_resource type="Script" uid="uid://jq14cgu6se6i" path="res://UI/PackageDisplay/ThumbnailGrid/ThumbnailGrid.cs" id="1_3b7tn"]
 [ext_resource type="PackedScene" uid="uid://bni0s53myiito" path="res://UI/PackageDisplay/ThumbnailGrid/ThumbnailGridItem.tscn" id="1_aoyc0"]
 [ext_resource type="Texture2D" uid="uid://2mvtivometqs" path="res://addons/CustomDataGrid/assets/twotone_arrow_drop_up_black_48dp.png" id="2_obg04"]
 [ext_resource type="Texture2D" uid="uid://byk0nxabtoms4" path="res://addons/CustomDataGrid/assets/twotone_arrow_drop_down_black_48dp.png" id="3_3b7tn"]
 [ext_resource type="PackedScene" uid="uid://co0gkpc2bm4hh" path="res://tools/snapshotter/snapshotter.tscn" id="3_hd7b2"]
-[ext_resource type="Texture2D" uid="uid://de2ermpqct8xs" path="res://addons/CustomDataGrid/assets/twotone_arrow_left_black_48dp.png" id="4_hd7b2"]
-[ext_resource type="Texture2D" uid="uid://bp8cvk5uy0e4b" path="res://addons/CustomDataGrid/assets/twotone_arrow_right_black_48dp.png" id="5_ecatp"]
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_qx78q"]
-border_width_left = 1
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-
-[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_xig5q"]
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_w7f5l"]
-border_width_left = 1
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_snh6f"]
-border_width_left = 1
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_p3qiu"]
-border_width_left = 1
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-
-[sub_resource type="Theme" id="Theme_1cx0q"]
-Button/styles/disabled = SubResource("StyleBoxFlat_qx78q")
-Button/styles/focus = SubResource("StyleBoxEmpty_xig5q")
-Button/styles/hover = SubResource("StyleBoxFlat_w7f5l")
-Button/styles/normal = SubResource("StyleBoxFlat_snh6f")
-Button/styles/pressed = SubResource("StyleBoxFlat_p3qiu")
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_103ea"]
 content_margin_top = 3.0
@@ -84,43 +49,23 @@ VScrollBar/styles/grabber_pressed = SubResource("StyleBoxFlat_xpfl1")
 VScrollBar/styles/scroll = SubResource("StyleBoxFlat_84wla")
 VScrollBar/styles/scroll_focus = SubResource("StyleBoxFlat_ccn8i")
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_q8mp5"]
-content_margin_left = 3.0
-content_margin_right = 3.0
-bg_color = Color(0.486678, 0.587472, 0.874869, 1)
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_dyd2w"]
-content_margin_left = 3.0
-content_margin_right = 3.0
-bg_color = Color(0.486678, 0.587472, 0.874869, 1)
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_7w6vo"]
-content_margin_left = 3.0
-content_margin_right = 3.0
-bg_color = Color(0.486678, 0.587472, 0.874869, 1)
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_62e7k"]
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_w5ydd"]
-
-[sub_resource type="Theme" id="Theme_7vdkj"]
-HScrollBar/styles/grabber = SubResource("StyleBoxFlat_q8mp5")
-HScrollBar/styles/grabber_highlight = SubResource("StyleBoxFlat_dyd2w")
-HScrollBar/styles/grabber_pressed = SubResource("StyleBoxFlat_7w6vo")
-HScrollBar/styles/scroll = SubResource("StyleBoxFlat_62e7k")
-HScrollBar/styles/scroll_focus = SubResource("StyleBoxFlat_w5ydd")
-
-[node name="ThumbnailGrid" type="MarginContainer" node_paths=PackedStringArray("ThumbGrid", "BGColorRect")]
+[node name="ThumbnailGrid" type="MarginContainer" node_paths=PackedStringArray("ThumbGrid", "BGColorRect", "vScrollBar", "ScrollUpButton", "ScrollDownButton", "ScrollUpAccent", "ScrollDownAccent", "ScrollBackground")]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_3b7tn")
-ThumbGrid = NodePath("")
+ThumbGrid = NodePath("VBoxContainer/HBoxContainer/Control/MarginContainer/ThumbGrid")
 BGColorRect = NodePath("BackgroundColor")
 ThumbnailGridItemPS = ExtResource("1_aoyc0")
 SnapshotterPS = ExtResource("3_hd7b2")
+vScrollBar = NodePath("VBoxContainer/HBoxContainer/VScrollContainer/VScroller/VScrollBar")
+ScrollUpButton = NodePath("VBoxContainer/HBoxContainer/VScrollContainer/VScroller/ScrollUp/ScrollUp_Button")
+ScrollDownButton = NodePath("VBoxContainer/HBoxContainer/VScrollContainer/VScroller/ScrollDown/ScrollDown_Button")
+ScrollUpAccent = NodePath("VBoxContainer/HBoxContainer/VScrollContainer/VScroller/ScrollUp/TextureRect/ScrollUpAccentColor")
+ScrollDownAccent = NodePath("VBoxContainer/HBoxContainer/VScrollContainer/VScroller/ScrollDown/TextureRect/ColorRect")
+ScrollBackground = NodePath("VBoxContainer/HBoxContainer/VScrollContainer/ColorRect")
 
 [node name="BackgroundColor" type="ColorRect" parent="."]
 layout_mode = 2
@@ -168,7 +113,6 @@ layout_mode = 2
 [node name="ScrollUp_Button" type="Button" parent="VBoxContainer/HBoxContainer/VScrollContainer/VScroller/ScrollUp"]
 layout_mode = 2
 focus_mode = 0
-theme = SubResource("Theme_1cx0q")
 
 [node name="TextureRect" type="TextureRect" parent="VBoxContainer/HBoxContainer/VScrollContainer/VScroller/ScrollUp"]
 clip_children = 1
@@ -209,73 +153,6 @@ texture = ExtResource("3_3b7tn")
 expand_mode = 5
 
 [node name="ColorRect" type="ColorRect" parent="VBoxContainer/HBoxContainer/VScrollContainer/VScroller/ScrollDown/TextureRect"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-
-[node name="HScrollContainer" type="MarginContainer" parent="VBoxContainer"]
-layout_mode = 2
-theme_override_constants/margin_right = 15
-
-[node name="ColorRect" type="ColorRect" parent="VBoxContainer/HScrollContainer"]
-layout_mode = 2
-
-[node name="HScroller" type="HBoxContainer" parent="VBoxContainer/HScrollContainer"]
-layout_mode = 2
-theme_override_constants/separation = 0
-
-[node name="ScrollLeft" type="MarginContainer" parent="VBoxContainer/HScrollContainer/HScroller"]
-custom_minimum_size = Vector2(15, 15)
-layout_mode = 2
-size_flags_horizontal = 0
-
-[node name="ScrollLeft_Button" type="Button" parent="VBoxContainer/HScrollContainer/HScroller/ScrollLeft"]
-layout_mode = 2
-focus_mode = 0
-
-[node name="TextureRect" type="TextureRect" parent="VBoxContainer/HScrollContainer/HScroller/ScrollLeft"]
-clip_children = 1
-layout_mode = 2
-mouse_filter = 2
-texture = ExtResource("4_hd7b2")
-expand_mode = 3
-
-[node name="ColorRect" type="ColorRect" parent="VBoxContainer/HScrollContainer/HScroller/ScrollLeft/TextureRect"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-
-[node name="HScrollBar" type="HScrollBar" parent="VBoxContainer/HScrollContainer/HScroller"]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 1
-theme = SubResource("Theme_7vdkj")
-
-[node name="ScrollRight" type="MarginContainer" parent="VBoxContainer/HScrollContainer/HScroller"]
-custom_minimum_size = Vector2(15, 15)
-layout_mode = 2
-size_flags_horizontal = 8
-
-[node name="ScrollRight_Button" type="Button" parent="VBoxContainer/HScrollContainer/HScroller/ScrollRight"]
-layout_mode = 2
-focus_mode = 0
-
-[node name="TextureRect" type="TextureRect" parent="VBoxContainer/HScrollContainer/HScroller/ScrollRight"]
-clip_children = 1
-layout_mode = 2
-mouse_filter = 2
-texture = ExtResource("5_ecatp")
-expand_mode = 3
-
-[node name="ColorRect" type="ColorRect" parent="VBoxContainer/HScrollContainer/HScroller/ScrollRight/TextureRect"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0

@@ -1,3 +1,4 @@
+using DataGridContainers;
 using Godot;
 using SimsCCManager.Containers;
 using SimsCCManager.Debugging;
@@ -40,11 +41,15 @@ public partial class PackageDisplay : MarginContainer
     public GameRunningPopup GameRunningPopup;
     [Export]
     public ExeChoicePopupPanel ExeChoicePopupPanel;
+    [Export]
+    public HSplitContainer WhereAllModsContainerLives;
     [ExportCategory("PackedScene")]
     [Export]
     PackedScene ProfilesManagementWindowPS;
     [Export]
     PackedScene CategoryManagementWindowPS;
+    [Export]
+    PackedScene UIAllModsPS;
     [ExportCategory("Dialogs")]
     [Export]
     public FileDialog AddFilesDialog;
@@ -54,6 +59,7 @@ public partial class PackageDisplay : MarginContainer
     public FileDialog AddFolderDialog;
     [Export]
     public CustomPopupWindow AdminWarningWindow;
+    
 
     public ProfileManagement ProfileManagementWindow;
 
@@ -81,6 +87,8 @@ public partial class PackageDisplay : MarginContainer
 
 
     public VFSFiles VFSFileList = new();
+
+    public List<Category> HideCategoriesInGrid = new();
 
 
     private bool _lockinput;
@@ -111,12 +119,7 @@ public partial class PackageDisplay : MarginContainer
         AdminWarningWindow.WindowTitle = "Elevated Permissions Required for Root";
         UIGameStartControls.PackageDisplay = this;
         GameRunningPopup.DisconnectFromGame += () => DisconnectGame();
-        UIAllModsContainer.packageDisplay = this;
-        EnabledFromProfile();
-        UIProfilesManagement.packageDisplay = this;
-        UIProfilesManagement.UpdateProfileOptions();
-        UIProfilesManagement.ManageProfilesOpen += () => OpenProfileManagementWindow();
-        UIProfilesManagement.ProfileChanged += (profile, idx) => ProfileChanged(profile, idx);
+        
         ThisInstance.InstanceInformationChanged += () => InstanceEdited();
 
         UIPackageManagementButtons.TopBarButtonPressed += (but) => PackageManagementButtonPressed(but);
@@ -131,8 +134,20 @@ public partial class PackageDisplay : MarginContainer
         AddFolderDialog.DirSelected += (directory) => AddFolderToInstance(directory);
 
         if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("This instance has found {0} files.", ThisInstance.Files.Count));
+        InitializeUIAllMods();
+    }
+
+    private bool InitializeUIAllMods()
+    {
+        UIAllModsContainer.packageDisplay = this;
+        EnabledFromProfile();
+        UIProfilesManagement.packageDisplay = this;
+        UIProfilesManagement.UpdateProfileOptions();
+        UIProfilesManagement.ManageProfilesOpen += () => OpenProfileManagementWindow();
+        UIProfilesManagement.ProfileChanged += (profile, idx) => ProfileChanged(profile, idx);
         UIAllModsContainer.CreateDataGrid();
         UIPackageViewerContainer.packageDisplay = this;
+        return true;
     }
 
     private void AddFolderToInstance(string directory)
@@ -203,17 +218,49 @@ public partial class PackageDisplay : MarginContainer
 
     private void OpenManageCategoriesWindow()
     {
-        CategoryManagement categorymanagement = CategoryManagementWindowPS.Instantiate() as CategoryManagement;
+        categorymanagement = CategoryManagementWindowPS.Instantiate() as CategoryManagement;
         categorymanagement.packageDisplay = this;
         AddChild(categorymanagement);
-        categorymanagement.CategoriesUpdated += () => CategoriesUpdated();
+        categorymanagement.CategoriesUpdated += (b) => CategoriesUpdated(b);
     }
+
+    public CategoryManagement categorymanagement;
 
     
 
-    private void CategoriesUpdated()
+    private void CategoriesUpdated(bool fromClose)
     {
-        
+        if (fromClose)
+        {
+            //UIAllModsContainer.QueueFree();
+            //UIAllModsContainer = UIAllModsPS.Instantiate() as AllModsContainer;
+            //WhereAllModsContainerLives.AddChild(UIAllModsContainer);
+            //WhereAllModsContainerLives.MoveChild(UIAllModsContainer, 0);
+            //bool done = InitializeUIAllMods();
+            List<DataGridRow> rows = UIAllModsContainer.DataGrid.RowData;
+            List<DataGridRow> hide = new();
+            StringBuilder sb = new();
+            foreach (Category c in HideCategoriesInGrid)
+            {
+                sb.AppendLine(c.Name);
+            }
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Categories to hide: {0}", sb.ToString()));
+            
+            if (HideCategoriesInGrid.Count > 0)
+            {
+                List<SimsPackage> matching = new();
+                foreach (Category cat in HideCategoriesInGrid)
+                {
+                    matching.AddRange(UIAllModsContainer.Packages.Where(x => x.PackageCategory.Identifier == cat.Identifier));
+                }
+                foreach (SimsPackage p in matching)
+                {
+                    hide.Add(rows.First(x=>x.Identifier == p.Identifier));
+                }
+            }
+            UIAllModsContainer.HiddenRows = hide;
+            categorymanagement.QueueFree();
+        }        
     }
 
     private void InstanceEdited()

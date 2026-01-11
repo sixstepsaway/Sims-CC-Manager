@@ -17,9 +17,11 @@ public partial class DataGridHeaderCell : Control
 	public string LabelText = "";
 	public bool Blank = false;
 	private bool _sorted;
-	public bool Sorted { get { return _sorted; }
-	set {_sorted = value; 
-	SortedIcon.Visible = value;}}
+	public bool Sorted { 
+		get { return _sorted; }
+		set {_sorted = value; 
+		SortedIcon.Visible = value; } 
+	}
 	private bool _sortascending;
 	public bool SortAscending {get {return _sortascending; }
 	set { _sortascending = value; 

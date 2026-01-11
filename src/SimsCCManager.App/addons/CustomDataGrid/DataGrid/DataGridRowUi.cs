@@ -59,6 +59,7 @@ public partial class DataGridRowUi : MarginContainer
 	public Color TextColor;
 	public int TextSize;
 	public int OverallIndex;
+	public int PopulatedIndex;
 	public Font MainFont;
 	public DataGridCell ToggleCell;
 	public DataGridCell ImageCell;

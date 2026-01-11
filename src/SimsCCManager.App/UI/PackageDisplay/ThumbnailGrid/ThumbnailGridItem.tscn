@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3 uid="uid://bni0s53myiito"]
+[gd_scene load_steps=13 format=3 uid="uid://bni0s53myiito"]
 
 [ext_resource type="Texture2D" uid="uid://lkd4nvq2po11" path="res://assets/images/floorATSmiscbrick001a.package_0.jpg" id="1_llw8o"]
 [ext_resource type="Script" uid="uid://cq0xvl01tqig2" path="res://UI/PackageDisplay/ThumbnailGrid/ThumbnailGridItem.cs" id="1_yyji0"]
@@ -22,6 +22,8 @@ corner_radius_bottom_left = 15
 [sub_resource type="ViewportTexture" id="ViewportTexture_yyji0"]
 viewport_path = NodePath("VBoxContainer/ThumbnailImage_RenderVersion/Panel/SubViewport")
 
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_p8wmr"]
+
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_or5p8"]
 bg_color = Color(0.6, 0.6, 0.6, 0)
 border_width_left = 5
@@ -44,7 +46,7 @@ corner_radius_bottom_left = 10
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_yyji0"]
 
-[node name="ThumbGridItem" type="MarginContainer" node_paths=PackedStringArray("ThumbnailSubviewerVersion", "ThumbnailImageVersion", "SelectedBox", "HoveredBox", "ItemName", "BorderColorRect", "BGColorRect", "SelectedColorRect", "HoveredColorRect", "ImageContainer", "SubviewportContainer", "subViewport", "ThumbnailImage", "button")]
+[node name="ThumbGridItem" type="MarginContainer" node_paths=PackedStringArray("ThumbnailSubviewerVersion", "ThumbnailImageVersion", "SelectedBox", "HoveredBox", "ItemName", "BorderColorRect", "BGColorRect", "SelectedColorRect", "HoveredColorRect", "ImageContainer", "SubviewportContainer", "subViewport", "ThumbnailImage", "button", "LabelHoverButton")]
 custom_minimum_size = Vector2(150, 170)
 script = ExtResource("1_yyji0")
 ThumbnailSubviewerVersion = NodePath("VBoxContainer/ThumbnailImage_RenderVersion")
@@ -64,6 +66,7 @@ Sims4Image = ExtResource("4_kublc")
 subViewport = NodePath("VBoxContainer/ThumbnailImage_RenderVersion/Panel/SubViewport")
 ThumbnailImage = NodePath("VBoxContainer/ThumbnailImage_JPGVersion/Panel/ThumbnailImage")
 button = NodePath("Button")
+LabelHoverButton = NodePath("VBoxContainer/MarginContainer2/Button")
 
 [node name="Panel" type="Panel" parent="."]
 clip_children = 1
@@ -158,6 +161,20 @@ text = "Item Name"
 horizontal_alignment = 1
 vertical_alignment = 1
 text_overrun_behavior = 3
+
+[node name="Button" type="Button" parent="VBoxContainer/MarginContainer2"]
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxEmpty_p8wmr")
+theme_override_styles/normal_mirrored = SubResource("StyleBoxEmpty_p8wmr")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_p8wmr")
+theme_override_styles/pressed_mirrored = SubResource("StyleBoxEmpty_p8wmr")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_p8wmr")
+theme_override_styles/hover_mirrored = SubResource("StyleBoxEmpty_p8wmr")
+theme_override_styles/hover_pressed = SubResource("StyleBoxEmpty_p8wmr")
+theme_override_styles/hover_pressed_mirrored = SubResource("StyleBoxEmpty_p8wmr")
+theme_override_styles/disabled = SubResource("StyleBoxEmpty_p8wmr")
+theme_override_styles/disabled_mirrored = SubResource("StyleBoxEmpty_p8wmr")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_p8wmr")
 
 [node name="IsSelected" type="MarginContainer" parent="."]
 visible = false
