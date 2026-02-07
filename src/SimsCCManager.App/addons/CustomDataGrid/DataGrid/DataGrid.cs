@@ -201,8 +201,11 @@ public partial class DataGrid : Control
 
 	public void UpdateRowData()
 	{
-		List<DataGridRow> _rowsunch = [ ..RowData];	
-		List<DataGridRow> _rows = new();	
+		if (!rHidden && !Searched && !Sorted) FullRowData = [.. RowData];
+		if (!rHidden && (Searched || Sorted)) RowsUnhidden = [..FullRowData];
+
+		List<DataGridRow> _rowsunch = [ ..RowsUnhidden];	
+		List<DataGridRow> _rows = new();
 		
 		if (HiddenRows.Count > 0)
 		{
@@ -211,32 +214,27 @@ public partial class DataGrid : Control
 		} else
 		{
 			rHidden = false;
-			_rows = [ .. _rowsunch];
+			_rows = [ .. RowsUnhidden];
 		}
 		
-		int i = 0;
-		foreach (DataGridRow row in _rows)
-		{
-			row.PopulatedIdx = i;
-			i++;
-		}
-		PleasePassLog(string.Format("Total rows: {0}, rows to hide: {1}, result: {2}", RowsUnchanged.Count, HiddenRows.Count, _rows.Count));
-		RowData.Clear();
-		RowData.AddRange(_rows);
+		UpdatePopulatedIndex(_rows);
+		PleasePassLog(string.Format("Total rows: {0}, rows to hide: {1}, result: {2}", RowsUnhidden.Count, HiddenRows.Count, _rows.Count));
 		PleasePassLog(string.Format("Rowdata: {0}", RowData.Count));
 		AllRows = [.._allrows];
-		PopulateRows();
+		if (Sorted || Searched) HeaderSorted(LastSortIndex, LastSortAscending, false, true); else PopulateRows();
 	}
 
 
 	private List<DataGridRow> RowsUnsorted = new();
-	private List<DataGridRow> RowsUnchanged = new();
+	private List<DataGridRow> RowsUnhidden = new();
+	private List<DataGridRow> RowsUnsearched = new();
+	private List<DataGridRow> FullRowData = new();
 	//the data of all the rows
 	private List<DataGridRow> _prowdata;
 	public List<DataGridRow> RowData {
 		get {return _prowdata; }
 		set { _prowdata = value; 
-			CallDeferred(nameof(GetPaneSizes));
+			if (!FirstLoaded) CallDeferred(nameof(GetPaneSizes), false);
 		}
 	}
 	public bool FirstLoaded = false;
@@ -317,6 +315,8 @@ public partial class DataGrid : Control
 	public PassLogEvent PassLog;
 
 	public List<MiniGrid> MiniGrids = new();
+
+	public Vector2 PrevPaneSize = new(0, 0);
 
 	public void PleasePassLog(string Log, [CallerLineNumber] int lineNumber = 0, [CallerFilePath] string filePath = "")
 	{
@@ -634,8 +634,20 @@ public partial class DataGrid : Control
 		RowData = __rows;
 	}
 
-	public void AddNewRows(int start)
+	public void AddNewRows(List<DataGridRow> rows)
 	{
+		foreach (DataGridRow row in rows)
+		{	
+			if (Sorted || Searched)
+			{
+				RowsUnsorted.Add(row);
+				HeaderSorted(0, false, true);
+			} else
+			{
+				RowData.Add(row);
+			}	
+			
+		}
 		/*PleasePassLog(string.Format("Adding new rows starting at {0}", start));
 		for (int i = start; i < RowData.Count; i++)
 		{
@@ -659,33 +671,34 @@ public partial class DataGrid : Control
 		PleasePassLog(string.Format("Checking VisibleRows for row {0}", importedRowData.OverallIdx));
 		if (VisibleRows.Any(x => x.RowData.Identifier == importedRowData.Identifier))
 		{			
-			PleasePassLog(string.Format("Found row {0} in visible rows!", importedRowData.OverallIdx));
+			PleasePassLog(string.Format("Found row {0} (P {1}) in visible rows!", importedRowData.OverallIdx, importedRowData.PopulatedIdx));
 			DataGridRow ogdata = RowData.First(x => x.Identifier == importedRowData.Identifier);
 			importedRowData.Selected = ogdata.Selected;
 			importedRowData.OverallIdx = ogdata.OverallIdx;
+			importedRowData.PopulatedIdx = ogdata.PopulatedIdx;
 			RowData[RowData.IndexOf(ogdata)] = importedRowData;	
-					
-			//int idx = AllRows[importedRowData.Idx].GetIndex();
-			int vidx = VisibleRows.IndexOf(AllRows[importedRowData.OverallIdx]);
-
-			if (vidx == 13) PleasePassLog(string.Format("Ah yes. *daemonvoice* A cunt."));
-
-			PleasePassLog(string.Format("Row {0} is {1}, which is row {2} in Visible Rows ({3})", importedRowData.OverallIdx, importedRowData.RowRef, vidx, VisibleRows[vidx].RowData.RowRef));
-
-			RemoveRow(importedRowData.OverallIdx, vidx);
+			
+			int vidx = VisibleRows.IndexOf(VisibleRows.First(x => x.RowData.Identifier == importedRowData.Identifier));
 
 			PleasePassLog(string.Format("Removing row {0} (spot {1}) from screen.", importedRowData.OverallIdx, vidx));
+			RemoveRow(importedRowData.PopulatedIdx, vidx);
 
+
+			PleasePassLog(string.Format("Creating new row {0} (spot {1}).", importedRowData.OverallIdx, vidx));
 			CreateRow(importedRowData, importedRowData.OverallIdx);
 
-			PleasePassLog(string.Format("Created new row {0} (spot {1}).", importedRowData.OverallIdx, vidx));
-
-			AddRow(importedRowData.OverallIdx, vidx);
 
 			PleasePassLog(string.Format("Adding row {0} to position {1}.", importedRowData.OverallIdx, vidx));
+			AddRow(importedRowData.PopulatedIdx, vidx);
+
 		} else
 		{
-			PleasePassLog(string.Format("Row {0} isn't a visible row, so we don't need to update one.", importedRowData.OverallIdx));
+			DataGridRow ogdata = RowData.First(x => x.Identifier == importedRowData.Identifier);
+			importedRowData.Selected = ogdata.Selected;
+			importedRowData.OverallIdx = ogdata.OverallIdx;
+			importedRowData.PopulatedIdx = ogdata.PopulatedIdx;
+			RowData[RowData.IndexOf(ogdata)] = importedRowData;	
+			PleasePassLog(string.Format("Row {0} isn't a visible row, so we don't need to update it.", importedRowData.OverallIdx));
 		}
 	}
 
@@ -695,22 +708,24 @@ public partial class DataGrid : Control
 			PleasePassLog(string.Format("Attempting to populate with rows from {0} RowData.", RowData.Count));
 						
 			if (Populating) { 
-				PleasePassLog(string.Format("(Rows: {0}): Already populating!", RowData.Count));
-				while (Populating)
-				{
-					//
-				}				
+				return;			
+			}
+			if (RowData.Count == 0)
+			{
+				CallDeferred(nameof(ClearRows));
+				DataGridReloadComplete();
+				return;
 			}
 			if (!FirstLoaded) { 
 				AllRows.AddRange(_allrows);
-				RowsUnchanged.AddRange(RowData);
+				RowsUnhidden.AddRange(RowData);
 			}
-			AllRows.Clear();
-			AllRows.AddRange(_allrows);
+			Populating = true;
+			//AllRows.Clear();
+			AllRows = [.._allrows];
 
 			PleasePassLog(string.Format("All rows length: {0}", AllRows.Count));
 			
-			Populating = true;
 			ConcurrentBag<Task> runningTasks = new();
 			int completedTasks = 0;
 			CallDeferred(nameof(SetScrollBar));			
@@ -736,7 +751,15 @@ public partial class DataGrid : Control
 			PleasePassLog(string.Format("Rows start: {0}, Rows End: {1}", rowsstart, rowsend));
 
 			List<DataGridRow> _rows = [..RowData.OrderBy(x => x.PopulatedIdx)];
-			List<DataGridRow> _rowdata = _rows.GetRange(rowsstart, (int)RowsOnScreen);
+
+			List<DataGridRow> _rowdata = new();
+			if (RowData.Count <= (int)RowsOnScreen)
+			{
+				_rowdata = [..RowData];
+			} else
+			{
+				_rowdata = _rows.GetRange(rowsstart, (int)RowsOnScreen);
+			}
 
 			PleasePassLog(string.Format("Items in _rowdata holder: {0}", _rowdata.Count));
 
@@ -773,16 +796,21 @@ public partial class DataGrid : Control
 
 	private void PopRowsDeferred(int start, int amt){	
 		//ClearVisibleRows();	
-		int end = start + amt;
+		int end = 0; 
+		if (RowData.Count <= (int)RowsOnScreen)
+		{
+			end = start + RowData.Count;
+		} else
+		{
+			end = start + amt;
+		}
+		
 		//List<DataGridRowUi> rows = AllRows.GetRange(start, amt).ToList();
 		PleasePassLog(string.Format("Row selection for populating: {0} - {1}, from list of {2}", start, end, amt));
 		//int i = start; 
-		foreach (Node node in RowsHolder.GetChildren())
-		{
-			RowsHolder.RemoveChild(node);
-			node.QueueFree();
-		}
-		VisibleRows.Clear();
+		ClearRows();
+
+		
 		int p = 0;
 		for (int i = start; i < end; i++){
 			PleasePassLog(string.Format("Adding row {0} to display.", i));
@@ -812,10 +840,16 @@ public partial class DataGrid : Control
 			}*/
 			DataGridFinishedFirstLoad?.Invoke();
 		}
-		
-		
+		if (Updating)
+		{
+			DataGridReloadComplete?.Invoke();
+			Updating = false;
+		}		
 		Populating = false;
 	}
+
+	public delegate void DataGridReloadCompleteEvent();
+	public DataGridReloadCompleteEvent DataGridReloadComplete;
 
 	private void ClearVisibleRows(){
 		foreach (DataGridRowUi rmv in VisibleRows){
@@ -846,7 +880,7 @@ public partial class DataGrid : Control
 		row.AdjustmentNumberChangedPropagate += (x, c) => AdjustmentNumberAdjusted(x, c);
 		row.OverallIndex = num;
 		row.PopulatedIndex = importedRowData.PopulatedIdx;
-		row.RowSelected += (s) => RowSelected(num, s);
+		row.RowSelected += (s) => RowSelected(row.RowData.PopulatedIdx, s);
 
 		if (importedRowData.UseCategoryColor)
 		{
@@ -862,6 +896,7 @@ public partial class DataGrid : Control
 			row.TextColor = MainRowTextColor; //GetFGColor(BackgroundColor);
 		}
 		row.SelectedColor = SelectedRowColor;	
+		row.SelectedTextColor = SelectedRowTextColor;
 		row.TextSize = DefaultCellTextSize * (CellTextSize / 100);	
 		row.Selected = importedRowData.Selected;
 		//row.NumBeingAdjusted += (r) => NumberAdjustmentCheck(r);
@@ -982,7 +1017,7 @@ public partial class DataGrid : Control
 			minigrid.Visible = false;
 		}
 
-
+		row.SetCellSettings();
 		AllRows[importedRowData.PopulatedIdx] = row;
 		PleasePassLog(string.Format("Created row {0} and put it into AllRows at {1}", importedRowData.OverallIdx, importedRowData.PopulatedIdx));
 
@@ -1124,7 +1159,7 @@ public partial class DataGrid : Control
 	private void InvokeDataChanged(DataGridRow row, string headerData, int headerIdx)
 	{
 		if (!Populating) DataChanged?.Invoke(row, headerData, headerIdx);
-		if (rHidden || Sorted || Searched) RowsUnchanged[row.OverallIdx] = RowData[row.PopulatedIdx];
+		if (rHidden || Sorted || Searched) RowsUnhidden[row.OverallIdx] = RowData[row.PopulatedIdx];
 	}
 
     private void AdjustmentNumberAdjusted(DataGridRowUi x, int c)
@@ -1144,7 +1179,7 @@ public partial class DataGrid : Control
 
 			reorderlist = reorderlist.OrderBy(x => x.AdjustmentNumber).ToList();
 			
-			if(RowData.Where(x => x.AdjustmentNumber != -1).Any()){
+			if(RowData.Any(x => x.AdjustmentNumber != -1)){
 				for (int i = 0; i < RowData.Count; i++){
 					if (RowData[i].AdjustmentNumber == c.NumberContent){
 						//TODO: what the fuck was this D:
@@ -1302,7 +1337,7 @@ public partial class DataGrid : Control
 
     private void RowSelected(int SelectedItem, bool Selected)
     {
-		PleasePassLog(string.Format("Row selected: {0} (Position: {1})", SelectedItem, VisibleRows.IndexOf(VisibleRows.First(x => x.RowData.OverallIdx == SelectedItem))));
+		PleasePassLog(string.Format("Row selected: {0} (Position: {1})", SelectedItem, VisibleRows.IndexOf(VisibleRows.First(x => x.RowData.PopulatedIdx == SelectedItem))));
 		if (!ShiftHeld && !ControlHeld){
 			if (RowData[SelectedItem].Selected && RowData.Count(x => x.Selected) > 1){
 				//int s = 0;
@@ -1371,7 +1406,7 @@ public partial class DataGrid : Control
 				RowData[SelectedItem].Selected = true;
 			}
 		} else {
-			RowData[SelectedItem].Selected = true;	
+			RowData[SelectedItem].Selected = Selected;	
 		}
 
 		PreviousSelection = SelectedItem;
@@ -1409,11 +1444,13 @@ public partial class DataGrid : Control
 		}){IsBackground = true}.Start();
 	}
 
-	private void GetPaneSizes()
+	private void GetPaneSizes(bool fromResize = false)
 	{
+		
 		if (PaneSize != Vector2.Zero)
 		{
-			//PaneSize = Size;
+			if (fromResize) if (PaneSize.X == PrevPaneSize.X) return;
+			PrevPaneSize = Size;
 			PaneHeight = PaneSize.Y - HeaderY;
 			if (Headers != null)
 			{
@@ -1435,6 +1472,7 @@ public partial class DataGrid : Control
 			
 			
 			if (RowData != null && RowData.Count > 0) { 
+				if (VisibleRows.Any()) ClearRows();
 				PopulateRows(); 
 				SetScrollBar();
 				PleasePassLog("Populating.");
@@ -1448,6 +1486,7 @@ public partial class DataGrid : Control
 	
 
 	private void SetScrollBar(){
+		vScrollBar.Step = 1;
 		if (RowData == null){
 			PleasePassLog(string.Format("Rowdata is null or 0 or there are fewer rows than max visible."));
 			vScrollBar.Page = RowsOnScreen;
@@ -1467,7 +1506,7 @@ public partial class DataGrid : Control
 			int minpage = (int)RowsOnScreen;
 			int pageunclamped = minpage - pages;
 			double page = Math.Clamp(pageunclamped, 1, minpage);
-			vScrollBar.Step = 1;
+			
 			vScrollBar.MaxValue = MaxScroll;
 			vScrollBar.MinValue = 0;
 			vScrollBar.Page = minpage;
@@ -1495,8 +1534,16 @@ public partial class DataGrid : Control
 		}
 	}
 
-	private void HeaderSorted(int index, bool SortAscending, bool Reset){
-		//if (!Sorted) RowsUnchanged = RowData;
+	private bool LastSortAscending = false;
+	private int LastSortIndex = -1;
+
+
+	private void HeaderSorted(int index, bool SortAscending, bool Reset, bool fromHiding = false){
+		//if (!Sorted) RowsUnhidden = RowData;
+
+		if (!Sorted && !Searched && !rHidden) FullRowData = [.. RowData];
+
+
 		if (Reset)
 		{
 			PleasePassLog(string.Format("Resetting sorting."));
@@ -1507,15 +1554,27 @@ public partial class DataGrid : Control
 		{
 			PleasePassLog(string.Format("Sorting by column {0}, descending.", index));
 		}
+
+		LastSortAscending = SortAscending;
+		LastSortIndex = index;
+
 		List<DataGridRow> _rows = new();
 		
 		if (Reset){
-			_rows = [..RowsUnsorted];
+			if (rHidden)
+			{
+				_rows = [..RowsUnhidden];
+			} else
+			{
+				_rows = [..RowsUnsorted];
+			}	
+			Sorted = false;		
 		} else if (SortAscending){
 			if (!Sorted)
 			{
 				RowsUnsorted.Clear();
 				RowsUnsorted.AddRange(RowData);
+				if (!Searched && !rHidden) RowsUnhidden = [.. RowData];
 			} else
 			{
 				Unsort(index);
@@ -1530,6 +1589,7 @@ public partial class DataGrid : Control
 				_rows.AddRange(rowdatarest);
 			} else if (index == IconsIdx){
 				List<DataGridRow> rowdataadj = [..RowData.Where(x => x.RowIcons.Any(i => i.IconVisible))];
+				rowdataadj = [..rowdataadj.OrderByDescending(x => x.RowIcons.Count(x => x.IconVisible))];
 				PleasePassLog(string.Format("Found {0} rows with icons showing.", rowdataadj.Count));
 				List<DataGridRow> rowdatarest = [..RowData.Except(rowdataadj)];
 				PleasePassLog(string.Format("Found {0} rows without icons showing.", rowdatarest.Count));
@@ -1548,6 +1608,7 @@ public partial class DataGrid : Control
 				_rows.AddRange(rowdatarest);
 			} else if (index == IconsIdx){
 				List<DataGridRow> rowdataadj = [..RowData.Where(x => x.RowIcons.Any(i => i.IconVisible))];
+				rowdataadj = [..rowdataadj.OrderBy(x => x.RowIcons.Count(x => x.IconVisible))];
 				PleasePassLog(string.Format("Found {0} rows with icons showing.", rowdataadj.Count));
 				List<DataGridRow> rowdatarest = [..RowData.Except(rowdataadj)];
 				PleasePassLog(string.Format("Found {0} rows without icons showing.", rowdatarest.Count));
@@ -1557,17 +1618,49 @@ public partial class DataGrid : Control
 				_rows.AddRange(RowData.OrderByDescending(x => x.Items[index].ItemContent));				
 			}
 		}
-		for (int i = 0; i < _rows.Count; i++)
-		{
-			PleasePassLog(string.Format("Setting row {0} PopulatedIndex to {1}", _rows[i].OverallIdx, i));
-			_rows[i].PopulatedIdx = i;
-		}
-		RowData.Clear();
-		RowData.AddRange(_rows);
-		//if (HiddenRows != null) if (HiddenRows.Count > 0) UpdateRowData();
+		UpdatePopulatedIndex(_rows);
 		vScrollBar.Value = 0;		
 		ScrollPosition = 0;
-		PopulateRows();
+		if (rHidden && !fromHiding) UpdateRowData(); else PopulateRows();
+	}
+
+	public bool Updating = false;
+
+	public void RefreshFileList(List<DataGridRow> rows)
+	{
+		Updating = true;
+		UpdatePopulatedIndex(rows);
+	}
+
+	private void UpdatePopulatedIndex(List<DataGridRow> _rows)
+	{
+		
+		if (_rows.Count > 0)
+		{
+			for (int i = 0; i < _rows.Count; i++)
+			{
+				//PleasePassLog(string.Format("Setting row {0} PopulatedIndex to {1}", _rows[i].OverallIdx, i));
+				_rows[i].PopulatedIdx = i;
+			}
+			
+			RowData = [.._rows];
+			CallDeferred(nameof(SetScrollBar));
+			//AllRows.Clear();
+			AllRows = [.._allrows];
+			if (Updating)
+			{
+				PopulateRows();
+			}
+		} else
+		{
+			RowData = [];
+			ClearRows();
+			DataGridReloadComplete?.Invoke();
+			Updating = false;
+		}
+		ControlHeld = false;
+		ShiftHeld = false;
+		
 	}
 
     private void Unsort(int current)
@@ -1883,7 +1976,7 @@ public partial class DataGrid : Control
 
 	public static dynamic GetProperty(dynamic owner, string propName){
 		if (ProcessProperty(owner, propName) == null){
-			return "Unknown";
+			return string.Empty;
 		}
 		var prop = ProcessProperty(owner, propName);
 		if (prop.GetType() == typeof(string)){
@@ -2030,7 +2123,7 @@ public partial class DataGrid : Control
 						foreach (DataGridRowUi row in VisibleRows){
 							row.Selected = true;
 							RowData[row.PopulatedIndex].Selected = true;
-							//RowsUnchanged[row.OverallIndex].Selected = true;
+							//RowsUnhidden[row.OverallIndex].Selected = true;
 						}
 						CallDeferred(nameof(ListenForKeyPressTimer));
 					}
@@ -2039,7 +2132,7 @@ public partial class DataGrid : Control
 
 
 
-			if (FirstLoaded) {
+			if (FirstLoaded && RowData != null) {
 				if (ListenForKeyPress && IsMouseInGrid()){ 
 					if (@event is InputEventMouseButton mouseEvent && mouseEvent.Pressed){
 						if (mouseEvent.ButtonIndex == MouseButton.WheelUp){
@@ -2078,7 +2171,7 @@ public partial class DataGrid : Control
 									VisibleRows.First(x => x.PopulatedIndex == idx).Toggle(toggle);
 								}
 								RowData[idx].Toggled = toggle;
-								//RowsUnchanged[oidx].Toggled = toggle;
+								//RowsUnhidden[oidx].Toggled = toggle;
 								AdjustableNumberEnabledAdd(RowData[idx], !toggle);
 							} else {
 								List<DataGridRow> selectedRows = RowData.Where(x => x.Selected).ToList();
@@ -2132,11 +2225,17 @@ public partial class DataGrid : Control
 
 		if (@event is InputEventMouseButton button && button.IsReleased())
 		{
+			new Thread(() => {
+			while (Populating)
+			{
+				
+			}
 			if (vScrollBar.Value != ScrollPosition)
 			{
 				PleasePassLog(string.Format("Scrollbar Value: {0}, ScrollPosition: {1}", vScrollBar.Value, ScrollPosition));
 				OnScrollScrolled(vScrollBar.Value);
 			}
+			}){IsBackground = true}.Start();			
 		}
     }
 
@@ -2202,37 +2301,78 @@ public partial class DataGrid : Control
 
 
 	public void Search(string SearchTerm, string Header = ""){
-		if (string.IsNullOrEmpty(SearchTerm) || string.IsNullOrWhiteSpace(SearchTerm)) { 
+		List<DataGridRow> _rows = new();
+		if (!Searched && !rHidden && !Sorted) FullRowData = [..RowData]; 
+		if (!Searched) RowsUnsearched = [..RowData];
+
+		PleasePassLog(string.Format("Searched for {0} in header {1}", SearchTerm, Header));
+
+		if (string.IsNullOrEmpty(SearchTerm) || string.IsNullOrWhiteSpace(SearchTerm) || SearchTerm == "") { 
+			PleasePassLog(string.Format("Search is empty. Resetting."));
 			if (Searched){
 				ResetSearch();
 			}
+			Searched = false;
+			return;
 		} else if (Header == ""){
 			Searched = true;
-			List<DataGridRow> searched = new();
+			PleasePassLog(string.Format("Searching all items."));
+
 			for (int i = 0; i < Headers.Count; i++) {
 				if (Headers[i].CellType == CellOptions.Text || Headers[i].CellType == CellOptions.Int){
-					if (RowsUnchanged.Where(x => x.Items[i].ItemContent.ToLower().Contains(SearchTerm.ToLower())).Any()){
-						searched.AddRange(RowsUnchanged.Where(x => x.Items[i].ItemContent.ToLower().Contains(SearchTerm.ToLower())).ToList());
-					}					
+					if (RowsUnsearched.Any(x => x.Items[i].ItemContent.Contains(SearchTerm, StringComparison.CurrentCultureIgnoreCase))){
+						_rows.AddRange(RowsUnsearched.Where(x => x.Items[i].ItemContent.Contains(SearchTerm, StringComparison.CurrentCultureIgnoreCase)));
+					}	
+				} else if (Headers[i].CellType == CellOptions.Icons)
+				{
+					if (RowsUnsearched.Any(x => x.Items[i].IconOptions.Any(o => o.IconName.Contains(SearchTerm, StringComparison.CurrentCultureIgnoreCase) && o.IconVisible)))
+					{
+						_rows.AddRange(RowsUnsearched.Where(x => x.Items[i].IconOptions.Any(o => o.IconName.Contains(SearchTerm, StringComparison.CurrentCultureIgnoreCase) && o.IconVisible)));
+					}
 				}
 			}
-			searched = searched.Distinct().ToList();
-			RowData = searched;
+			_rows = _rows.Distinct().ToList();
 		} else {
-			List<DataGridRow> searched = new();
-			int column = Headers.IndexOf(Headers.First(x => x.Title == Header));			
-			if (RowsUnchanged.Any(x => x.Items[column].ItemContent.ToLower().Contains(SearchTerm.ToLower()))){
-				searched = RowsUnchanged.Where(x => x.Items[column].ItemContent.ToLower().Contains(SearchTerm.ToLower())).ToList();
-			}			
-			RowData = searched;
+			PleasePassLog(string.Format("Searching only {0}", Header));
 			Searched = true;
-		}
-	}
+			List<DataGridRow> searched = new();
+			int column = Headers.IndexOf(Headers.First(x => x.Title == Header));		
 
+			if (Headers[column].CellType == CellOptions.Text || Headers[column].CellType == CellOptions.Int){
+				if (RowsUnsearched.Any(x => x.Items[column].ItemContent.Contains(SearchTerm, StringComparison.CurrentCultureIgnoreCase))){
+					_rows.AddRange(RowsUnsearched.Where(x => x.Items[column].ItemContent.Contains(SearchTerm, StringComparison.CurrentCultureIgnoreCase)));
+				}	
+			} else if (Headers[column].CellType == CellOptions.Icons)
+			{
+				if (RowsUnsearched.Any(x => x.Items[column].IconOptions.Any(o => o.IconName.Contains(SearchTerm, StringComparison.CurrentCultureIgnoreCase) && o.IconVisible)))
+				{
+					_rows.AddRange(RowsUnsearched.Where(x => x.Items[column].IconOptions.Any(o => o.IconName.Contains(SearchTerm, StringComparison.CurrentCultureIgnoreCase) && o.IconVisible)));
+				}
+			}
+		}
+		vScrollBar.Value = 0; 
+		ScrollPosition = 0;
+		UpdatePopulatedIndex(_rows);
+		if (RowData.Count > 0) PopulateRows(); else ClearRows();
+	}
 	public void ResetSearch(){
-		RowData = RowsUnchanged;
+		List<DataGridRow> _rows = [..RowsUnsearched];
+		UpdatePopulatedIndex(_rows);
+		PopulateRows();
 		Searched = false;
 	}
+
+	private void ClearRows()
+	{
+		foreach (Node node in RowsHolder.GetChildren())
+		{
+			RowsHolder.RemoveChild(node);
+			node.QueueFree();
+		}
+		VisibleRows.Clear();
+		SetScrollBar();
+	}
+
 
 	public void TooltipProduced(string t){
 		MakeTooltip?.Invoke(t);

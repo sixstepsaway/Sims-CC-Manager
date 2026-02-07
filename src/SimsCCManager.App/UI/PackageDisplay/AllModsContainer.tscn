@@ -1,4 +1,4 @@
-[gd_scene load_steps=19 format=3 uid="uid://55aunc3up5rf"]
+[gd_scene load_steps=21 format=3 uid="uid://55aunc3up5rf"]
 
 [ext_resource type="Script" uid="uid://biglkyj7fjd1m" path="res://UI/PackageDisplay/AllModsContainer.cs" id="1_07ull"]
 [ext_resource type="Theme" uid="uid://b4fe82i5mblf5" path="res://themes/packagedisplay_headers.tres" id="1_gmjrk"]
@@ -8,9 +8,11 @@
 [ext_resource type="FontFile" uid="uid://dbl0pkpxsvvww" path="res://assets/fonts/Livvic/Livvic-Medium.ttf" id="3_xitth"]
 [ext_resource type="PackedScene" uid="uid://cqsrg0fwrld8s" path="res://UI/PackageDisplay/PackageListItem.tscn" id="4_1bilu"]
 [ext_resource type="PackedScene" uid="uid://cyfgp4vopp1cq" path="res://UI/Buttons/CustomCheckButton.tscn" id="4_ylio6"]
+[ext_resource type="PackedScene" uid="uid://biyhvjfpffmqj" path="res://UI/PackageDisplay/AddDetail.tscn" id="6_ylio6"]
+[ext_resource type="PackedScene" uid="uid://bvm2atrydtgg6" path="res://windows/CustomPopupWindow.tscn" id="7_1bilu"]
 [ext_resource type="PackedScene" uid="uid://cqwmdnxfu6311" path="res://UI/PackageDisplay/ThumbnailGrid/ThumbnailGrid.tscn" id="7_wdnan"]
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ea8ua"]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_1bilu"]
 content_margin_left = 5.0
 content_margin_top = 1.0
 content_margin_right = 5.0
@@ -21,7 +23,7 @@ border_width_top = 4
 border_width_right = 4
 border_width_bottom = 4
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ym2rk"]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_6ykyx"]
 content_margin_left = 5.0
 content_margin_top = 1.0
 content_margin_right = 5.0
@@ -34,10 +36,10 @@ border_width_bottom = 2
 
 [sub_resource type="Theme" id="Theme_wdnan"]
 LineEdit/fonts/font = ExtResource("3_xitth")
-LineEdit/styles/focus = SubResource("StyleBoxFlat_ea8ua")
-LineEdit/styles/normal = SubResource("StyleBoxFlat_ym2rk")
+LineEdit/styles/focus = SubResource("StyleBoxFlat_1bilu")
+LineEdit/styles/normal = SubResource("StyleBoxFlat_6ykyx")
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_sh1cm"]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_xe552"]
 content_margin_left = 5.0
 content_margin_top = 1.0
 content_margin_right = 5.0
@@ -48,7 +50,7 @@ border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_0tei2"]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_7lf2g"]
 content_margin_left = 5.0
 content_margin_top = 1.0
 content_margin_right = 5.0
@@ -59,7 +61,7 @@ border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ylio6"]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_or5p8"]
 content_margin_left = 5.0
 content_margin_top = 1.0
 content_margin_right = 5.0
@@ -70,7 +72,7 @@ border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_1bilu"]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_nu3rc"]
 content_margin_left = 5.0
 content_margin_top = 1.0
 content_margin_right = 5.0
@@ -83,20 +85,21 @@ border_width_bottom = 2
 
 [sub_resource type="Theme" id="Theme_6ykyx"]
 OptionButton/fonts/font = ExtResource("3_xitth")
-OptionButton/styles/focus = SubResource("StyleBoxFlat_sh1cm")
-OptionButton/styles/hover = SubResource("StyleBoxFlat_0tei2")
-OptionButton/styles/normal = SubResource("StyleBoxFlat_ylio6")
-OptionButton/styles/pressed = SubResource("StyleBoxFlat_1bilu")
+OptionButton/styles/focus = SubResource("StyleBoxFlat_xe552")
+OptionButton/styles/hover = SubResource("StyleBoxFlat_7lf2g")
+OptionButton/styles/normal = SubResource("StyleBoxFlat_or5p8")
+OptionButton/styles/pressed = SubResource("StyleBoxFlat_nu3rc")
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_3p7jc"]
 
-[node name="AllModsContainer" type="MarginContainer" node_paths=PackedStringArray("AllModsHeader", "AllModsModNumber", "SearchBox", "SearchOptions", "DataGrid", "GridContainer", "SwapDisplaysCheck", "ThumbGrid")]
+[node name="AllModsContainer" type="MarginContainer" node_paths=PackedStringArray("AllModsHeader", "AllModsModNumber", "SearchBox", "SearchOptions", "DataGrid", "GridContainer", "SwapDisplaysCheck", "GridSwapLabel")]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 size_flags_horizontal = 3
+size_flags_vertical = 3
 script = ExtResource("1_07ull")
 AllModsHeader = NodePath("ContainerHeader/LabelPositioner/HBoxContainer/AllMods_Label")
 AllModsModNumber = NodePath("ContainerHeader/LabelPositioner/HBoxContainer/AllModsInfo_Label")
@@ -107,9 +110,11 @@ GridContainer = NodePath("AllMods_Container/GridContainer")
 RightClickMenuPS = ExtResource("2_ea8ua")
 ThumbgridPS = ExtResource("7_wdnan")
 SwapDisplaysCheck = NodePath("ContainerHeader/MarginContainer/GridTypeSwapCheckButton")
-ThumbGrid = NodePath("")
+GridSwapLabel = NodePath("ContainerHeader/MarginContainer2/ThumbnailGrid")
 RenameItemsBoxPS = ExtResource("3_0tei2")
 PackageListItemPS = ExtResource("4_1bilu")
+AddDetailPS = ExtResource("6_ylio6")
+CustomPopupWindowPS = ExtResource("7_1bilu")
 
 [node name="ContainerHeader" type="HBoxContainer" parent="."]
 layout_mode = 2
@@ -153,7 +158,7 @@ layout_mode = 2
 size_flags_vertical = 1
 theme = ExtResource("1_gmjrk")
 theme_override_font_sizes/font_size = 12
-text = "Switch Grid Type"
+text = "Grid View"
 horizontal_alignment = 1
 vertical_alignment = 1
 

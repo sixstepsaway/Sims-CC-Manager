@@ -1,4 +1,4 @@
-[gd_scene load_steps=20 format=3 uid="uid://c4rjghpqcjk60"]
+[gd_scene load_steps=21 format=3 uid="uid://c4rjghpqcjk60"]
 
 [ext_resource type="Script" uid="uid://da8nog1p33e81" path="res://UI/PackageDisplay.cs" id="1_i7mej"]
 [ext_resource type="PackedScene" uid="uid://uo2724xgb1uw" path="res://UI/Background.tscn" id="2_tqnmv"]
@@ -19,8 +19,9 @@
 [ext_resource type="PackedScene" uid="uid://djy0ci67h1dkw" path="res://UI/PackageDisplay/CategoryManagement.tscn" id="17_dynkg"]
 [ext_resource type="PackedScene" uid="uid://wsoegap3c8q2" path="res://UI/PackageDisplay/ExeChoicePopupPanel.tscn" id="18_0266g"]
 [ext_resource type="PackedScene" uid="uid://bvm2atrydtgg6" path="res://windows/CustomPopupWindow.tscn" id="19_aasf2"]
+[ext_resource type="Theme" uid="uid://b4fe82i5mblf5" path="res://themes/packagedisplay_headers.tres" id="20_hlfwx"]
 
-[node name="PackageDisplay" type="MarginContainer" node_paths=PackedStringArray("UIAllModsContainer", "UIDownloadsContainer", "UIPackageViewerContainer", "UIPackageManagementButtons", "UIProfilesManagement", "UIGameStartControls", "UISettingsAndHelpControls", "GameRunningPopup", "ExeChoicePopupPanel", "WhereAllModsContainerLives", "AddFilesDialog", "AddExeDialog", "AddFolderDialog", "AdminWarningWindow")]
+[node name="PackageDisplay" type="MarginContainer" node_paths=PackedStringArray("UIAllModsContainer", "UIDownloadsContainer", "UIPackageViewerContainer", "UIPackageManagementButtons", "UIProfilesManagement", "UIGameStartControls", "UISettingsAndHelpControls", "GameRunningPopup", "ExeChoicePopupPanel", "WhereAllModsContainerLives", "VSplit", "AddFilesDialog", "AddExeDialog", "AddFolderDialog", "AdminWarningWindow", "PleaseWaitWindow", "PleaseWaitLabel", "PleaseWaitBG")]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -37,6 +38,7 @@ UISettingsAndHelpControls = NodePath("MainWindowSizer/TopPanels/SettingsAndHelpC
 GameRunningPopup = NodePath("GameRunningPopup")
 ExeChoicePopupPanel = NodePath("ExeChoice_PopupPanel")
 WhereAllModsContainerLives = NodePath("MainWindowSizer/MainPanels/HSplitContainer")
+VSplit = NodePath("MainWindowSizer/MainPanels/HSplitContainer/VSplitContainer")
 ProfilesManagementWindowPS = ExtResource("16_i7mej")
 CategoryManagementWindowPS = ExtResource("17_dynkg")
 UIAllModsPS = ExtResource("3_io27h")
@@ -44,6 +46,9 @@ AddFilesDialog = NodePath("AddFileDialog")
 AddExeDialog = NodePath("AddExeDialog")
 AddFolderDialog = NodePath("AddFolderDialog")
 AdminWarningWindow = NodePath("CustomPopupWindow")
+PleaseWaitWindow = NodePath("MarginContainer")
+PleaseWaitLabel = NodePath("MarginContainer/MarginContainer/VBoxContainer/MarginContainer/Label")
+PleaseWaitBG = NodePath("MarginContainer/ColorRect")
 
 [node name="Background" parent="." instance=ExtResource("2_tqnmv")]
 layout_mode = 2
@@ -70,6 +75,7 @@ layout_mode = 2
 layout_mode = 2
 
 [node name="VSplitContainer" type="VSplitContainer" parent="MainWindowSizer/MainPanels/HSplitContainer"]
+visible = false
 layout_mode = 2
 size_flags_horizontal = 3
 
@@ -78,6 +84,7 @@ visible = false
 layout_mode = 2
 
 [node name="NewDownloadsContainer" parent="MainWindowSizer/MainPanels/HSplitContainer/VSplitContainer" instance=ExtResource("5_aasf2")]
+visible = false
 layout_mode = 2
 
 [node name="TopPanels" type="MarginContainer" parent="MainWindowSizer"]
@@ -155,3 +162,29 @@ use_native_dialog = true
 [node name="CustomPopupWindow" parent="." instance=ExtResource("19_aasf2")]
 visible = false
 force_native = false
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+visible = false
+layout_mode = 2
+
+[node name="ColorRect" type="ColorRect" parent="MarginContainer"]
+modulate = Color(1, 1, 1, 0.58431375)
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/MarginContainer"]
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="MarginContainer/MarginContainer/VBoxContainer/MarginContainer"]
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 1
+theme = ExtResource("20_hlfwx")
+text = "Please wait..."

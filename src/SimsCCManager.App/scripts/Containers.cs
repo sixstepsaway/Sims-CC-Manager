@@ -2,12 +2,14 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Metadata.Ecma335;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
 using Godot;
@@ -47,14 +49,52 @@ namespace SimsCCManager.Containers
         public Sims3Folders Sims3Folders {get; set;}
         public Sims4Folders Sims4Folders {get; set;}
         public InstanceFolders InstanceFolders {get; set;}
+        public List<string> InstanceProfileLocations {get; set;}
+        [XmlIgnore]
         public List<InstanceProfile> InstanceProfiles {get; set;}
+
+        private void LoadProfiles()
+        {
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Loading {0} profiles.", InstanceProfileLocations.Count));
+            XmlSerializer Deserializer = new XmlSerializer(typeof(InstanceProfile));
+            List<InstanceProfile> ip = new();
+            foreach (string p in InstanceProfileLocations)
+            {
+                string name = new DirectoryInfo(p).Name;
+                string path = Path.Combine(p, string.Format("{0}.xml", name));
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Opening profile: {0}", path));
+                if (File.Exists(path)){ 
+                    using (FileStream fileStream = new(path, FileMode.Open, System.IO.FileAccess.Read)){
+                        using (StreamReader streamReader = new(fileStream)){
+                            ip.Add((InstanceProfile)Deserializer.Deserialize(streamReader));
+                            streamReader.Close();
+                        }
+                        fileStream.Close();
+                    }
+                }
+            }
+            if (ip.Count == 0)
+            {
+                DefaultProfile();
+            } else
+            {
+                InstanceProfiles = ip;
+                LoadedProfile = InstanceProfiles.First(x => x.ProfileIdentifier == LoadedProfileID);
+            }
+        }
+
         private InstanceProfile _loadedprofile;
         [XmlIgnore]
         public InstanceProfile LoadedProfile {get { return _loadedprofile; } set { _loadedprofile = value; 
         InstanceInformationChanged?.Invoke(); }}
-        public Guid LoadedProfileID { get { return LoadedProfile.ProfileIdentifier; } set
+        private Guid _loadedprofileid;
+        public Guid LoadedProfileID { 
+            get { 
+                    if (LoadedProfile != null) return LoadedProfile.ProfileIdentifier; else return _loadedprofileid;
+                } 
+        set
             {
-                LoadedProfile = InstanceProfiles.Where(x => x.ProfileIdentifier == value).First();
+                _loadedprofileid = value;
             }
         }
         public List<Category> Categories {get; set;}
@@ -65,6 +105,11 @@ namespace SimsCCManager.Containers
             get { return _files; }
             set { _files = value; }
         }
+
+        [XmlIgnore]
+        public ConcurrentBag<SimsDownload> _downloads = new();
+        [XmlIgnore]
+        public ConcurrentBag<SimsPackage> _packages = new();
 
 
         public delegate void FilesChangedEvent();
@@ -77,16 +122,24 @@ namespace SimsCCManager.Containers
 
         public void CreateDefaults()
         {
-            
-
-
             InstanceProfiles = new();
-            InstanceProfile instanceProfile = new() {EnabledPackages = new(), ProfileDescription = "The default instance profile.", ProfileName = "Default"};
-            InstanceProfiles.Add(instanceProfile);
-            LoadedProfile = instanceProfile;
+            DefaultProfile();
             Categories = new();
             Category category = new() { Name = "Default", Background = Godot.Colors.Transparent, TextColor = Godot.Colors.Transparent, Description = "The default category for all packages."};
             Categories.Add(category);
+        }
+
+        private void DefaultProfile()
+        {
+            InstanceProfile instanceProfile = new() {
+                EnabledPackages = new(), 
+                ProfileDescription = "The default instance profile.", 
+                ProfileName = "Default",
+            };
+            instanceProfile.ProfileFolder = Path.Combine(InstanceFolders.InstanceProfilesFolder, instanceProfile.SafeFileName());
+            Directory.CreateDirectory(instanceProfile.ProfileFolder);
+            InstanceProfiles = new(){instanceProfile};
+            LoadedProfile = instanceProfile;
         }
 
         public void BuildInstanceFolders()
@@ -114,11 +167,6 @@ namespace SimsCCManager.Containers
         {
             if (File.Exists(this.XMLfile()))
             {
-                /*if (File.Exists(this.XMLfile().Replace(".xml", ".xml.bk")))
-                {
-                    File.Delete(this.XMLfile().Replace(".xml", ".xml.bk"));
-                }*/
-                //File.Copy(this.XMLfile(), this.XMLfile().Replace(".xml", ".xml.bk"));
                 File.Delete(this.XMLfile());
             }
             XmlSerializer InstanceSerializer = new XmlSerializer(this.GetType());
@@ -126,6 +174,38 @@ namespace SimsCCManager.Containers
             {
                 InstanceSerializer.Serialize(writer, this);
             }
+
+            XmlSerializer ProfileSerializer = new XmlSerializer(typeof(InstanceProfile));
+            foreach (InstanceProfile profile in InstanceProfiles)
+            {
+                using (var writer = new StreamWriter(profile.XMLFile()))
+                {
+                    ProfileSerializer.Serialize(writer, profile);
+                }
+            }
+        }
+
+        public GameInstance LoadInstance()
+        {
+            GameInstance instance = new();
+            if (File.Exists(this.XMLfile()))
+            {
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Loading Instance from {0}", this.XMLfile()));
+                XmlSerializer InstanceSerializer = new XmlSerializer(typeof(GameInstance));
+                using (FileStream fileStream = new(this.XMLfile(), FileMode.Open, System.IO.FileAccess.Read)){
+                    using (StreamReader streamReader = new(fileStream)){
+                        instance = (GameInstance)InstanceSerializer.Deserialize(streamReader);
+                        streamReader.Close();
+                    }
+                    fileStream.Close();
+                }
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Loaded instance: {0} and its {1} profiles", instance.InstanceName, instance.InstanceProfileLocations.Count));
+            }
+            
+            instance.LoadProfiles();
+
+
+            return instance;
         }
 
         public void CheckExisting()
@@ -280,7 +360,7 @@ namespace SimsCCManager.Containers
         {
             StringBuilder sb = new();            
             sb.AppendLine(InstanceFolder);
-            sb.AppendLine(InstanceFolders.InstanceDataFolder);
+            //sb.AppendLine(InstanceFolders.InstanceDataFolder);
             sb.AppendLine(Path.Combine(ExecutablePath, ExecutableName));
             if (GameChoice == SimsGames.Sims2)
             {
@@ -415,11 +495,56 @@ namespace SimsCCManager.Containers
         public string ProfileName {get; set;}
         public Guid ProfileIdentifier {get; set;} = Guid.NewGuid();
         public string ProfileDescription {get; set;}
-        public bool LocalSaves {get; set;}
-        public bool LocalSettings {get; set;}
-        public bool LocalMedia {get; set;}
-        public bool LocalData {get; set;}
+        public string ProfileFolder {get; set;}
+        private bool _localsaves; 
+        public bool LocalSaves {
+            get { return _localsaves; }
+            set { _localsaves = value; 
+            if (!Directory.Exists(LocalSaveFolder))  Directory.CreateDirectory(LocalSaveFolder); }
+        }
+        public string LocalSaveFolder { get { return Path.Combine(ProfileFolder, "Saves"); }}
+        
+        private bool _localsettings; 
+        public bool LocalSettings {
+            get { return _localsettings; }
+            set { _localsettings = value; 
+            if (!Directory.Exists(LocalSettingsFolder))  Directory.CreateDirectory(LocalSettingsFolder); }
+        }
+        public string LocalSettingsFolder { get { return Path.Combine(ProfileFolder, "Settings"); }}
+        private bool _localmedia;
+        public bool LocalMedia {
+            get { return _localmedia; }
+            set { _localmedia = value; 
+            if (!Directory.Exists(LocalMediaFolder))  Directory.CreateDirectory(LocalMediaFolder); }
+        }
+        public string LocalMediaFolder { get { return Path.Combine(ProfileFolder, "Media"); }}
+        private bool _localdata;
+        public bool LocalData {
+            get { return _localdata; }
+            set { _localdata = value; 
+            if (!Directory.Exists(LocalDataFolder))  Directory.CreateDirectory(LocalDataFolder); }
+        }
+        public string LocalDataFolder { get { return Path.Combine(ProfileFolder, "Data"); }}
+        private bool _autobackups;
+        public bool AutoBackups {
+            get { return _autobackups; }
+            set { _autobackups = value; 
+            if (!Directory.Exists(BackupFolder))  Directory.CreateDirectory(BackupFolder); }
+        }
+        public string BackupFolder { get { return Path.Combine(ProfileFolder, "Backups"); }}
+        
         public List<EnabledPackages> EnabledPackages {get; set;} = new();
+
+        public string XMLFile()
+        {
+            return Path.Combine(ProfileFolder, string.Format("{0}.xml", SafeFileName()));
+        }
+
+        public string SafeFileName()
+        {
+            var invalids = System.IO.Path.GetInvalidFileNameChars();
+            return String.Join("_", ProfileName.Split(invalids, StringSplitOptions.RemoveEmptyEntries) ).TrimEnd('.');
+        }
 
         public void RemoveEnabled(EnabledPackages pa)
         {
@@ -491,12 +616,9 @@ namespace SimsCCManager.Containers
         public string InfoFile
         {
             get { 
-                    if (IsDirectory)
-                    {
-                        return string.Format("{0}.info", new DirectoryInfo(Location).FullName); 
-                    } else { 
-                        return string.Format("{0}.info", new FileInfo(Location).FullName); 
-                    } 
+                    
+                        return string.Format("{0}.info", Location); 
+                    
                 }
         }
         private string _location;
@@ -530,6 +652,9 @@ namespace SimsCCManager.Containers
         public DateTime DateAdded {get; set;}
         public DateTime DateUpdated {get; set;}
         public string InstalledForVersion {get; set;}
+        public string Source {get; set;}
+        public string Creator {get; set;}
+        public string Notes {get; set;}
         [XmlIgnore]
         public bool Selected {get; set;}
         private bool _isdirectory;
@@ -540,10 +665,76 @@ namespace SimsCCManager.Containers
                 {
                     FileType = FileTypes.Folder;
                 }
-            }}
+            }}        
         public bool StandAlone {get; set;}
         public bool Broken {get; set;}
         public bool WrongGame {get; set;}
+        public string MatchingMesh {get; set;}
+        public List<string> MatchingRecolors {get; set;} = new();
+
+        [XmlIgnore]
+        public string Type {get
+            {
+                switch(Game){
+                    case SimsGames.Sims2:
+                    if (Sims2Data.FunctionSort.Any())
+                    {
+                        if (Sims2Data.FunctionSort[0] != null)
+                        {
+                            if (!string.IsNullOrEmpty(Sims2Data.FunctionSort[0].Subcategory))
+                            {
+                                return string.Format("{0}/{1}", Sims2Data.FunctionSort[0].Category, Sims2Data.FunctionSort[0].Subcategory); 
+                            } else
+                            {
+                                return Sims2Data.FunctionSort[0].Category;
+                            }
+                        }
+                    }
+                    
+                    if (!string.IsNullOrEmpty(Sims2Data.AltType))
+                    {
+                        return Sims2Data.AltType;
+                    }
+                    break;
+                    case SimsGames.Sims3:
+                    if (Sims3Data.FunctionSort.Any())
+                    {
+                        if (!string.IsNullOrEmpty(Sims3Data.FunctionSort[0].Subcategory))
+                        {
+                            return string.Format("{0}/{1}", Sims3Data.FunctionSort[0].Category, Sims3Data.FunctionSort[0].Subcategory); 
+                        } else
+                        {
+                            return Sims3Data.FunctionSort[0].Category;
+                        }
+                    }
+                    
+                    if (!string.IsNullOrEmpty(Sims3Data.AltType))
+                    {
+                        return Sims3Data.AltType;
+                    }
+                    break;
+                    case SimsGames.Sims4:
+                    if (Sims4Data.FunctionSort.Any())
+                    {
+                        if (!string.IsNullOrEmpty(Sims4Data.FunctionSort[0].Subcategory))
+                        {
+                            return string.Format("{0}/{1}", Sims4Data.FunctionSort[0].Category, Sims4Data.FunctionSort[0].Subcategory); 
+                        } else
+                        {
+                            return Sims4Data.FunctionSort[0].Category;
+                        }
+                    }
+                    
+                    if (!string.IsNullOrEmpty(Sims4Data.AltType))
+                    {
+                        return Sims4Data.AltType;
+                    }
+                    break;
+                }  
+                return "Unknown";            
+            
+            }
+        }
 
         public string PackageGameVersion {get; set;}
         public List<string> LinkedFiles {get; set;} = new();
@@ -813,18 +1004,27 @@ namespace SimsCCManager.Containers
         {
             return Game == SimsGames.Sims4;
         }
-
+        static ReaderWriterLock locker = new ReaderWriterLock();
         public void WriteXML()
         {
-            if (File.Exists(this.InfoFile))
+            try
             {
-                File.Delete(this.InfoFile);
+                locker.AcquireWriterLock(int.MaxValue); 
+                if (File.Exists(this.InfoFile))
+                {
+                    File.Delete(this.InfoFile);
+                }
+                XmlSerializer InfoSerializer = new XmlSerializer(this.GetType());
+                using (var writer = new StreamWriter(this.InfoFile))
+                {
+                    InfoSerializer.Serialize(writer, this);
+                }
             }
-            XmlSerializer InfoSerializer = new XmlSerializer(this.GetType());
-            using (var writer = new StreamWriter(this.InfoFile))
+            finally
             {
-                InfoSerializer.Serialize(writer, this);
-            }   
+                locker.ReleaseWriterLock();
+            }
+               
         }
 
         public void SetProperty(string propName, dynamic input){
@@ -868,6 +1068,7 @@ namespace SimsCCManager.Containers
         public string Title {get; set;}
         public string Description {get; set;}
         public string Type {get;}
+        public string AltType {get; set;}
 
         public List<FunctionSortList> FunctionSort {get; set;}
         public string GUID {get; set;}
@@ -878,6 +1079,10 @@ namespace SimsCCManager.Containers
         public bool Mesh {get; set;}
         public bool Orphan {get; set;}
         public bool GameMod {get; set;}
+
+        
+
+        public ClothingInfo ClothingInfo {get; set;}
         
 
         void Serialize();
@@ -889,6 +1094,15 @@ namespace SimsCCManager.Containers
         public int EntryTypes();
         public void DictionaryEntries();
 
+    }
+
+    public class ClothingInfo
+    {
+        public string Type {get; set;} //top bottom full
+        public List<string> Category {get; set;} = new(); //formal atletic etc
+        public List<string> Gender {get; set;} = new(); 
+        public List<string> Age {get; set;} = new();
+        public List<string> Species {get; set;} = new(); 
     }
 
     public class Sims2Data : ISimsData
@@ -906,6 +1120,7 @@ namespace SimsCCManager.Containers
                 }
             }
         }
+        public string AltType {get; set;}
 
         public List<FunctionSortList> FunctionSort {get; set;} = new();
         private string _guid;
@@ -934,8 +1149,12 @@ namespace SimsCCManager.Containers
         public bool Mesh {get; set;}
         public bool Orphan {get; set;}
         public bool GameMod {get; set;}
+
+        public List<Sims2Expansions> Expansions {get; set;} = new();
+
+        public ClothingInfo ClothingInfo {get; set;} = new();
         
-        public List<IndexEntry> IndexEntries {get; set;}
+        public List<IndexEntry> IndexEntries {get; set;} = new();
         
 
         public void DictionaryEntries()
@@ -951,17 +1170,23 @@ namespace SimsCCManager.Containers
             IndexEntryCounts = entryCounts.ToList();
         }
 
-        public List<EntryCount> IndexEntryCounts {get; set;}
+        public List<EntryCount> IndexEntryCounts {get; set;} = new();
         public List<GMDCData> GMDCDataBlock {get; set;} = new();
         public List<MMATData> MMATDataBlock {get; set;} = new();
         public XFLRData XFLRDataBlock {get; set;} = new();
         public List<TXTRData> TXTRDataBlock {get; set;} = new();
+        public XNGBData XNGBDataBlock {get; set;} = new();
+        public List<GZPSData> GZPSDataBlock {get; set;} = new();
+        public List<EIDRData> EIDRDataBlock {get; set;} = new();
+        public List<SHPEData> SHPEDataBlock {get; set;} = new();
+        public List<TXMTData> TXMTDataBlock {get; set;} = new();
+        public List<XHTNData> XHTNDataBlock {get; set;} = new();
 
         public int EntryCount(string entry)
         {
-            if (IndexEntryCounts.Any(x=>x.EntryTag == entry))
+            if (IndexEntryCounts.Any(x=>x.EntryTag.Equals(entry, StringComparison.CurrentCultureIgnoreCase)))
             {
-                return IndexEntryCounts.First(x=>x.EntryTag == entry).Count;
+                return IndexEntryCounts.First(x=>x.EntryTag.Equals(entry, StringComparison.CurrentCultureIgnoreCase)).Count;
             } else
             {
                 return 0;
@@ -1034,6 +1259,7 @@ namespace SimsCCManager.Containers
                 }
             }
         }
+        public string AltType {get; set;}
 
         public List<FunctionSortList> FunctionSort {get; set;} = new();
         private List<IndexEntry> _indexentries;
@@ -1052,6 +1278,10 @@ namespace SimsCCManager.Containers
         public bool Mesh {get; set;}
         public bool Orphan {get; set;}
         public bool GameMod {get; set;}
+
+        public List<Sims3Expansions> Expansions {get; set;} = new();
+
+        public ClothingInfo ClothingInfo {get; set;} = new();
         public void Serialize()
         {
             //throw new NotImplementedException();
@@ -1093,6 +1323,7 @@ namespace SimsCCManager.Containers
                 }
             }
         }
+        public string AltType {get; set;}
 
         public List<FunctionSortList> FunctionSort {get; set;} = new();
         private List<IndexEntry> _indexentries;
@@ -1111,6 +1342,10 @@ namespace SimsCCManager.Containers
         public bool Mesh {get; set;}
         public bool Orphan {get; set;}
         public bool GameMod {get; set;}
+
+        public List<Sims4Expansions> Expansions {get; set;} = new();
+
+        public ClothingInfo ClothingInfo {get; set;} = new();
         public void Serialize()
         {
             //throw new NotImplementedException();

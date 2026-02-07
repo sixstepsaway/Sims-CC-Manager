@@ -11,6 +11,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Numerics;
 using System.Runtime.ExceptionServices;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks.Dataflow;
@@ -36,6 +37,7 @@ namespace SimsCCManager.PackageReaders
             new EntryType(){ Tag = "5EL", TypeID = "6A97042F", Description = "Lighting (Environment Cube Light)" },
             new EntryType(){ Tag = "5LF", TypeID = "AC06A66F", Description = "Lighting (Linear Fog Light)" },
             new EntryType(){ Tag = "5SC", TypeID = "25232B11", Description = "Scene Node" },
+            new EntryType(){ Tag = "AGED", TypeID = "AC598EAC", Description = "Age Data" },
             new EntryType(){ Tag = "ANIM", TypeID = "FB00791E", Description = "Animation Resource" },
             new EntryType(){ Tag = "BCON", TypeID = "42434F4E", Description = "Behaviour Constant" },
             new EntryType(){ Tag = "BHAV", TypeID = "42484156", Description = "Behaviour Function" },
@@ -65,7 +67,6 @@ namespace SimsCCManager.PackageReaders
             new EntryType(){ Tag = "HLS", TypeID = "7B1ACFCD", Description = "Hitlist (TS2 format)" },
             new EntryType(){ Tag = "HOUS", TypeID = "484F5553", Description = "House Data" },
             new EntryType(){ Tag = "JFIF", TypeID = "4D533EDD", Description = "JPEG/JFIF Image" },
-            new EntryType(){ Tag = "JFIF", TypeID = "856DDBAC", Description = "JPEG/JFIF Image" },
             new EntryType(){ Tag = "JFIF", TypeID = "8C3CE95A", Description = "JPEG/JFIF Image" },
             new EntryType(){ Tag = "JFIF", TypeID = "0C7E9A76", Description = "JPEG/JFIF Image" },
             new EntryType(){ Tag = "LDEF", TypeID = "0BF999E7", Description = "Lot or Tutorial Description" },
@@ -97,7 +98,6 @@ namespace SimsCCManager.PackageReaders
             new EntryType(){ Tag = "PDAT", TypeID = "AACE2EFB", Description = "Person Data (Formerly SDSC/SINF/SDAT)" },
             new EntryType(){ Tag = "PERS", TypeID = "50455253", Description = "Person Status" },
             new EntryType(){ Tag = "PMAP", TypeID = "8CC0A14B", Description = "Predictive Map" },
-            new EntryType(){ Tag = "PNG", TypeID = "856DDBAC", Description = "PNG Image" },
             new EntryType(){ Tag = "POOL", TypeID = "0C900FDB", Description = "Pool Surface" },
             new EntryType(){ Tag = "Popups", TypeID = "2C310F46", Description = "Unknown" },
             new EntryType(){ Tag = "POSI", TypeID = "504F5349", Description = "Edith Positional Information (deprecated)" },
@@ -107,7 +107,7 @@ namespace SimsCCManager.PackageReaders
             new EntryType(){ Tag = "SFX", TypeID = "8DB5E4C2", Description = "Sound Effects" },
             new EntryType(){ Tag = "SHPE", TypeID = "FC6EB1F7", Description = "Shape" },
             new EntryType(){ Tag = "SIMI", TypeID = "53494D49", Description = "Sim Information" },
-            new EntryType(){ Tag = "SKIN", TypeID = "AC506764", Description = "Sim Outfits" },
+            new EntryType(){ Tag = "3IDR", TypeID = "AC506764", Description = "3D ID Reference" },
             new EntryType(){ Tag = "SLOT", TypeID = "534C4F54", Description = "Object Slot" },
             new EntryType(){ Tag = "SMAP", TypeID = "CAC4FC40", Description = "String Map" },
             new EntryType(){ Tag = "SPR2", TypeID = "53505232", Description = "Sprites" },
@@ -117,7 +117,7 @@ namespace SimsCCManager.PackageReaders
             new EntryType(){ Tag = "STXR", TypeID = "ACE46235", Description = "Surface Texture" },
             new EntryType(){ Tag = "SWAF", TypeID = "CD95548E", Description = "Sim Wants and Fears" },
             new EntryType(){ Tag = "TATT", TypeID = "54415454", Description = "Tree Attributes" },
-            new EntryType(){ Tag = "TGA", TypeID = "856DDBAC", Description = "Targa Image" },
+            new EntryType(){ Tag = "IMG", TypeID = "856DDBAC", Description = "Image" },
             new EntryType(){ Tag = "TMAP", TypeID = "4B58975B", Description = "Lot or Terrain Texture Map" },
             new EntryType(){ Tag = "TPRP", TypeID = "54505250", Description = "Edith SimAntics Behavior Labels" },
             new EntryType(){ Tag = "TRCN", TypeID = "5452434E", Description = "Behavior Constant Labels" },
@@ -135,8 +135,10 @@ namespace SimsCCManager.PackageReaders
             new EntryType(){ Tag = "WRLD", TypeID = "49FF7D76", Description = "World Database" },
             new EntryType(){ Tag = "WTHR", TypeID = "B21BE28B", Description = "Weather Info" },
             new EntryType(){ Tag = "XA", TypeID = "2026960B", Description = "XA Audio" },
+            new EntryType(){ Tag = "XFMD", TypeID = "0C93E3DE", Description = "Face Modifier XML" },
             new EntryType(){ Tag = "XHTN", TypeID = "8C1580B5", Description = "Hairtone XML" },
             new EntryType(){ Tag = "XMTO", TypeID = "584D544F", Description = "Material Object Class Dump" },
+            new EntryType(){ Tag = "XNGB", TypeID = "6D619378", Description = "Neighborhood Object XML" },
             new EntryType(){ Tag = "XOBJ", TypeID = "CCA8E925", Description = "Object Class Dump" },
             new EntryType(){ Tag = "XTOL", TypeID = "2C1FD8A1", Description = "Texture Overlay XML" },
             new EntryType(){ Tag = "UNK", TypeID = "0F9F0C21", Description = "Unknown (from Nightlife)" },
@@ -302,7 +304,7 @@ namespace SimsCCManager.PackageReaders
             new FunctionSortList(){FlagNum = 8, FunctionSubsortNum = 2, Category = "Two Story Window"},
             new FunctionSortList(){FlagNum = 8, FunctionSubsortNum = 10, Category = "Arch"},
             new FunctionSortList(){FlagNum = 1, FunctionSubsortNum = 20, Category = "Staircase"},
-            new FunctionSortList(){FlagNum = 0, FunctionSubsortNum = 0, Category = "Fireplaces (?)"},
+            new FunctionSortList(){FlagNum = 0, FunctionSubsortNum = 0, Category = "Fireplaces"},
             new FunctionSortList(){FlagNum = 1, FunctionSubsortNum = 400, Category = "Garage"},
             new FunctionSortList(){FlagNum = 4, FunctionSubsortNum = 1, Category = "Trees"},
             new FunctionSortList(){FlagNum = 4, FunctionSubsortNum = 4, Category = "Flowers"},
@@ -635,7 +637,13 @@ namespace SimsCCManager.PackageReaders
             }
             if (IndexData.Exists(x => x.EntryType == "OBJD"))
             {
-                S2ReadOBJD(IndexData.First(x => x.EntryType == "OBJD"));
+                int c = 0;
+                foreach (IndexEntry entry in IndexData.Where(x => x.EntryType == "OBJD"))
+                {
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Reading {0} OBJD #{1}", fileinfo.Name, c));
+                    S2ReadOBJD(entry);
+                    c++;
+                }
             }
             if (IndexData.Exists(x => x.EntryType == "GMDC"))
             {
@@ -662,6 +670,20 @@ namespace SimsCCManager.PackageReaders
                     S2ReadXFLR(entry);
                 }
             }
+            if (IndexData.Exists(x => x.EntryType == "XNGB"))
+            {
+                foreach (IndexEntry entry in IndexData.Where(x => x.EntryType == "XNGB"))
+                {
+                    S2ReadXNGB(entry);
+                }
+            }
+            if (IndexData.Exists(x => x.EntryType == "GZPS"))
+            {
+                foreach (IndexEntry entry in IndexData.Where(x => x.EntryType == "GZPS"))
+                {
+                    S2ReadGZPS(entry);                    
+                }                
+            }
 
             if (IndexData.Exists(x => x.EntryType == "TXTR"))
             {
@@ -671,7 +693,48 @@ namespace SimsCCManager.PackageReaders
                     S2ReadTXTR(entry, c);
                     c++;
                 }
-            }            
+            }
+
+            if (IndexData.Exists(x => x.EntryType == "3IDR"))
+            {
+                int c = 0;
+                foreach (IndexEntry entry in IndexData.Where(x => x.EntryType == "3IDR"))
+                {
+                    S2Read3DIR(entry, c);
+                    c++;
+                }
+            }
+            if (IndexData.Exists(x => x.EntryType == "SHPE"))
+            {
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Found {0} SHPE entries in {1}", IndexData.Count(x => x.EntryType == "SHPE"), fileinfo.Name));
+                int c = 0;
+                foreach (IndexEntry entry in IndexData.Where(x => x.EntryType == "SHPE"))
+                {
+                    S2ReadSHPE(entry, c);
+                    c++;
+                }
+            }
+            if (IndexData.Exists(x => x.EntryType == "TXMT"))
+            {
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Found {0} TXMT entries in {1}", IndexData.Count(x => x.EntryType == "TXMT"), fileinfo.Name));
+                int c = 0;
+                foreach (IndexEntry entry in IndexData.Where(x => x.EntryType == "TXMT"))
+                {
+                    S2ReadTXMT(entry, c);
+                    c++;
+                }
+            }
+            if (IndexData.Exists(x => x.EntryType == "XHTN"))
+            {
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Found {0} XHTN entries in {1}", IndexData.Count(x => x.EntryType == "XHTN"), fileinfo.Name));
+                int c = 0;
+                foreach (IndexEntry entry in IndexData.Where(x => x.EntryType == "XHTN"))
+                {
+                    S2ReadXHTN(entry, c);
+                    c++;
+                }
+            }
+
 
             if (Sims2Data.MMATDataBlock.Count != 0)
             {
@@ -684,7 +747,284 @@ namespace SimsCCManager.PackageReaders
             SimsData.IndexEntries = IndexData;
             SimsData.DictionaryEntries();
 
-            if (SimsData.EntryCount("GMDC") > 0) SimsData.Mesh = true;
+            if (SimsData.EntryCount("BHAV") > 0
+            && SimsData.EntryCount("DIR") == 1
+            && SimsData.EntryCount("GMDC") == 0)
+            {
+                Sims2Data.IsGameMod(); if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Package {0} is Sims2Data.IsGameMod()", fileinfo.Name));
+            }
+
+            if (SimsData.EntryCount("bhav") > 0
+            && SimsData.EntryCount("bcon") > 0
+            && SimsData.EntryCount("dir") == 0
+            && SimsData.EntryCount("gmdc") == 0
+            && SimsData.EntryCount("objd") == 0)
+            {
+                Sims2Data.IsGameMod(); if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Package {0} is Sims2Data.IsGameMod()", fileinfo.Name));
+            }
+
+            if (SimsData.EntryCount("bhav") > 0
+            && SimsData.EntryCount("nref") > 0
+            && SimsData.EntryCount("objd") > 0
+            && SimsData.EntryCount("objf") > 0
+            && SimsData.EntryCount("slot") > 0
+            && SimsData.EntryTypes() == 5)
+            {
+                Sims2Data.IsGameMod(); if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Package {0} is Sims2Data.IsGameMod()", fileinfo.Name));
+            }
+
+            if (SimsData.EntryCount("ttab") > 0
+            && SimsData.EntryCount("ttas") > 0
+            && SimsData.EntryTypes() == 2)
+            {
+                Sims2Data.IsGameMod(); if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Package {0} is Sims2Data.IsGameMod()", fileinfo.Name));
+            }
+
+            if (SimsData.EntryCount("bhav") > 0
+            && SimsData.EntryCount("ttas") > 0
+            && SimsData.EntryCount("ttab") > 0
+            && SimsData.EntryTypes() == 3)
+            {
+                Sims2Data.IsGameMod(); if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Package {0} is Sims2Data.IsGameMod()", fileinfo.Name));
+            }
+
+            if (SimsData.EntryCount("bhav") > 0
+            && SimsData.EntryCount("ctss") > 0
+            && SimsData.EntryCount("STR#") > 0
+            && SimsData.EntryTypes() == 3)
+            {
+                Sims2Data.IsGameMod(); if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Package {0} is Sims2Data.IsGameMod()", fileinfo.Name));
+            }
+
+            if (SimsData.EntryCount("bcon") > 0
+            && SimsData.EntryTypes() == 1)
+            {
+                Sims2Data.IsGameMod(); if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Package {0} is Sims2Data.IsGameMod()", fileinfo.Name));
+            }
+
+            if (SimsData.EntryCount("bhav") > 0
+            && SimsData.EntryTypes() == 1)
+            {
+                Sims2Data.IsGameMod(); if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Package {0} is Sims2Data.IsGameMod()", fileinfo.Name));
+            }
+
+            if (SimsData.EntryCount("bhav") > 0
+            && SimsData.EntryCount("objf") > 0
+            && SimsData.EntryTypes() == 2)
+            {
+                Sims2Data.IsGameMod(); if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Package {0} is Sims2Data.IsGameMod()", fileinfo.Name));
+            }
+
+            if (SimsData.EntryCount("ttab") > 0
+            && SimsData.EntryTypes() == 1)
+            {
+                Sims2Data.IsGameMod(); if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Package {0} is Sims2Data.IsGameMod()", fileinfo.Name));
+            }
+
+            if (SimsData.EntryCount("cres") > 0
+            && SimsData.EntryCount("STR#") > 0
+            && SimsData.EntryTypes() == 2)
+            {
+                Sims2Data.IsGameMod(); if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Package {0} is Sims2Data.IsGameMod()", fileinfo.Name));
+            }
+
+            if (SimsData.EntryCount("STR#") > 0
+            && SimsData.EntryTypes() == 1)
+            {
+                Sims2Data.IsGameMod(); if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Package {0} is Sims2Data.IsGameMod()", fileinfo.Name));
+            }
+
+            if (SimsData.EntryCount("objd") > 0
+            && SimsData.EntryCount("objf") > 0
+            && SimsData.EntryCount("slot") > 0
+            && SimsData.EntryCount("nref") > 0
+            && SimsData.EntryTypes() == 4)
+            {
+                Sims2Data.IsGameMod(); if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Package {0} is Sims2Data.IsGameMod()", fileinfo.Name));
+            }
+
+            if (SimsData.EntryCount("bhav") > 0
+            && SimsData.EntryCount("ttab") > 0
+            && SimsData.EntryCount("ttas") > 0
+            && SimsData.EntryCount("STR#") > 0
+            && SimsData.EntryTypes() == 4)
+            {
+                Sims2Data.IsGameMod(); if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Package {0} is Sims2Data.IsGameMod()", fileinfo.Name));
+            }
+
+            if (SimsData.EntryCount("bhav") > 0
+            && SimsData.EntryCount("STR#") > 0
+            && SimsData.EntryCount("ttab") > 0
+            && SimsData.EntryCount("ttas") > 0
+            && SimsData.EntryCount("anim") > 0
+            && SimsData.EntryTypes() == 5)
+            {
+                Sims2Data.IsGameMod(); if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Package {0} is Sims2Data.IsGameMod()", fileinfo.Name));
+            }
+
+            if (SimsData.EntryCount("coll") > 0)
+            {
+                Sims2Data.AltType = "Collection"; if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Package {0} is Sims2Data.AltType = Collection", fileinfo.Name));
+            }
+            if (SimsData.EntryCount("xngb") > 0)
+            {
+                Sims2Data.AltType = "Hood Deco"; if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Package {0} is Sims2Data.AltType = Hood Deco", fileinfo.Name));
+            }
+            /*if (SimsData.EntryCount("xhtn") > 0)
+            {
+                Sims2Data.AltType = "Hair"; if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Package {0} is Sims2Data.AltType = Hair", fileinfo.Name));
+            }*/
+
+
+            if (SimsData.EntryCount("lxnr") > 0
+            && SimsData.EntryCount("AGED") > 0
+            && SimsData.EntryCount("3IDR") > 0
+            && SimsData.EntryCount("IMG") == 0
+            && SimsData.EntryCount("gzps") > 0
+            && SimsData.EntryCount("binx") > 0
+            && SimsData.EntryCount("txmt") > 0)
+            {
+                Sims2Data.AltType = "Face Template"; if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Package {0} is Sims2Data.AltType = Face Template", fileinfo.Name));
+            }
+
+            if (SimsData.EntryCount("lxnr") > 0
+            && SimsData.EntryCount("AGED") > 0
+            && SimsData.EntryCount("3IDR") > 0
+            && SimsData.EntryCount("IMG") > 0
+            && SimsData.EntryCount("gzps") > 0
+            && SimsData.EntryCount("binx") > 0
+            && SimsData.EntryCount("txmt") > 0
+            && SimsData.EntryCount("bhav") > 0)
+            {
+                Sims2Data.AltType = "NPC"; if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Package {0} is Sims2Data.AltType = NPC", fileinfo.Name));
+            }
+
+            if (SimsData.EntryCount("gmdc") > 0
+            &&SimsData.EntryCount("gmnd") > 0
+            && SimsData.EntryCount("xfmd") > 0)
+            {
+                Sims2Data.AltType = "Slider"; if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Package {0} is Sims2Data.AltType = Slider", fileinfo.Name));
+            }
+
+            if (SimsData.EntryCount("XOBJ") > 0
+            && SimsData.EntryCount("objd") == 0
+            && SimsData.EntryCount("gmdc") == 0
+            && SimsData.EntryCount("str#") == 0
+            && SimsData.EntryCount("bhav") == 0
+            && SimsData.EntryCount("xngb") == 0
+            && SimsData.EntryCount("txtr") == 0
+            && SimsData.EntryCount("txmt") == 0
+            && SimsData.EntryCount("slot") == 0
+            && SimsData.EntryCount("nref") == 0
+            && SimsData.EntryCount("ctss") == 0)
+            {
+                Sims2Data.AltType = "Build Object Hider"; if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Package {0} is Sims2Data.AltType = Build Object Hider", fileinfo.Name));
+            }
+            if (SimsData.EntryCount("XOBJ") == 0
+            && SimsData.EntryCount("objd") > 0
+            && SimsData.EntryCount("gmdc") == 0
+            && SimsData.EntryCount("str#") == 0
+            && SimsData.EntryCount("bhav") == 0
+            && SimsData.EntryCount("xngb") == 0
+            && SimsData.EntryCount("txtr") == 0
+            && SimsData.EntryCount("txmt") == 0
+            && SimsData.EntryCount("slot") == 0
+            && SimsData.EntryCount("nref") == 0
+            && SimsData.EntryCount("ctss") == 0)
+            {
+                Sims2Data.AltType = "Buy Object Hider"; if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Package {0} is Sims2Data.AltType = Buy Object Hider", fileinfo.Name));
+            }
+            if (SimsData.EntryCount("XOBJ") == 0
+            && SimsData.EntryCount("objd") == 0
+            && SimsData.EntryCount("gmdc") == 0
+            && SimsData.EntryCount("str#") == 0
+            && SimsData.EntryCount("bhav") == 0
+            && SimsData.EntryCount("xngb") == 0
+            && SimsData.EntryCount("txtr") == 0
+            && SimsData.EntryCount("txmt") == 0
+            && SimsData.EntryCount("slot") == 0
+            && SimsData.EntryCount("nref") == 0
+            && SimsData.EntryCount("ctss") == 0
+            && SimsData.EntryCount("gzps") > 0)
+            {
+                Sims2Data.AltType = "CAS Hider"; if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Package {0} is Sims2Data.AltType = CAS Hider", fileinfo.Name));
+            }
+
+            if (SimsData.EntryCount("XOBJ") == 0
+            && SimsData.EntryCount("objd") == 0
+            && SimsData.EntryCount("gmdc") == 0
+            && SimsData.EntryCount("str#") == 0
+            && SimsData.EntryCount("bhav") == 0
+            && SimsData.EntryCount("xngb") == 0
+            && SimsData.EntryCount("txtr") == 0
+            && SimsData.EntryCount("txmt") == 0
+            && SimsData.EntryCount("slot") == 0
+            && SimsData.EntryCount("nref") == 0
+            && SimsData.EntryCount("ctss") == 0
+            && SimsData.EntryCount("xtol") > 0)
+            {
+                Sims2Data.AltType = "CAS Makeup Hider"; if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Package {0} is Sims2Data.AltType = CAS Makeup Hider", fileinfo.Name));
+            }
+
+            if (SimsData.EntryCount("XOBJ") == 0
+            && SimsData.EntryCount("objd") == 0
+            && SimsData.EntryCount("gmdc") == 0
+            && SimsData.EntryCount("str#") == 0
+            && SimsData.EntryCount("bhav") == 0
+            && SimsData.EntryCount("xngb") == 0
+            && SimsData.EntryCount("txtr") == 0
+            && SimsData.EntryCount("txmt") == 0
+            && SimsData.EntryCount("slot") == 0
+            && SimsData.EntryCount("nref") == 0
+            && SimsData.EntryCount("ctss") == 0
+            && SimsData.EntryCount("xmol") > 0)
+            {
+                Sims2Data.AltType = "CAS Accesory Hider"; if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Package {0} is Sims2Data.AltType = CAS Accesory Hider", fileinfo.Name));
+            }
+
+            if (SimsData.EntryCount("XOBJ") == 0
+            && SimsData.EntryCount("objd") == 0
+            && SimsData.EntryCount("gmdc") == 0
+            && SimsData.EntryCount("str#") == 0
+            && SimsData.EntryCount("bhav") == 0
+            && SimsData.EntryCount("xngb") == 0
+            && SimsData.EntryCount("txtr") == 0
+            && SimsData.EntryCount("txmt") == 0
+            && SimsData.EntryCount("slot") == 0
+            && SimsData.EntryCount("nref") == 0
+            && SimsData.EntryCount("ctss") == 0
+            && SimsData.EntryCount("xngb") > 0)
+            {
+                Sims2Data.AltType = "Hood Deco Hider"; if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Package {0} is Sims2Data.AltType = Hood Deco Hider", fileinfo.Name));
+            }
+
+            if (SimsData.EntryCount("XOBJ") == 0
+            && SimsData.EntryCount("objd") == 0
+            && SimsData.EntryCount("gmdc") == 0
+            && SimsData.EntryCount("str#") == 0
+            && SimsData.EntryCount("bhav") > 0
+            && SimsData.EntryCount("xngb") == 0
+            && SimsData.EntryCount("txtr") == 0
+            && SimsData.EntryCount("txmt") == 0
+            && SimsData.EntryCount("slot") == 0
+            && SimsData.EntryCount("nref") == 0
+            && SimsData.EntryCount("ctss") == 0
+            && SimsData.EntryCount("xngb") == 0)
+            {
+                Sims2Data.GameMod = true; if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Package {0} is Sims2Data.GameMod = true", fileinfo.Name));
+            }
+
+            
+            if (SimsData.EntryCount("GMDC") > 0) { 
+                SimsData.Mesh = true; 
+                if (Sims2Data.GMDCDataBlock.Any(x => x.Groups.Any(g => g.ObjectName.StartsWith("hair"))))
+                {
+                    SimsData.AltType = "Hair";
+                }
+            }
+            if (SimsData.EntryCount("TXTR") > 0) SimsData.Recolor = true;
+
+
             if (SimsData.EntryCount("MMAT") > 0 && SimsData.EntryCount("GMDC") == 0)
             {
                 if (SimsData.FunctionSort.Count != 0)
@@ -703,79 +1043,358 @@ namespace SimsCCManager.PackageReaders
                     SimsData.Recolor = true;
                 }
             }
-            
-            if (SimsData.EntryCount("BHAV") > 0 
-            && SimsData.EntryCount("DIR") == 1 
-            && SimsData.EntryCount("GMDC") == 0) SimsData.IsGameMod();
 
-            if (SimsData.EntryCount("bhav") > 0 
-            && SimsData.EntryCount("bcon") > 0 
-            && SimsData.EntryCount("dir") == 0 
-            && SimsData.EntryCount("gmdc") == 0 
-            && SimsData.EntryCount("objd") == 0) SimsData.IsGameMod();
-            
-            if (SimsData.EntryCount("bhav") > 0 
-            && SimsData.EntryCount("nref") > 0 
-            && SimsData.EntryCount("objd") > 0 
-            && SimsData.EntryCount("objf") > 0 
-            && SimsData.EntryCount("slot") > 0 
-            && SimsData.EntryTypes() == 5) SimsData.IsGameMod();
-            
-            if (SimsData.EntryCount("ttab") > 0 
-            && SimsData.EntryCount("ttas") > 0 
-            && SimsData.EntryTypes() == 2) SimsData.IsGameMod();
-
-            if (SimsData.EntryCount("bhav") > 0 
-            && SimsData.EntryCount("ttas") > 0 
-            && SimsData.EntryCount("ttab") > 0 
-            && SimsData.EntryTypes() == 3) SimsData.IsGameMod();
-
-            if (SimsData.EntryCount("bhav") > 0 
-            && SimsData.EntryCount("ctss") > 0 
-            && SimsData.EntryCount("STR#") > 0  
-            && SimsData.EntryTypes() == 3) SimsData.IsGameMod(); 
-            
-            if (SimsData.EntryCount("bcon") > 0 
-            && SimsData.EntryTypes() == 1) SimsData.IsGameMod(); 
-
-            if (SimsData.EntryCount("bhav") > 0 
-            && SimsData.EntryTypes() == 1) SimsData.IsGameMod();
-
-            if (SimsData.EntryCount("bhav") > 0 
-            && SimsData.EntryCount("objf") > 0 
-            && SimsData.EntryTypes() == 2) SimsData.IsGameMod();
-            
-            if (SimsData.EntryCount("ttab") > 0 
-            && SimsData.EntryTypes() == 1) SimsData.IsGameMod(); 
-            
-            if (SimsData.EntryCount("cres") > 0 
-            && SimsData.EntryCount("STR#") > 0 
-            && SimsData.EntryTypes() == 2) SimsData.IsGameMod();
-            
-            if (SimsData.EntryCount("STR#") > 0 
-            && SimsData.EntryTypes() == 1) SimsData.IsGameMod();
-            
-            if (SimsData.EntryCount("objd") > 0 
-            && SimsData.EntryCount("objf") > 0 
-            && SimsData.EntryCount("slot") > 0 
-            && SimsData.EntryCount("nref") > 0 
-            && SimsData.EntryTypes() == 4) SimsData.IsGameMod();
-
-            if (SimsData.EntryCount("bhav") > 0 
-            && SimsData.EntryCount("ttab") > 0 
-            && SimsData.EntryCount("ttas") > 0 
-            && SimsData.EntryCount("STR#") > 0 
-            && SimsData.EntryTypes() == 4) SimsData.IsGameMod();
-            
-            if (SimsData.EntryCount("bhav") > 0 
-            && SimsData.EntryCount("STR#") > 0 
-            && SimsData.EntryCount("ttab") > 0 
-            && SimsData.EntryCount("ttas") > 0 
-            && SimsData.EntryCount("anim") > 0 
-            && SimsData.EntryTypes() == 5) SimsData.IsGameMod();
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Package {0} alt type: {1}", fileinfo.Name, SimsData.AltType));
         }
 
 
+
+        public void S2ReadXHTN(IndexEntry entry, int num)
+        {
+            S2ReadXHTNChunk xhtn = new();
+
+            packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
+            int cFileSize = packagereader.ReadInt32();
+            string cTypeID = packagereader.ReadUInt16().ToString("X4");
+            if (cTypeID == "FB10")
+            {
+                byte[] tempBytes = packagereader.ReadBytes(3);
+                uint cFullSize = Sims2EntryReaders.QFSLengthToInt(tempBytes);
+                string cpfTypeID = packagereader.ReadUInt32().ToString("X8");
+                if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
+                {
+                    xhtn = new(packagereader);
+                }
+                else
+                {
+                    packagereader.BaseStream.Position = ChunkOffset + entry.Offset + 9;
+                    DecryptByteStream decompressed = new DecryptByteStream(Sims2EntryReaders.Uncompress(packagereader.ReadBytes(cFileSize), cFullSize, 0));
+                    if (cpfTypeID == "E750E0E2")
+                    {
+                        // Read first four bytes
+                        cpfTypeID = decompressed.ReadUInt32().ToString("X8");
+                        if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
+                        {
+                            xhtn = new(decompressed);
+                        }
+                    }
+                    else
+                    {
+                        xhtn = new(decompressed, true);
+                    }
+                }
+            }
+            xhtn.XHTNData.CopyEntryInfo(entry);
+            (SimsData as Sims2Data).XHTNDataBlock.Add(xhtn.XHTNData);
+        }
+
+
+
+
+
+        public void S2ReadTXMT(IndexEntry entry, int txtrc)
+        {
+            S2ReadTXMTChunk txmt;
+
+            packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
+            int cFileSize = packagereader.ReadInt32();
+            string cTypeID = packagereader.ReadUInt16().ToString("X4");
+            if (cTypeID == "FB10")
+            {
+                byte[] tempBytes = packagereader.ReadBytes(3);
+                uint cFullSize = Sims2EntryReaders.QFSLengthToInt(tempBytes);
+                DecryptByteStream decompressed = new DecryptByteStream(Sims2EntryReaders.Uncompress(packagereader.ReadBytes(cFileSize), cFullSize, 0));
+                txmt = new(decompressed, fileinfo, txtrc);
+
+            }
+            else
+            {
+                packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
+                txmt = new(packagereader, fileinfo, txtrc);
+            }
+            txmt.TXMTData.CopyEntryInfo(entry);
+            (SimsData as Sims2Data).TXMTDataBlock.Add(txmt.TXMTData);
+            
+
+        }
+
+        public void S2ReadSHPE(IndexEntry entry, int txtrc)
+        {
+            S2ReadSHPEChunk shpe;
+
+            packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
+            int cFileSize = packagereader.ReadInt32();
+            string cTypeID = packagereader.ReadUInt16().ToString("X4");
+            if (cTypeID == "FB10")
+            {
+                byte[] tempBytes = packagereader.ReadBytes(3);
+                uint cFullSize = Sims2EntryReaders.QFSLengthToInt(tempBytes);
+                DecryptByteStream decompressed = new DecryptByteStream(Sims2EntryReaders.Uncompress(packagereader.ReadBytes(cFileSize), cFullSize, 0));
+                shpe = new(decompressed, fileinfo, txtrc);
+
+            }
+            else
+            {
+                packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
+                shpe = new(packagereader, fileinfo, txtrc);
+            }
+            shpe.SHPEData.CopyEntryInfo(entry);
+            
+            (SimsData as Sims2Data).SHPEDataBlock.Add(shpe.SHPEData);
+            
+
+        }
+
+        public void S2Read3DIR(IndexEntry entry, int txtrc)
+        {
+            S2Read3IDRChunk eidr;
+
+            packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
+            int cFileSize = packagereader.ReadInt32();
+            string cTypeID = packagereader.ReadUInt16().ToString("X4");
+            if (cTypeID == "FB10")
+            {
+                byte[] tempBytes = packagereader.ReadBytes(3);
+                uint cFullSize = Sims2EntryReaders.QFSLengthToInt(tempBytes);
+                DecryptByteStream decompressed = new DecryptByteStream(Sims2EntryReaders.Uncompress(packagereader.ReadBytes(cFileSize), cFullSize, 0));
+                eidr = new(decompressed, fileinfo);
+
+            }
+            else
+            {
+                packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
+                eidr = new(packagereader, fileinfo);
+            }
+            eidr.EIDRData.CopyEntryInfo(entry);
+            (SimsData as Sims2Data).EIDRDataBlock.Add(eidr.EIDRData);
+            
+
+        }
+        
+        public void S2ReadGZPS(IndexEntry entry)
+        {
+            S2ReadGZPSChunk gzps = new();
+
+            packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
+            int cFileSize = packagereader.ReadInt32();
+            string cTypeID = packagereader.ReadUInt16().ToString("X4");
+            if (cTypeID == "FB10")
+            {
+                byte[] tempBytes = packagereader.ReadBytes(3);
+                uint cFullSize = Sims2EntryReaders.QFSLengthToInt(tempBytes);
+                string cpfTypeID = packagereader.ReadUInt32().ToString("X8");
+                if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
+                {
+                    gzps = new(packagereader);
+                }
+                else
+                {
+                    packagereader.BaseStream.Position = ChunkOffset + entry.Offset + 9;
+                    DecryptByteStream decompressed = new DecryptByteStream(Sims2EntryReaders.Uncompress(packagereader.ReadBytes(cFileSize), cFullSize, 0));
+                    if (cpfTypeID == "E750E0E2")
+                    {
+                        // Read first four bytes
+                        cpfTypeID = decompressed.ReadUInt32().ToString("X8");
+                        if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
+                        {
+                            gzps = new(decompressed);
+                        }
+                    }
+                    else
+                    {
+                        gzps = new(decompressed, true);
+                    }
+                }
+            }
+            gzps.GZPSData.CopyEntryInfo(entry);
+            
+            string category = "";
+            string subcategory = "";
+
+            switch (gzps.GZPSData.Product)
+            {
+                case "0":
+                Sims2Data.Expansions.Add(Sims2Expansions.BaseGame);
+                break;
+            }
+
+
+            switch (gzps.GZPSData.Override0subset)
+            {                    
+                case "body":
+                category = "Clothing";
+                subcategory = "Full body";
+                break;           
+                case "top":
+                category = "Clothing";
+                subcategory = "Top";
+                break;           
+                case "bottom":
+                category = "Clothing";
+                subcategory = "Bottom";
+                break;         
+                case "hair":
+                category = "Hair";
+                break;
+
+            }
+            Sims2Data.FunctionSort.Add(new () { Category = category, Subcategory = subcategory});
+
+            switch (gzps.GZPSData.Category)
+            {
+                case "4991":
+                    Sims2Data.ClothingInfo.Category.Add("All");
+                break;
+                case "1":
+                    Sims2Data.ClothingInfo.Category.Add("Casual1");
+                break;
+                case "2":
+                    Sims2Data.ClothingInfo.Category.Add("Casual2");
+                break;
+                case "4":
+                    Sims2Data.ClothingInfo.Category.Add("Casual3");
+                break;
+                case "7":
+                    Sims2Data.ClothingInfo.Category.Add("Everyday");
+                break;
+                case "8":
+                    Sims2Data.ClothingInfo.Category.Add("Swimwear");
+                break;
+                case "10":
+                    Sims2Data.ClothingInfo.Category.Add("Swimwear");
+                break;
+                case "20":
+                    Sims2Data.ClothingInfo.Category.Add("Formal");
+                break;
+                case "40":
+                    Sims2Data.ClothingInfo.Category.Add("Underwear");
+                break;
+                case "80":
+                    Sims2Data.FunctionSort = [new() { Category = "Skintone"}];
+                    //Sims2Data.ClothingInfo.Category.Add("Skintone");
+                break;
+                case "100":
+                    Sims2Data.ClothingInfo.Category.Add("Maternity");
+                break;
+                case "200":
+                    Sims2Data.ClothingInfo.Category.Add("Activewear");
+                break;
+                case "400":
+                    Sims2Data.ClothingInfo.Category.Add("TryOn");
+                break;
+                case "800":
+                    Sims2Data.ClothingInfo.Category.Add("NakedOverlay");
+                break;
+                case "1000":
+                    Sims2Data.ClothingInfo.Category.Add("Outerwear");
+                break;
+                
+            }
+
+            switch (gzps.GZPSData.Age)
+            {
+                case "48":
+                Sims2Data.ClothingInfo.Age.Add("Adult");
+                break;
+                case "2":
+                Sims2Data.ClothingInfo.Age.Add("Child");
+                break;
+                case "10":
+                Sims2Data.ClothingInfo.Age.Add("Elder");
+                break;
+                case "4":
+                Sims2Data.ClothingInfo.Age.Add("Teen");
+                break;
+                case "1":
+                Sims2Data.ClothingInfo.Age.Add("Toddler");
+                break;
+                case "20":
+                Sims2Data.ClothingInfo.Age.Add("Baby");
+                break;
+                case "40":
+                Sims2Data.ClothingInfo.Age.Add("Young Adult");
+                break;
+            }
+            switch (gzps.GZPSData.Gender)
+            {
+                case "1":
+                Sims2Data.ClothingInfo.Age.Add("Female");
+                break;
+                case "2":
+                Sims2Data.ClothingInfo.Age.Add("Male");
+                break;
+                case "3":
+                Sims2Data.ClothingInfo.Age.Add("Unisex");
+                break;
+            }
+
+            switch (gzps.GZPSData.Hairtone)
+            {
+                case "00000001-0000-0000-0000-000000000000":
+                    gzps.GZPSData.HairColor = "Black";
+                break; 
+                case "00000002-0000-0000-0000-000000000000":
+                    gzps.GZPSData.HairColor = "Brown";
+                break;
+                case "00000003-0000-0000-0000-000000000000":
+                    gzps.GZPSData.HairColor = "Blond";
+                break;
+                case "00000004-0000-0000-0000-000000000000":
+                    gzps.GZPSData.HairColor = "Red";
+                break;
+                case "00000005-0000-0000-0000-000000000000":
+                    gzps.GZPSData.HairColor = "Grey";
+                break;
+                default:
+                    gzps.GZPSData.HairColor = "Other";
+                break;
+            }
+        
+            (SimsData as Sims2Data).GZPSDataBlock.Add(gzps.GZPSData);
+        }
+
+        public void S2ReadXNGB(IndexEntry entry)
+        {
+            S2ReadXNGBChunk xngb = new();
+
+            packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
+            int cFileSize = packagereader.ReadInt32();
+            string cTypeID = packagereader.ReadUInt16().ToString("X4");
+            if (cTypeID == "FB10")
+            {
+                byte[] tempBytes = packagereader.ReadBytes(3);
+                uint cFullSize = Sims2EntryReaders.QFSLengthToInt(tempBytes);
+                string cpfTypeID = packagereader.ReadUInt32().ToString("X8");
+                if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
+                {
+                    xngb = new(packagereader);
+                }
+                else
+                {
+                    packagereader.BaseStream.Position = ChunkOffset + entry.Offset + 9;
+                    DecryptByteStream decompressed = new DecryptByteStream(Sims2EntryReaders.Uncompress(packagereader.ReadBytes(cFileSize), cFullSize, 0));
+                    if (cpfTypeID == "E750E0E2")
+                    {
+                        // Read first four bytes
+                        cpfTypeID = decompressed.ReadUInt32().ToString("X8");
+                        if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
+                        {
+                            xngb = new(decompressed);
+                        }
+                    }
+                    else
+                    {
+                        xngb = new(decompressed, true);
+                    }
+                }
+            }
+            xngb.XNGBData.CopyEntryInfo(entry);
+            (SimsData as Sims2Data).XNGBDataBlock = xngb.XNGBData;
+            if (xngb.XNGBData.Type != null) SimsData.AltType = xngb.XNGBData.Type;
+            if (xngb.XNGBData.Name != null) SimsData.Title = xngb.XNGBData.Name;
+            if (xngb.XNGBData.Description != null) SimsData.Description = xngb.XNGBData.Description;
+            if (xngb.XNGBData.Guid != null) SimsData.GUID = xngb.XNGBData.Guid;
+        }
 
         public void S2ReadTXTR(IndexEntry entry, int txtrc)
         {
@@ -797,6 +1416,7 @@ namespace SimsCCManager.PackageReaders
                 packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
                 txtr = new(packagereader, fileinfo, txtrc);
             }
+            txtr.TXTRData.CopyEntryInfo(entry);
             (SimsData as Sims2Data).TXTRDataBlock.Add(txtr.TXTRData);
             if (!string.IsNullOrEmpty(txtr.TXTRData.GUID) && (string.IsNullOrEmpty(Sims2Data.GUID) || Sims2Data.GUID == "N/a")) Sims2Data.GUID = txtr.TXTRData.GUID;
 
@@ -836,7 +1456,7 @@ namespace SimsCCManager.PackageReaders
                     }
                 }
             }
-
+            xflr.XFLRData.CopyEntryInfo(entry);
             (SimsData as Sims2Data).XFLRDataBlock = xflr.XFLRData;
             if (xflr.XFLRData.Type == "terrainPaint")
             {
@@ -886,6 +1506,7 @@ namespace SimsCCManager.PackageReaders
                     }
                 }
             }
+            mmat.MMATData.CopyEntryInfo(entry);
 
             (SimsData as Sims2Data).MMATDataBlock.Add(mmat.MMATData);
         }
@@ -919,6 +1540,7 @@ namespace SimsCCManager.PackageReaders
             {
                 gmdc = new(packagereader);
             }
+            gmdc.GMDCData.CopyEntryInfo(entry);
             (SimsData as Sims2Data).GMDCDataBlock.Add(gmdc.GMDCData);
         }
 
@@ -940,6 +1562,7 @@ namespace SimsCCManager.PackageReaders
                 packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
                 cts = new(packagereader);
             }
+            
             if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("File {0}. CTSS: {1}", fileinfo.Name, cts.ToString()));
             SimsData.Title = cts.Title;
             SimsData.Description = cts.Description;
@@ -965,8 +1588,8 @@ namespace SimsCCManager.PackageReaders
                 objd = new(packagereader);
             }
             //if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("File {0}. OBJD: {1}", fileinfo.Name, objd.ToString()));
-            SimsData.FunctionSort = objd.FunctionSort;
-            SimsData.GUID = objd.ObjectGUID;
+            SimsData.FunctionSort.AddRange(objd.FunctionSort);
+            if (string.IsNullOrEmpty(SimsData.GUID)) SimsData.GUID = objd.ObjectGUID;
         }
         public void S2ReadXOBJ(IndexEntry entry)
         {
@@ -1081,13 +1704,1649 @@ namespace SimsCCManager.PackageReaders
 
         public void Dispose()
         {
-           msPackage.Dispose();
-           packagereader.Dispose();           
-           Sims2Data = new();
-           Sims3Data = new();
-           Sims4Data = new();
-           SimsData = Sims2Data;
+            msPackage.Dispose();
+            packagereader.Dispose();
+            Sims2Data = new();
+            Sims3Data = new();
+            Sims4Data = new();
+            SimsData = Sims2Data;
+
+        }
+    }
+
+    public struct S2ReadTXMTChunk
+    {
+        public TXMTData TXMTData = new();
+        public FileInfo file;
+        public S2ReadTXMTChunk(BinaryReader readFile, FileInfo fileInfo, int entryc)
+        {            
+            file = fileInfo;
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Reading TXMT chunk {0} for file {1}", entryc, file.Name));
+            
+            byte nameLength = readFile.ReadByte();
+            while (nameLength != 19)
+            {
+                nameLength = readFile.ReadByte();
+            }            
+            string fieldName = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("FieldName: {0}", fieldName));
+
+            string BlockID = readFile.ReadUInt32().ToString("X8");
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("BlockID: {0}", BlockID));
+            uint Version = readFile.ReadUInt32();
+            nameLength = readFile.ReadByte();
+            string cSGResource = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Version: {0}, cSGResource: {1}", Version, cSGResource));
+            
+        }
+        public S2ReadTXMTChunk(DecryptByteStream readFile, FileInfo fileInfo, int entryc)
+        {
+            file = fileInfo;
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Reading TXMT chunk {0} for file {1}", entryc, file.Name));
+            
+            byte nameLength = readFile.ReadByte();
+            while (nameLength != 19)
+            {
+                nameLength = readFile.ReadByte();
+            }            
+            string fieldName = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("FieldName: {0}", fieldName));
+
+            string BlockID = readFile.ReadUInt32().ToString("X8");
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("BlockID: {0}", BlockID));
+            uint Version = readFile.ReadUInt32();
+            nameLength = readFile.ReadByte();
+            string cSGResource = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Version: {0}, cSGResource: {1}", Version, cSGResource));
+            
+            
+            nameLength = readFile.ReadByte();
+            while (nameLength < 6) nameLength = readFile.ReadByte();
+            TXMTData.FileName = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Filename: {0}", TXMTData.FileName));
+            nameLength = readFile.ReadByte();
+            TXMTData.MaterialDescription = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Materialdescription: {0}", TXMTData.MaterialDescription));
+            
+            nameLength = readFile.ReadByte();
+            TXMTData.MaterialType = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("MaterialType: {0}", TXMTData.MaterialType));
+
+            TXMTData.PropertyCount = readFile.ReadUInt32();
+            for (int i = 0; i < TXMTData.PropertyCount; i++)
+            {
+                TXMTMaterial mat = new();
+                nameLength = readFile.ReadByte();
+                mat.PropertyName = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
+                nameLength = readFile.ReadByte();
+                mat.PropertyValue = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
+                TXMTData.MaterialProperties.Add(mat);
+            }
+
+            if (Version == 8)
+            {
+                TXMTData.TextureNameCount = readFile.ReadUInt32();
+                for (int i = 0; i < TXMTData.TextureNameCount; i++)
+                {
+                    nameLength = readFile.ReadByte();
+                    TXMTData.TextureNames.Add(Encoding.UTF8.GetString(readFile.ReadBytes(nameLength)));                   
+                }
+            }
            
+        }     
+    }
+
+public struct S2ReadSHPEChunk
+    {
+        public SHPEData SHPEData = new();
+        public FileInfo file;
+        public S2ReadSHPEChunk(BinaryReader readFile, FileInfo fileInfo, int entryc)
+        {            
+            file = fileInfo;
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Reading SHPE chunk {0} for file {1}", entryc, file.Name));
+            //readFile.ReadBytes(6);
+            byte nameLength = readFile.ReadByte();
+            while (nameLength != 6)
+            {
+                nameLength = readFile.ReadByte();
+            }            
+            string fieldName = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("FieldName: {0}", fieldName));
+            string BlockID = readFile.ReadUInt32().ToString("X8");
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("BlockID: {0}", BlockID));
+            uint Version = readFile.ReadUInt32();
+            nameLength = readFile.ReadByte();
+            string cSGResource = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Version: {0}, cSGResource: {1}", Version, cSGResource));
+            while (nameLength != 13)
+            {
+                nameLength = readFile.ReadByte();
+            }
+            string cReferentNode = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("cReferentNode: {0}", cReferentNode));
+            while (nameLength != 16)
+            {
+                nameLength = readFile.ReadByte();
+            }
+            string cObjectGraphNode = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("cObjectGraphNode: {0}", cObjectGraphNode));
+
+            //object graph
+
+            uint ClassID = readFile.ReadUInt32();
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("ClassID: {0}", ClassID));
+            uint cOBNVersion = readFile.ReadUInt32();
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("COGN Version: {0}", cOBNVersion));
+            uint NumExtensions = readFile.ReadUInt32();
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Number of Extensions: {0}", NumExtensions));
+            
+            for (int i = 0; i < NumExtensions; i++)
+            {
+                SHPEExtension ex = new();
+                byte byt = readFile.ReadByte();
+                if (byt == 0)
+                {
+                    ex.Enabled = false;
+                } else
+                {
+                    ex.Enabled = true;
+                }
+                byt = readFile.ReadByte();
+                if (byt == 0)
+                {
+                    ex.Depends = false;
+                } else
+                {
+                    ex.Depends = true;
+                }
+                ex.IndexOfExtension = readFile.ReadUInt32();
+                SHPEData.Extensions.Add(ex);
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Extension {0}: {1}", i, ex.ToString()));
+            }
+
+            if (cOBNVersion == 4)
+            {      
+                nameLength = readFile.ReadByte(); 
+                while (nameLength <= 1) {
+                    //if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("NameLength: {0}", nameLength));
+                    nameLength = readFile.ReadByte();                      
+                }                
+                SHPEData.FileName = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Length: {1}, RepeatFileName: {0}", SHPEData.FileName, nameLength));
+            }
+
+
+            // LODs    
+
+            bool isLod = false;
+
+            uint count = readFile.ReadUInt32();
+            //readFile.Offset--;
+            nameLength = readFile.ReadByte();
+            if (Version == 7 || Version == 6 || Version == 8)
+            {
+                if (nameLength == 0) {
+                    SHPEData.LODCount = count;
+                } else
+                {
+                    SHPEData.MaterialCount = count;
+                }
+            } else
+            {
+                SHPEData.LODCount = count;
+            }   
+            readFile.BaseStream.Position--;         
+                           
+            if (SHPEData.LODCount > 0 && SHPEData.LODCount < 10)
+            {
+                if (Version == 7 || Version == 6)
+                {   
+                    //SHPEData.LODCount = readFile.ReadUInt32();
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("LOD Count: {0}", SHPEData.LODCount));
+                    for (int i = 0; i < SHPEData.LODCount; i++)
+                    {    
+                        SHPELod lod = new();    
+                        lod.LODType = readFile.ReadUInt32();
+                        if (readFile.ReadByte() == 0)
+                        {
+                            lod.Enabled = false;
+                        } else
+                        {
+                            lod.Enabled = true;
+                        }
+                        if (readFile.ReadByte() == 0)
+                        {
+                            lod.UseGMNDSubmesh = false;
+                        } else
+                        {
+                            lod.UseGMNDSubmesh = true;
+                        }
+                        lod.HeaderLinkIndex = readFile.ReadUInt32();
+                        SHPEData.LODs.Add(lod);
+                    }
+                } else if (Version == 8)
+                {
+                    //SHPEData.LODCount = readFile.ReadUInt32();    
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("LOD Count: {0}", SHPEData.LODCount));                    
+                    for (int i = 0; i < SHPEData.LODCount; i++)
+                    {
+                        SHPELod lod = new();
+                        lod.LODType = readFile.ReadUInt32();
+                        if (readFile.ReadByte() == 0)
+                        {
+                            lod.Enabled = false;
+                        } else
+                        {
+                            lod.Enabled = true;
+                        }
+                        lod.GMNDFileName = Encoding.UTF8.GetString(readFile.ReadBytes(readFile.ReadByte()));
+                        SHPEData.LODs.Add(lod);
+                    }
+                } else if (Version > 6)
+                {
+                    //SHPEData.LODCount = readFile.ReadUInt32(); 
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("LOD Count: {0}", SHPEData.LODCount));                       
+                    for (int i = 0; i < SHPEData.LODCount; i++)
+                    {
+                        SHPELod lod = new();
+                        lod.LODValue = readFile.ReadUInt32();
+                        SHPEData.LODs.Add(lod);
+                    }
+                }
+            }
+
+
+            
+                    
+                               
+            
+
+            //materials
+
+            //SHPEData.MaterialCount = readFile.ReadByte();
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Material Count: {0}", SHPEData.MaterialCount));
+            for (int i = 0; i < SHPEData.MaterialCount; i++)
+            {
+                SHPEMaterial mat = new();
+                mat.Group = Encoding.UTF8.GetString(readFile.ReadBytes(readFile.ReadByte()));
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Group: {0}", mat.Group));
+                mat.MaterialDefinition = Encoding.UTF8.GetString(readFile.ReadBytes(readFile.ReadByte()));
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("MatDef: {0}", mat.MaterialDefinition));
+                mat.LODType = readFile.ReadUInt32();
+                mat.Enabled = readFile.ReadByte();
+                mat.Index = readFile.ReadUInt32();
+                SHPEData.Materials.Add(mat);
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Material {0}: {1}", i, mat.ToString()));
+            }       
+        }
+        public S2ReadSHPEChunk(DecryptByteStream readFile, FileInfo fileInfo, int entryc)
+        {
+            file = fileInfo;
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Reading SHPE chunk {0} for file {1}", entryc, file.Name));
+            
+            byte nameLength = readFile.ReadByte();
+            while (nameLength != 6)
+            {
+                //if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("NameLength: {0}", nameLength));
+                nameLength = readFile.ReadByte();
+            }            
+            string fieldName = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("FieldName: {0}", fieldName));
+            string BlockID = readFile.ReadUInt32().ToString("X8");
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("BlockID: {0}", BlockID));
+            uint Version = readFile.ReadUInt32();
+            nameLength = readFile.ReadByte();
+            string cSGResource = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Version: {0}, cSGResource: {1}", Version, cSGResource));
+            while (nameLength != 13)
+            {
+                nameLength = readFile.ReadByte();
+            }
+            string cReferentNode = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("cReferentNode: {0}", cReferentNode));
+            while (nameLength != 16)
+            {
+                nameLength = readFile.ReadByte();
+            }
+            string cObjectGraphNode = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("cObjectGraphNode: {0}", cObjectGraphNode));
+
+            //object graph
+
+            uint ClassID = readFile.ReadUInt32();
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("ClassID: {0}", ClassID));
+            uint cOBNVersion = readFile.ReadUInt32();
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("COGN Version: {0}", cOBNVersion));
+            uint NumExtensions = readFile.ReadUInt32();
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Number of Extensions: {0}", NumExtensions));
+            
+            for (int i = 0; i < NumExtensions; i++)
+            {
+                SHPEExtension ex = new();
+                byte byt = readFile.ReadByte();
+                if (byt == 0)
+                {
+                    ex.Enabled = false;
+                } else
+                {
+                    ex.Enabled = true;
+                }
+                byt = readFile.ReadByte();
+                if (byt == 0)
+                {
+                    ex.Depends = false;
+                } else
+                {
+                    ex.Depends = true;
+                }
+                ex.IndexOfExtension = readFile.ReadUInt32();
+                SHPEData.Extensions.Add(ex);
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Extension {0}: {1}", i, ex.ToString()));
+            }
+
+            if (cOBNVersion == 4)
+            {      
+                nameLength = readFile.ReadByte(); 
+                while (nameLength <= 1) {
+                    //if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("NameLength: {0}", nameLength));
+                    nameLength = readFile.ReadByte();                      
+                }                
+                SHPEData.FileName = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Length: {1}, RepeatFileName: {0}", SHPEData.FileName, nameLength));
+            }
+
+
+            // LODs    
+
+            bool isLod = false;
+
+            uint count = readFile.ReadUInt32();
+            //readFile.Offset--;
+            nameLength = readFile.ReadByte();
+            if (Version == 7 || Version == 6 || Version == 8)
+            {
+                if (nameLength == 0) {
+                    SHPEData.LODCount = count;
+                } else
+                {
+                    SHPEData.MaterialCount = count;
+                }
+            } else
+            {
+                SHPEData.LODCount = count;
+            }   
+            readFile.Offset--;         
+                           
+            if (SHPEData.LODCount > 0 && SHPEData.LODCount < 10)
+            {
+                if (Version == 7 || Version == 6)
+                {   
+                    //SHPEData.LODCount = readFile.ReadUInt32();
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("LOD Count: {0}", SHPEData.LODCount));
+                    for (int i = 0; i < SHPEData.LODCount; i++)
+                    {    
+                        SHPELod lod = new();    
+                        lod.LODType = readFile.ReadUInt32();
+                        if (readFile.ReadByte() == 0)
+                        {
+                            lod.Enabled = false;
+                        } else
+                        {
+                            lod.Enabled = true;
+                        }
+                        if (readFile.ReadByte() == 0)
+                        {
+                            lod.UseGMNDSubmesh = false;
+                        } else
+                        {
+                            lod.UseGMNDSubmesh = true;
+                        }
+                        lod.HeaderLinkIndex = readFile.ReadUInt32();
+                        SHPEData.LODs.Add(lod);
+                    }
+                } else if (Version == 8)
+                {
+                    //SHPEData.LODCount = readFile.ReadUInt32();    
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("LOD Count: {0}", SHPEData.LODCount));                    
+                    for (int i = 0; i < SHPEData.LODCount; i++)
+                    {
+                        SHPELod lod = new();
+                        lod.LODType = readFile.ReadUInt32();
+                        if (readFile.ReadByte() == 0)
+                        {
+                            lod.Enabled = false;
+                        } else
+                        {
+                            lod.Enabled = true;
+                        }
+                        lod.GMNDFileName = Encoding.UTF8.GetString(readFile.ReadBytes(readFile.ReadByte()));
+                        SHPEData.LODs.Add(lod);
+                    }
+                } else if (Version > 6)
+                {
+                    //SHPEData.LODCount = readFile.ReadUInt32(); 
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("LOD Count: {0}", SHPEData.LODCount));                       
+                    for (int i = 0; i < SHPEData.LODCount; i++)
+                    {
+                        SHPELod lod = new();
+                        lod.LODValue = readFile.ReadUInt32();
+                        SHPEData.LODs.Add(lod);
+                    }
+                }
+            }
+            
+                    
+                               
+            
+
+            //materials
+
+            //SHPEData.MaterialCount = readFile.ReadByte();
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Material Count: {0}", SHPEData.MaterialCount));
+            for (int i = 0; i < SHPEData.MaterialCount; i++)
+            {
+                SHPEMaterial mat = new();
+                mat.Group = Encoding.UTF8.GetString(readFile.ReadBytes(readFile.ReadByte()));
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Group: {0}", mat.Group));
+                mat.MaterialDefinition = Encoding.UTF8.GetString(readFile.ReadBytes(readFile.ReadByte()));
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("MatDef: {0}", mat.MaterialDefinition));
+                mat.LODType = readFile.ReadUInt32();
+                mat.Enabled = readFile.ReadByte();
+                mat.Index = readFile.ReadUInt32();
+                SHPEData.Materials.Add(mat);
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Material {0}: {1}", i, mat.ToString()));
+            }
+        }     
+    }
+
+
+    public struct S2Read3IDRChunk
+    {
+        public EIDRData EIDRData = new();
+        public FileInfo file;
+        public S2Read3IDRChunk(BinaryReader readFile, FileInfo fileInfo)
+        {
+            file = fileInfo;
+            uint ID = readFile.ReadUInt32();
+            uint IndexType = readFile.ReadUInt32();
+            uint NumRecords = readFile.ReadUInt32();
+            for (int i = 0; i < NumRecords; i++)
+            {
+                ResourceKey rk = new();
+                rk.TypeID = readFile.ReadUInt32().ToString("X8");
+                rk.GroupID = readFile.ReadUInt32().ToString("X8");
+                rk.InstanceID = readFile.ReadUInt32().ToString("X8");
+                rk.ResourceID = readFile.ReadUInt32().ToString("X8");
+                if (Sims2PackageStatics.Sims2EntryTypes.Any(x => x.TypeID == rk.TypeID)) rk.TypeName = Sims2PackageStatics.Sims2EntryTypes.First(x => x.TypeID == rk.TypeID).Tag;
+                EIDRData.ResourceKeys.Add(rk);
+            }
+        }
+        public S2Read3IDRChunk(DecryptByteStream readFile, FileInfo fileInfo)
+        {
+            file = fileInfo;
+            uint ID = readFile.ReadUInt32();
+            uint IndexType = readFile.ReadUInt32();
+            uint NumRecords = readFile.ReadUInt32();
+            for (int i = 0; i < NumRecords; i++)
+            {
+                ResourceKey rk = new();
+                rk.TypeID = readFile.ReadUInt32().ToString("X8");
+                rk.GroupID = readFile.ReadUInt32().ToString("X8");
+                rk.InstanceID = readFile.ReadUInt32().ToString("X8");
+                rk.ResourceID = readFile.ReadUInt32().ToString("X8");
+                if (Sims2PackageStatics.Sims2EntryTypes.Any(x => x.TypeID == rk.TypeID)) rk.TypeName = Sims2PackageStatics.Sims2EntryTypes.First(x => x.TypeID == rk.TypeID).Tag;
+                EIDRData.ResourceKeys.Add(rk);
+            }
+        }        
+    }
+
+
+    public struct S2ReadXHTNChunk
+    {
+        public XHTNData XHTNData = new();
+
+        public S2ReadXHTNChunk(BinaryReader readFile)
+        {
+            uint NumItems = readFile.ReadUInt32();
+            // Read the items
+            for (int i = 0; i < NumItems; i++)
+            {
+                // Get type of the item
+                string dataType = readFile.ReadUInt32().ToString("X8");
+                uint nameLength = readFile.ReadUInt32();
+                string fieldName = Encoding.UTF8.GetString(readFile.ReadBytes((int)nameLength));
+
+                uint fieldValueInt = 0;
+                uint fieldValueFloat = 0;
+                string fieldValueString = "";
+                bool fieldValueBool = false;
+
+                switch (dataType)
+                {
+                    // Int
+                    case "EB61E4F7":
+                        fieldValueInt = readFile.ReadUInt32();
+                        break;
+                    // Int #2 - Not Used
+                    case "0C264712":
+                        fieldValueInt = readFile.ReadUInt32();
+                        break;
+                    // String
+                    case "0B8BEA18":
+                        uint stringLength = readFile.ReadUInt32();
+                        fieldValueString = Encoding.UTF8.GetString(readFile.ReadBytes((int)stringLength));
+                        break;
+                    // Float
+                    case "ABC78708":
+                        // Ignore for now
+                        fieldValueFloat = readFile.ReadUInt32();
+                        break;
+                    // Boolean
+                    case "CBA908E1":
+                        fieldValueBool = readFile.ReadBoolean();
+                        break;
+                }
+
+                switch (fieldName.ToLower())
+                {
+                    case "version":
+                    XHTNData.Version = fieldValueInt.ToString();;
+                    break;
+                    case "product":
+                    XHTNData.Product = fieldValueInt.ToString();;
+                    break;
+                    case "age":
+                    XHTNData.Age = fieldValueInt.ToString();;
+                    break;
+                    case "gender":
+                    XHTNData.Gender = fieldValueInt.ToString();;
+                    break;
+                    case "species":
+                    XHTNData.Species = fieldValueInt.ToString();;
+                    break;
+                    case "parts":
+                    XHTNData.Parts = fieldValueInt.ToString();;
+                    break;
+                    case "outfit":
+                    XHTNData.Outfit = fieldValueInt.ToString();;
+                    break;
+                    case "flags":
+                    XHTNData.Flags = fieldValueInt.ToString();;
+                    break;
+                    case "name":
+                    XHTNData.Name = fieldValueString;;
+                    break;
+                    case "creator":
+                    XHTNData.Creator = fieldValueString;;
+                    break;
+                    case "family":
+                    XHTNData.Family = fieldValueString;;
+                    break;
+                    case "genetic":
+                    XHTNData.Genetic = fieldValueFloat.ToString();;
+                    break;
+                    case "priority":
+                    XHTNData.Priority = fieldValueInt.ToString();;
+                    break;
+                    case "type":
+                    XHTNData.Type = fieldValueString;;
+                    break;
+                    case "preview":
+                    XHTNData.Preview = fieldValueString;;
+                    break;
+                    case "proxy":
+                    XHTNData.Proxy = fieldValueString;;
+                    break;
+                }
+            }
+        }
+
+        public S2ReadXHTNChunk(DecryptByteStream readFile)
+        {
+            readFile.ReadUInt16();
+            uint NumItems = readFile.ReadUInt32();
+            // Read the items
+            for (int i = 0; i < NumItems; i++)
+            {
+                // Get type of the item
+                string dataType = readFile.ReadUInt32().ToString("X8");
+                uint nameLength = readFile.ReadUInt32();
+                string fieldName = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
+
+                uint fieldValueInt = 0;
+                string fieldValueString = "";
+                uint fieldValueFloat = 0;
+                bool fieldValueBool = false;
+
+                switch (dataType)
+                {
+                    // Int
+                    case "EB61E4F7":
+                        fieldValueInt = readFile.ReadUInt32();
+                        break;
+                    // Int #2 - Not Used
+                    case "0C264712":
+                        fieldValueInt = readFile.ReadUInt32();
+                        break;
+                    // String
+                    case "0B8BEA18":
+                        uint stringLength = readFile.ReadUInt32();
+                        fieldValueString = Encoding.UTF8.GetString(readFile.ReadBytes(stringLength));
+                        break;
+                    // Float
+                    case "ABC78708":
+                        // Ignore for now
+                        fieldValueFloat = readFile.ReadUInt32();
+                        break;
+                    // Boolean
+                    case "CBA908E1":
+                        fieldValueBool = readFile.ReadBoolean();
+                        break;
+                }
+
+                switch (fieldName.ToLower())
+                {
+                    case "version":
+                    XHTNData.Version = fieldValueInt.ToString();;
+                    break;
+                    case "product":
+                    XHTNData.Product = fieldValueInt.ToString();;
+                    break;
+                    case "age":
+                    XHTNData.Age = fieldValueInt.ToString();;
+                    break;
+                    case "gender":
+                    XHTNData.Gender = fieldValueInt.ToString();;
+                    break;
+                    case "species":
+                    XHTNData.Species = fieldValueInt.ToString();;
+                    break;
+                    case "parts":
+                    XHTNData.Parts = fieldValueInt.ToString();;
+                    break;
+                    case "outfit":
+                    XHTNData.Outfit = fieldValueInt.ToString();;
+                    break;
+                    case "flags":
+                    XHTNData.Flags = fieldValueInt.ToString();;
+                    break;
+                    case "name":
+                    XHTNData.Name = fieldValueString;;
+                    break;
+                    case "creator":
+                    XHTNData.Creator = fieldValueString;;
+                    break;
+                    case "family":
+                    XHTNData.Family = fieldValueString;;
+                    break;
+                    case "genetic":
+                    XHTNData.Genetic = fieldValueFloat.ToString();;
+                    break;
+                    case "priority":
+                    XHTNData.Priority = fieldValueInt.ToString();;
+                    break;
+                    case "type":
+                    XHTNData.Type = fieldValueString;;
+                    break;
+                    case "preview":
+                    XHTNData.Preview = fieldValueString;;
+                    break;
+                    case "proxy":
+                    XHTNData.Proxy = fieldValueString;;
+                    break;
+
+                }
+            }
+        }
+
+        public S2ReadXHTNChunk(DecryptByteStream readFile, bool xml)
+        {
+            XmlTextReader xmlDoc = new XmlTextReader(new StringReader(Encoding.UTF8.GetString(readFile.GetEntireStream())));
+            bool inDesc = false;
+            string inAttrDesc = "";
+            while (xmlDoc.Read())
+            {
+                if (xmlDoc.NodeType == XmlNodeType.Element)
+                {
+                    if (xmlDoc.Name == "AnyString") inDesc = true;
+                    if (xmlDoc.Name == "AnyUint32") inDesc = true;
+                }
+                if (xmlDoc.NodeType == XmlNodeType.EndElement)
+                {
+                    inDesc = false;
+                    inAttrDesc = "";
+                }
+                if (inDesc == true)
+                {
+                    if (xmlDoc.AttributeCount > 0)
+                    {
+                        while (xmlDoc.MoveToNextAttribute())
+                        {
+                            switch (xmlDoc.Value.ToLower())
+                            {
+                                case "version":
+                                case "product":
+                                case "age":
+                                case "gender":
+                                case "species":
+                                case "parts":
+                                case "outfit":
+                                case "flags":
+                                case "name":
+                                case "creator":
+                                case "family":
+                                case "genetic":
+                                case "priority":
+                                case "type":
+                                case "preview":
+                                case "proxy":
+                                    inAttrDesc = xmlDoc.Value;
+                                    break;
+                            }
+                        }
+                    }
+                }
+                if (xmlDoc.NodeType == XmlNodeType.Text)
+                {
+                    if (inAttrDesc != "")
+                    {
+                        switch (inAttrDesc.ToLower())
+                        {
+                            case "version":
+                            XHTNData.Version = xmlDoc.Value;
+                            break;
+                            case "product":
+                            XHTNData.Product = xmlDoc.Value;
+                            break;
+                            case "age":
+                            XHTNData.Age = xmlDoc.Value;
+                            break;
+                            case "gender":
+                            XHTNData.Gender = xmlDoc.Value;
+                            break;
+                            case "species":
+                            XHTNData.Species = xmlDoc.Value;
+                            break;
+                            case "parts":
+                            XHTNData.Parts = xmlDoc.Value;
+                            break;
+                            case "outfit":
+                            XHTNData.Outfit = xmlDoc.Value;
+                            break;
+                            case "flags":
+                            XHTNData.Flags = xmlDoc.Value;
+                            break;
+                            case "name":
+                            XHTNData.Name = xmlDoc.Value;
+                            break;
+                            case "creator":
+                            XHTNData.Creator = xmlDoc.Value;
+                            break;
+                            case "family":
+                            XHTNData.Family = xmlDoc.Value;
+                            break;
+                            case "genetic":
+                            XHTNData.Genetic = xmlDoc.Value;
+                            break;
+                            case "priority":
+                            XHTNData.Priority = xmlDoc.Value;
+                            break;
+                            case "type":
+                            XHTNData.Type = xmlDoc.Value;
+                            break;
+                            case "preview":
+                            XHTNData.Preview = xmlDoc.Value;
+                            break;
+                            case "proxy":
+                            XHTNData.Proxy = xmlDoc.Value;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    public struct S2ReadGZPSChunk
+    {
+        public GZPSData GZPSData = new();
+
+        public S2ReadGZPSChunk(BinaryReader readFile)
+        {
+            uint NumItems = readFile.ReadUInt32();
+            // Read the items
+            for (int i = 0; i < NumItems; i++)
+            {
+                // Get type of the item
+                string dataType = readFile.ReadUInt32().ToString("X8");
+                uint nameLength = readFile.ReadUInt32();
+                string fieldName = Encoding.UTF8.GetString(readFile.ReadBytes((int)nameLength));
+
+                uint fieldValueInt = 0;
+                uint fieldValueFloat = 0;
+                string fieldValueString = "";
+                bool fieldValueBool = false;
+
+                switch (dataType)
+                {
+                    // Int
+                    case "EB61E4F7":
+                        fieldValueInt = readFile.ReadUInt32();
+                        break;
+                    // Int #2 - Not Used
+                    case "0C264712":
+                        fieldValueInt = readFile.ReadUInt32();
+                        break;
+                    // String
+                    case "0B8BEA18":
+                        uint stringLength = readFile.ReadUInt32();
+                        fieldValueString = Encoding.UTF8.GetString(readFile.ReadBytes((int)stringLength));
+                        break;
+                    // Float
+                    case "ABC78708":
+                        // Ignore for now
+                        fieldValueFloat = readFile.ReadUInt32();
+                        break;
+                    // Boolean
+                    case "CBA908E1":
+                        fieldValueBool = readFile.ReadBoolean();
+                        break;
+                }
+
+                switch (fieldName.ToLower())
+                {
+                    case "version":
+                    GZPSData.Version = fieldValueInt.ToString();
+                    break;
+                    case "product":
+                    GZPSData.Product = fieldValueInt.ToString();
+                    break;
+                    case "age":
+                    GZPSData.Age = fieldValueInt.ToString();
+                    break;
+                    case "gender":
+                    GZPSData.Gender = fieldValueInt.ToString();
+                    break;
+                    case "species":
+                    GZPSData.Species = fieldValueInt.ToString();
+                    break;
+                    case "parts":
+                    GZPSData.Parts = fieldValueInt.ToString();
+                    break;
+                    case "outfit":
+                    GZPSData.Outfit = fieldValueInt.ToString();
+                    break;
+                    case "flags":
+                    GZPSData.Flags = fieldValueInt.ToString();
+                    break;
+                    case "name":
+                    GZPSData.Name = fieldValueString;
+                    break;
+                    case "creator":
+                    GZPSData.Creator = fieldValueString;
+                    break;
+                    case "family":
+                    GZPSData.Family = fieldValueString;
+                    break;
+                    case "genetic":
+                    GZPSData.Genetic = fieldValueFloat.ToString();
+                    break;
+                    case "priority":
+                    GZPSData.Priority = fieldValueInt.ToString();
+                    break;
+                    case "type":
+                    GZPSData.Type = fieldValueString;
+                    break;
+                    case "skin":
+                    GZPSData.Skin = fieldValueString;
+                    break;
+                    case "hairtone":
+                    GZPSData.Hairtone = fieldValueString;
+                    break;
+                    case "category":
+                    GZPSData.Category = fieldValueInt.ToString();
+                    break;
+                    case "shoe":
+                    GZPSData.Shoe = fieldValueInt.ToString();
+                    break;
+                    case "fitness":
+                    GZPSData.Fitness = fieldValueInt.ToString();
+                    break;
+                    case "resourcekeyidx":
+                    GZPSData.Resourcekeyidx = fieldValueInt.ToString();
+                    break;
+                    case "shapekeyidx":
+                    GZPSData.Shapekeyidx = fieldValueInt.ToString();
+                    break;
+                    case "numoverrides":
+                    GZPSData.Numoverrides = fieldValueInt.ToString();
+                    break;
+                    case "override0shape":
+                    GZPSData.Override0shape = fieldValueInt.ToString();
+                    break;
+                    case "override0subset":
+                    GZPSData.Override0subset = fieldValueString;
+                    break;
+                    case "override0resourcekeyidx":
+                    GZPSData.Override0resourcekeyidx = fieldValueInt.ToString();
+                    break;
+                    case "override1shape":
+                    GZPSData.Override1shape = fieldValueInt.ToString();
+                    break;
+                    case "override1subset":
+                    GZPSData.Override1subset = fieldValueString;
+                    break;
+                    case "override1resourcekeyidx":
+                    GZPSData.Override1resourcekeyidx = fieldValueInt.ToString();
+                    break;
+                    case "override2shape":
+                    GZPSData.Override2shape = fieldValueInt.ToString();
+                    break;
+                    case "override2subset":
+                    GZPSData.Override2subset = fieldValueString;
+                    break;
+                    case "override2resourcekeyidx":
+                    GZPSData.Override2resourcekeyidx = fieldValueInt.ToString();
+                    break;
+                }
+            }
+        }
+
+        public S2ReadGZPSChunk(DecryptByteStream readFile)
+        {
+            readFile.ReadUInt16();
+            uint NumItems = readFile.ReadUInt32();
+            // Read the items
+            for (int i = 0; i < NumItems; i++)
+            {
+                // Get type of the item
+                string dataType = readFile.ReadUInt32().ToString("X8");
+                uint nameLength = readFile.ReadUInt32();
+                string fieldName = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
+
+                uint fieldValueInt = 0;
+                string fieldValueString = "";
+                uint fieldValueFloat = 0;
+                bool fieldValueBool = false;
+
+                switch (dataType)
+                {
+                    // Int
+                    case "EB61E4F7":
+                        fieldValueInt = readFile.ReadUInt32();
+                        break;
+                    // Int #2 - Not Used
+                    case "0C264712":
+                        fieldValueInt = readFile.ReadUInt32();
+                        break;
+                    // String
+                    case "0B8BEA18":
+                        uint stringLength = readFile.ReadUInt32();
+                        fieldValueString = Encoding.UTF8.GetString(readFile.ReadBytes(stringLength));
+                        break;
+                    // Float
+                    case "ABC78708":
+                        // Ignore for now
+                        fieldValueFloat = readFile.ReadUInt32();
+                        break;
+                    // Boolean
+                    case "CBA908E1":
+                        fieldValueBool = readFile.ReadBoolean();
+                        break;
+                }
+
+                switch (fieldName.ToLower())
+                {
+                    case "version":
+                    GZPSData.Version = fieldValueInt.ToString();
+                    break;
+                    case "product":
+                    GZPSData.Product = fieldValueInt.ToString();
+                    break;
+                    case "age":
+                    GZPSData.Age = fieldValueInt.ToString();
+                    break;
+                    case "gender":
+                    GZPSData.Gender = fieldValueInt.ToString();
+                    break;
+                    case "species":
+                    GZPSData.Species = fieldValueInt.ToString();
+                    break;
+                    case "parts":
+                    GZPSData.Parts = fieldValueInt.ToString();
+                    break;
+                    case "outfit":
+                    GZPSData.Outfit = fieldValueInt.ToString();
+                    break;
+                    case "flags":
+                    GZPSData.Flags = fieldValueInt.ToString();
+                    break;
+                    case "name":
+                    GZPSData.Name = fieldValueString;
+                    break;
+                    case "creator":
+                    GZPSData.Creator = fieldValueString;
+                    break;
+                    case "family":
+                    GZPSData.Family = fieldValueString;
+                    break;
+                    case "genetic":
+                    GZPSData.Genetic = fieldValueFloat.ToString();
+                    break;
+                    case "priority":
+                    GZPSData.Priority = fieldValueInt.ToString();
+                    break;
+                    case "type":
+                    GZPSData.Type = fieldValueString;
+                    break;
+                    case "skin":
+                    GZPSData.Skin = fieldValueString;
+                    break;
+                    case "hairtone":
+                    GZPSData.Hairtone = fieldValueString;
+                    break;
+                    case "category":
+                    GZPSData.Category = fieldValueInt.ToString();
+                    break;
+                    case "shoe":
+                    GZPSData.Shoe = fieldValueInt.ToString();
+                    break;
+                    case "fitness":
+                    GZPSData.Fitness = fieldValueInt.ToString();
+                    break;
+                    case "resourcekeyidx":
+                    GZPSData.Resourcekeyidx = fieldValueInt.ToString();
+                    break;
+                    case "shapekeyidx":
+                    GZPSData.Shapekeyidx = fieldValueInt.ToString();
+                    break;
+                    case "numoverrides":
+                    GZPSData.Numoverrides = fieldValueInt.ToString();
+                    break;
+                    case "override0shape":
+                    GZPSData.Override0shape = fieldValueInt.ToString();
+                    break;
+                    case "override0subset":
+                    GZPSData.Override0subset = fieldValueString;
+                    break;
+                    case "override0resourcekeyidx":
+                    GZPSData.Override0resourcekeyidx = fieldValueInt.ToString();
+                    break;
+                    case "override1shape":
+                    GZPSData.Override1shape = fieldValueInt.ToString();
+                    break;
+                    case "override1subset":
+                    GZPSData.Override1subset = fieldValueString;
+                    break;
+                    case "override1resourcekeyidx":
+                    GZPSData.Override1resourcekeyidx = fieldValueInt.ToString();
+                    break;
+                    case "override2shape":
+                    GZPSData.Override2shape = fieldValueInt.ToString();
+                    break;
+                    case "override2subset":
+                    GZPSData.Override2subset = fieldValueString;
+                    break;
+                    case "override2resourcekeyidx":
+                    GZPSData.Override2resourcekeyidx = fieldValueInt.ToString();
+                    break;
+                }
+            }
+        }
+
+        public S2ReadGZPSChunk(DecryptByteStream readFile, bool xml)
+        {
+            XmlTextReader xmlDoc = new XmlTextReader(new StringReader(Encoding.UTF8.GetString(readFile.GetEntireStream())));
+            bool inDesc = false;
+            string inAttrDesc = "";
+            while (xmlDoc.Read())
+            {
+                if (xmlDoc.NodeType == XmlNodeType.Element)
+                {
+                    if (xmlDoc.Name == "AnyString") inDesc = true;
+                    if (xmlDoc.Name == "AnyUint32") inDesc = true;
+                }
+                if (xmlDoc.NodeType == XmlNodeType.EndElement)
+                {
+                    inDesc = false;
+                    inAttrDesc = "";
+                }
+                if (inDesc == true)
+                {
+                    if (xmlDoc.AttributeCount > 0)
+                    {
+                        while (xmlDoc.MoveToNextAttribute())
+                        {
+                            switch (xmlDoc.Value.ToLower())
+                            {
+                                case "version":
+                                case "product":
+                                case "age":
+                                case "gender":
+                                case "species":
+                                case "parts":
+                                case "outfit":
+                                case "flags":
+                                case "name":
+                                case "creator":
+                                case "family":
+                                case "genetic":
+                                case "priority":
+                                case "type":
+                                case "skin":
+                                case "hairtone":
+                                case "category":
+                                case "shoe":
+                                case "fitness":
+                                case "resourcekeyidx":
+                                case "shapekeyidx":
+                                case "numoverrides":
+                                case "override0shape":
+                                case "override0subset":
+                                case "override0resourcekeyidx":
+                                case "override1shape":
+                                case "override1subset":
+                                case "override1resourcekeyidx":
+                                case "override2shape":
+                                case "override2subset":
+                                case "override2resourcekeyidx":
+                                    inAttrDesc = xmlDoc.Value;
+                                    break;
+                            }
+                        }
+                    }
+                }
+                if (xmlDoc.NodeType == XmlNodeType.Text)
+                {
+                    if (inAttrDesc != "")
+                    {
+                        switch (inAttrDesc.ToLower())
+                        {
+                            case "version":
+                            GZPSData.Version = xmlDoc.Value;
+                            break;
+                            case "product":
+                            GZPSData.Product = xmlDoc.Value;
+                            break;
+                            case "age":
+                            GZPSData.Age = xmlDoc.Value;
+                            break;
+                            case "gender":
+                            GZPSData.Gender = xmlDoc.Value;
+                            break;
+                            case "species":
+                            GZPSData.Species = xmlDoc.Value;
+                            break;
+                            case "parts":
+                            GZPSData.Parts = xmlDoc.Value;
+                            break;
+                            case "outfit":
+                            GZPSData.Outfit = xmlDoc.Value;
+                            break;
+                            case "flags":
+                            GZPSData.Flags = xmlDoc.Value;
+                            break;
+                            case "name":
+                            GZPSData.Name = xmlDoc.Value;
+                            break;
+                            case "creator":
+                            GZPSData.Creator = xmlDoc.Value;
+                            break;
+                            case "family":
+                            GZPSData.Family = xmlDoc.Value;
+                            break;
+                            case "genetic":
+                            GZPSData.Genetic = xmlDoc.Value;
+                            break;
+                            case "priority":
+                            GZPSData.Priority = xmlDoc.Value;
+                            break;
+                            case "type":
+                            GZPSData.Type = xmlDoc.Value;
+                            break;
+                            case "skin":
+                            GZPSData.Skin = xmlDoc.Value;
+                            break;
+                            case "hairtone":
+                            GZPSData.Hairtone = xmlDoc.Value;
+                            break;
+                            case "category":
+                            GZPSData.Category = xmlDoc.Value;
+                            break;
+                            case "shoe":
+                            GZPSData.Shoe = xmlDoc.Value;
+                            break;
+                            case "fitness":
+                            GZPSData.Fitness = xmlDoc.Value;
+                            break;
+                            case "resourcekeyidx":
+                            GZPSData.Resourcekeyidx = xmlDoc.Value;
+                            break;
+                            case "shapekeyidx":
+                            GZPSData.Shapekeyidx = xmlDoc.Value;
+                            break;
+                            case "numoverrides":
+                            GZPSData.Numoverrides = xmlDoc.Value;
+                            break;
+                            case "override0shape":
+                            GZPSData.Override0shape = xmlDoc.Value;
+                            break;
+                            case "override0subset":
+                            GZPSData.Override0subset = xmlDoc.Value;
+                            break;
+                            case "override0resourcekeyidx":
+                            GZPSData.Override0resourcekeyidx = xmlDoc.Value;
+                            break;
+                            case "override1shape":
+                            GZPSData.Override1shape = xmlDoc.Value;
+                            break;
+                            case "override1subset":
+                            GZPSData.Override1subset = xmlDoc.Value;
+                            break;
+                            case "override1resourcekeyidx":
+                            GZPSData.Override1resourcekeyidx = xmlDoc.Value;
+                            break;
+                            case "override2shape":
+                            GZPSData.Override2shape = xmlDoc.Value;
+                            break;
+                            case "override2subset":
+                            GZPSData.Override2subset = xmlDoc.Value;
+                            break;
+                            case "override2resourcekeyidx":
+                            GZPSData.Override2resourcekeyidx = xmlDoc.Value;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+
+    public struct S2ReadXNGBChunk
+    {
+        public XNGBData XNGBData = new();
+
+        public S2ReadXNGBChunk(BinaryReader readFile)
+        {
+            uint NumItems = readFile.ReadUInt32();
+            // Read the items
+            for (int i = 0; i < NumItems; i++)
+            {
+                // Get type of the item
+                string dataType = readFile.ReadUInt32().ToString("X8");
+                uint nameLength = readFile.ReadUInt32();
+                string fieldName = Encoding.UTF8.GetString(readFile.ReadBytes((int)nameLength));
+
+                uint fieldValueInt = 0;
+                uint fieldValueFloat = 0;
+                string fieldValueString = "";
+                bool fieldValueBool = false;
+
+                switch (dataType)
+                {
+                    // Int
+                    case "EB61E4F7":
+                        fieldValueInt = readFile.ReadUInt32();
+                        break;
+                    // Int #2 - Not Used
+                    case "0C264712":
+                        fieldValueInt = readFile.ReadUInt32();
+                        break;
+                    // String
+                    case "0B8BEA18":
+                        uint stringLength = readFile.ReadUInt32();
+                        fieldValueString = Encoding.UTF8.GetString(readFile.ReadBytes((int)stringLength));
+                        break;
+                    // Float
+                    case "ABC78708":
+                        // Ignore for now
+                        fieldValueFloat = readFile.ReadUInt32();
+                        break;
+                    // Boolean
+                    case "CBA908E1":
+                        fieldValueBool = readFile.ReadBoolean();
+                        break;
+                }
+
+                switch (fieldName.ToLower())
+                {
+                    case "type":
+                    XNGBData.Type = fieldValueString;
+                    break;
+                    case "name":
+                    XNGBData.Name = fieldValueString;
+                    break;
+                    case "description":
+                    XNGBData.Description = fieldValueString;
+                    break;
+                    case "guid":
+                    XNGBData.Guid = fieldValueInt.ToString("X8");
+                    break;
+                    case "cost":
+                    XNGBData.Cost = fieldValueInt.ToString();
+                    break;
+                    case "deprecated":
+                    XNGBData.Deprecated = fieldValueInt.ToString();
+                    break;
+                    case "showincatalog":
+                    XNGBData.ShowInCatalog = fieldValueInt.ToString();
+                    break;
+                    case "version":
+                    XNGBData.Version = fieldValueInt.ToString();
+                    break;
+                    case "nicenessmultiplier":
+                    XNGBData.NicenessMultiplier = fieldValueFloat.ToString();;
+                    break;
+                    case "crapscore":
+                    XNGBData.CrapScore = fieldValueFloat.ToString();;
+                    break;
+                    case "resourcerestypeid":
+                    XNGBData.ResourceResTypeID = fieldValueInt.ToString();
+                    break;
+                    case "resourcegroupid":
+                    XNGBData.ResourceGroupID = fieldValueInt.ToString();
+                    break;
+                    case "resourceid":
+                    XNGBData.ResourceID = fieldValueInt.ToString();
+                    break;
+                    case "stringsetrestypeid":
+                    XNGBData.StringsetResTypeID = fieldValueInt.ToString();
+                    break;
+                    case "stringsetgroupid":
+                    XNGBData.StringsetGroupID = fieldValueInt.ToString();
+                    break;
+                    case "stringsetid":
+                    XNGBData.StringSetID = fieldValueInt.ToString();
+                    break;
+                    case "modelname":
+                    XNGBData.ModelName = fieldValueString;
+                    break;
+                    case "placementsurface":
+                    XNGBData.PlacementSurface = fieldValueInt.ToString();
+                    break;
+                    case "allowedinlot":
+                    XNGBData.AllowedInLot = fieldValueInt.ToString();
+                    break;
+                    case "removeonlotplop":
+                    XNGBData.RemoveonLotPlop = fieldValueInt.ToString();
+                    break;
+                    case "allowedonroad":
+                    XNGBData.AllowedOnRoad = fieldValueInt.ToString();
+                    break;
+                    case "sort":
+                    XNGBData.Sort = fieldValueString;
+                    break;
+                    case "thumbnailgroupid":
+                    XNGBData.ThumbnailGroupID = fieldValueInt.ToString();
+                    break;
+                    case "thumbnailinstanceid":
+                    XNGBData.ThumbnailInstanceID = fieldValueInt.ToString();
+                    break;
+
+                }
+            }
+        }
+
+        public S2ReadXNGBChunk(DecryptByteStream readFile)
+        {
+            readFile.ReadUInt16();
+            uint NumItems = readFile.ReadUInt32();
+            // Read the items
+            for (int i = 0; i < NumItems; i++)
+            {
+                // Get type of the item
+                string dataType = readFile.ReadUInt32().ToString("X8");
+                uint nameLength = readFile.ReadUInt32();
+                string fieldName = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
+
+                uint fieldValueInt = 0;
+                string fieldValueString = "";
+                uint fieldValueFloat = 0;
+                bool fieldValueBool = false;
+
+                switch (dataType)
+                {
+                    // Int
+                    case "EB61E4F7":
+                        fieldValueInt = readFile.ReadUInt32();
+                        break;
+                    // Int #2 - Not Used
+                    case "0C264712":
+                        fieldValueInt = readFile.ReadUInt32();
+                        break;
+                    // String
+                    case "0B8BEA18":
+                        uint stringLength = readFile.ReadUInt32();
+                        fieldValueString = Encoding.UTF8.GetString(readFile.ReadBytes(stringLength));
+                        break;
+                    // Float
+                    case "ABC78708":
+                        // Ignore for now
+                        fieldValueFloat = readFile.ReadUInt32();
+                        break;
+                    // Boolean
+                    case "CBA908E1":
+                        fieldValueBool = readFile.ReadBoolean();
+                        break;
+                }
+
+                switch (fieldName.ToLower())
+                {
+                    case "type":
+                    XNGBData.Type = fieldValueString;
+                    break;
+                    case "name":
+                    XNGBData.Name = fieldValueString;
+                    break;
+                    case "description":
+                    XNGBData.Description = fieldValueString;
+                    break;
+                    case "guid":
+                    XNGBData.Guid = fieldValueInt.ToString("X8");
+                    break;
+                    case "cost":
+                    XNGBData.Cost = fieldValueInt.ToString();
+                    break;
+                    case "deprecated":
+                    XNGBData.Deprecated = fieldValueInt.ToString();
+                    break;
+                    case "showincatalog":
+                    XNGBData.ShowInCatalog = fieldValueInt.ToString();
+                    break;
+                    case "version":
+                    XNGBData.Version = fieldValueInt.ToString();
+                    break;
+                    case "nicenessmultiplier":
+                    XNGBData.NicenessMultiplier = fieldValueFloat.ToString();;
+                    break;
+                    case "crapscore":
+                    XNGBData.CrapScore = fieldValueFloat.ToString();;
+                    break;
+                    case "resourcerestypeid":
+                    XNGBData.ResourceResTypeID = fieldValueInt.ToString();
+                    break;
+                    case "resourcegroupid":
+                    XNGBData.ResourceGroupID = fieldValueInt.ToString();
+                    break;
+                    case "resourceid":
+                    XNGBData.ResourceID = fieldValueInt.ToString();
+                    break;
+                    case "stringsetrestypeid":
+                    XNGBData.StringsetResTypeID = fieldValueInt.ToString();
+                    break;
+                    case "stringsetgroupid":
+                    XNGBData.StringsetGroupID = fieldValueInt.ToString();
+                    break;
+                    case "stringsetid":
+                    XNGBData.StringSetID = fieldValueInt.ToString();
+                    break;
+                    case "modelname":
+                    XNGBData.ModelName = fieldValueString;
+                    break;
+                    case "placementsurface":
+                    XNGBData.PlacementSurface = fieldValueInt.ToString();
+                    break;
+                    case "allowedinlot":
+                    XNGBData.AllowedInLot = fieldValueInt.ToString();
+                    break;
+                    case "removeonlotplop":
+                    XNGBData.RemoveonLotPlop = fieldValueInt.ToString();
+                    break;
+                    case "allowedonroad":
+                    XNGBData.AllowedOnRoad = fieldValueInt.ToString();
+                    break;
+                    case "sort":
+                    XNGBData.Sort = fieldValueString;
+                    break;
+                    case "thumbnailgroupid":
+                    XNGBData.ThumbnailGroupID = fieldValueInt.ToString();
+                    break;
+                    case "thumbnailinstanceid":
+                    XNGBData.ThumbnailInstanceID = fieldValueInt.ToString();
+                    break;
+                }
+            }
+        }
+
+        public S2ReadXNGBChunk(DecryptByteStream readFile, bool xml)
+        {
+            XmlTextReader xmlDoc = new XmlTextReader(new StringReader(Encoding.UTF8.GetString(readFile.GetEntireStream())));
+            bool inDesc = false;
+            string inAttrDesc = "";
+            while (xmlDoc.Read())
+            {
+                if (xmlDoc.NodeType == XmlNodeType.Element)
+                {
+                    if (xmlDoc.Name == "AnyString") inDesc = true;
+                    if (xmlDoc.Name == "AnyUint32") inDesc = true;
+                }
+                if (xmlDoc.NodeType == XmlNodeType.EndElement)
+                {
+                    inDesc = false;
+                    inAttrDesc = "";
+                }
+                if (inDesc == true)
+                {
+                    if (xmlDoc.AttributeCount > 0)
+                    {
+                        while (xmlDoc.MoveToNextAttribute())
+                        {
+                            switch (xmlDoc.Value.ToLower())
+                            {
+                                case "type":
+                                case "name":
+                                case "description":
+                                case "guid":
+                                case "cost":
+                                case "deprecated":
+                                case "showincatalog":
+                                case "version":
+                                case "nicenessmultiplier":
+                                case "crapscore":
+                                case "resourcerestypeid":
+                                case "resourcegroupid":
+                                case "resourceid":
+                                case "stringsetrestypeid":
+                                case "stringsetgroupid":
+                                case "stringsetid":
+                                case "modelname":
+                                case "placementsurface":
+                                case "allowedinlot":
+                                case "removeonlotplop":
+                                case "allowedonroad":
+                                case "sort":
+                                case "thumbnailgroupid":
+                                case "thumbnailinstanceid":
+                                    inAttrDesc = xmlDoc.Value;
+                                    break;
+                            }
+                        }
+                    }
+                }
+                if (xmlDoc.NodeType == XmlNodeType.Text)
+                {
+                    if (inAttrDesc != "")
+                    {
+                        switch (inAttrDesc.ToLower())
+                        {
+                            case "type":
+                            XNGBData.Type = xmlDoc.Value;
+                            break;
+                            case "name":
+                            XNGBData. Name = xmlDoc.Value;
+                            break;
+                            case "description":
+                            XNGBData.Description = xmlDoc.Value;
+                            break;
+                            case "guid":
+                            XNGBData.Guid = xmlDoc.Value;
+                            break;
+                            case "cost":
+                            XNGBData.Cost = xmlDoc.Value;
+                            break;
+                            case "deprecated":
+                            XNGBData.Deprecated = xmlDoc.Value;
+                            break;
+                            case "showincatalog":
+                            XNGBData.ShowInCatalog = xmlDoc.Value;
+                            break;
+                            case "version":
+                            XNGBData.Version = xmlDoc.Value;
+                            break;
+                            case "nicenessmultiplier":
+                            XNGBData.NicenessMultiplier = xmlDoc.Value;
+                            break;
+                            case "crapscore":
+                            XNGBData.CrapScore = xmlDoc.Value;
+                            break;
+                            case "resourcerestypeid":
+                            XNGBData.ResourceResTypeID = xmlDoc.Value;
+                            break;
+                            case "resourcegroupid":
+                            XNGBData.ResourceGroupID = xmlDoc.Value;
+                            break;
+                            case "resourceid":
+                            XNGBData.ResourceID = xmlDoc.Value;
+                            break;
+                            case "stringsetrestypeid":
+                            XNGBData.StringsetResTypeID = xmlDoc.Value;
+                            break;
+                            case "stringsetgroupid":
+                            XNGBData.StringsetGroupID = xmlDoc.Value;
+                            break;
+                            case "stringsetid":
+                            XNGBData.StringSetID = xmlDoc.Value;
+                            break;
+                            case "modelname":
+                            XNGBData.ModelName = xmlDoc.Value;
+                            break;
+                            case "placementsurface":
+                            XNGBData.PlacementSurface = xmlDoc.Value;
+                            break;
+                            case "allowedinlot":
+                            XNGBData.AllowedInLot = xmlDoc.Value;
+                            break;
+                            case "removeonlotplop":
+                            XNGBData.RemoveonLotPlop = xmlDoc.Value;
+                            break;
+                            case "allowedonroad":
+                            XNGBData.AllowedOnRoad = xmlDoc.Value;
+                            break;
+                            case "sort":
+                            XNGBData. Sort = xmlDoc.Value;
+                            break;
+                            case "thumbnailgroupid":
+                            XNGBData.ThumbnailGroupID = xmlDoc.Value;
+                            break;
+                            case "thumbnailinstanceid":
+                            XNGBData.ThumbnailInstanceID = xmlDoc.Value;
+                            break;
+
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -1192,7 +3451,8 @@ namespace SimsCCManager.PackageReaders
                             }
                             else if (TXTRData.FormatCode == 6)
                             {
-                                TXTRData.Texture = Godot.Image.CreateFromData((int)TXTRData.TextureWidth, (int)TXTRData.TextureHeight, mipmaps, Godot.Image.Format.R8, readFile.ReadBytes((int)ImageDataSize));
+                                TXTRData.Texture = Godot.Image.CreateFromData((int)TXTRData.TextureWidth, (int)TXTRData.TextureHeight, mipmaps, Godot.Image.Format.L8, readFile.ReadBytes((int)ImageDataSize));
+                                //TXTRData.Texture.Convert(Godot.Image.Format.L8);
                                 if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Saved Image (Type: {0}, Name: {1}) to TXTRData. Size: {2}", TXTRData.FormatCode, TXTRData.FullTXTRName, TXTRData.Texture.GetDataSize()));
                                 //texture.SavePng(string.Format("{0}_{1}.png", fileInfo.FullName, txtrc));
                             }
@@ -1316,7 +3576,7 @@ namespace SimsCCManager.PackageReaders
                             }
                             else if (TXTRData.FormatCode == 6)
                             {
-                                TXTRData.Texture = Godot.Image.CreateFromData((int)TXTRData.TextureWidth, (int)TXTRData.TextureHeight, mipmaps, Godot.Image.Format.R8, readFile.ReadBytes((uint)ImageDataSize));
+                                TXTRData.Texture = Godot.Image.CreateFromData((int)TXTRData.TextureWidth, (int)TXTRData.TextureHeight, mipmaps, Godot.Image.Format.L8, readFile.ReadBytes((uint)ImageDataSize));
                                 if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Saved Image (Type: {0}, Name: {1}) to TXTRData. Size: {2}", TXTRData.FormatCode, TXTRData.FullTXTRName, TXTRData.Texture.GetDataSize()));
                                 //texture.SavePng(string.Format("{0}_{1}.png", fileInfo.FullName, txtrc));
                             }
@@ -2121,15 +4381,15 @@ namespace SimsCCManager.PackageReaders
             uint blockID = readFile.ReadUInt32();
             Version = readFile.ReadUInt32();
             byte resourcenamelength = readFile.ReadByte();
-            string resourceName = Encoding.UTF8.GetString(readFile.ReadBytes(resourcenamelength));
+            GMDCData.ResourceName = Encoding.UTF8.GetString(readFile.ReadBytes(resourcenamelength));
             uint resourceID = readFile.ReadUInt32();
             uint resourceversion = readFile.ReadUInt32();
             byte filenamelength = readFile.ReadByte();
-            string filename = Encoding.UTF8.GetString(readFile.ReadBytes(filenamelength));
+            GMDCData.FileName = Encoding.UTF8.GetString(readFile.ReadBytes(filenamelength));
 
 
 
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Version: {0}. FileName: {1}", Version, filename));
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Version: {0}. FileName: {1}, ResourceName: {1}", Version, GMDCData.FileName, GMDCData.ResourceName));
             // all above works
             //most meshses use version 4, apparently
 
@@ -2944,6 +5204,7 @@ namespace SimsCCManager.PackageReaders
                 UseDefaultPlacementFlags = readFile.ReadUInt16();
                 LookAtScore = readFile.ReadUInt16();
                 ObjectGUID = readFile.ReadUInt32().ToString("X8");
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("OBJD Guid: {0}", ObjectGUID));
                 // Skip stuff we don't need
                 readFile.ReadBytes(46);
                 RoomSortFlag = readFile.ReadUInt16();
@@ -3583,8 +5844,107 @@ namespace SimsCCManager.PackageReaders
         }
     }
 
-    public class MMATData
+    public interface IIndexEntry
     {
+        public string TypeID {get; set;}
+        public string GroupID {get; set;}
+        public string InstanceID {get; set;}
+        public string FullKey {get; set; }
+        
+        void CopyEntryInfo(IndexEntry entry);
+    }
+
+    public class XHTNData : IIndexEntry
+    {
+        public string TypeID {get; set;}
+        public string GroupID {get; set;}
+        public string InstanceID {get; set;}
+        private string _fullkeyproxy;
+        public string FullKey { get { return string.Format("{0}-{1}-{2}", TypeID, GroupID, InstanceID); }
+        set { _fullkeyproxy = value; } }
+        
+        public void CopyEntryInfo(IndexEntry entry)
+        {
+            TypeID = entry.TypeID; 
+            GroupID = entry.GroupID; 
+            InstanceID = entry.InstanceID; 
+        }
+
+        public string Version {get; set;} 
+        public string Product {get; set;} 
+        public string Age {get; set;} 
+        public string Gender {get; set;} 
+        public string Species {get; set;} 
+        public string Parts {get; set;} 
+        public string Outfit {get; set;} 
+        public string Flags {get; set;} 
+        public string Name {get; set;} 
+        public string Creator {get; set;} 
+        public string Family {get; set;} 
+        public string Genetic {get; set;} 
+        public string Priority {get; set;} 
+        public string Type {get; set;} 
+        public string Preview {get; set;} 
+        public string Proxy {get; set;} 
+    }
+
+    public class TXMTData : IIndexEntry
+    {
+        public string TypeID {get; set;}
+        public string GroupID {get; set;}
+        public string InstanceID {get; set;}
+        private string _fullkeyproxy;
+        public string FullKey { get { return string.Format("{0}-{1}-{2}", TypeID, GroupID, InstanceID); }
+        set { _fullkeyproxy = value; } }
+        
+        public void CopyEntryInfo(IndexEntry entry)
+        {
+            TypeID = entry.TypeID; 
+            GroupID = entry.GroupID; 
+            InstanceID = entry.InstanceID; 
+        }
+        public string FileName {get; set;}
+        public string MaterialDescription {get; set;}
+        public string MaterialType {get; set;}
+        public uint PropertyCount {get; set;}
+        public List<TXMTMaterial> MaterialProperties {get; set;} = new();
+        public uint TextureNameCount {get; set;}
+        public List<string> TextureNames {get; set;} = new();
+    }
+
+    public class TXMTMaterial : IIndexEntry
+    {
+        public string TypeID {get; set;}
+        public string GroupID {get; set;}
+        public string InstanceID {get; set;}
+        private string _fullkeyproxy;
+        public string FullKey { get { return string.Format("{0}-{1}-{2}", TypeID, GroupID, InstanceID); }
+        set { _fullkeyproxy = value; } }
+        public void CopyEntryInfo(IndexEntry entry)
+        {
+            TypeID = entry.TypeID; 
+            GroupID = entry.GroupID; 
+            InstanceID = entry.InstanceID; 
+        }
+        public string PropertyName {get; set;}
+        public string PropertyValue {get; set;}
+    }
+
+    public class MMATData : IIndexEntry
+    {
+        public string TypeID {get; set;}
+        public string GroupID {get; set;}
+        public string InstanceID {get; set;}
+        private string _fullkeyproxy;
+        public string FullKey { get { return string.Format("{0}-{1}-{2}", TypeID, GroupID, InstanceID); }
+        set { _fullkeyproxy = value; } }
+        
+        public void CopyEntryInfo(IndexEntry entry)
+        {
+            TypeID = entry.TypeID; 
+            GroupID = entry.GroupID; 
+            InstanceID = entry.InstanceID; 
+        }
         public string Creator { get; set; }
         public bool DefaultMaterial { get; set; }
         public string Family { get; set; }
@@ -3611,8 +5971,215 @@ namespace SimsCCManager.PackageReaders
         }
     }
 
-    public class TXTRData
+    public class SHPEData : IIndexEntry
     {
+        public string TypeID {get; set;}
+        public string GroupID {get; set;}
+        public string InstanceID {get; set;}
+        private string _fullkeyproxy;
+        public string FullKey { get { return string.Format("{0}-{1}-{2}", TypeID, GroupID, InstanceID); }
+        set { _fullkeyproxy = value; } }
+        
+        public void CopyEntryInfo(IndexEntry entry)
+        {
+            TypeID = entry.TypeID; 
+            GroupID = entry.GroupID; 
+            InstanceID = entry.InstanceID; 
+        }
+        public string FileName {get; set;}
+        public uint Version {get; set;}
+        public List<SHPEExtension> Extensions {get; set;} = new();
+        public uint LODCount {get; set;}
+        public List<SHPELod> LODs {get; set;} = new();
+        public uint MaterialCount {get; set;}
+        public List<SHPEMaterial> Materials {get; set;} = new();
+    }
+
+    public class SHPEMaterial : IIndexEntry
+    {
+        public string TypeID {get; set;}
+        public string GroupID {get; set;}
+        public string InstanceID {get; set;}
+        public void CopyEntryInfo(IndexEntry entry)
+        {
+            TypeID = entry.TypeID; 
+            GroupID = entry.GroupID; 
+            InstanceID = entry.InstanceID; 
+        }
+        private string _fullkeyproxy;
+        public string FullKey { get { return string.Format("{0}-{1}-{2}", TypeID, GroupID, InstanceID); }
+        set { _fullkeyproxy = value; } }
+        public string Group {get; set;}
+        public string MaterialDefinition {get; set;}
+        public uint LODType {get; set;} //should always be 0
+        public byte Enabled {get; set;} //should always be 0
+        public uint Index {get; set;} //should always be 0
+        public override string ToString()
+        {
+            return string.Format("Group: {0}, MaterialDefinition: {1}", Group, MaterialDefinition);
+        }
+    }
+
+    public class SHPELod
+    {
+        public uint LODValue {get; set;}
+        public uint LODType {get; set;} // 0 = full detail, 15 == reduced detail
+        public bool Enabled {get; set;}
+        public bool UseGMNDSubmesh {get; set;}
+        public uint HeaderLinkIndex {get; set;}
+        public string GMNDFileName {get; set;}
+    }
+
+    public class SHPEExtension
+    {
+        public bool Enabled {get; set;}
+        public bool Depends {get; set;}
+        public uint IndexOfExtension {get; set;}
+
+        public override string ToString()
+        {
+            return string.Format("Index: {0}, Enabled: {1}, Depends: {2}", IndexOfExtension, Enabled, Depends);
+        }
+    }
+
+
+    public class EIDRData : IIndexEntry
+    {
+        public string TypeID {get; set;}
+        public string GroupID {get; set;}
+        public string InstanceID {get; set;}
+        private string _fullkeyproxy;
+        public string FullKey { get { return string.Format("{0}-{1}-{2}", TypeID, GroupID, InstanceID); }
+        set { _fullkeyproxy = value; } }
+        public void CopyEntryInfo(IndexEntry entry)
+        {
+            TypeID = entry.TypeID; 
+            GroupID = entry.GroupID; 
+            InstanceID = entry.InstanceID; 
+        }
+    
+        public List<ResourceKey> ResourceKeys {get; set;} = new();
+    }
+
+    public class ResourceKey
+    {
+        public string TypeID {get; set;}
+        public string GroupID {get; set;}
+        public string InstanceID {get; set;}
+        public string ResourceID {get; set;}
+        public string TypeName {get; set;}
+
+        private string _fullkeyproxy;
+        public string FullKey { get { return string.Format("{0}-{1}-{2}", TypeID, GroupID, InstanceID); }
+        set { _fullkeyproxy = value; } }
+    }
+
+    public class GZPSData : IIndexEntry
+    {
+        public string TypeID {get; set;}
+        public string GroupID {get; set;}
+        public string InstanceID {get; set;}
+        private string _fullkeyproxy;
+        public string FullKey { get { return string.Format("{0}-{1}-{2}", TypeID, GroupID, InstanceID); }
+        set { _fullkeyproxy = value; } }
+        public void CopyEntryInfo(IndexEntry entry)
+        {
+            TypeID = entry.TypeID; 
+            GroupID = entry.GroupID; 
+            InstanceID = entry.InstanceID; 
+        }
+        public string Version {get; set;} 
+        public string Product {get; set;} 
+        public string Age {get; set;} 
+        public string Gender {get; set;} 
+        public string Species {get; set;} 
+        public string Parts {get; set;} 
+        public string Outfit {get; set;} 
+        public string Flags {get; set;} 
+        public string Name {get; set;} 
+        public string Creator {get; set;} 
+        public string Family {get; set;} 
+        public string Genetic {get; set;} 
+        public string Priority {get; set;} 
+        public string Type {get; set;} 
+        public string Skin {get; set;} 
+        public string Hairtone {get; set;} 
+        public string Category {get; set;} 
+        public string Shoe {get; set;} 
+        public string Fitness {get; set;} 
+        public string Resourcekeyidx {get; set;} 
+        public string Shapekeyidx {get; set;} 
+        public string Numoverrides {get; set;} 
+        public string Override0shape {get; set;} 
+        public string Override0subset {get; set;} 
+        public string Override0resourcekeyidx {get; set;} 
+        public string Override1shape {get; set;} 
+        public string Override1subset {get; set;} 
+        public string Override1resourcekeyidx {get; set;} 
+        public string Override2shape {get; set;} 
+        public string Override2subset {get; set;} 
+        public string Override2resourcekeyidx {get; set;} 
+
+        public string HairColor {get; set;}
+
+    }
+
+    public class XNGBData : IIndexEntry
+    {
+        public string TypeID {get; set;}
+        public string GroupID {get; set;}
+        public string InstanceID {get; set;}
+        private string _fullkeyproxy;
+        public string FullKey { get { return string.Format("{0}-{1}-{2}", TypeID, GroupID, InstanceID); }
+        set { _fullkeyproxy = value; } }
+        public void CopyEntryInfo(IndexEntry entry)
+        {
+            TypeID = entry.TypeID; 
+            GroupID = entry.GroupID; 
+            InstanceID = entry.InstanceID; 
+        }
+        public string Type {get; set;}
+        public string Name {get; set;}
+        public string Description {get; set;}
+        public string Guid {get; set;}
+        public string Cost {get; set;}
+        public string Deprecated {get; set;}
+        public string ShowInCatalog {get; set;}
+        public string Version {get; set;}
+        public string NicenessMultiplier {get; set;}
+        public string CrapScore {get; set;}
+        public string ResourceResTypeID {get; set;}
+        public string ResourceGroupID {get; set;}
+        public string ResourceID {get; set;}
+        public string StringsetResTypeID {get; set;}
+        public string StringsetGroupID {get; set;}
+        public string StringSetID {get; set;}
+        public string ModelName {get; set;} = "";
+        public string PlacementSurface {get; set;}
+        public string AllowedInLot {get; set;}
+        public string RemoveonLotPlop {get; set;}
+        public string AllowedOnRoad {get; set;}
+        public string Sort {get; set;}
+        public string ThumbnailGroupID {get; set;}
+        public string ThumbnailInstanceID {get; set;}
+
+
+    }
+
+    public class TXTRData : IIndexEntry
+    {
+        public string TypeID {get; set;}
+        public string GroupID {get; set;}
+        public string InstanceID {get; set;}
+        private string _fullkeyproxy;
+        public string FullKey { get { return string.Format("{0}-{1}-{2}", TypeID, GroupID, InstanceID); }
+        set { _fullkeyproxy = value; } }
+        public void CopyEntryInfo(IndexEntry entry)
+        {
+            TypeID = entry.TypeID; 
+            GroupID = entry.GroupID; 
+            InstanceID = entry.InstanceID; 
+        }
         public string FullTXTRName { get; set; }
         public string GUID
         {
@@ -3626,6 +6193,13 @@ namespace SimsCCManager.PackageReaders
             get
             {
                 if (FullTXTRName.Contains('!')) return FullTXTRName.Split('!')[1]; else return "N/a";
+            }
+        }
+        public string TextureNoSuffix
+        {
+            get
+            {
+                if (FullTXTRName.Contains('-')) return FullTXTRName.Split('-')[^1]; else return "N/a";
             }
         }
 
@@ -3661,19 +6235,19 @@ namespace SimsCCManager.PackageReaders
 
         private Godot.Image ConvertTexture(Godot.Image image)
         {
-            if (image.GetFormat() != Godot.Image.Format.Rgb8)
+            if (image.GetFormat() != Godot.Image.Format.Rgba8)
             {
                 if (image.IsCompressed())
                 {
                     image.Decompress();
                 }
-                image.Convert(Godot.Image.Format.Rgb8);
+                image.Convert(Godot.Image.Format.Rgba8);
             }
             else
             {
                 if (!image.IsCompressed())
                 {
-                    image.Compress(Godot.Image.CompressMode.Astc);
+                    image.Compress(Godot.Image.CompressMode.S3Tc);
                 }
             }
             return image;
@@ -3686,8 +6260,20 @@ namespace SimsCCManager.PackageReaders
         }
     }
 
-    public class XFLRData
+    public class XFLRData : IIndexEntry
     {
+        public string TypeID {get; set;}
+        public string GroupID {get; set;}
+        public string InstanceID {get; set;}
+        private string _fullkeyproxy;
+        public string FullKey { get { return string.Format("{0}-{1}-{2}", TypeID, GroupID, InstanceID); }
+        set { _fullkeyproxy = value; } }
+        public void CopyEntryInfo(IndexEntry entry)
+        {
+            TypeID = entry.TypeID; 
+            GroupID = entry.GroupID; 
+            InstanceID = entry.InstanceID; 
+        }
         public uint BrushWidth { get; set; }
         public uint Cost { get; set; }
         public float CrapScore { get; set; }
@@ -4613,13 +7199,29 @@ namespace SimsCCManager.PackageReaders
         public List<Godot.Vector3> Verts { get; set; } = new();
         public List<uint> Faces { get; set; } = new();
     }
-    public class GMDCData
+    public class GMDCData : IIndexEntry
     {
+        public string TypeID {get; set;}
+        public string GroupID {get; set;}
+        public string InstanceID {get; set;}
+        private string _fullkeyproxy;
+        public string FullKey { get { return string.Format("{0}-{1}-{2}", TypeID, GroupID, InstanceID); }
+        set { _fullkeyproxy = value; } }        
+        public void CopyEntryInfo(IndexEntry entry)
+        {
+            TypeID = entry.TypeID; 
+            GroupID = entry.GroupID; 
+            InstanceID = entry.InstanceID; 
+        }
+
+        public string ResourceName {get; set;}
+        public string FileName {get; set;}
+    
         private List<GMDCElementVertices> _GMDCElementVertices;
         public List<GMDCElementVertices> GMDCElementVertices
         {
             get
-            {                
+            {
                 return _GMDCElementVertices;
             }
             set
@@ -4644,9 +7246,9 @@ namespace SimsCCManager.PackageReaders
         {
             get
             {
-                
+
                 return _GMDCElementUVCoordinates;
-                
+
             }
             set
             {
@@ -4658,7 +7260,7 @@ namespace SimsCCManager.PackageReaders
         {
             get
             {
-                return _GMDCElementTargetIndices;                
+                return _GMDCElementTargetIndices;
             }
             set
             {
@@ -4670,9 +7272,9 @@ namespace SimsCCManager.PackageReaders
         {
             get
             {
-                
-                    return _GMDCElementBoneAssignments;
-                
+
+                return _GMDCElementBoneAssignments;
+
             }
             set
             {
@@ -4684,9 +7286,9 @@ namespace SimsCCManager.PackageReaders
         {
             get
             {
-                
-                    return _GMDCElementSkinV1;
-                
+
+                return _GMDCElementSkinV1;
+
             }
             set
             {
@@ -4698,10 +7300,10 @@ namespace SimsCCManager.PackageReaders
         {
             get
             {
-                
-                
-                    return _GMDCElementSkinV2;
-                
+
+
+                return _GMDCElementSkinV2;
+
             }
             set
             {
@@ -4713,9 +7315,9 @@ namespace SimsCCManager.PackageReaders
         {
             get
             {
-                
-                    return _GMDCElementSkinV3;
-                
+
+                return _GMDCElementSkinV3;
+
             }
             set
             {
@@ -4727,9 +7329,9 @@ namespace SimsCCManager.PackageReaders
         {
             get
             {
-                
-                    return _GMDCElementMorphVertexDeltas;
-                
+
+                return _GMDCElementMorphVertexDeltas;
+
             }
             set
             {
@@ -4741,9 +7343,9 @@ namespace SimsCCManager.PackageReaders
         {
             get
             {
-                
-                    return _GMDCElementMorphNormalDeltas;
-                
+
+                return _GMDCElementMorphNormalDeltas;
+
             }
             set
             {
@@ -4755,10 +7357,10 @@ namespace SimsCCManager.PackageReaders
         {
             get
             {
-                
-                
-                    return _GMDCElementMorphVertexMap;
-                
+
+
+                return _GMDCElementMorphVertexMap;
+
             }
             set
             {
@@ -4770,10 +7372,10 @@ namespace SimsCCManager.PackageReaders
         {
             get
             {
-                
-                
-                    return _GMDCElementBumpMapNormals;
-                
+
+
+                return _GMDCElementBumpMapNormals;
+
             }
             set
             {

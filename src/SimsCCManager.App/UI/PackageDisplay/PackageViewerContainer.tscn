@@ -70,6 +70,9 @@ layout_mode = 2
 mouse_filter = 2
 theme_override_constants/margin_top = 40
 
+[node name="Panel2" type="Panel" parent="PackageViewer_Container"]
+layout_mode = 2
+
 [node name="Panel" type="Panel" parent="PackageViewer_Container"]
 visible = false
 layout_mode = 2
@@ -86,7 +89,7 @@ size_flags_vertical = 3
 layout_mode = 2
 
 [node name="MarginContainer" type="MarginContainer" parent="PackageViewer_Container/PackageViewer/HBoxContainer/VBoxContainer"]
-custom_minimum_size = Vector2(0, 150)
+custom_minimum_size = Vector2(0, 190)
 layout_mode = 2
 size_flags_horizontal = 4
 size_flags_vertical = 4
@@ -96,17 +99,19 @@ theme_override_constants/margin_right = 5
 theme_override_constants/margin_bottom = 5
 
 [node name="TextureRect" type="TextureRect" parent="PackageViewer_Container/PackageViewer/HBoxContainer/VBoxContainer/MarginContainer"]
+custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
 size_flags_horizontal = 4
 texture = ExtResource("3_hjkl5")
-expand_mode = 3
+expand_mode = 5
+stretch_mode = 4
 
 [node name="TextureRect2" type="TextureRect" parent="PackageViewer_Container/PackageViewer/HBoxContainer/VBoxContainer/MarginContainer"]
 layout_mode = 2
 size_flags_horizontal = 4
 texture = SubResource("ViewportTexture_mxfm6")
 expand_mode = 3
-stretch_mode = 3
+stretch_mode = 4
 
 [node name="SubViewport" type="SubViewport" parent="PackageViewer_Container/PackageViewer/HBoxContainer/VBoxContainer/MarginContainer"]
 own_world_3d = true

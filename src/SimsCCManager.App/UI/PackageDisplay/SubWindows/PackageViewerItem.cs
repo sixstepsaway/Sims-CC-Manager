@@ -9,6 +9,23 @@ public partial class PackageViewerItem : MarginContainer
     Label Value;
     [Export]
     Panel BG;
+    [Export]
+    HBoxContainer Short;
+    [Export]
+    VBoxContainer Long;
+    [Export]
+    RichTextLabel LongValue;
+    [Export]
+    Label LongKey;
+
+    private bool _islong;
+    public bool IsLong
+    {
+        get { return _islong; }
+        set { _islong = value;
+        Long.Visible = value;
+        Short.Visible = !value; }
+    }
 
     private Color _bgColor;
     public Color BGColor
@@ -33,12 +50,14 @@ public partial class PackageViewerItem : MarginContainer
     public string KeyText {
         get { return _keyText; }
         set { _keyText = value; 
-        Key.Text = value; }
+        Key.Text = value; 
+        LongKey.Text = value; }
     }
     private string _valueText;
     public string ValueText {
         get { return _valueText; }
         set { _valueText = value; 
-        Value.Text = value; }
+        Value.Text = value;
+        LongValue.Text = value; }
     }
 }

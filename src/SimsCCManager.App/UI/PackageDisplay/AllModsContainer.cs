@@ -3,6 +3,7 @@ using Godot;
 using SimsCCManager.Containers;
 using SimsCCManager.Debugging;
 using SimsCCManager.Globals;
+using SimsCCManager.OptionLists;
 using SimsCCManager.SettingsSystem;
 using System;
 using System.Collections.Concurrent;
@@ -39,11 +40,17 @@ public partial class AllModsContainer : MarginContainer
     PackedScene ThumbgridPS;
     [Export]
     CustomCheckButton SwapDisplaysCheck;
+    [Export]
+    Label GridSwapLabel;
     ThumbnailGrid ThumbGrid;
     [Export]
     PackedScene RenameItemsBoxPS;
     [Export]
     PackedScene PackageListItemPS;
+    [Export]
+    PackedScene AddDetailPS;
+    [Export]
+    PackedScene CustomPopupWindowPS;
 
     public bool FirstLoaded = false;
 
@@ -59,14 +66,18 @@ public partial class AllModsContainer : MarginContainer
             {
                 ThumbGrid.Visible = value;
                 DataGrid.Visible = !value;
+                if (value) GridSwapLabel.Text = "Data View"; else GridSwapLabel.Text = "Grid View";
             } else if (value)
             {
                 LoadThumbGrid();
+                GridSwapLabel.Text = "Data View";
             }
             
         }
     }
 
+
+    
     
 
     public List<Category> Categories { get { return packageDisplay.ThisInstance.Categories; }}
@@ -96,24 +107,17 @@ public partial class AllModsContainer : MarginContainer
     public List<DataGridRow> SelectedItems { get { return _selecteditems; }
     set { _selecteditems = value; } }
 
+
+    public List<SimsPackage> SelectedPackages = new();
+
+    
+
+
+
+
     RightClickMenu rcm;
 
     RenameItemsBox rib;
-
-    public List<string> Headers = new()
-    {
-        "IsEnabled",
-        "FileName",
-        "LoadOrder",
-        "Location",
-        "Image",
-        "FileSize",
-        "FileType",
-        "",
-        "DateUpdated",
-        "DateAdded",
-        "Game"
-    };
 
     public List<DataGridHeader> DataGridHeaders = new() {
             new DataGridHeader() { 
@@ -126,7 +130,7 @@ public partial class AllModsContainer : MarginContainer
                 ShowHeader = true},
 			new DataGridHeader() { 
                 ContentType = DataGridContentType.Text,
-                StartingWidth = 150,
+                StartingWidth = 250,
                 Data = "FileName",
                 Title = "Title",
                 Resizeable = true,
@@ -146,6 +150,22 @@ public partial class AllModsContainer : MarginContainer
                 StartingWidth = 150,
                 Data = "Location",
                 Title = "Location",
+                Resizeable = true,
+                CellType = CellOptions.Text,
+                ShowHeader = true},
+			new DataGridHeader() { 
+                ContentType = DataGridContentType.Text,
+                StartingWidth = 150,
+                Data = "Type",
+                Title = "Type",
+                Resizeable = true,
+                CellType = CellOptions.Text,
+                ShowHeader = true},
+			new DataGridHeader() { 
+                ContentType = DataGridContentType.Text,
+                StartingWidth = 150,
+                Data = "Creator",
+                Title = "Creator",
                 Resizeable = true,
                 CellType = CellOptions.Text,
                 ShowHeader = true},
@@ -262,13 +282,29 @@ public partial class AllModsContainer : MarginContainer
         ThumbGrid.TextColor = GlobalVariables.LoadedTheme.MainTextColor;
         ThumbGrid.SelectedColor = GlobalVariables.LoadedTheme.DataGridSelected;
         ThumbGrid.packageDisplay = packageDisplay;        
-        ThumbGrid.PaneSize = GridContainer.Size;
+        ThumbGrid.PaneSize = new(GridContainer.Size.X - 15, GridContainer.Size.Y);
+        ThumbGrid.PaneSizer = GridContainer;
+        ThumbGrid.ThumbGridItemsSelected += (p) => ThumbGridItemsSelected(p);
         GridContainer.AddChild(ThumbGrid);
 
         ThumbGrid.MakeItems();
         ThumbGrid.Visible = true;
         DataGrid.Visible = false;
+        ThumbDisplayLoaded = true;
     }
+
+    private void ThumbGridItemsSelected(List<SimsPackage> p)
+    {
+        if (p.Count == 1)
+        {
+            DisplayPackageInfo(Packages.First(x => x.Identifier == p[0].Identifier));            
+        } else
+        {
+            HidePackageInfo();
+        }
+        SelectedPackages = p;
+    }
+
 
     private void HeadersChanged(List<DataGridHeader> h)
     {
@@ -279,7 +315,9 @@ public partial class AllModsContainer : MarginContainer
     private void DataGridLoaded()
     {
         GlobalVariables.mainWindow.DataGridFinishedLoading();
-        DataGrid.DataChanged += (rowIdx, dataChanged, Item) => DataChanged(rowIdx, dataChanged, Item);
+        DataGrid.DataChanged -= DataChanged; 
+        DataGrid.DataChanged += DataChanged;
+        DataGrid.FirstLoaded = true;
     }
 
     private void ViewFlipped(bool v)
@@ -296,6 +334,7 @@ public partial class AllModsContainer : MarginContainer
 
     private void ChangeLinkedItemsRemove(DataGridRow row, int idx, List<Guid> items)
     {
+        List<DataGridRow> newRows = new();
         int rowpackage = Packages.IndexOf(Packages.Where(x => x.Identifier == row.Identifier).First());
         int rowstart = DataGrid.RowData.Count;
         StringBuilder sb = new();
@@ -331,10 +370,11 @@ public partial class AllModsContainer : MarginContainer
             package.WriteXML();
             int rows = DataGrid.RowData.Count;
             DataGridRow newrow = CreateRow(package, rows);
-            DataGrid.RowData.Add(newrow);
+            newRows.Add(newrow);
+            //DataGrid.RowData.Add(newrow);
         }
-        DataGrid.AddNewRows(rowstart);
         DataGrid.UpdateRow(row);
+        DataGrid.AddNewRows(newRows);
     }
 
     private void ChangeLinkedItemsAdd(DataGridRow row, int idx, List<string> items)
@@ -369,9 +409,12 @@ public partial class AllModsContainer : MarginContainer
         DataGrid.UpdateRow(row);
     }
 
+    public delegate void PackagesDataChangedEvent();
+    public PackagesDataChangedEvent PackagesDataChanged;
+
     private void PackagesChanged()
     {
-        //throw new NotImplementedException();
+        PackagesDataChanged?.Invoke();
     }
 
     public void UpdateProfilePackages()
@@ -428,7 +471,7 @@ public partial class AllModsContainer : MarginContainer
         {
             foreach (string linkedfile in pack.LinkedFiles)
             {
-                if (!subpacks.Where(x => x.Location == linkedfile).Any())
+                if (!subpacks.Any(x => x.Location == linkedfile))
                 {
                     FileInfo fi = new(linkedfile);
                     SimsPackage simsPackage = InstanceControllers.ReadPackage(linkedfile, packageDisplay.ThisInstance, fi);                    
@@ -441,7 +484,7 @@ public partial class AllModsContainer : MarginContainer
         {
             foreach (string linkedfile in pack.LinkedFolders)
             {
-                if (!subpacks.Where(x => x.Location == linkedfile).Any())
+                if (!subpacks.Any(x => x.Location == linkedfile))
                 {
                     DirectoryInfo fi = new(linkedfile);
                     SimsPackage simsPackage = InstanceControllers.ReadPackage(linkedfile, packageDisplay.ThisInstance, fi);                    
@@ -593,19 +636,19 @@ public partial class AllModsContainer : MarginContainer
             if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Packages: {0}", Packages.Count));
             foreach (SimsPackage pack in Packages.OrderBy(x => x.IsDirectory).ThenBy(x => x.FileName)){
                 if (pack.StandAlone)
+                {                    
+                    Task t = Task.Run( () => {
+                        DataGridRow newrow = CreateRow(pack, i);
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Row {0}: {1}", i, pack.FileName));
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("-- Is Subrow: {0}\n -- Has Subitems: {1}", newrow.SubRow, newrow.SubRowItems.Count));
+                        rows.Add(newrow);                        
+                    });
+                    i++;
+                    runningTasks.Add(t);                                         
+                }   else
                 {
-                    if (!packageDisplay.HideCategoriesInGrid.Contains(pack.PackageCategory))
-                    {
-                        Task t = Task.Run( () => {
-                            DataGridRow newrow = CreateRow(pack, i);
-                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Row {0}: {1}", i, pack.FileName));
-                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("-- Is Subrow: {0}\n -- Has Subitems: {1}", newrow.SubRow, newrow.SubRowItems.Count));
-                            rows.Add(newrow);                        
-                        });
-                        i++;
-                        runningTasks.Add(t);
-                    }                     
-                }            
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Row {0}: {1} wasn't standalone.", i, pack.FileName));
+                }         
             }
 
             while (runningTasks.Any(x => !x.IsCompleted)){
@@ -628,6 +671,71 @@ public partial class AllModsContainer : MarginContainer
         }){IsBackground = true}.Start();
     }
 
+
+    public void ReplaceFiles(List<SimsPackage> newFiles, List<SimsPackage> removedFiles)
+    {
+        ConcurrentBag<Task> runningTasks = new();
+        int completedTasks = 0;
+        ConcurrentBag<DataGridRow> rows = new();
+        new Thread(() => {        
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Creating rows"));
+            
+            if (newFiles.Count > 0)
+            {
+                int i = 0;
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Packages: {0}", Packages.Count));
+                foreach (SimsPackage pack in newFiles){
+                    if (pack.StandAlone)
+                    {                    
+                        Task t = Task.Run( () => {
+                            DataGridRow newrow = CreateRow(pack, i);
+                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Row {0}: {1}", i, pack.FileName));
+                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("-- Is Subrow: {0}\n -- Has Subitems: {1}", newrow.SubRow, newrow.SubRowItems.Count));
+                            rows.Add(newrow);                        
+                        });
+                        i++;
+                        runningTasks.Add(t);                                         
+                    }   else
+                    {
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Row {0}: {1} wasn't standalone.", i, pack.FileName));
+                    }         
+                }
+            }
+            
+            if (removedFiles.Count > 0)
+            {
+                foreach (SimsPackage pack in removedFiles)
+                {
+                    if (DataGrid.RowData.Any(x => x.Identifier == pack.Identifier)) DataGrid.RowData.Remove(DataGrid.RowData.First(x => x.Identifier == pack.Identifier));
+                }  
+            }
+            Task w = Task.Run(() => {
+                Thread.Sleep(5);
+            });
+            runningTasks.Add(w);
+
+
+            while (runningTasks.Any(x => !x.IsCompleted)){
+                if (completedTasks != runningTasks.Count(x => x.IsCompleted)) {
+                    completedTasks = runningTasks.Count(x => x.IsCompleted);
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0} tasks in runningTasks, {1} completed", runningTasks.Count, completedTasks));
+                }
+            }
+
+            if (newFiles.Count > 0) { 
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Adding {0} rows to grid.", rows.Count));
+                List<DataGridRow> _rows = rows.OrderBy(x => x.RowRef).ToList();
+                List<DataGridRow> rowCollection = new();
+                if (DataGrid.RowData != null) if (DataGrid.RowData.Count > 0) rowCollection = [..DataGrid.RowData];
+                rowCollection.AddRange([.._rows]);                
+                DataGrid.RefreshFileList(rowCollection);
+            } else if (removedFiles.Count > 0)
+            {
+                DataGrid.RefreshFileList(DataGrid.RowData);
+            } else DGReloadDone();        
+            
+        }){IsBackground = true}.Start();
+    }
     
 
     public void CreateDataGrid()
@@ -637,13 +745,22 @@ public partial class AllModsContainer : MarginContainer
         SearchBox.TextSubmitted += (text) => SearchedMods(text);
 
         SCCMTheme theme = GlobalVariables.LoadedTheme;
-
+        if (!theme.IsThemeLight()) DataGrid.DarkMode = true; else DataGrid.DarkMode = false;
         DataGrid.AccentColor = theme.AccentColor;
         DataGrid.BackgroundColor = theme.BackgroundColor;
         DataGrid.SecondaryColor = theme.DataGridB;
         DataGrid.MainRowColor = theme.DataGridA;
+        DataGrid.MainRowTextColor = theme.DataGridTextA;
+        DataGrid.AlternateRowTextColor = theme.DataGridTextB;
         DataGrid.AlternateRowColor = theme.DataGridB;
-        DataGrid.SelectedRowColor = theme.DataGridSelected;
+        DataGrid.SelectedRowColor = theme.DataGridSelected;        
+        if (theme.IsPropertyLight(theme.DataGridSelected))
+        {
+            DataGrid.SelectedRowTextColor = theme.DataGridSelected.Darkened(0.2f);
+        } else
+        {
+            DataGrid.SelectedRowTextColor = theme.DataGridSelected.Lightened(0.2f);
+        }
         DataGrid.Alert1RowColor = theme.AccentColor;
         DataGrid.Alert2RowColor = theme.AccentColor.Darkened(0.1f);
         DataGrid.Alert3RowColor = theme.AccentColor.Darkened(0.2f);
@@ -656,9 +773,26 @@ public partial class AllModsContainer : MarginContainer
 		DataGrid.MakeRCMenu += (headerMenu) => CreateHeaderClickMenu(headerMenu);
 		DataGrid.LinkToggleToAdjustmentNumber = true;
         DataGrid.PassLog += (log) => LogPassed(log);
+        DataGrid.DataGridReloadComplete += () => DGReloadDone();
         //DataGrid.PaneSize = GridContainer.Size;
-        CreateRows();
+        if (Packages.Count > 0) {
+            CreateRows();
+        } else
+        {
+            DataGridLoaded();
+        }
     }
+
+    private void DGReloadDone()
+    {
+        CallDeferred(nameof(DeferDGReloadDone));
+    }
+
+    private void DeferDGReloadDone()
+    {
+        packageDisplay.TogglePleaseWait(false);
+    }
+
 
     private void LogPassed(string log)
     {
@@ -682,11 +816,10 @@ public partial class AllModsContainer : MarginContainer
     {
         if (SelectedRows.Count == 1)
         {
-            DisplayPackageInfo(Packages.First(x => x.Identifier == SelectedRows[0].Identifier));
-            packageDisplay.UIPackageViewerContainer.Visible = true;
+            DisplayPackageInfo(Packages.First(x => x.Identifier == SelectedRows[0].Identifier));            
         } else
         {
-            packageDisplay.UIPackageViewerContainer.Visible = false;
+            HidePackageInfo();
         }
         SelectedItems = SelectedRows;
         StringBuilder sb = new();
@@ -700,17 +833,31 @@ public partial class AllModsContainer : MarginContainer
     private void DisplayPackageInfo(SimsPackage package)
     {
         packageDisplay.UIPackageViewerContainer.package = package;
+        if (!packageDisplay.UIDownloadsContainer.Visible)
+        {
+            packageDisplay.VSplit.Visible = true;
+        }
+        packageDisplay.UIPackageViewerContainer.Visible = true;
+    }
+
+    private void HidePackageInfo()
+    {
+        if (!packageDisplay.UIDownloadsContainer.Visible)
+        {
+            packageDisplay.VSplit.Visible = false;
+        }
+        packageDisplay.UIPackageViewerContainer.Visible = false;
     }
 
 
     private void DataChanged(DataGridRow rowIdx, string dataChanged, int Item)
     {
-        if (Packages.Where(x => x.Identifier == rowIdx.Identifier).Any())
+        if (Packages.Any(x => x.Identifier == rowIdx.Identifier))
         {
             if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Data changed: {0}, {1}. New value: {2}", dataChanged, Item, rowIdx.Items[Item].ItemContent));
             //SetProperty(pack, header.Data).ToString();
             
-            SimsPackage package = Packages.Where(x => x.Identifier == rowIdx.Identifier).First();
+            SimsPackage package = Packages.First(x => x.Identifier == rowIdx.Identifier);
 
             package.SetProperty(dataChanged, rowIdx.Items[Item].ItemContent);
 
@@ -720,11 +867,15 @@ public partial class AllModsContainer : MarginContainer
             {
                 if (rowIdx.Items[Item].ItemContent == "True")
                 {
-                    packageDisplay.ThisInstance.LoadedProfile.EnabledPackages.Add(new () { PackageIdentifier = package.Identifier, LoadOrder = 0, PackageLocation = package.Location, PackageName = package.FileName});
+                    if (!packageDisplay.ThisInstance.LoadedProfile.EnabledPackages.Any(x => x.PackageIdentifier == package.Identifier)) packageDisplay.ThisInstance.LoadedProfile.EnabledPackages.Add(new () { PackageIdentifier = package.Identifier, LoadOrder = 0, PackageLocation = package.Location, PackageName = package.FileName});
                 } else
                 {
-                    EnabledPackages pa = packageDisplay.ThisInstance.LoadedProfile.EnabledPackages.Where(x => x.PackageIdentifier == package.Identifier).First();
-                    packageDisplay.ThisInstance.LoadedProfile.RemoveEnabled(pa);
+                    if (packageDisplay.ThisInstance.LoadedProfile.EnabledPackages.Any(x => x.PackageIdentifier == package.Identifier))
+                    {
+                        EnabledPackages pa = packageDisplay.ThisInstance.LoadedProfile.EnabledPackages.First(x => x.PackageIdentifier == package.Identifier);
+                        packageDisplay.ThisInstance.LoadedProfile.RemoveEnabled(pa);
+                    }
+                    
                 }
                 
             }
@@ -732,11 +883,11 @@ public partial class AllModsContainer : MarginContainer
             {
                 if (rowIdx.Items[Item].ItemContent == "-1")
                 {
-                    if (packageDisplay.ThisInstance.LoadedProfile.EnabledPackages.Where(x => x.PackageIdentifier == package.Identifier).Any()) packageDisplay.ThisInstance.LoadedProfile.EnabledPackages.Remove(packageDisplay.ThisInstance.LoadedProfile.EnabledPackages.Where(x => x.PackageIdentifier == package.Identifier).First());
+                    if (packageDisplay.ThisInstance.LoadedProfile.EnabledPackages.Any(x => x.PackageIdentifier == package.Identifier)) packageDisplay.ThisInstance.LoadedProfile.EnabledPackages.Remove(packageDisplay.ThisInstance.LoadedProfile.EnabledPackages.Where(x => x.PackageIdentifier == package.Identifier).First());
                 } else {
-                    if (packageDisplay.ThisInstance.LoadedProfile.EnabledPackages.Where(x => x.PackageIdentifier == package.Identifier).Any())
+                    if (packageDisplay.ThisInstance.LoadedProfile.EnabledPackages.Any(x => x.PackageIdentifier == package.Identifier))
                     {
-                        packageDisplay.ThisInstance.LoadedProfile.EnabledPackages.Where(x => x.PackageIdentifier == package.Identifier).First().LoadOrder = int.Parse(rowIdx.Items[Item].ItemContent);
+                        packageDisplay.ThisInstance.LoadedProfile.EnabledPackages.First(x => x.PackageIdentifier == package.Identifier).LoadOrder = int.Parse(rowIdx.Items[Item].ItemContent);
                     } else
                     {
                         packageDisplay.ThisInstance.LoadedProfile.EnabledPackages.Add(new () { PackageIdentifier = package.Identifier, LoadOrder = int.Parse(rowIdx.Items[Item].ItemContent), PackageLocation = package.Location, PackageName = package.FileName});
@@ -749,6 +900,7 @@ public partial class AllModsContainer : MarginContainer
         {
             if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Changed data doesn't exist?"));
         }
+        PackagesChanged();
         
     }
 
@@ -799,218 +951,454 @@ public partial class AllModsContainer : MarginContainer
         
         AllModsHeader.AddThemeColorOverride("font_color", theme.HeaderTextColor);
         AllModsModNumber.AddThemeColorOverride("font_color", theme.ButtonHover);
+        GridSwapLabel.AddThemeColorOverride("font_color", theme.HeaderTextColor);
     }
 
     public override void _Input(InputEvent @event)
     {
-        if (DataGrid.IsMouseInGrid())
+        if (ViewSwap)
         {
-            if (@event is InputEventMouseButton mouse && mouse.ButtonIndex == MouseButton.Right && mouse.Pressed)
+            if (ThumbGrid.IsMouseInThumbGrid())
             {
-                if (SelectedItems.Count != 0)
+                if (@event is InputEventMouseButton mouse && mouse.ButtonIndex == MouseButton.Right && mouse.Pressed)
                 {
-                    SimsPackage package = Packages.First(x => x.Identifier == SelectedItems[0].Identifier);
-                    rcm = RightClickMenuPS.Instantiate() as RightClickMenu;
-                    if (SelectedItems.Count > 1) rcm.Plural = true;
-                    rcm.CategorySelected += (c) => CategorySelected(c);
-                    rcm.AllCategories = packageDisplay.ThisInstance.Categories;
-                    rcm.packageDisplay = packageDisplay;
-                    if (SelectedItems.Count == 1)
+                    if (SelectedPackages.Count != 0)
                     {
-                        rcm.MostlyRoot = package.RootMod;
-                        rcm.MostlyFave = package.Favorite;
-                        rcm.MostlyUpdated = !package.OutOfDate;
-                        if (package.Game != packageDisplay.ThisInstance.GameChoice)
+                        SimsPackage package = SelectedPackages.First(x => x.Identifier == SelectedPackages[0].Identifier);
+                        rcm = RightClickMenuPS.Instantiate() as RightClickMenu;
+                        rcm.ThumbGridVersion = true;
+                        if (SelectedPackages.Count > 1) rcm.Plural = true;
+                        rcm.CategorySelected += (c) => CategorySelected(c);
+                        rcm.AllCategories = packageDisplay.ThisInstance.Categories;
+                        rcm.packageDisplay = packageDisplay;
+                        if (SelectedPackages.Count == 1)
                         {
-                            rcm.MostlyWrongGame = true;
+                            rcm.MostlyRoot = package.RootMod;
+                            rcm.MostlyFave = package.Favorite;
+                            rcm.MostlyUpdated = !package.OutOfDate;
+                            if (package.Game != packageDisplay.ThisInstance.GameChoice)
+                            {
+                                rcm.MostlyWrongGame = true;
+                            } else
+                            {
+                                rcm.MostlyWrongGame = false;
+                            }
+                            if (package.IsDirectory)
+                            {
+                                rcm.MostlyFolderSelected = true;
+                            } else
+                            {
+                                rcm.MostlyFolderSelected = false;
+                            }
+                            
                         } else
                         {
-                            rcm.MostlyWrongGame = false;
-                        }
-                        if (package.IsDirectory)
-                        {
-                            rcm.FolderSelected = true;
-                        } else
-                        {
-                            rcm.FolderSelected = false;
-                        }
-                        
-                    } else
-                    {
-                        List<SimsPackage> packages = new();
-                        foreach (DataGridRow item in SelectedItems)
-                        {
-                            packages.Add(Packages.First(x => x.Identifier == item.Identifier));
-                        }
+                            List<SimsPackage> packages = new();
+                            foreach (SimsPackage item in SelectedPackages)
+                            {
+                                packages.Add(Packages.First(x => x.Identifier == item.Identifier));
+                            }
 
-                        rcm.FFromF.Visible = false;
-                        if (packages.Count(x => x.RootMod) > packages.Count(x => x.RootMod == false))
-                        {
-                            rcm.MostlyRoot = true;
-                        } else
-                        {
-                            rcm.MostlyRoot = false;
+                            //rcm.FFromF.Visible = false;
+                            if (packages.Count(x => x.RootMod) > packages.Count(x => x.RootMod == false))
+                            {
+                                rcm.MostlyRoot = true;
+                            } else
+                            {
+                                rcm.MostlyRoot = false;
+                            }
+                            if (packages.Count(x => x.Favorite) > packages.Count(x => x.Favorite == false))
+                            {
+                                rcm.MostlyFave = true;
+                            } else
+                            {
+                                rcm.MostlyFave = false;
+                            }
+                            if (packages.Count(x => x.OutOfDate) > packages.Count(x => x.OutOfDate == false))
+                            {
+                                rcm.MostlyUpdated = false;
+                            } else
+                            {
+                                rcm.MostlyUpdated = true;
+                            }
+                            
+                            if (packages.Count(x => x.Game == packageDisplay.ThisInstance.GameChoice) > packages.Count(x => x.Game != packageDisplay.ThisInstance.GameChoice))
+                            {
+                                rcm.MostlyWrongGame = false;
+                            } else
+                            {
+                                rcm.MostlyWrongGame = true;
+                            }
+
+                            if (packages.Count(x => x.IsDirectory) > packages.Count(x => !x.IsDirectory))
+                            {
+                                rcm.MostlyFolderSelected = true;
+                            } else
+                            {
+                                rcm.MostlyFolderSelected = false;
+                            }
+
+
+                            
                         }
-                        if (packages.Count(x => x.Favorite) > packages.Count(x => x.Favorite == false))
-                        {
-                            rcm.MostlyFave = true;
-                        } else
-                        {
-                            rcm.MostlyFave = false;
-                        }
-                        if (packages.Count(x => x.OutOfDate) > packages.Count(x => x.OutOfDate == false))
-                        {
-                            rcm.MostlyUpdated = false;
-                        } else
-                        {
-                            rcm.MostlyUpdated = true;
-                        }
-                        
-                        if (packages.Count(x => x.Game == packageDisplay.ThisInstance.GameChoice) > packages.Count(x => x.Game != packageDisplay.ThisInstance.GameChoice))
-                        {
-                            rcm.MostlyWrongGame = false;
-                        } else
-                        {
-                            rcm.MostlyWrongGame = true;
-                        }
-                        
-                    }
-                    rcm.ButtonPressed += (i) => RCMButtonPressed(i);
+                        rcm.ButtonPressed += (i) => RCMButtonPressed(i);
 
 
 
-                    Vector2 mousePos = GetGlobalMousePosition();
-                    rcm.GlobalPosition = mousePos;
-                    
-                    GlobalVariables.mainWindow.AddChild(rcm);
-                    float x = 0;
-                    float y = 0;
-                    float rcmwidth = rcm.MainContainer.Size.X;
-                    Rect2 rect2 = new(packageDisplay.GlobalPosition, packageDisplay.Size);
-                    Rect2 rcmrect = new(rcm.Position, rcm.MainContainer.Size);
-                    Vector2 bottomright = rcm.Position + rcm.MainContainer.Size; 
-
-                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Windowrect: {0}", rect2.ToString()));
-                    if (!rect2.HasPoint(bottomright))
-                    {   
-                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("RCM not in window: {0}", bottomright));
-                        Vector2 distance = bottomright - rect2.Size;
-                        rcm.GlobalPosition = new(mousePos.X, mousePos.Y - distance.Y);
-                    } else
-                    {
-                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("RCM in window: {0}", bottomright));
+                        Vector2 mousePos = GetGlobalMousePosition();
                         rcm.GlobalPosition = mousePos;
-                    } 
+                        
+                        GlobalVariables.mainWindow.AddChild(rcm);
+                        float x = 0;
+                        float y = 0;
+                        float rcmwidth = rcm.MainContainer.Size.X;
+                        Rect2 rect2 = new(packageDisplay.GlobalPosition, packageDisplay.Size);
+                        Rect2 rcmrect = new(rcm.Position, rcm.MainContainer.Size);
+                        Vector2 bottomright = rcm.Position + rcm.MainContainer.Size; 
+
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Windowrect: {0}", rect2.ToString()));
+                        if (!rect2.HasPoint(bottomright))
+                        {   
+                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("RCM not in window: {0}", bottomright));
+                            Vector2 distance = bottomright - rect2.Size;
+                            rcm.GlobalPosition = new(mousePos.X, mousePos.Y - distance.Y);
+                        } else
+                        {
+                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("RCM in window: {0}", bottomright));
+                            rcm.GlobalPosition = mousePos;
+                        } 
 
 
 
-                    Vector2 edbottomright = rcm.EditDetails.GlobalPosition + rcm.EditDetails.Size; 
-                    if (!rect2.HasPoint(edbottomright))
-                    {   
-                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("RCM not in window: {0}", edbottomright));
-                        Vector2 distance = edbottomright - rect2.Size;
-                        rcm.EditDetails.GlobalPosition = new(rcm.EditDetails.GlobalPosition.X, rcm.EditDetails.GlobalPosition.Y - distance.Y);
+                        Vector2 edbottomright = rcm.EditDetails.GlobalPosition + rcm.EditDetails.Size; 
+                        if (!rect2.HasPoint(edbottomright))
+                        {   
+                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("RCM not in window: {0}", edbottomright));
+                            Vector2 distance = edbottomright - rect2.Size;
+                            rcm.EditDetails.GlobalPosition = new(rcm.EditDetails.GlobalPosition.X, rcm.EditDetails.GlobalPosition.Y - distance.Y);
+                        }
+
+                        
+                        Vector2 cbottomright = rcm.CategoryOptions.GlobalPosition + rcm.CategoryOptions.Size; 
+                        if (!rect2.HasPoint(cbottomright))
+                        {   
+                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("RCM not in window: {0}", cbottomright));
+                            Vector2 distance = cbottomright - rect2.Size;
+                            rcm.CategoryOptions.GlobalPosition = new(rcm.CategoryOptions.GlobalPosition.X, rcm.CategoryOptions.GlobalPosition.Y - distance.Y);
+                        }
+
+
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Mouse pos: {0}", mousePos));
                     }
-
-                    
-                    Vector2 cbottomright = rcm.CategoryOptions.GlobalPosition + rcm.CategoryOptions.Size; 
-                    if (!rect2.HasPoint(cbottomright))
-                    {   
-                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("RCM not in window: {0}", cbottomright));
-                        Vector2 distance = cbottomright - rect2.Size;
-                        rcm.CategoryOptions.GlobalPosition = new(rcm.CategoryOptions.GlobalPosition.X, rcm.CategoryOptions.GlobalPosition.Y - distance.Y);
-                    }
-
-
-                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Mouse pos: {0}", mousePos));
                 }
             }
-        }
+        } else
+        {
+            if (DataGrid.IsMouseInGrid())
+            {
+                if (@event is InputEventMouseButton mouse && mouse.ButtonIndex == MouseButton.Right && mouse.Pressed)
+                {
+                    if (SelectedItems.Count != 0)
+                    {
+                        SimsPackage package = Packages.First(x => x.Identifier == SelectedItems[0].Identifier);
+                        rcm = RightClickMenuPS.Instantiate() as RightClickMenu;
+                        if (SelectedItems.Count > 1) rcm.Plural = true;
+                        rcm.CategorySelected += (c) => CategorySelected(c);
+                        rcm.AllCategories = packageDisplay.ThisInstance.Categories;
+                        rcm.packageDisplay = packageDisplay;
+                        if (SelectedItems.Count == 1)
+                        {
+                            rcm.MostlyRoot = package.RootMod;
+                            rcm.MostlyFave = package.Favorite;
+                            rcm.MostlyUpdated = !package.OutOfDate;
+                            if (package.Game != packageDisplay.ThisInstance.GameChoice)
+                            {
+                                rcm.MostlyWrongGame = true;
+                            } else
+                            {
+                                rcm.MostlyWrongGame = false;
+                            }
+                            if (package.IsDirectory)
+                            {
+                                rcm.MostlyFolderSelected = true;
+                            } else
+                            {
+                                rcm.MostlyFolderSelected = false;
+                            }
+                            
+                        } else
+                        {
+                            List<SimsPackage> packages = new();
+                            foreach (DataGridRow item in SelectedItems)
+                            {
+                                packages.Add(Packages.First(x => x.Identifier == item.Identifier));
+                            }
+
+                            //rcm.FFromF.Visible = false;
+                            if (packages.Count(x => x.RootMod) > packages.Count(x => x.RootMod == false))
+                            {
+                                rcm.MostlyRoot = true;
+                            } else
+                            {
+                                rcm.MostlyRoot = false;
+                            }
+                            if (packages.Count(x => x.Favorite) > packages.Count(x => x.Favorite == false))
+                            {
+                                rcm.MostlyFave = true;
+                            } else
+                            {
+                                rcm.MostlyFave = false;
+                            }
+                            if (packages.Count(x => x.OutOfDate) > packages.Count(x => x.OutOfDate == false))
+                            {
+                                rcm.MostlyUpdated = false;
+                            } else
+                            {
+                                rcm.MostlyUpdated = true;
+                            }
+                            
+                            if (packages.Count(x => x.Game == packageDisplay.ThisInstance.GameChoice) > packages.Count(x => x.Game != packageDisplay.ThisInstance.GameChoice))
+                            {
+                                rcm.MostlyWrongGame = false;
+                            } else
+                            {
+                                rcm.MostlyWrongGame = true;
+                            }
+
+                            if (packages.Count(x => x.IsDirectory) > packages.Count(x => !x.IsDirectory))
+                            {
+                                rcm.MostlyFolderSelected = true;
+                            } else
+                            {
+                                rcm.MostlyFolderSelected = false;
+                            }
+                            
+                        }
+                        rcm.ButtonPressed += (i) => RCMButtonPressed(i);
+
+
+
+                        Vector2 mousePos = GetGlobalMousePosition();
+                        rcm.GlobalPosition = mousePos;
+                        
+                        GlobalVariables.mainWindow.AddChild(rcm);
+                        float x = 0;
+                        float y = 0;
+                        float rcmwidth = rcm.MainContainer.Size.X;
+                        Rect2 rect2 = new(packageDisplay.GlobalPosition, packageDisplay.Size);
+                        Rect2 rcmrect = new(rcm.Position, rcm.MainContainer.Size);
+                        Vector2 bottomright = rcm.Position + rcm.MainContainer.Size; 
+
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Windowrect: {0}", rect2.ToString()));
+                        if (!rect2.HasPoint(bottomright))
+                        {   
+                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("RCM not in window: {0}", bottomright));
+                            Vector2 distance = bottomright - rect2.Size;
+                            rcm.GlobalPosition = new(mousePos.X, mousePos.Y - distance.Y);
+                        } else
+                        {
+                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("RCM in window: {0}", bottomright));
+                            rcm.GlobalPosition = mousePos;
+                        } 
+
+
+
+                        Vector2 edbottomright = rcm.EditDetails.GlobalPosition + rcm.EditDetails.Size; 
+                        if (!rect2.HasPoint(edbottomright))
+                        {   
+                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("RCM not in window: {0}", edbottomright));
+                            Vector2 distance = edbottomright - rect2.Size;
+                            rcm.EditDetails.GlobalPosition = new(rcm.EditDetails.GlobalPosition.X, rcm.EditDetails.GlobalPosition.Y - distance.Y);
+                        }
+
+                        
+                        Vector2 cbottomright = rcm.CategoryOptions.GlobalPosition + rcm.CategoryOptions.Size; 
+                        if (!rect2.HasPoint(cbottomright))
+                        {   
+                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("RCM not in window: {0}", cbottomright));
+                            Vector2 distance = cbottomright - rect2.Size;
+                            rcm.CategoryOptions.GlobalPosition = new(rcm.CategoryOptions.GlobalPosition.X, rcm.CategoryOptions.GlobalPosition.Y - distance.Y);
+                        }
+
+
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Mouse pos: {0}", mousePos));
+                    }
+                }
+            }
+        }        
     }
 
     private void CategorySelected(Category c)
     {
         rcm.QueueFree();
-        for (int i = 0; i < SelectedItems.Count; i++)
+        if (ViewSwap)
         {
-            SimsPackage package = Packages.First(x => x.Identifier == SelectedItems[i].Identifier);
-            package.PackageCategory = c;
-            package.WriteXML();
-            DataGridRow rowdata = DataGrid.RowData.First(x => x.Identifier == package.Identifier);
-            rowdata.UseCategoryColor = true;
-            rowdata.BackgroundColor = c.Background;
-            rowdata.TextColor = c.TextColor;
-            rowdata = CreateRow(package, rowdata.OverallIdx);
-            DataGrid.UpdateRow(rowdata);
+            for (int i = 0; i < SelectedPackages.Count; i++)
+            {
+                SimsPackage package = Packages.First(x => x.Identifier == SelectedPackages[i].Identifier);
+                package.PackageCategory = c;
+                package.WriteXML();
+                /*DataGridRow rowdata = DataGrid.RowData.First(x => x.Identifier == package.Identifier);
+                rowdata.UseCategoryColor = true;
+                rowdata.BackgroundColor = c.Background;
+                rowdata.TextColor = c.TextColor;
+                rowdata = CreateRow(package, rowdata.OverallIdx);
+                DataGrid.UpdateRow(rowdata);*/
+                UpdateItem(package);
+            }
+        } else
+        {
+            for (int i = 0; i < SelectedItems.Count; i++)
+            {
+                SimsPackage package = Packages.First(x => x.Identifier == SelectedItems[i].Identifier);
+                package.PackageCategory = c;
+                package.WriteXML();
+                /*DataGridRow rowdata = DataGrid.RowData.First(x => x.Identifier == package.Identifier);
+                rowdata.UseCategoryColor = true;
+                rowdata.BackgroundColor = c.Background;
+                rowdata.TextColor = c.TextColor;
+                rowdata = CreateRow(package, rowdata.OverallIdx);
+                DataGrid.UpdateRow(rowdata);*/
+                UpdateItem(package);
+            }
         }
+        
     }
 
 
     private void ToggleRoot()
     {
-        for (int i = 0; i < SelectedItems.Count; i++)
+        if (ViewSwap)
         {
-            SimsPackage package = Packages.First(x => x.Identifier == SelectedItems[i].Identifier);
-            
-            if (Directory.Exists(package.Location))
+            for (int i = 0; i < SelectedPackages.Count; i++)
             {
-                package.RootMod = !rcm.MostlyRoot;
-                if (package.RootMod)
+                SimsPackage package = Packages.First(x => x.Identifier == SelectedPackages[i].Identifier);
+                
+                if (Directory.Exists(package.Location))
                 {
-                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Changing package {0} to root. Searching {1} for info files to delete.", package.FileName, package.Location));
-                    package.IsDirectory = false;
-                    foreach (string info in Directory.EnumerateFiles(package.Location, "*.info", SearchOption.AllDirectories))
+                    package.RootMod = !rcm.MostlyRoot;
+                    if (package.RootMod)
                     {
-                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Deleting {0}", info));
-                        File.Delete(info);
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Changing package {0} to root. Searching {1} for info files to delete.", package.FileName, package.Location));
+                        package.IsDirectory = false;
+                        foreach (string info in Directory.EnumerateFiles(package.Location, "*.info", SearchOption.AllDirectories))
+                        {
+                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Deleting {0}", info));
+                            File.Delete(info);
+                        }
+                        package.LinkedFiles.Clear();
+                        package.LinkedFolders.Clear();
+                        package.LinkedPackageFolders.Clear();
+                        package.LinkedPackages.Clear();
+                        //DataGridRow rowdata = DataGrid.RowData.First(x => x.Identifier == package.Identifier);
+                        package.WriteXML();
+                        UpdateItem(package);
+                        
+                        
+                    } else
+                    {
+                        SimsPackage pack = Packages.First(x => x.Identifier == SelectedPackages[i].Identifier);
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Changing package {0} to not root.", pack.FileName));
+                        if (Directory.Exists(pack.Location)) pack.IsDirectory = true;
+                        pack = InstanceControllers.GetSubDirectoriesPackage(packageDisplay.ThisInstance, pack.Location, pack);
+                        //DataGridRow rowdata = DataGrid.RowData.First(x => x.Identifier == pack.Identifier);
+                        pack.WriteXML();
+                        UpdateItem(package);
                     }
-                    package.LinkedFiles.Clear();
-                    package.LinkedFolders.Clear();
-                    package.LinkedPackageFolders.Clear();
-                    package.LinkedPackages.Clear();
-                    DataGridRow rowdata = DataGrid.RowData.First(x => x.Identifier == package.Identifier);
-                    package.WriteXML();
-                    rowdata = CreateRow(package, rowdata.OverallIdx);
-                    DataGrid.UpdateRow(rowdata);
-                    
                     
                 } else
                 {
-                    SimsPackage pack = Packages.First(x => x.Identifier == SelectedItems[i].Identifier);
-                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Changing package {0} to not root.", pack.FileName));
-                    if (Directory.Exists(pack.Location)) pack.IsDirectory = true;
-                    pack = InstanceControllers.GetSubDirectoriesPackage(packageDisplay.ThisInstance, pack.Location, pack);
-                    DataGridRow rowdata = DataGrid.RowData.First(x => x.Identifier == pack.Identifier);
-                    pack.WriteXML();
-                    rowdata = CreateRow(pack, rowdata.OverallIdx);
-                    DataGrid.UpdateRow(rowdata);
-                }
-                
-            } else
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Root mods should be folders."));
+                }            
+            }
+        } else
+        {
+            for (int i = 0; i < SelectedItems.Count; i++)
             {
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Root mods should be folders."));
-            }            
-        }
+                SimsPackage package = Packages.First(x => x.Identifier == SelectedItems[i].Identifier);
+                
+                if (Directory.Exists(package.Location))
+                {
+                    package.RootMod = !rcm.MostlyRoot;
+                    if (package.RootMod)
+                    {
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Changing package {0} to root. Searching {1} for info files to delete.", package.FileName, package.Location));
+                        package.IsDirectory = false;
+                        foreach (string info in Directory.EnumerateFiles(package.Location, "*.info", SearchOption.AllDirectories))
+                        {
+                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Deleting {0}", info));
+                            File.Delete(info);
+                        }
+                        package.LinkedFiles.Clear();
+                        package.LinkedFolders.Clear();
+                        package.LinkedPackageFolders.Clear();
+                        package.LinkedPackages.Clear();
+                        DataGridRow rowdata = DataGrid.RowData.First(x => x.Identifier == package.Identifier);
+                        package.WriteXML();
+                        UpdateItem(package);
+                        //rowdata = CreateRow(package, rowdata.OverallIdx);
+                        //DataGrid.UpdateRow(rowdata);                        
+                    } else
+                    {
+                        SimsPackage pack = Packages.First(x => x.Identifier == SelectedItems[i].Identifier);
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Changing package {0} to not root.", pack.FileName));
+                        if (Directory.Exists(pack.Location)) pack.IsDirectory = true;
+                        pack = InstanceControllers.GetSubDirectoriesPackage(packageDisplay.ThisInstance, pack.Location, pack);
+                        DataGridRow rowdata = DataGrid.RowData.First(x => x.Identifier == pack.Identifier);
+                        pack.WriteXML();
+                        //rowdata = CreateRow(pack, rowdata.OverallIdx);
+                        //DataGrid.UpdateRow(rowdata);
+                        UpdateItem(package);
+                    }
+                    
+                } else
+                {
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Root mods should be folders."));
+                }            
+            }
+        }        
     }
 
     private void RenameFiles()
     {
         packageDisplay.LockInput = true;
-        rib = RenameItemsBoxPS.Instantiate() as RenameItemsBox;
-        rib.CancelButton.Pressed += () => CloseRenamePane();
-        rib.ConfirmButton.Pressed += () => RenameAllFiles();
-        rib.UpdateTheme();
-        foreach (DataGridRow row in SelectedItems)
+        if (ViewSwap)
         {
-            SimsPackage package = Packages.First(x => x.Identifier == row.Identifier);
-            PackageListItem pli = PackageListItemPS.Instantiate() as PackageListItem;
-            pli.packageItem = package;
-            pli.NameBox.Text = package.FileName;
-            pli.GotNames += () => rib.CheckItems();
-            rib.Items.Add(pli);
-            rib.ItemContainer.AddChild(pli);            
+            rib = RenameItemsBoxPS.Instantiate() as RenameItemsBox;
+            rib.CancelButton.Pressed += () => CloseRenamePane();
+            rib.ConfirmButton.Pressed += () => RenameAllFiles();
+            rib.UpdateTheme();
+            foreach (SimsPackage package in SelectedPackages)
+            {
+               // SimsPackage package = Packages.First(x => x.Identifier == row.Identifier);
+                PackageListItem pli = PackageListItemPS.Instantiate() as PackageListItem;
+                pli.packageItem = package;
+                pli.NameBox.Text = package.FileName;
+                pli.GotNames += () => rib.CheckItems();
+                rib.Items.Add(pli);
+                rib.ItemContainer.AddChild(pli);            
+            }
+            packageDisplay.AddChild(rib);
+        } else
+        {
+            rib = RenameItemsBoxPS.Instantiate() as RenameItemsBox;
+            rib.CancelButton.Pressed += () => CloseRenamePane();
+            rib.ConfirmButton.Pressed += () => RenameAllFiles();
+            rib.UpdateTheme();
+            foreach (DataGridRow row in SelectedItems)
+            {
+                SimsPackage package = Packages.First(x => x.Identifier == row.Identifier);
+                PackageListItem pli = PackageListItemPS.Instantiate() as PackageListItem;
+                pli.packageItem = package;
+                pli.NameBox.Text = package.FileName;
+                pli.GotNames += () => rib.CheckItems();
+                rib.Items.Add(pli);
+                rib.ItemContainer.AddChild(pli);            
+            }
+            packageDisplay.AddChild(rib);
         }
-        packageDisplay.AddChild(rib);
+        
+        
     }
 
     private void RenameAllFiles()
@@ -1035,6 +1423,10 @@ public partial class AllModsContainer : MarginContainer
                     extension = fi.Extension;
                 }
                 newname = string.Format("{0}{1}", pli.NameBox.Text, extension);
+                if (Packages.Any(x => x.FileName == newname))
+                {
+                    newname = Utilities.IncrementName(newname);
+                }
                 package.FileName = newname;
                 newname = Path.Combine(parent, newname);
                 File.Delete(package.InfoFile);
@@ -1042,9 +1434,10 @@ public partial class AllModsContainer : MarginContainer
                 File.Move(package.Location, newname);
                 package.Location = newname;
                 package.WriteXML();
-                DataGridRow rowdata = DataGrid.RowData.First(x => x.Identifier == package.Identifier);
-                rowdata = CreateRow(package, rowdata.OverallIdx);
-                DataGrid.UpdateRow(rowdata);
+                //DataGridRow rowdata = DataGrid.RowData.First(x => x.Identifier == package.Identifier);
+                //rowdata = CreateRow(package, rowdata.OverallIdx);
+                //DataGrid.UpdateRow(rowdata);
+                UpdateItem(package);
             }            
         }
         packageDisplay.LockInput = false;
@@ -1061,36 +1454,537 @@ public partial class AllModsContainer : MarginContainer
 
     private void ToggleOutOfDate()
     {
-        for (int i = 0; i < SelectedItems.Count; i++)
+        if (ViewSwap)
         {
-            SimsPackage package = Packages.First(x => x.Identifier == SelectedItems[i].Identifier);            
-            package.OutOfDate = rcm.MostlyUpdated;            
-            package.WriteXML();
-            DataGridRow rowdata = DataGrid.RowData.First(x => x.Identifier == package.Identifier);
-            rowdata = UpdateRow(rowdata, package);
-            DataGrid.UpdateRow(rowdata);
+            for (int i = 0; i < SelectedPackages.Count; i++)
+            {
+                SimsPackage package = Packages.First(x => x.Identifier == SelectedPackages[i].Identifier);
+                package.OutOfDate = rcm.MostlyUpdated;            
+                package.WriteXML();
+                DataGridRow rowdata = DataGrid.RowData.First(x => x.Identifier == package.Identifier);
+                UpdateItem(package);
+            }
+        } else
+        {
+            for (int i = 0; i < SelectedItems.Count; i++)
+            {
+                SimsPackage package = Packages.First(x => x.Identifier == SelectedItems[i].Identifier);            
+                package.OutOfDate = rcm.MostlyUpdated;            
+                package.WriteXML();
+                DataGridRow rowdata = DataGrid.RowData.First(x => x.Identifier == package.Identifier);
+                UpdateItem(package);
+            } 
         }
+        
     }
     private void ToggleFave()
     {
-        for (int i = 0; i < SelectedItems.Count; i++)
-        {           
-            SimsPackage package = Packages.First(x => x.Identifier == SelectedItems[i].Identifier);
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Marking item {0} as fave: {1}", i, package.FileName));
-            package.Favorite = !rcm.MostlyFave;            
-            package.WriteXML();
-            DataGridRow rowdata = DataGrid.RowData.First(x => x.Identifier == package.Identifier);
-            rowdata = UpdateRow(rowdata, package);
-            DataGrid.UpdateRow(rowdata);
+        if (ViewSwap)
+        {
+            for (int i = 0; i < SelectedPackages.Count; i++)
+            {
+                SimsPackage package = Packages.First(x => x.Identifier == SelectedPackages[i].Identifier);
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Marking item {0} as fave: {1}", i, package.FileName));
+                package.Favorite = !rcm.MostlyFave;             
+                package.WriteXML();
+                DataGridRow rowdata = DataGrid.RowData.First(x => x.Identifier == package.Identifier);
+                UpdateItem(package);
+            }
+        } else
+        {
+            for (int i = 0; i < SelectedItems.Count; i++)
+            {
+                SimsPackage package = Packages.First(x => x.Identifier == SelectedItems[i].Identifier);            
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Marking item {0} as fave: {1}", i, package.FileName));
+                package.Favorite = !rcm.MostlyFave;            
+                package.WriteXML();
+                DataGridRow rowdata = DataGrid.RowData.First(x => x.Identifier == package.Identifier);
+                UpdateItem(package);
+            } 
         }
     }
+    private void ToggleWrongGame()
+    {
+        if (ViewSwap)
+        {
+            for (int i = 0; i < SelectedPackages.Count; i++)
+            {
+                SimsPackage package = Packages.First(x => x.Identifier == SelectedPackages[i].Identifier);
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Marking item {0} as fave: {1}", i, package.FileName));
+                if (!rcm.MostlyWrongGame)
+                {
+                    package.Game = SimsGames.Null;
+                    package.WrongGame = true;
+                } else
+                {
+                    package.Game = packageDisplay.ThisInstance.GameChoice; 
+                    package.WrongGame = false;
+                }
+                package.WriteXML();
+                DataGridRow rowdata = DataGrid.RowData.First(x => x.Identifier == package.Identifier);
+                UpdateItem(package);
+            }
+        } else
+        {
+            for (int i = 0; i < SelectedItems.Count; i++)
+            {
+                SimsPackage package = Packages.First(x => x.Identifier == SelectedItems[i].Identifier);            
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Marking item {0} as fave: {1}", i, package.FileName));
+                if (!rcm.MostlyWrongGame)
+                {
+                    package.Game = SimsGames.Null;
+                    package.WrongGame = true;
+                } else
+                {
+                    package.Game = packageDisplay.ThisInstance.GameChoice; 
+                    package.WrongGame = false;
+                }            
+                package.WriteXML();
+                DataGridRow rowdata = DataGrid.RowData.First(x => x.Identifier == package.Identifier);
+                UpdateItem(package);
+            } 
+        }
+    }
+
+    private void FFromF()
+    {
+        if (rcm.MostlyFolderSelected) FilesFromFolders(); else FolderFromFiles();
+    }
+
+    private void FilesFromFolders()
+    {
+        if (ViewSwap)
+        {
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Thumbgrid version."));
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Turning {0} folders into files.", SelectedPackages.Count));
+            for (int i = 0; i < SelectedPackages.Count; i++)
+            {
+                SimsPackage package = Packages.First(x => x.Identifier == SelectedPackages[i].Identifier);
+                if (!File.Exists(package.Location))
+                {
+                    if (Directory.Exists(package.Location))
+                    {                        
+                        foreach (string file in Directory.EnumerateFiles(package.Location, "*.*", SearchOption.AllDirectories))
+                        {                            
+                            FileInfo f = new(file);
+                            if (f.Extension != ".info")
+                            {
+                                string filename = f.Name;
+                                string newloc = Path.Combine(packageDisplay.ThisInstance.InstanceFolders.InstancePackagesFolder, filename);
+                                newloc = Utilities.IncrementName(newloc);
+                                File.Move(file, newloc);
+                                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Moving file {0} to {1}", file, newloc));
+                            } else
+                            {
+                                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Deleting info file {0}", file));
+                                File.Delete(file);
+                            }                           
+                        }
+
+                        foreach (string folder in Directory.EnumerateDirectories(package.Location, "*.*", SearchOption.AllDirectories))
+                        {
+                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Deleting directory {0}", folder));
+                            Directory.Delete(folder);
+                        }
+
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Deleting directory {0}", package.Location));
+                        Directory.Delete(package.Location);
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Deleting file {0}", package.InfoFile));
+                        File.Delete(package.InfoFile);                        
+                    }
+                }
+                packageDisplay.RefreshFiles();                 
+            }
+        } else
+        {
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Datagrid version."));
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Turning {0} folders into files.", SelectedItems.Count));
+            for (int i = 0; i < SelectedItems.Count; i++)
+            {
+                SimsPackage package = Packages.First(x => x.Identifier == SelectedItems[i].Identifier);
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Turning {0} into files.", package.FileName));
+                if (!File.Exists(package.Location))
+                {
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0} is not a file.", package.FileName));
+                    if (Directory.Exists(package.Location))
+                    {                  
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0} is a folder.", package.FileName));      
+                        foreach (string file in Directory.EnumerateFiles(package.Location, "*.*", SearchOption.AllDirectories))
+                        {                            
+                            FileInfo f = new(file);
+                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0} extension is {1}.", package.FileName, f.Extension));
+                            if (f.Extension != ".info")
+                            {
+                                string filename = f.Name;
+                                string newloc = Path.Combine(packageDisplay.ThisInstance.InstanceFolders.InstancePackagesFolder, filename);
+                                newloc = Utilities.IncrementName(newloc);
+                                File.Move(file, newloc);
+                                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Moving file {0} to {1}", file, newloc));
+                            } else
+                            {
+                                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Deleting info file {0}", file));
+                                File.Delete(file);
+                            }                         
+                        }
+
+                        foreach (string folder in Directory.EnumerateDirectories(package.Location, "*.*", SearchOption.AllDirectories))
+                        {
+                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Deleting directory {0}", folder));
+                            Directory.Delete(folder);
+                        }
+
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Deleting directory {0}", package.Location));
+                        Directory.Delete(package.Location);
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Deleting file {0}", package.InfoFile));
+                        File.Delete(package.InfoFile);                        
+                    }
+                }
+            } 
+        }
+        packageDisplay.RefreshFiles(); 
+    }
+
+    private void FolderFromFiles()
+    {        
+        if (ViewSwap)
+        {
+            if (SelectedPackages.Count < 1) return;
+            SimsPackage firstPackage = Packages.First(x => x.Identifier == SelectedPackages[0].Identifier);
+            string folder = "";
+            int s = 0;
+            if (File.Exists(firstPackage.Location))
+            {
+                FileInfo fi = new(firstPackage.Location);
+                folder = fi.FullName.Replace(fi.Extension, "");
+            } else if (Directory.Exists(firstPackage.Location))
+            {
+                s = 1;
+                folder = firstPackage.Location;
+            } else
+            {
+                return;
+            }
+
+            if (!Directory.Exists(folder)) Directory.CreateDirectory(folder);
+
+
+
+
+            for (int i = s; i < SelectedPackages.Count; i++)
+            {
+                SimsPackage package = Packages.First(x => x.Identifier == SelectedPackages[i].Identifier);
+                if (File.Exists(package.Location))
+                {
+                    FileInfo f = new(package.Location);
+                    string filename = f.Name;
+                    string infolder = Path.Combine(folder, filename);
+                    infolder = Utilities.IncrementName(infolder);
+                    File.Move(f.FullName, infolder);
+                    if (File.Exists(package.InfoFile))
+                    {
+                        File.Delete(package.InfoFile);
+                    }
+                }
+            }           
+        } else
+        {
+            if (SelectedItems.Count < 1) return;
+
+            SimsPackage firstPackage = Packages.First(x => x.Identifier == SelectedItems[0].Identifier);
+            string folder = "";
+            int s = 0;
+            if (File.Exists(firstPackage.Location))
+            {
+                FileInfo fi = new(firstPackage.Location);
+                folder = fi.FullName.Replace(fi.Extension, "");
+            } else if (Directory.Exists(firstPackage.Location))
+            {
+                s = 1;
+                folder = firstPackage.Location;
+            } else
+            {
+                return;
+            }
+
+            if (!Directory.Exists(folder)) Directory.CreateDirectory(folder);
+
+            for (int i = 0; i < SelectedItems.Count; i++)
+            {
+                SimsPackage package = Packages.First(x => x.Identifier == SelectedItems[i].Identifier);
+                if (File.Exists(package.Location))
+                {
+                    FileInfo f = new(package.Location);
+                    string filename = f.Name;
+                    string infolder = Path.Combine(folder, filename);
+                    infolder = Utilities.IncrementName(infolder);
+                    File.Move(f.FullName, infolder);
+                    if (File.Exists(package.InfoFile))
+                    {
+                        File.Delete(package.InfoFile);
+                    }
+                }
+            }
+        }
+        packageDisplay.RefreshFiles();
+    }
+
+
+    private void AddSourceLinkBox()
+    {
+        AddDetail ad = AddDetailPS.Instantiate() as AddDetail;
+        packageDisplay.AddChild(ad);
+        packageDisplay.LockInput = true;
+        ad.packageDisplay = packageDisplay;
+        ad.LongTextVersion = false;
+        ad.PlaceholderText = "Source link...";
+        ad.TextSubmitted += (t) => UpdateDetails(0, t);
+    }
+    private void AddCreatorBox()
+    {
+        AddDetail ad = AddDetailPS.Instantiate() as AddDetail;
+        packageDisplay.AddChild(ad);
+        packageDisplay.LockInput = true;
+        ad.packageDisplay = packageDisplay;
+        ad.LongTextVersion = false;
+        ad.PlaceholderText = "Creator name...";
+        ad.TextSubmitted += (t) => UpdateDetails(1, t);
+    }
+    private void AddNotesBox()
+    {
+        AddDetail ad = AddDetailPS.Instantiate() as AddDetail;
+        packageDisplay.AddChild(ad);
+        packageDisplay.LockInput = true;
+        ad.packageDisplay = packageDisplay;
+        ad.LongTextVersion = true;
+        ad.PlaceholderText = "Creator name...";
+        ad.TextSubmitted += (t) => UpdateDetails(2, t);
+    }
+    private void AddTypeBox()
+    {
+        AddDetail ad = AddDetailPS.Instantiate() as AddDetail;
+        packageDisplay.AddChild(ad);
+        packageDisplay.LockInput = true;
+        ad.packageDisplay = packageDisplay;
+        ad.LongTextVersion = false;
+        ad.PlaceholderText = "Type...";
+        ad.TextSubmitted += (t) => UpdateDetails(3, t);
+    }
+
+    private void UpdateDetails(int type, string text)
+    {
+        if (ViewSwap)
+        {
+            for (int i = 0; i < SelectedPackages.Count; i++)
+            {
+                SimsPackage package = Packages.First(x => x.Identifier == SelectedPackages[i].Identifier);
+                
+                switch (type)
+                {
+                    case 0:
+                        package.Source = text;
+                    break;
+                    case 1:
+                        package.Creator = text;
+                    break;
+                    case 2:
+                        package.Notes = text;
+                    break;
+                    case 3:
+                        if (package.Game == SimsGames.Sims2) package.Sims2Data.AltType = text;
+                        if (package.Game == SimsGames.Sims3) package.Sims3Data.AltType = text;
+                        if (package.Game == SimsGames.Sims4) package.Sims4Data.AltType = text;
+                    break;
+                }
+
+                package.WriteXML();
+                UpdateItem(package);
+            }
+        } else
+        {
+            for (int i = 0; i < SelectedItems.Count; i++)
+            {
+                SimsPackage package = Packages.First(x => x.Identifier == SelectedItems[i].Identifier);
+                
+                switch (type)
+                {
+                    case 0:
+                        package.Source = text;
+                    break;
+                    case 1:
+                        package.Creator = text;
+                    break;
+                    case 2:
+                        package.Notes = text;
+                    break;
+                    case 3:
+                        if (package.Game == SimsGames.Sims2) package.Sims2Data.AltType = text;
+                        if (package.Game == SimsGames.Sims3) package.Sims3Data.AltType = text;
+                        if (package.Game == SimsGames.Sims4) package.Sims4Data.AltType = text;
+                    break;
+                }
+
+                package.WriteXML();
+                UpdateItem(package);
+            }
+        }
+    }
+
+    private void AddDeleteWindow()
+    {
+        cpw = CustomPopupWindowPS.Instantiate() as CustomPopupWindow;
+        AddChild(cpw);
+        cpw.WindowTitle = "Are you sure?";
+        int packages = 0;
+        if (ViewSwap)
+        {
+            packages = SelectedPackages.Count;
+        } else
+        {
+            packages = SelectedItems.Count;
+        }
+
+        cpw.WindowMessage.Text = string.Format("Are you sure you want to delete {0} packages?", packages);
+        cpw.YesButton.Visible = true;
+        cpw.NoButton.Visible = true;
+        cpw.UpdateTheme();
+        cpw.YesButton.Text = "Delete Files";
+        cpw.NoButton.Text = "Cancel";
+        cpw.YesButton.Pressed += () => YesDelete();
+        cpw.NoClosesWindow();        
+    }
+
+    private void YesDelete()
+    {
+        if (ViewSwap)
+        {
+            for (int i = 0; i < SelectedPackages.Count; i++)
+            {
+                SimsPackage package = Packages.First(x => x.Identifier == SelectedPackages[i].Identifier);
+                if (File.Exists(package.Location))
+                {
+                    File.Delete(package.Location);
+                    if (File.Exists(package.InfoFile)) File.Delete(package.InfoFile);
+                } else if (Directory.Exists(package.Location))
+                {
+                    foreach (string file in Directory.EnumerateFiles(package.Location, "*.*", SearchOption.AllDirectories))
+                    {
+                        File.Delete(file);
+                        string infofile = string.Format("{0}.info", file);
+                        if (File.Exists(infofile)) File.Delete(infofile);
+                    }
+                }                
+            }
+        } else
+        {
+            for (int i = 0; i < SelectedItems.Count; i++)
+            {
+                SimsPackage package = Packages.First(x => x.Identifier == SelectedItems[i].Identifier);
+                if (File.Exists(package.Location))
+                {
+                    File.Delete(package.Location);
+                    if (File.Exists(package.InfoFile)) File.Delete(package.InfoFile);
+                } else if (Directory.Exists(package.Location))
+                {
+                    foreach (string file in Directory.EnumerateFiles(package.Location, "*.*", SearchOption.AllDirectories))
+                    {
+                        File.Delete(file);
+                        string infofile = string.Format("{0}.info", file);
+                        if (File.Exists(infofile)) File.Delete(infofile);
+                    }
+                }                
+            }
+        }
+
+        RemoveChild(cpw);
+        cpw.QueueFree();
+        packageDisplay.RefreshFiles();
+    }
+    private void YesMove()
+    {
+        string moveloc = cpw.BrowseLineEdit.Text;
+        if (!Directory.Exists(moveloc)) Directory.CreateDirectory(moveloc);
+
+        if (ViewSwap)
+        {
+            for (int i = 0; i < SelectedPackages.Count; i++)
+            {
+                SimsPackage package = Packages.First(x => x.Identifier == SelectedPackages[i].Identifier);
+                if (File.Exists(package.Location))
+                {
+                    FileInfo f = new(package.Location);
+                    string newloc = Path.Combine(moveloc, f.Name);
+                    newloc = Utilities.IncrementName(newloc);
+                    File.Move(package.Location, newloc);
+                } else if (Directory.Exists(package.Location))
+                {
+                    string newloc = Path.Combine(moveloc, package.FileName);
+                    newloc = Utilities.IncrementName(newloc, true);
+                    Directory.Move(package.Location, newloc);
+                } 
+            }
+        } else
+        {
+            for (int i = 0; i < SelectedItems.Count; i++)
+            {
+                SimsPackage package = Packages.First(x => x.Identifier == SelectedItems[i].Identifier);
+                if (File.Exists(package.Location))
+                {
+                    FileInfo f = new(package.Location);
+                    string newloc = Path.Combine(moveloc, f.Name);
+                    newloc = Utilities.IncrementName(newloc);
+                    File.Move(package.Location, newloc);
+                } else if (Directory.Exists(package.Location))
+                {
+                    string newloc = Path.Combine(moveloc, package.FileName);
+                    newloc = Utilities.IncrementName(newloc, true);
+                    Directory.Move(package.Location, newloc);
+                }            
+            }
+        }
+
+
+
+        RemoveChild(cpw);
+        cpw.QueueFree();
+        packageDisplay.RefreshFiles();
+    }
+
+    public CustomPopupWindow cpw;
+
+    private void AddMoveWindow()
+    {
+        cpw = CustomPopupWindowPS.Instantiate() as CustomPopupWindow;
+        AddChild(cpw);
+        cpw.WindowTitle = "Move Files?";
+        int packages = 0;
+        if (ViewSwap)
+        {
+            packages = SelectedPackages.Count;
+        } else
+        {
+            packages = SelectedItems.Count;
+        }
+
+        cpw.WindowMessage.Text = string.Format("Where do you want to move {0} files to?", packages);
+        cpw.YesButton.Visible = true;
+        cpw.NoButton.Visible = true;
+        cpw.UpdateTheme();
+        cpw.YesButton.Text = "Move Files";
+        cpw.NoButton.Text = "Cancel";
+        cpw.YesButton.Pressed += () => YesMove();
+        cpw.NoClosesWindow();
+        cpw.UseBrowseOption = true;
+        cpw.PlaceholderText = "Move to...";
+        cpw.BrowseDialog.RootSubfolder = packageDisplay.ThisInstance.InstanceFolder;
+    }
+
 
     private void RCMButtonPressed(int i)
     {
         switch (i)
         {
             case 0:
-            //WrongGame
+            ToggleWrongGame();
             if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Pressed button {0}: WrongGame", i));
             break;
 
@@ -1110,7 +2004,7 @@ public partial class AllModsContainer : MarginContainer
             break;
 
             case 4:
-            //FFromF
+            FFromF();
             if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Pressed button {0}: FFromF", i));
             break;
 
@@ -1120,27 +2014,27 @@ public partial class AllModsContainer : MarginContainer
             break;
 
             case 6:
-            //Source
+            AddSourceLinkBox();
             if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Pressed button {0}: Source", i));
             break;
 
             case 7:
-            //Creator
+            AddCreatorBox();
             if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Pressed button {0}: Creator", i));
             break;
 
             case 8:
-            //Move
+            AddMoveWindow();
             if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Pressed button {0}: Move", i));
             break;
 
             case 9:
-            //Delete
+            AddDeleteWindow();
             if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Pressed button {0}: Delete", i));
             break;
 
             case 10:
-            //Notes
+            AddNotesBox();
             if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Pressed button {0}: Notes", i));
             break;
 
@@ -1152,7 +2046,38 @@ public partial class AllModsContainer : MarginContainer
             //edit details
             if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Pressed button {0}: Edit details", i));
             break;
+            case 13:
+            AddTypeBox();
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Pressed button {0}: Edit details", i));
+            break;
         }
         rcm.QueueFree();
     }
+
+
+
+
+
+
+
+
+    public void UpdateItem(SimsPackage package)
+    {
+        DataGridRow rowdata = DataGrid.RowData.First(x => x.Identifier == package.Identifier);
+        rowdata = CreateRow(package, rowdata.OverallIdx);
+        DataGrid.UpdateRow(rowdata);
+
+        if (ThumbGrid != null) ThumbGrid.ReplaceTGI(package);
+    }
+
+
+
+
+
+
+
+
+
+
+
 }

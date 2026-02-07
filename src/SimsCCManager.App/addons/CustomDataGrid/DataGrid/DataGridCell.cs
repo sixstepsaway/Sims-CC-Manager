@@ -154,7 +154,13 @@ public partial class DataGridCell : Control
 	public List<DataGridCellIcons> Icons = new();
 	public CellOptions CellOptions = CellOptions.Text;
 	public dynamic CustomContainerItem;
-	public Color FontColor;
+	private Color _fontcolor;
+	public Color FontColor
+	{
+		get { return _fontcolor; }
+		set { _fontcolor = value; 
+		SetTextOptions(); }
+	}
 	public Color AccentColor;
 	public int FontSize;
 	public Font MainFont;
@@ -495,6 +501,10 @@ public partial class DataGridCell : Control
 					if (ToggleLinked && thisRow.Toggled)
 					{
 						ShowNumberAdjusterControls = true;
+						ShowNumberAdjuster?.Invoke(ShowNumberAdjusterControls);
+					} else if (ToggleLinked && !thisRow.Toggled)
+					{
+						ShowNumberAdjusterControls = false;
 						ShowNumberAdjuster?.Invoke(ShowNumberAdjusterControls);
 					}
 					else if (!ToggleLinked)

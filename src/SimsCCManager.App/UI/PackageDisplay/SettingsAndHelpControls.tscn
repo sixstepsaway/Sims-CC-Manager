@@ -1,9 +1,10 @@
-[gd_scene load_steps=8 format=3 uid="uid://32whu6sh6ha1"]
+[gd_scene load_steps=9 format=3 uid="uid://32whu6sh6ha1"]
 
 [ext_resource type="PackedScene" uid="uid://ryrvwl0ec34b" path="res://UI/Buttons/TopbarButton.tscn" id="1_mq0u7"]
 [ext_resource type="Script" uid="uid://bteq4lnaltk0l" path="res://UI/PackageDisplay/SettingsAndHelpControls.cs" id="1_wr2e3"]
 [ext_resource type="Texture2D" uid="uid://u7h16r70fle5" path="res://assets/icons/materialicons/twotone_backspace_black_48dp.png" id="2_wr2e3"]
 [ext_resource type="Texture2D" uid="uid://bkuudak2gjupp" path="res://assets/icons/materialicons/twotone_settings_black_48dp.png" id="3_rhbyh"]
+[ext_resource type="Texture2D" uid="uid://2r315mvss44v" path="res://assets/icons/materialicons/twotone_download_black_48dp.png" id="3_wr2e3"]
 [ext_resource type="Texture2D" uid="uid://c8mq228vanu3y" path="res://assets/icons/materialicons/twotone_error_black_48dp.png" id="5_5r2bt"]
 [ext_resource type="Texture2D" uid="uid://bp0j34pwjatb4" path="res://assets/icons/materialicons/twotone_help_black_48dp.png" id="6_p1aw0"]
 
@@ -26,6 +27,12 @@ ErrorsDetectedCircle = NodePath("HBoxContainer/MarginContainer/ErrorsDetected")
 
 [node name="HBoxContainer" type="HBoxContainer" parent="."]
 layout_mode = 2
+
+[node name="ShowDownloads" parent="HBoxContainer" instance=ExtResource("1_mq0u7")]
+custom_minimum_size = Vector2(45, 45)
+layout_mode = 2
+Texture = ExtResource("3_wr2e3")
+ToolTipText = "Show Downloads"
 
 [node name="BackToMainMenu" parent="HBoxContainer" instance=ExtResource("1_mq0u7")]
 custom_minimum_size = Vector2(45, 45)

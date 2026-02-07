@@ -50,7 +50,7 @@ Panel/styles/panel = SubResource("StyleBoxFlat_3wbg4")
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_yook7"]
 
-[node name="LoadInstance" type="MarginContainer" node_paths=PackedStringArray("ListBGColor", "InstanceList", "CancelButton", "LoadButton", "AcceptDialogHolder", "AcceptDialogOK", "AcceptDialogCANCEL")]
+[node name="LoadInstance" type="MarginContainer" node_paths=PackedStringArray("ListBGColor", "InstanceList", "CancelButton", "LoadButton", "AcceptDialogHolder", "AcceptDialogOK", "AcceptDialogCANCEL", "loadInstance")]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -67,6 +67,7 @@ InstancePickerPS = ExtResource("2_pul82")
 AcceptDialogHolder = NodePath("AcceptDialogHolder")
 AcceptDialogOK = NodePath("AcceptDialogHolder/AcceptDialog/VBoxContainer/MarginContainer2/HBoxContainer/MarginContainer2/Button_OK")
 AcceptDialogCANCEL = NodePath("AcceptDialogHolder/AcceptDialog/VBoxContainer/MarginContainer2/HBoxContainer/MarginContainer/Button_Back")
+loadInstance = NodePath("FileDialog")
 
 [node name="Background" parent="." instance=ExtResource("2_8ux1x")]
 layout_mode = 2
@@ -264,6 +265,15 @@ theme_override_styles/pressed = SubResource("StyleBoxEmpty_yook7")
 theme_override_styles/hover = SubResource("StyleBoxEmpty_yook7")
 theme_override_styles/disabled = SubResource("StyleBoxEmpty_yook7")
 theme_override_styles/focus = SubResource("StyleBoxEmpty_yook7")
+
+[node name="FileDialog" type="FileDialog" parent="."]
+title = "Open Instance Folder"
+dialog_hide_on_ok = true
+file_mode = 2
+display_mode = 1
+access = 2
+use_native_dialog = true
+option_count = 1
 
 [editable path="MarginContainer/VBoxContainer/HBoxContainer/CancelButton"]
 [editable path="MarginContainer/VBoxContainer/HBoxContainer/ConfirmButton"]

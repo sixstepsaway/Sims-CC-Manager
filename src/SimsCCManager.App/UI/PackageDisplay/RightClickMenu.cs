@@ -4,6 +4,7 @@ using SimsCCManager.Debugging;
 using SimsCCManager.Globals;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 public partial class RightClickMenu : Node2D
 {
@@ -44,7 +45,7 @@ public partial class RightClickMenu : Node2D
     [Export]
     RcmItem Details;
     [Export]
-    public RcmItem FFromF;
+    RcmItem FFromF;
     [Export]
     RcmItem Categories;
     [ExportGroup("EditDetailsOptions")]
@@ -60,13 +61,17 @@ public partial class RightClickMenu : Node2D
     RcmItem Delete;
     [Export]
     RcmItem Notes;
+    [Export]
+    RcmItem Type;
     
     public bool Plural = false;
 
-    private bool _folderselected;
-    public bool FolderSelected {
-    get { return _folderselected; }
-    set { _folderselected = value; 
+    public bool ThumbGridVersion = false;
+
+    private bool _mostlyfolderselected;
+    public bool MostlyFolderSelected {
+    get { return _mostlyfolderselected; }
+    set { _mostlyfolderselected = value; 
             if (value)
             {                
                 FFromF.label.Text = "Files from Folder";
@@ -155,6 +160,8 @@ public partial class RightClickMenu : Node2D
         items.Add(Delete);
         items.Add(Notes);
         items.Add(Categories);
+        items.Add(Details);
+        items.Add(Type);
 
         if (Plural)
         {
@@ -174,6 +181,8 @@ public partial class RightClickMenu : Node2D
             Notes.label.Text = "Notes";
         }
 
+        Type.label.Text = "Set Type";
+
         
         Categories.label.Text = "Categories";
         Details.label.Text = "Edit Details";
@@ -185,6 +194,12 @@ public partial class RightClickMenu : Node2D
         
         Details.button.MouseEntered += () => DetailsHover(true);
         Details.button.MouseExited += () => DetailsHover(false);
+
+        MakeRoot.button.MouseEntered += () => HidePanes();
+        WrongGame.button.MouseEntered += () => HidePanes();
+        UpdatedOOD.button.MouseEntered += () => HidePanes();
+        Fave.button.MouseEntered += () => HidePanes();
+        FFromF.button.MouseEntered += () => HidePanes();
         
 
         UpdateTheme();
@@ -203,9 +218,17 @@ public partial class RightClickMenu : Node2D
         Notes.button.Pressed += () => PressedButton(10);
         Categories.button.Pressed += () => PressedButton(11);
         Details.button.Pressed += () => PressedButton(12);
+        Type.button.Pressed += () => PressedButton(13);
 
 
     }
+
+    private void HidePanes()
+    {
+        EditDetails.Visible = false;
+        CategoryOptions.Visible = false;
+    }
+
 
     private void DetailsHover(bool v)
     {
@@ -234,33 +257,42 @@ public partial class RightClickMenu : Node2D
             categoryoptions.Remove(catop);
         }
 
-        CategoryOption cop = CategoryOption.Instantiate() as CategoryOption;
-        cop.label.Text = "Default";
-        cop.BGColor.Color = Colors.White;
-        cop.label.AddThemeColorOverride("font_color", Colors.Black);
-
-        Categorylist.AddChild(cop);
-        categoryoptions.Add(cop);
+        AddCategory(AllCategories.First(x => x.Name == "Default"));
+        
         foreach (Category cat in AllCategories)
         {
             if (cat.Name != "Default")
             {
-                CategoryOption co = CategoryOption.Instantiate() as CategoryOption;
-                co.label.Text = cat.Name;
-                co.label.AddThemeColorOverride("font_color", cat.TextColor);
-                co.BGColor.Color = cat.Background;
-                co.button.Pressed += () => CategoryClicked(co);
-                co.category = cat;
-
-                Categorylist.AddChild(co);
-                categoryoptions.Add(co);
+                AddCategory(cat);
             }            
         }
     }
 
+    private void AddCategory(Category cat)
+    {
+        CategoryOption co = CategoryOption.Instantiate() as CategoryOption;
+        co.label.Text = cat.Name;
+        
+        if (cat.Name == "Default")
+        {
+            co.label.AddThemeColorOverride("font_color", Colors.Black);
+            co.BGColor.Color = Colors.AntiqueWhite;
+        } else
+        {
+            co.label.AddThemeColorOverride("font_color", cat.TextColor);
+            co.BGColor.Color = cat.Background;
+        }
+        
+        co.button.Pressed += () => CategoryClicked(co);
+        co.category = cat;
+
+        Categorylist.AddChild(co);
+        categoryoptions.Add(co);
+    }
+
     private void CategoryClicked(CategoryOption categoryOption)
     {
-        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Category {0} selected: {1}", categoryOption.label.Name, categoryOption.IsToggled ));
+        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Category {0} selected: {1}", categoryOption.label.Text, categoryOption.IsToggled ));
         CategorySelected?.Invoke(categoryOption.category);
     }
 

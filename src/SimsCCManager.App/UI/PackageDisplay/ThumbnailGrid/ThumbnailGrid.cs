@@ -18,6 +18,7 @@ public partial class ThumbnailGrid : MarginContainer
 {
     public PackageDisplay packageDisplay;
     public Vector2 PaneSize = new(0, 0);
+    public MarginContainer PaneSizer;
     [Export]
     GridContainer ThumbGrid;
     [Export]
@@ -26,6 +27,8 @@ public partial class ThumbnailGrid : MarginContainer
     PackedScene ThumbnailGridItemPS;
     [Export]
     PackedScene SnapshotterPS;
+    [Export]
+    MarginContainer GridHolder;
 
     private Color _selectedcolor;
     public Color SelectedColor 
@@ -54,6 +57,7 @@ public partial class ThumbnailGrid : MarginContainer
     public Color ItemBackgroundColor;
 
     Vector2 ItemSize = new(100,120);
+    Vector2 OriginalItemSize = new(100,120);
 
     bool ShiftHeld = false;
     bool ControlHeld = false;
@@ -94,6 +98,8 @@ public partial class ThumbnailGrid : MarginContainer
     Godot.Timer ScrollDownTimer;
     Godot.Timer KeyPressTimer;
 
+    bool FirstLoaded = false;
+
     int MaxScroll = 0;
 
     int ScrollPosition = 0; 
@@ -113,21 +119,42 @@ public partial class ThumbnailGrid : MarginContainer
     List<SimsPackage> packages = new();    
     List<GridItem> GridItems = new();
 
-    private void GetSettings()
+
+    public void MakeItems()
     {
-		packages = packageDisplay.ThisInstance.Files.OfType<SimsPackage>().ToList();
-        ScrollUpButton.ButtonDown += () => OnScrollUp_ButtonUsed(true);
-		ScrollDownButton.ButtonDown += () => OnScrollDown_ButtonUsed(true);
-		ScrollUpButton.ButtonUp += () => OnScrollUp_ButtonUsed(false);
-		ScrollDownButton.ButtonUp += () => OnScrollDown_ButtonUsed(false);
+        GetSettings();
+        MakeGridItems();  
+        MakeVisibleItems();
+    }
 
-		vScrollBar.ValueChanged += (v) => OnScrollScrolled(v);        
+    private void GetSettings(bool fromResized = false)
+    {
+        int newCount = ItemCount;
+        if (Resizing) return;
+        if (fromResized && PaneSize == new Vector2(GridHolder.Size.X - 15, GridHolder.Size.Y)) return;
+        if (fromResized) { PaneSize = new Vector2(GridHolder.Size.X - 15, GridHolder.Size.Y); Resizing = true; }
+        if (!FirstLoaded) { 
+            packages = packageDisplay.ThisInstance.Files.OfType<SimsPackage>().ToList();
+            PaneSizer.Resized += () => GetSettings(true); 
+            ScrollUpButton.ButtonDown += () => OnScrollUp_ButtonUsed(true);
+		    ScrollDownButton.ButtonDown += () => OnScrollDown_ButtonUsed(true);
+		    ScrollUpButton.ButtonUp += () => OnScrollUp_ButtonUsed(false);
+		    ScrollDownButton.ButtonUp += () => OnScrollDown_ButtonUsed(false);
 
-        double itemCount = Math.Floor(PaneSize.X / ItemSize.X);
-        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0} items will fit in the grid.", itemCount));
+		    vScrollBar.ValueChanged += OnScrollScrolled; 
+            UpdateTheme();      
+        }
 
-        float itemWidth = (float)(PaneSize.X / itemCount);
-        float scale = ItemSize.X / itemWidth; 
+        float dividedBy100 = PaneSize.X / 100f;
+        int items = (int)Math.Ceiling(dividedBy100);
+
+        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0} items will fit in the grid.", items));
+
+        float itemWidth = PaneSize.X / items;
+        float scale = 0;
+
+        scale = itemWidth / ItemSize.X;
+
         ItemSize = new(ItemSize.X * scale, ItemSize.Y * scale);
 
         if (VisibleTGIs.Count > 0)
@@ -136,12 +163,15 @@ public partial class ThumbnailGrid : MarginContainer
             {
                 tgi.CustomMinimumSize = ItemSize;
             }
-        }        
-        ThumbGrid.Columns = (int)itemCount; 
+        }     
+
+        ThumbGrid.Columns = items; 
         ColumnCount = ThumbGrid.Columns; // items per row
         RowCount = (int)Math.Ceiling(PaneSize.Y / ItemSize.Y); //rows per screen
 
-        MaxScroll = packages.Count / RowCount; // max rows
+
+
+        MaxScroll = (packages.Count / ColumnCount); // max rows
         if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Max Scroll: {0}", MaxScroll));
         int pages = (MaxScroll / RowCount) * 2;
         int minpage = RowCount;
@@ -151,9 +181,28 @@ public partial class ThumbnailGrid : MarginContainer
         vScrollBar.MaxValue = MaxScroll;
         vScrollBar.MinValue = 0;
         vScrollBar.Page = minpage;
-        VisibleTGIs = [.._visibletgis];
-        AllTGIs = [.._alltgis];
-        UpdateTheme();
+
+
+        if (!FirstLoaded) FirstLoaded = true; 
+        if (fromResized)
+        {                        
+            Resizing = false;
+            CheckSize();
+            if (ItemCount != newCount)
+            {
+                RemoveItems();
+                MakeVisibleItems();
+            }
+        }
+        newCount = ItemCount;
+    }
+
+    bool Resizing = false;
+
+
+    private void CheckSize()
+    {
+        if (PaneSize != Size) GetSettings();
     }
 
     private void UpdateTheme()
@@ -286,10 +335,13 @@ public partial class ThumbnailGrid : MarginContainer
 		ScrollUpButton.AddThemeStyleboxOverride("disabled", scrollbuttondisabled);		
 		ScrollDownButton.AddThemeStyleboxOverride("disabled", scrollbuttondisabled);
 
-		StyleBoxEmpty focusedtheme = ScrollUpButton.GetThemeStylebox("focus") as StyleBoxEmpty;
-		ScrollUpButton.AddThemeStyleboxOverride("focus", focusedtheme);		
-		ScrollDownButton.AddThemeStyleboxOverride("focus", focusedtheme);
+		//StyleBoxEmpty focusedtheme = ScrollUpButton.GetThemeStylebox("focus") as StyleBoxEmpty;
+		//ScrollUpButton.AddThemeStyleboxOverride("focus", focusedtheme);		
+		//ScrollDownButton.AddThemeStyleboxOverride("focus", focusedtheme);
     }
+
+    #region Scrolling
+
 
     private void OnScrollDown_ButtonUsed(bool Down){
 		if (Down && ListenForKeyPress){
@@ -301,8 +353,6 @@ public partial class ThumbnailGrid : MarginContainer
 			ReleaseScroll();			
 		}
 	}
-
-	//MAYBE QUEUE IT AS TASKS SO IT DOES IT ONE AT A TIME?? 
 
 	private void OnScrollUp_ButtonUsed(bool Down){
 		if (Down && ListenForKeyPress){
@@ -319,7 +369,7 @@ public partial class ThumbnailGrid : MarginContainer
     {		
 		double val = vScrollBar.Value;
 		val++;
-		if (val <= vScrollBar.MaxValue) vScrollBar.Value++;		
+		if (val <= vScrollBar.MaxValue) { vScrollBar.Value++; }	
     }
 
     private void OnScrollUp()
@@ -378,15 +428,18 @@ public partial class ThumbnailGrid : MarginContainer
 
     private void OnScrollScrolled(double val)
     {
+        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Scroll moved! New position: {0}", val));
 		new Thread(() => {		
 			if (ScrollChecker) return;
 			ScrollChecker = true;
 
 			int currentValue = (int)val;
             if (currentValue == -1) { ScrollPosition = 0; return; }
+            if (currentValue > MaxScroll) { ScrollPosition = (int)vScrollBar.MaxValue; return; }
 
 			if (currentValue != ScrollPosition + 1 && currentValue != ScrollPosition - 1)
-			{				
+			{			
+                ScrollPosition = currentValue;	
                 ScrollRepopulateRows();
 			} else
 			{
@@ -406,11 +459,26 @@ public partial class ThumbnailGrid : MarginContainer
 
     private void ScrollRepopulateRows(){
 		ScrollerTasks.Enqueue(new (() => { 
+            RemoveItems();
 			MakeVisibleItems();
 		}));
 	}
 
-	private void OnScrollBarDown(int pos)
+    private void RemoveItems()
+    {
+        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Removing all items."));
+        if (VisibleTGIs.Count > 0)
+        {
+            foreach (ThumbnailGridItem tgi in VisibleTGIs)
+            {
+                ThumbGrid.RemoveChild(tgi);
+			    tgi.QueueFree();
+            }
+        }
+		VisibleTGIs.Clear();
+    }
+
+    private void OnScrollBarDown(int pos)
     {			
 		ScrollerTasks.Enqueue(new (async () => { 
 			await ScrollDownTask(pos);
@@ -426,25 +494,32 @@ public partial class ThumbnailGrid : MarginContainer
 
 	private Task ScrollUpTask(int scrollPos)
 	{        
-        for (int i = ItemCount - ColumnCount; i < ItemCount; i++)
+        //rows:
+        int topRowStart = scrollPos * ColumnCount;
+        int topRowEnd = topRowStart + ColumnCount;
+        scrollPos++;
+        int bottomRowEnd = (scrollPos * ColumnCount) + ItemCount;
+        int bottomRowStart = bottomRowEnd - ColumnCount;
+        
+        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("SCROLL UP: New items starts at {0} and ends at {1}, scrollpos {2}", topRowStart, topRowEnd, scrollPos));
+        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("SCROLL UP: Removal items starts at {0} and ends at {1}, scrollpos {2}", bottomRowStart, bottomRowEnd, scrollPos));
+        int zeroidx = ItemCount - ColumnCount;
+        for (int i = bottomRowStart; i < bottomRowEnd; i++)
         {
-            ThumbGrid.RemoveChild(VisibleTGIs[i]);
-            VisibleTGIs[i].QueueFree();
-            int idx = AllTGIs.IndexOf(VisibleTGIs[i]);
-            AllTGIs[idx] = _alltgis[idx];
-            VisibleTGIs[i] = _visibletgis[i];
+            ThumbGrid.RemoveChild(AllTGIs[i]);
+            AllTGIs[i].QueueFree();
+            //int idx = VisibleTGIs.IndexOf(AllTGIs[i]);
+            VisibleTGIs.Remove(AllTGIs[i]);
+            AllTGIs[i] = _alltgis[i];
+            zeroidx++;
         }
         
-        int start = scrollPos * ColumnCount;
-        int ending = start + ColumnCount;
-
-        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("New items starts at {0} and ends at {1}, scrollpos {2}", start, ending, scrollPos));
-        int zeroidx = 0;
-        for (int i = start; i < ending; i++)
+        zeroidx = 0;
+        for (int i = topRowStart; i < topRowEnd; i++)
         {
             if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Adding item {0} to grid.", i));
             ThumbnailGridItem tgi = MakeTGIItem(GridItems[i]);
-            VisibleTGIs[zeroidx] = tgi;
+            VisibleTGIs.Insert(zeroidx, tgi);
             AllTGIs[i] = tgi;
             ThumbGrid.AddChild(tgi);
             ThumbGrid.MoveChild(tgi, zeroidx);            
@@ -456,27 +531,33 @@ public partial class ThumbnailGrid : MarginContainer
 
 	private Task ScrollDownTask(int scrollPos)
 	{		
-        
-		for (int i = 0; i < ColumnCount; i++)
-        {
-            ThumbGrid.RemoveChild(VisibleTGIs[i]);
-            VisibleTGIs[i].QueueFree();
-            int idx = AllTGIs.IndexOf(VisibleTGIs[i]);
-            AllTGIs[idx] = _alltgis[idx];
-            VisibleTGIs[i] = _visibletgis[i];
-        }
-        //scrollpos is the row so...
-        int start = scrollPos * ColumnCount;
-        int ending = start + ColumnCount;
+        scrollPos--;
+        int topRowStart = scrollPos * ColumnCount;
+        int topRowEnd = topRowStart + ColumnCount;
+        scrollPos++;
+        int bottomRowEnd = (scrollPos * ColumnCount) + ItemCount;
+        int bottomRowStart = bottomRowEnd - ColumnCount;
 
-        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("New items starts at {0} and ends at {1}, scrollpos {2}", start, ending, scrollPos));
+        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("SCROLL DOWN: New items starts at {0} and ends at {1}, scrollpos {2}", bottomRowStart, bottomRowEnd, scrollPos));
+        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("SCROLL DOWN: Removal items starts at {0} and ends at {1}, scrollpos {2}", topRowStart, topRowEnd, scrollPos));
+		int zeroidx = 0;
+        for (int i = topRowStart; i < topRowEnd; i++)
+        {
+            ThumbGrid.RemoveChild(AllTGIs[i]);
+            AllTGIs[i].QueueFree();
+            //int idx = VisibleTGIs.IndexOf(AllTGIs[i]);
+            VisibleTGIs.Remove(AllTGIs[i]);
+            AllTGIs[i] = _alltgis[i];
+            zeroidx++;
+        }
+
         //int c = 0;
-        int zeroidx = ItemCount - ColumnCount;
-        for (int i = start; i < ending; i++)
+        zeroidx = 0;
+        for (int i = bottomRowStart; i < bottomRowEnd; i++)
         {
             if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Adding item {0} to grid.", i));
             ThumbnailGridItem tgi = MakeTGIItem(GridItems[i]);
-            VisibleTGIs[zeroidx] = tgi;
+            VisibleTGIs.Add(tgi);
             AllTGIs[i] = tgi;
             ThumbGrid.AddChild(tgi);
             //ThumbGrid.MoveChild(tgi, zeroidx);            
@@ -485,9 +566,25 @@ public partial class ThumbnailGrid : MarginContainer
 		return Task.CompletedTask;
 	}
 
+    
+    private void RunScrollerTasks(){
+    //if (!ScrollerTasksRunning){
+    //	ScrollerTasksRunning = true;
+        //for (int i = 0; i < ScrollerTasks.Count; i++){
+            ScrollerTasks.TryDequeue(out Task task);
+            task.Start(TaskScheduler.FromCurrentSynchronizationContext());
+        //}
+    //}
+    //ScrollerTasksRunning = false;
+    }
+
+    #endregion
+
 
     private void MakeGridItems()
-    {
+    {        
+        //VisibleTGIs = [.._visibletgis];
+        AllTGIs = [.._alltgis];
         int i = 0;
         foreach (SimsPackage package in packages)
         {
@@ -503,16 +600,31 @@ public partial class ThumbnailGrid : MarginContainer
         }
     }
 
+    public void ReplaceTGI(SimsPackage package)
+    {
+        if (VisibleTGIs.Any(x => x.PackageReference.Identifier == package.Identifier))
+        {
+            GridItem item = GridItems.First(x => x.Package.Identifier == package.Identifier);
+            ThumbnailGridItem tgi = VisibleTGIs.First(x => x.PackageReference.Identifier == package.Identifier);
+            int vidx = VisibleTGIs.IndexOf(tgi);
+            int idx = AllTGIs.IndexOf(AllTGIs.First(x => x.PackageReference.Identifier == package.Identifier));
+            ThumbGrid.RemoveChild(tgi);
+            tgi.QueueFree();
+            //VisibleTGIs[vidx] = _visibletgis[vidx];
+            AllTGIs[idx] = _alltgis[idx];
+            item.Package = package;
+            tgi = MakeTGIItem(item);
+            VisibleTGIs[vidx] = tgi;
+            ThumbGrid.AddChild(tgi);
+            ThumbGrid.MoveChild(tgi, vidx);  
+        }
+    }
+
     private ThumbnailGridItem MakeTGIItem(GridItem item)
     {
         if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Creating thumbitem for {0}", item.Package.FileName));
         ThumbnailGridItem tgi = ThumbnailGridItemPS.Instantiate() as ThumbnailGridItem;
         tgi.PackageReference = item;
-        tgi.SelectedColor = SelectedColor;
-        tgi.TextColor = TextColor;
-        tgi.AccentColor = AccentColor;
-        tgi.BackgroundColor = ItemBackgroundColor;
-        tgi.LabelText = item.Package.FileName;
         tgi.ItemSelected += (x, y, z) => GridItemSelectionChanged(x, y, z);
         tgi.CustomMinimumSize = ItemSize;
         if (item.Package.PackageData != null)
@@ -523,12 +635,27 @@ public partial class ThumbnailGrid : MarginContainer
                 {
                     if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Thumbitem {0} is a mesh or a recolor", item.Package.FileName));
                     tgi.ViewportVersion = true;
-                    tgi = MakeViewportItem(tgi, item.Package);
+                    ThumbnailGridItem t = MakeViewportItem(tgi, item.Package);
+                    if (t == null)
+                    {
+                        tgi.ViewportVersion = false;
+                        tgi.ImagePlaceholder = 2;
+                    } else
+                    {
+                        tgi = t;
+                    }
                 } else if (item.Package.Sims2Data.TXTRDataBlock.Count > 0)
                 {
                     if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Thumbitem {0} is just a texture", item.Package.FileName));
                     tgi.ViewportVersion = false;
-                    tgi = MakeTextureItem(tgi, item.Package);
+                    ThumbnailGridItem t = MakeTextureItem(tgi, item.Package);
+                    if (t == null)
+                    {
+                        tgi.ImagePlaceholder = 2;
+                    } else
+                    {
+                        tgi = t;
+                    }
                 } else
                 {
                     if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Thumbitem {0} uses a placeholder image", item.Package.FileName));
@@ -563,6 +690,19 @@ public partial class ThumbnailGrid : MarginContainer
                 break;                    
             }
         }
+            tgi.AccentColor = AccentColor;
+            tgi.SelectedColor = SelectedColor;
+            tgi.LabelText = item.Package.FileName;
+
+        if (item.Package.CategoryName != "Default")
+        {                
+            tgi.TextColor = item.Package.PackageCategory.TextColor;
+            tgi.BackgroundColor = item.Package.PackageCategory.Background;
+        } else
+        {            
+            tgi.TextColor = TextColor;
+            tgi.BackgroundColor = ItemBackgroundColor;
+        }
         
         //tgi.IsSelected = item.IsSelected;
         item.IsOnScreen = true;
@@ -570,33 +710,25 @@ public partial class ThumbnailGrid : MarginContainer
     }
 
     public void MakeVisibleItems()
-    {           
+    {        
+        //VisibleTGIs = [..VisibleTGIs];
         if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Making {0} items for thumb grid. {1} rows, {2} items per row", ItemCount, RowCount, ColumnCount));
         int items = 0;
-        int position = ScrollPosition;
+        int position = ScrollPosition * ColumnCount;
         for (int r = 0; r < RowCount; r++)
         {
             for (int c = 0; c < ColumnCount; c++)
             {
                 if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Adding item {0} - row {1}, column {2}", position, r, c));
                 ThumbnailGridItem tgi = MakeTGIItem(GridItems[position]);
-                VisibleTGIs[items] = tgi;
+                VisibleTGIs.Add(tgi);
                 AllTGIs[position] = tgi;
                 ThumbGrid.AddChild(tgi);
                 items++;
                 position++;
             }
-        }
-    }
-
-    public void MakeItems()
-    {
-        GetSettings();
-        MakeGridItems();  
-        MakeVisibleItems();
-    }
-
-
+        } 
+    }   
 
     private void GridItemSelectionChanged(bool Selected, GridItem package, ThumbnailGridItem gridItem)
     {        
@@ -606,7 +738,7 @@ public partial class ThumbnailGrid : MarginContainer
                 if (GridItems[i].Identifier != package.Identifier)
                 {
                     GridItems[i].IsSelected = false;
-                    if (GridItems[i].IsOnScreen)
+                    if (VisibleTGIs.Any(x => x.PackageReference.Identifier == GridItems[i].Identifier))
                     {
                         VisibleTGIs.First(x => x.PackageReference.Identifier == GridItems[i].Identifier).IsSelected = false;
                     }
@@ -615,7 +747,7 @@ public partial class ThumbnailGrid : MarginContainer
 		} else if (ShiftHeld){
             foreach (GridItem item in GridItems)
             {        
-                if (item.IsOnScreen)
+                if (VisibleTGIs.Any(x => x.PackageReference.Identifier == item.Identifier))
                 {
                     VisibleTGIs.First(x => x.PackageReference.Identifier == item.Identifier).IsSelected = false;
                 }        
@@ -628,7 +760,7 @@ public partial class ThumbnailGrid : MarginContainer
                 for (int i = PreviousSelection; i <= package.GridIdx; i++)
                 {                    
                     GridItems[i].IsSelected = Selected;
-                    if (GridItems[i].IsOnScreen)
+                    if (VisibleTGIs.Any(x => x.PackageReference.Identifier == GridItems[i].Identifier))
                     {
                         VisibleTGIs.First(x => x.PackageReference.Identifier == GridItems[i].Identifier).IsSelected = Selected;
                     }                    
@@ -638,7 +770,7 @@ public partial class ThumbnailGrid : MarginContainer
                 for (int i = package.GridIdx; i <= PreviousSelection; i++)
                 {                    
                     GridItems[i].IsSelected = Selected;
-                    if (GridItems[i].IsOnScreen)
+                    if (VisibleTGIs.Any(x => x.PackageReference.Identifier == GridItems[i].Identifier))
                     {
                         VisibleTGIs.First(x => x.PackageReference.Identifier == GridItems[i].Identifier).IsSelected = Selected;
                     }                    
@@ -649,40 +781,55 @@ public partial class ThumbnailGrid : MarginContainer
         ThumbGridItemsSelected?.Invoke(GridItems.Where(x => x.IsSelected).Select(x => x.Package).ToList());
     }
 
+    private bool IsTGIOnScreen(int idx){
+		return VisibleTGIs.Any(x => x.PackageReference.GridIdx == idx);
+	}
+
     public ThumbnailGridItem MakeViewportItem(ThumbnailGridItem tgi, SimsPackage package)
     {
-        if (package.Mesh)
-        {
-            if (package.Game == SimsGames.Sims2)
+        try {
+            if (package.Mesh || package.Type.Contains("Hair"))
             {
-                Snapshotter snapshotter = SnapshotterPS.Instantiate() as Snapshotter;
-                tgi.subViewport.AddChild(snapshotter);
-                snapshotter.BuildSims2Mesh(package);
-                if ((package.PackageData as Sims2Data).MMATDataBlock.Count != 0)
+                if (package.Game == SimsGames.Sims2)
                 {
-                    snapshotter.ApplyTextures(package);
-                } else
-                {
-                    if (packages.Where(x => x.ObjectGUID == package.ObjectGUID).Any(p => p.Recolor))
-                    {
-                        SimsPackage matchingMesh = packages.Where(x => x.ObjectGUID == package.ObjectGUID).First(p => p.Recolor);
-                        snapshotter.ApplyTextures(matchingMesh);
-                    }
-                    
+                    Snapshotter snapshotter = SnapshotterPS.Instantiate() as Snapshotter;
+                    snapshotter.Packages = packages;
+                    tgi.subViewport.AddChild(snapshotter);
+                    snapshotter.BuildSims2Mesh(package);
+
+                    if (!package.Type.Contains("Hair")) snapshotter.GetTexturesForS2Meshes(package);
                 }
-            }
-        } else if (!package.Mesh && package.Recolor)
-        {
-            if (packages.Where(x => x.ObjectGUID == package.ObjectGUID).Any(p => p.Mesh))
+            } else if (!package.Mesh && package.Recolor)
             {
-                SimsPackage matchingMesh = packages.Where(x => x.ObjectGUID == package.ObjectGUID).First(p => p.Mesh);
-                Snapshotter snapshotter = SnapshotterPS.Instantiate() as Snapshotter;
-                tgi.subViewport.AddChild(snapshotter);
-                snapshotter.BuildSims2Mesh(matchingMesh);
-                snapshotter.ApplyTextures(package);    
+                if (packages.Where(x => x.ObjectGUID == package.ObjectGUID).Any(p => p.Mesh))
+                {
+                    SimsPackage matchingMesh = packages.Where(x => x.ObjectGUID == package.ObjectGUID).First(p => p.Mesh);
+                    Snapshotter snapshotter = SnapshotterPS.Instantiate() as Snapshotter;
+                    snapshotter.Packages = packages;
+                    tgi.subViewport.AddChild(snapshotter);
+                    if (package.Game == SimsGames.Sims2)
+                    {
+                        snapshotter.BuildSims2Mesh(matchingMesh);
+                        snapshotter.ApplyS2Textures(package);
+                    }
+                } else if (packageDisplay.ThisInstance.Files.OfType<SimsPackage>().Where(x => x.Sims2Data.XNGBDataBlock.ModelName.Contains(package.Sims2Data.TXTRDataBlock[0].TextureNoSuffix)).Any(p => p.Mesh))
+                {
+                    SimsPackage matchingMesh = packageDisplay.ThisInstance.Files.OfType<SimsPackage>().Where(x => x.Sims2Data.XNGBDataBlock.ModelName.Contains(package.Sims2Data.TXTRDataBlock[0].TextureNoSuffix)).First(p => p.Mesh);
+                    Snapshotter snapshotter = SnapshotterPS.Instantiate() as Snapshotter;
+                    snapshotter = SnapshotterPS.Instantiate() as Snapshotter;
+                    snapshotter.Packages = packageDisplay.ThisInstance.Files.OfType<SimsPackage>().ToList();
+                    
+                    snapshotter.BuildSims2Mesh(matchingMesh);
+                    if (!package.Type.Contains("Hair")) {
+                        if (package.Game == SimsGames.Sims2) snapshotter.ApplyS2Textures(package);
+                    }
+                }
             }            
+            return tgi;
+        } catch {
+            return null;
         }
-        return tgi;
+
     }
 
     private ThumbnailGridItem MakeTextureItem(ThumbnailGridItem tgi, SimsPackage package)
@@ -718,6 +865,62 @@ public partial class ThumbnailGrid : MarginContainer
                 } else if (keyboardKey.IsReleased()) {
                     ControlHeld = false;
                 }
+            } else if (keyboardKey.Keycode == Key.Up)
+            {
+                if (ListenForKeyPress && IsMouseInThumbGrid())
+                {
+                    if (PreviousSelection != 0){ 
+                        ListenForKeyPress = false;
+                        int currentSelection = PreviousSelection - 1;
+                        
+                        if (VisibleTGIs.Any(x => x.PackageReference.GridIdx == PreviousSelection)){
+                            VisibleTGIs.First(x => x.PackageReference.GridIdx == PreviousSelection).FlipSelected(false);
+                        }							
+                        if (IsTGIOnScreen(currentSelection)){
+                            VisibleTGIs.First(x => x.PackageReference.GridIdx == PreviousSelection).FlipSelected(true);
+                            PreviousSelection = currentSelection;
+                        } else {
+                            //VisibleRows.First(x => x.PopulatedIndex == currentSelection).First().RowSelectedButtonPressed(true);
+                            CallDeferred(nameof(OnScrollUp));
+                            PreviousSelection = currentSelection;
+                        }
+                        CallDeferred(nameof(ListenForKeyPressTimer));
+                    }
+                }
+            } else if (keyboardKey.Keycode == Key.Down)
+            {
+                if (ListenForKeyPress && IsMouseInThumbGrid())
+                {
+                    if (PreviousSelection != GridItems.Count -1){ 
+                        ListenForKeyPress = false;
+                        int currentSelection = PreviousSelection + 1;
+                        
+                        if (VisibleTGIs.Any(x => x.PackageReference.GridIdx == PreviousSelection)){
+                            VisibleTGIs.First(x => x.PackageReference.GridIdx == PreviousSelection).FlipSelected(false);
+                        }							
+                        if (IsTGIOnScreen(currentSelection)){
+                            VisibleTGIs.First(x => x.PackageReference.GridIdx == PreviousSelection).FlipSelected(true);
+                            PreviousSelection = currentSelection;
+                        } else {
+                            CallDeferred(nameof(OnScrollDown));
+                            PreviousSelection = currentSelection;
+                        }							
+                        CallDeferred(nameof(ListenForKeyPressTimer));
+                    }
+                }
+            } else if (keyboardKey.Keycode == Key.A)
+            {
+                if (ListenForKeyPress && IsMouseInThumbGrid() && ControlHeld)
+                {
+                    ListenForKeyPress = false;
+                    foreach (GridItem item in GridItems){
+                        item.IsSelected = true;
+                    }
+                    foreach (ThumbnailGridItem item in VisibleTGIs){
+                        item.IsSelected = true;
+                    }
+                    CallDeferred(nameof(ListenForKeyPressTimer));
+                }
             }
         }
         if (@event is InputEventMouseButton button && button.IsReleased())
@@ -728,6 +931,21 @@ public partial class ThumbnailGrid : MarginContainer
 				OnScrollScrolled(vScrollBar.Value);
 			}
 		}
+        if (FirstLoaded) {
+            if (ListenForKeyPress && IsMouseInThumbGrid()){ 
+                if (@event is InputEventMouseButton mouseEvent && mouseEvent.Pressed){
+                    if (mouseEvent.ButtonIndex == MouseButton.WheelUp){
+                        ListenForKeyPress = false;
+                        OnScrollUp();
+                    } else if (mouseEvent.ButtonIndex == MouseButton.WheelDown){
+                        ListenForKeyPress = false;
+                        OnScrollDown();
+                    }
+                    CallDeferred(nameof(ListenForKeyPressTimer));
+                }
+            }
+        }
+        
     }
 
     public override void _Process(double delta)
@@ -738,16 +956,15 @@ public partial class ThumbnailGrid : MarginContainer
     }
 
 
-    private void RunScrollerTasks(){
-    //if (!ScrollerTasksRunning){
-    //	ScrollerTasksRunning = true;
-        //for (int i = 0; i < ScrollerTasks.Count; i++){
-            ScrollerTasks.TryDequeue(out Task task);
-            task.Start(TaskScheduler.FromCurrentSynchronizationContext());
-        //}
-    //}
-    //ScrollerTasksRunning = false;
-}
+
+    public bool IsMouseInThumbGrid()
+    {
+        Vector2 mousepos = GetGlobalMousePosition(); 
+
+		Rect2 rect = new (this.GlobalPosition, this.Size); 
+
+		return rect.HasPoint(mousepos); 
+    }
 
 }
 

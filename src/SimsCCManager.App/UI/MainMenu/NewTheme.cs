@@ -430,6 +430,7 @@ public partial class NewTheme : MarginContainer
         theme.DataGridSelected = DataGridSelected_Color;
         theme.AccentColor = AccentColor_Color;
         theme.MainTextColor = MainTextColor_Color;
+        theme.HeaderTextColor = HeaderTextColor_Color;
         XmlSerializer ThemeWriter = new(typeof(SCCMTheme));
         string themefile = Path.Combine(GlobalVariables.ThemesFolder, string.Format("{0}.xml", theme.ThemeName));
         if (File.Exists(themefile))

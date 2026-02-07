@@ -1,0 +1,135 @@
+[gd_scene load_steps=11 format=3 uid="uid://biyhvjfpffmqj"]
+
+[ext_resource type="Script" uid="uid://cyjlxeavbwbgs" path="res://UI/PackageDisplay/AddDetail.cs" id="1_mpr7r"]
+[ext_resource type="FontFile" uid="uid://dbl0pkpxsvvww" path="res://assets/fonts/Livvic/Livvic-Medium.ttf" id="1_qwsov"]
+[ext_resource type="PackedScene" uid="uid://ryrvwl0ec34b" path="res://UI/Buttons/TopbarButton.tscn" id="2_5lpwk"]
+[ext_resource type="Theme" uid="uid://elq77dslte5a" path="res://themes/ManageCategories_buttons.tres" id="2_mpr7r"]
+[ext_resource type="Texture2D" uid="uid://u7h16r70fle5" path="res://assets/icons/materialicons/twotone_backspace_black_48dp.png" id="3_7cgqu"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ciked"]
+corner_radius_top_left = 15
+corner_radius_top_right = 15
+corner_radius_bottom_right = 15
+corner_radius_bottom_left = 15
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_5lpwk"]
+bg_color = Color(0.6, 0.6, 0.6, 0)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+corner_radius_top_left = 15
+corner_radius_top_right = 15
+corner_radius_bottom_right = 15
+corner_radius_bottom_left = 15
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_5y0ig"]
+content_margin_left = 5.0
+content_margin_top = 1.0
+content_margin_right = 5.0
+content_margin_bottom = 1.0
+bg_color = Color(0.5019608, 0.5019608, 0.5019608, 1)
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_r1rvu"]
+content_margin_left = 5.0
+content_margin_top = 1.0
+content_margin_right = 5.0
+content_margin_bottom = 1.0
+bg_color = Color(0.5019608, 0.5019608, 0.5019608, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+
+[sub_resource type="Theme" id="Theme_7cgqu"]
+LineEdit/fonts/font = ExtResource("1_qwsov")
+LineEdit/styles/focus = SubResource("StyleBoxFlat_5y0ig")
+LineEdit/styles/normal = SubResource("StyleBoxFlat_r1rvu")
+
+[node name="AddDetail" type="MarginContainer" node_paths=PackedStringArray("BGColorRect", "BorderColorRect", "TextEditVersion", "LineEditVersion", "LineEdit", "TextEdit", "LESaveButton", "TESaveButton", "CancelButton")]
+size_flags_horizontal = 4
+size_flags_vertical = 4
+script = ExtResource("1_mpr7r")
+BGColorRect = NodePath("Panel/ColorRect")
+BorderColorRect = NodePath("Panel2/ColorRect")
+TextEditVersion = NodePath("MarginContainer/HBoxContainer")
+LineEditVersion = NodePath("MarginContainer/VBoxContainer")
+LineEdit = NodePath("MarginContainer/HBoxContainer/TextBox")
+TextEdit = NodePath("MarginContainer/VBoxContainer/TextEdit")
+LESaveButton = NodePath("MarginContainer/HBoxContainer/Save_Button")
+TESaveButton = NodePath("MarginContainer/VBoxContainer/Save_Button2")
+CancelButton = NodePath("MarginContainer/HBoxContainer/Topbar_Button")
+
+[node name="Panel" type="Panel" parent="."]
+clip_children = 1
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_ciked")
+
+[node name="ColorRect" type="ColorRect" parent="Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Panel2" type="Panel" parent="."]
+clip_children = 1
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_5lpwk")
+
+[node name="ColorRect" type="ColorRect" parent="Panel2"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.3553136, 0.35531354, 0.35531357, 1)
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_override_constants/margin_left = 30
+theme_override_constants/margin_top = 30
+theme_override_constants/margin_right = 30
+theme_override_constants/margin_bottom = 30
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+
+[node name="Topbar_Button" parent="MarginContainer/HBoxContainer" instance=ExtResource("2_5lpwk")]
+layout_mode = 2
+Texture = ExtResource("3_7cgqu")
+ToolTipText = "Cancel"
+
+[node name="TextBox" type="LineEdit" parent="MarginContainer/HBoxContainer"]
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+size_flags_horizontal = 8
+theme = SubResource("Theme_7cgqu")
+placeholder_text = "Source link..."
+
+[node name="Save_Button" type="Button" parent="MarginContainer/HBoxContainer"]
+layout_mode = 2
+theme = ExtResource("2_mpr7r")
+text = "Save"
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+visible = false
+layout_mode = 2
+
+[node name="TextEdit" type="TextEdit" parent="MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(350, 150)
+layout_mode = 2
+theme = SubResource("Theme_7cgqu")
+
+[node name="Save_Button2" type="Button" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme = ExtResource("2_mpr7r")
+text = "Save"

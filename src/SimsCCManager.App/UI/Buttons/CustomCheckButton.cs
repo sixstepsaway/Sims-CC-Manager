@@ -1,4 +1,5 @@
 using Godot;
+using SimsCCManager.Debugging;
 using SimsCCManager.Globals;
 using SimsCCManager.SettingsSystem;
 using System;
@@ -39,6 +40,7 @@ public partial class CustomCheckButton : MarginContainer
 
     private void ButtonClicked()
     {
+        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Checkbutton clicked!"));
         IsToggled = !IsToggled;
         CheckToggled?.Invoke(IsToggled);
     }

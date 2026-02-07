@@ -1,22 +1,53 @@
-[gd_scene load_steps=5 format=3 uid="uid://bvm2atrydtgg6"]
+[gd_scene load_steps=9 format=3 uid="uid://bvm2atrydtgg6"]
 
 [ext_resource type="Script" uid="uid://w3jk13bva0rk" path="res://windows/CustomPopupWindow.cs" id="1_3s6f3"]
 [ext_resource type="FontFile" uid="uid://bob4v2pndpu0q" path="res://assets/fonts/Convergence/Convergence-Regular.ttf" id="1_7npse"]
 [ext_resource type="Theme" uid="uid://elq77dslte5a" path="res://themes/ManageCategories_buttons.tres" id="2_3s6f3"]
+[ext_resource type="FontFile" uid="uid://dbl0pkpxsvvww" path="res://assets/fonts/Livvic/Livvic-Medium.ttf" id="3_1yv80"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_1hsbu"]
 
-[node name="CustomPopupWindow" type="Window" node_paths=PackedStringArray("BGColor", "WindowMessage", "YesButton", "NoButton")]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ea8ua"]
+content_margin_left = 5.0
+content_margin_top = 1.0
+content_margin_right = 5.0
+content_margin_bottom = 1.0
+bg_color = Color(0.5019608, 0.5019608, 0.5019608, 1)
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ym2rk"]
+content_margin_left = 5.0
+content_margin_top = 1.0
+content_margin_right = 5.0
+content_margin_bottom = 1.0
+bg_color = Color(0.5019608, 0.5019608, 0.5019608, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+
+[sub_resource type="Theme" id="Theme_6qq6f"]
+LineEdit/fonts/font = ExtResource("3_1yv80")
+LineEdit/styles/focus = SubResource("StyleBoxFlat_ea8ua")
+LineEdit/styles/normal = SubResource("StyleBoxFlat_ym2rk")
+
+[node name="CustomPopupWindow" type="Window" node_paths=PackedStringArray("BGColor", "WindowMessage", "YesButton", "NoButton", "BrowseButton", "BrowseDialog", "BrowseOption", "BrowseLineEdit")]
 oversampling_override = 1.0
 title = "Virtual Files Detected"
 initial_position = 2
 size = Vector2i(415, 235)
-force_native = true
 script = ExtResource("1_3s6f3")
 BGColor = NodePath("MarginContainer/BgColor")
 WindowMessage = NodePath("MarginContainer/MarginContainer/VBoxContainer/HBoxContainer2/RichTextLabel")
 YesButton = NodePath("MarginContainer/MarginContainer/VBoxContainer/HBoxContainer/Yes_Button")
 NoButton = NodePath("MarginContainer/MarginContainer/VBoxContainer/HBoxContainer/No_Button")
+BrowseButton = NodePath("MarginContainer/MarginContainer/VBoxContainer/HBoxContainer3/Browse_Button")
+BrowseDialog = NodePath("Browse")
+BrowseOption = NodePath("MarginContainer/MarginContainer/VBoxContainer/HBoxContainer3")
+BrowseLineEdit = NodePath("MarginContainer/MarginContainer/VBoxContainer/HBoxContainer3/TextBox")
 
 [node name="MarginContainer" type="MarginContainer" parent="."]
 anchors_preset = 15
@@ -76,6 +107,20 @@ theme_override_styles/hover = SubResource("StyleBoxEmpty_1hsbu")
 theme_override_styles/disabled = SubResource("StyleBoxEmpty_1hsbu")
 theme_override_styles/focus = SubResource("StyleBoxEmpty_1hsbu")
 
+[node name="HBoxContainer3" type="HBoxContainer" parent="MarginContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="TextBox" type="LineEdit" parent="MarginContainer/MarginContainer/VBoxContainer/HBoxContainer3"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme = SubResource("Theme_6qq6f")
+placeholder_text = "Source link..."
+
+[node name="Browse_Button" type="Button" parent="MarginContainer/MarginContainer/VBoxContainer/HBoxContainer3"]
+layout_mode = 2
+theme = ExtResource("2_3s6f3")
+text = "Browse"
+
 [node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
 alignment = 1
@@ -89,3 +134,10 @@ text = "OK"
 layout_mode = 2
 theme = ExtResource("2_3s6f3")
 text = "No"
+
+[node name="Browse" type="FileDialog" parent="."]
+title = "Open a Directory"
+file_mode = 2
+display_mode = 1
+access = 2
+use_native_dialog = true

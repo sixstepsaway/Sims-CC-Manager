@@ -14,40 +14,83 @@ border_color = Color(0.29079, 0.38269648, 0.42732337, 1)
 [sub_resource type="Theme" id="Theme_pft5s"]
 Label/colors/font_color = Color(0.099986, 0.099986, 0.099986, 1)
 Label/fonts/font = ExtResource("1_1mag0")
+RichTextLabel/colors/default_color = Color(0.033853278, 0.033853278, 0.033853274, 1)
+RichTextLabel/fonts/bold_font = ExtResource("1_1mag0")
+RichTextLabel/fonts/bold_italics_font = ExtResource("1_1mag0")
+RichTextLabel/fonts/italics_font = ExtResource("1_1mag0")
+RichTextLabel/fonts/mono_font = ExtResource("1_1mag0")
+RichTextLabel/fonts/normal_font = ExtResource("1_1mag0")
 
-[node name="MarginContainer" type="MarginContainer" node_paths=PackedStringArray("Key", "Value")]
+[node name="MarginContainer" type="MarginContainer" node_paths=PackedStringArray("Key", "Value", "BG", "Short", "Long", "LongValue", "LongKey")]
 script = ExtResource("1_ydmb6")
-Key = NodePath("HBoxContainer/MarginContainer/key")
-Value = NodePath("HBoxContainer/MarginContainer2/value")
+Key = NodePath("Normal/MarginContainer/key")
+Value = NodePath("Normal/MarginContainer2/value")
+BG = NodePath("Panel")
+Short = NodePath("Normal")
+Long = NodePath("Long")
+LongValue = NodePath("Long/MarginContainer2/RichTextLabel")
+LongKey = NodePath("Long/MarginContainer/key")
 
 [node name="Panel" type="Panel" parent="."]
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_ydmb6")
 
-[node name="HBoxContainer" type="HBoxContainer" parent="."]
+[node name="Normal" type="HBoxContainer" parent="."]
+visible = false
 layout_mode = 2
 
-[node name="MarginContainer" type="MarginContainer" parent="HBoxContainer"]
+[node name="MarginContainer" type="MarginContainer" parent="Normal"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/margin_left = 4
 theme_override_constants/margin_top = 4
 
-[node name="key" type="Label" parent="HBoxContainer/MarginContainer"]
+[node name="key" type="Label" parent="Normal/MarginContainer"]
 layout_mode = 2
 theme = SubResource("Theme_pft5s")
 theme_override_font_sizes/font_size = 14
 text = "FileName: "
 
-[node name="MarginContainer2" type="MarginContainer" parent="HBoxContainer"]
+[node name="MarginContainer2" type="MarginContainer" parent="Normal"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/margin_top = 4
 theme_override_constants/margin_right = 4
 
-[node name="value" type="Label" parent="HBoxContainer/MarginContainer2"]
+[node name="value" type="Label" parent="Normal/MarginContainer2"]
 layout_mode = 2
 theme = SubResource("Theme_pft5s")
 theme_override_font_sizes/font_size = 12
 text = "package name is long and stupid but here we go"
-autowrap_mode = 2
+
+[node name="Long" type="VBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="Long"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/margin_left = 4
+theme_override_constants/margin_top = 4
+
+[node name="key" type="Label" parent="Long/MarginContainer"]
+layout_mode = 2
+theme = SubResource("Theme_pft5s")
+theme_override_font_sizes/font_size = 14
+text = "FileName: "
+
+[node name="MarginContainer2" type="MarginContainer" parent="Long"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/margin_left = 4
+theme_override_constants/margin_right = 4
+theme_override_constants/margin_bottom = 4
+
+[node name="RichTextLabel" type="RichTextLabel" parent="Long/MarginContainer2"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+theme = SubResource("Theme_pft5s")
+theme_override_font_sizes/normal_font_size = 10
+theme_override_font_sizes/bold_font_size = 10
+theme_override_font_sizes/bold_italics_font_size = 10
+theme_override_font_sizes/italics_font_size = 10
+theme_override_font_sizes/mono_font_size = 10

@@ -91,37 +91,21 @@ public partial class MainMenu : MarginContainer
     List<SimsPackageReader> sims2packagereaders = new();
     private void DevClicked()
     {     
-          
-        /*new Thread(() => {
-            List<string> files = Directory.EnumerateFiles(@"O:\Godot Projects\SimsCCManager\Test", "*.package", SearchOption.AllDirectories).ToList();
-            for (int i = 0; i < files.Count; i++)
-            {
-                SimsPackageReader sims2PackageReader = new();            
-                sims2PackageReader.ReadPackage(files[i]);           
-                
-                //sims2PackageReader.ReadPackage(@"O:\Godot Projects\SimsCCManager\Test\MLC-KFCBucketToilet.package");
-                sims2packagereaders.Add(sims2PackageReader);
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0}", sims2PackageReader.ToString()));                
-            }
-            MakeScreencaps();
-        }){IsBackground = true}.Start(); */    
-
-        DirectoryInfo di = new(@"C:\Program Files (x86)\Mr DJ\The Sims 2 Ultimate Collection");
-        try { var fs = new FileSecurity(di.FullName, AccessControlSections.All); 
-        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Allowed!"));}
-        catch (Exception e)
-        {
-            if (e.GetBaseException().GetType() == typeof(PrivilegeNotHeldException))
-            {
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("womp womp"));
-            }  
-        }        
+        string file = @"E:\Documents\Sims CC Manager\Instances\Sims 2 Testing Version\Packages\MESH_Digi_Nightcrawler08.package";
+        SimsPackageReader spr = new();
+        spr.ReadPackage(file);
+        SimsPackage package = new();
+        package.Location = file;
+        package.Game = SimsCCManager.OptionLists.SimsGames.Sims2;
+        package.Sims2Data = spr.Sims2Data;
+        package.WriteXML();
     }
 
     
 
     private void MakeScreencaps()
     {
+
         /*for (int i = 0; i < sims2packagereaders.Count; i++){
             if (sims2packagereaders[i].PackageGame == SimsCCManager.OptionLists.SimsGames.Sims2) {
                 snapShotted = false;

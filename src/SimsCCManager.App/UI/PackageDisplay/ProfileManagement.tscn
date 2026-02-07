@@ -54,7 +54,7 @@ expand_margin_top = 10.0
 expand_margin_right = 10.0
 expand_margin_bottom = 10.0
 
-[node name="ProfileManagement" type="MarginContainer" node_paths=PackedStringArray("BgPanel", "ProfilesLabel", "ListBg", "ProfilesList", "NewProfileButton", "EditProfileButton", "DupeProfileButton", "DeleteProfileButton", "CloseButton", "MiniWindow", "ProfileNameBox", "ProfileDescriptionBox", "ConfirmButton", "CancelButton", "LocalSavesLabel", "LocalSavesCheck", "LocalSettingsLabel", "LocalSettingsCheck", "LocalMediaLabel", "LocalMediaCheck", "LocalDataLabel", "LocalDataCheck")]
+[node name="ProfileManagement" type="MarginContainer" node_paths=PackedStringArray("BgPanel", "ProfilesLabel", "ListBg", "ProfilesList", "NewProfileButton", "EditProfileButton", "DupeProfileButton", "DeleteProfileButton", "CloseButton", "MiniWindow", "ProfileNameBox", "ProfileDescriptionBox", "ConfirmButton", "CancelButton", "LocalSavesLabel", "LocalSavesCheck", "LocalSettingsLabel", "LocalSettingsCheck", "LocalMediaLabel", "LocalMediaCheck", "LocalDataLabel", "LocalDataCheck", "AutoBackupsLabel", "AutoBackupsCheck")]
 script = ExtResource("1_1r50d")
 ProfileItemPS = ExtResource("2_yq3p3")
 BgPanel = NodePath("MarginContainer/Panel")
@@ -79,6 +79,8 @@ LocalMediaLabel = NodePath("MarginContainer2/MarginContainer/VBoxContainer/VBoxC
 LocalMediaCheck = NodePath("MarginContainer2/MarginContainer/VBoxContainer/VBoxContainer/HBoxContainer/HBoxContainer3/LocalMedia_CheckButton")
 LocalDataLabel = NodePath("MarginContainer2/MarginContainer/VBoxContainer/VBoxContainer/HBoxContainer/HBoxContainer4/Label")
 LocalDataCheck = NodePath("MarginContainer2/MarginContainer/VBoxContainer/VBoxContainer/HBoxContainer/HBoxContainer4/LocalData_CheckButton")
+AutoBackupsLabel = NodePath("MarginContainer2/MarginContainer/VBoxContainer/VBoxContainer/HBoxContainer2/HBoxContainer3/Label")
+AutoBackupsCheck = NodePath("MarginContainer2/MarginContainer/VBoxContainer/VBoxContainer/HBoxContainer2/HBoxContainer3/AutoBackups_CheckButton")
 
 [node name="Panel" type="Panel" parent="."]
 layout_mode = 2
@@ -179,7 +181,6 @@ theme = ExtResource("2_1r50d")
 text = "Close"
 
 [node name="MarginContainer2" type="MarginContainer" parent="."]
-visible = false
 layout_mode = 2
 size_flags_horizontal = 4
 size_flags_vertical = 4
@@ -292,6 +293,42 @@ horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="LocalData_CheckButton" parent="MarginContainer2/MarginContainer/VBoxContainer/VBoxContainer/HBoxContainer/HBoxContainer4" instance=ExtResource("3_yq3p3")]
+layout_mode = 2
+
+[node name="HBoxContainer2" type="HBoxContainer" parent="MarginContainer2/MarginContainer/VBoxContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="HBoxContainer3" type="HBoxContainer" parent="MarginContainer2/MarginContainer/VBoxContainer/VBoxContainer/HBoxContainer2"]
+layout_mode = 2
+theme_override_constants/separation = 15
+alignment = 2
+
+[node name="Label" type="Label" parent="MarginContainer2/MarginContainer/VBoxContainer/VBoxContainer/HBoxContainer2/HBoxContainer3"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme = ExtResource("1_j3obd")
+text = "Make Automatic Backups"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="AutoBackups_CheckButton" parent="MarginContainer2/MarginContainer/VBoxContainer/VBoxContainer/HBoxContainer2/HBoxContainer3" instance=ExtResource("3_yq3p3")]
+layout_mode = 2
+
+[node name="HBoxContainer4" type="HBoxContainer" parent="MarginContainer2/MarginContainer/VBoxContainer/VBoxContainer/HBoxContainer2"]
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 15
+alignment = 2
+
+[node name="Label" type="Label" parent="MarginContainer2/MarginContainer/VBoxContainer/VBoxContainer/HBoxContainer2/HBoxContainer4"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme = ExtResource("1_j3obd")
+text = "Local Data"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="LocalData_CheckButton" parent="MarginContainer2/MarginContainer/VBoxContainer/VBoxContainer/HBoxContainer2/HBoxContainer4" instance=ExtResource("3_yq3p3")]
 layout_mode = 2
 
 [node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer2/MarginContainer/VBoxContainer"]

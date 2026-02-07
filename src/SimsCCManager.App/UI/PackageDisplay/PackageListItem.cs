@@ -1,5 +1,6 @@
 using Godot;
 using SimsCCManager.Containers;
+using SimsCCManager.Globals;
 using System;
 using System.IO;
 
@@ -55,7 +56,7 @@ public partial class PackageListItem : HBoxContainer
 
     public void GetInternalName()
     {
-        NameBox.Text = packageItem.PackageData.Title; 
+        NameBox.Text = Utilities.SafeFileName(packageItem.PackageData.Title); 
         GotNames?.Invoke();       
     }
 

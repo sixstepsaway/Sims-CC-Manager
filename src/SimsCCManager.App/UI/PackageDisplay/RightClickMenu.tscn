@@ -11,7 +11,7 @@ border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
 
-[node name="RightClickMenu" type="Node2D" node_paths=PackedStringArray("MainContainer", "bgcolor", "bordercolor", "CategoryOptions", "EditDetails", "Categorylist", "MakeRoot", "Fave", "WrongGame", "UpdatedOOD", "Details", "FFromF", "Categories", "Rename", "Creator", "Source", "Move", "Delete", "Notes")]
+[node name="RightClickMenu" type="Node2D" node_paths=PackedStringArray("MainContainer", "bgcolor", "bordercolor", "CategoryOptions", "EditDetails", "Categorylist", "MakeRoot", "Fave", "WrongGame", "UpdatedOOD", "Details", "FFromF", "Categories", "Rename", "Creator", "Source", "Move", "Delete", "Notes", "Type")]
 script = ExtResource("1_71ntt")
 MainContainer = NodePath("MarginContainer")
 CategoryOption = ExtResource("2_bu7fk")
@@ -27,12 +27,13 @@ UpdatedOOD = NodePath("MarginContainer/MarginContainer/VBoxContainer/UpdatedOOD"
 Details = NodePath("MarginContainer/MarginContainer/VBoxContainer/Details")
 FFromF = NodePath("MarginContainer/MarginContainer/VBoxContainer/FolderFromFiles")
 Categories = NodePath("MarginContainer/MarginContainer/VBoxContainer/Categories")
-Rename = NodePath("EditDetails_Options/VBoxContainer/Rename")
-Creator = NodePath("EditDetails_Options/VBoxContainer/Creator")
-Source = NodePath("EditDetails_Options/VBoxContainer/Source")
-Move = NodePath("EditDetails_Options/VBoxContainer/Move")
-Delete = NodePath("EditDetails_Options/VBoxContainer/Del")
-Notes = NodePath("EditDetails_Options/VBoxContainer/AddNote")
+Rename = NodePath("EditDetails_Options/MarginContainer/VBoxContainer/Rename")
+Creator = NodePath("EditDetails_Options/MarginContainer/VBoxContainer/Creator")
+Source = NodePath("EditDetails_Options/MarginContainer/VBoxContainer/Source")
+Move = NodePath("EditDetails_Options/MarginContainer/VBoxContainer/Move")
+Delete = NodePath("EditDetails_Options/MarginContainer/VBoxContainer/Del")
+Notes = NodePath("EditDetails_Options/MarginContainer/VBoxContainer/AddNote")
+Type = NodePath("EditDetails_Options/MarginContainer/VBoxContainer/Type")
 
 [node name="MarginContainer" type="MarginContainer" parent="."]
 custom_minimum_size = Vector2(130, 0)
@@ -140,23 +141,30 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.23352596, 0.5170328, 0.41327563, 1)
 
-[node name="VBoxContainer" type="VBoxContainer" parent="EditDetails_Options"]
+[node name="MarginContainer" type="MarginContainer" parent="EditDetails_Options"]
+layout_mode = 2
+theme_override_constants/margin_left = 7
+
+[node name="VBoxContainer" type="VBoxContainer" parent="EditDetails_Options/MarginContainer"]
 layout_mode = 2
 
-[node name="Rename" parent="EditDetails_Options/VBoxContainer" instance=ExtResource("2_8xt3o")]
+[node name="Rename" parent="EditDetails_Options/MarginContainer/VBoxContainer" instance=ExtResource("2_8xt3o")]
 layout_mode = 2
 
-[node name="AddNote" parent="EditDetails_Options/VBoxContainer" instance=ExtResource("2_8xt3o")]
+[node name="AddNote" parent="EditDetails_Options/MarginContainer/VBoxContainer" instance=ExtResource("2_8xt3o")]
 layout_mode = 2
 
-[node name="Creator" parent="EditDetails_Options/VBoxContainer" instance=ExtResource("2_8xt3o")]
+[node name="Creator" parent="EditDetails_Options/MarginContainer/VBoxContainer" instance=ExtResource("2_8xt3o")]
 layout_mode = 2
 
-[node name="Source" parent="EditDetails_Options/VBoxContainer" instance=ExtResource("2_8xt3o")]
+[node name="Source" parent="EditDetails_Options/MarginContainer/VBoxContainer" instance=ExtResource("2_8xt3o")]
 layout_mode = 2
 
-[node name="Move" parent="EditDetails_Options/VBoxContainer" instance=ExtResource("2_8xt3o")]
+[node name="Type" parent="EditDetails_Options/MarginContainer/VBoxContainer" instance=ExtResource("2_8xt3o")]
 layout_mode = 2
 
-[node name="Del" parent="EditDetails_Options/VBoxContainer" instance=ExtResource("2_8xt3o")]
+[node name="Move" parent="EditDetails_Options/MarginContainer/VBoxContainer" instance=ExtResource("2_8xt3o")]
+layout_mode = 2
+
+[node name="Del" parent="EditDetails_Options/MarginContainer/VBoxContainer" instance=ExtResource("2_8xt3o")]
 layout_mode = 2

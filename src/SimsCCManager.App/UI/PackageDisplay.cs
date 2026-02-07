@@ -43,6 +43,8 @@ public partial class PackageDisplay : MarginContainer
     public ExeChoicePopupPanel ExeChoicePopupPanel;
     [Export]
     public HSplitContainer WhereAllModsContainerLives;
+    [Export]
+    public VSplitContainer VSplit;
     [ExportCategory("PackedScene")]
     [Export]
     PackedScene ProfilesManagementWindowPS;
@@ -59,6 +61,12 @@ public partial class PackageDisplay : MarginContainer
     public FileDialog AddFolderDialog;
     [Export]
     public CustomPopupWindow AdminWarningWindow;
+    [Export]
+    MarginContainer PleaseWaitWindow;
+    [Export]
+    Label PleaseWaitLabel;
+    [Export]
+    ColorRect PleaseWaitBG;
     
 
     public ProfileManagement ProfileManagementWindow;
@@ -66,24 +74,7 @@ public partial class PackageDisplay : MarginContainer
 
     
 
-    List<string> Sims2DataFolders = new() { "Collections","LockedBins","Logs","PetBreeds","PetCoats","SC4Terrains","Teleport","LotCatalog" };
-    List<string> Sims2DataFiles = new() { "Accessory.cache", "Groups.cache"};
-    List<string> Sims2SavesFolders = new() { "Neighborhoods", "PackagedLots" };
-    List<string> Sims2SettingsFolders = new() { "Cameras", "Config" };
-    List<string> Sims2MediaFolders = new() { "Movies", "Music", "Paintings", "Screenshots", "Storytelling", "Thumbnails" };
-
-    List<string> Sims3DataFolders = new() { "Collections", "ContentPatch", "DCBackup", "DCCache", "Downloads", "FeaturedItems", "IGACache", "SigsCache", "Thumbnails"  };
-    List<string> Sims3DataFiles = new() { "CASPartCache.package", "compositorCache.package", "DeviceConfig.log", "scriptCache.package", "simCompositorCache.package", "Sims3LauncherLogFile.log", "Sims3Logs.xml", "Version.tag" };
-    List<string> Sims3SavesFolders = new() { "CurrentGame.sims3", "Saves", "Exports", "SavedOutfits" };
-    List<string> Sims3SettingsFiles = new() { "options.ini" };
-    List<string> Sims3MediaFolders = new() { "Custom Music", "Recorded Videos", "Screenshots" };
-
-    List<string> Sims4DataFolders = new() { "cachestr",  "Content", "onlinethumbnailcache", "ReticulatedSplinesView"};
-    List<string> Sims4DataFiles = new() { "accountDataDB.package", "avatarcache.package", "clientDB.package", "ConnectionStatus.txt","GameVersion.txt", "houseDescription-client.package", "localsimtexturecache.package", "localthumbcache.package", "notify.glob", "UserData.lock"};
-    List<string> Sims4SavesFolders = new() { "Saves", "Tray" };
-    List<string> Sims4SettingsFolders = new() { "ConfigOverride"};
-    List<string> Sims4SettingsFiles = new() { "UserSetting.ini", "Options.ini", "Events.ini", "GameConfig.ini", "Config.log"};
-    List<string> Sims4MediaFolders = new() { "Recorded Videos", "Screenshots", "Custom Music" };
+    
 
 
     public VFSFiles VFSFileList = new();
@@ -105,7 +96,7 @@ public partial class PackageDisplay : MarginContainer
         CallDeferred(nameof(GameRunningFlip)); 
         if (value == false)
             {
-                InstanceControllers.ClearInstance();
+                InstanceControllers.ClearInstance(ThisInstance, false);
             }
         }
     }
@@ -131,11 +122,34 @@ public partial class PackageDisplay : MarginContainer
         AddFilesDialog.FilesSelected += (items) => AddFilesToInstance(items);
         AddFilesDialog.FileSelected += (item) => AddFileToInstance(item);
 
+
+        PleaseWaitBG.Color = GlobalVariables.LoadedTheme.BackgroundColor;
+        PleaseWaitLabel.AddThemeColorOverride("font_color", GlobalVariables.LoadedTheme.MainTextColor);
+
+
+
+
         AddFolderDialog.DirSelected += (directory) => AddFolderToInstance(directory);
 
         if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("This instance has found {0} files.", ThisInstance.Files.Count));
         InitializeUIAllMods();
+        UIAllModsContainer.PackagesDataChanged += () => PackagesChanged();
+        PackagesChanged();
     }
+
+    private void PackagesChanged()
+    {
+        if (ThisInstance.Files.OfType<SimsPackage>().Any(x => x.Broken || x.WrongGame || x.Orphan || x.OutOfDate))
+        {
+            UISettingsAndHelpControls.ErrorsDetected = true;
+            UISettingsAndHelpControls.ErrorCount = ThisInstance.Files.OfType<SimsPackage>().Count(x => x.Broken || x.WrongGame || x.Orphan || x.OutOfDate);
+        } else
+        {
+            UISettingsAndHelpControls.ErrorsDetected = false;
+            UISettingsAndHelpControls.ErrorCount = 0;
+        }
+    }
+
 
     private bool InitializeUIAllMods()
     {
@@ -197,6 +211,7 @@ public partial class PackageDisplay : MarginContainer
                 if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0}: Add folder pressed.", but));
             break;
             case 2:
+                RefreshFiles();
                 if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0}: Refresh files pressed.", but));
             break;
             case 3:
@@ -216,6 +231,145 @@ public partial class PackageDisplay : MarginContainer
         }
     }
 
+    public ConcurrentBag<Task> runningTasks = new();
+
+    public void RefreshFiles()
+    {
+        TogglePleaseWait(true);
+
+        //List<SimsPackage> newpackages = [];
+
+        List<SimsPackage> gonepackages = [];
+        List<SimsDownload> newdownloads = [];
+
+        List<SimsDownload> gonedownloads = [];
+
+        ThisInstance._packages = new();
+        ThisInstance._downloads = new();
+        
+        List<string> allLocations = [..ThisInstance.Files.Select(x => x.Location)];
+        List<string> allfound = new();
+
+        foreach (string file in Directory.GetFiles(ThisInstance.InstanceFolders.InstancePackagesFolder))
+        {
+            allfound.Add(file);
+            FileInfo fi = new(file);
+            if (!ThisInstance.Files.Any(x=>x.Location == file) && GlobalVariables.SimsFileExtensions.Contains(fi.Extension))
+            {
+                Task t = Task.Run(() => {
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Found new file: {0}", file));
+                                        
+                    SimsPackage simsPackage = InstanceControllers.ReadPackage(file, ThisInstance, fi);                    
+                    ThisInstance._packages.Add(simsPackage);                        
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Added: {0}", file));
+                    int incBy = 1;
+                    if (simsPackage.IsDirectory)
+                    {
+                        if (simsPackage.LinkedFiles.Count > 0) incBy += simsPackage.LinkedFiles.Count;
+                        if (simsPackage.LinkedFolders.Count > 0) incBy += simsPackage.LinkedFolders.Count;
+                    }
+                    GlobalVariables.mainWindow.IncrementLoadingScreen(incBy, fi.Name.Replace(".info", ""), "Globals: ReadPackages 1");
+                                        
+                });
+                runningTasks.Add(t);
+            }            
+        }
+
+        foreach (string file in Directory.GetDirectories(ThisInstance.InstanceFolders.InstancePackagesFolder))
+        {
+            allfound.Add(file);
+            if (!ThisInstance.Files.Any(x=>x.Location == file))
+            {
+                Task t = Task.Run(() => {
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Found: {0}", file));
+                    DirectoryInfo fi = new(file);
+                    SimsPackage simsPackage = InstanceControllers.ReadPackage(file, ThisInstance, fi);                
+                    ThisInstance._packages.Add(simsPackage);
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Added: {0}", file));
+                    
+                    if (!simsPackage.RootMod) ThisInstance = InstanceControllers.GetSubDirectories(ThisInstance, file, simsPackage);
+                    
+                    //GlobalVariables.mainWindow.IncrementLoadingScreen(incBy, fi.Name.Replace(".info", ""), "Globals: ReadPackages 3");
+                });
+                runningTasks.Add(t);
+            }
+        }
+        foreach (string file in Directory.GetFiles(ThisInstance.InstanceFolders.InstanceDownloadsFolder))
+        {
+            allfound.Add(file);
+            if (!ThisInstance.Files.Any(x=>x.Location == file))
+            {
+                Task t = Task.Run(() => {
+                    FileInfo f = new(file);
+                    SimsDownload simsDownload = InstanceControllers.ReadDownload(file, f);
+                    ThisInstance._downloads.Add(simsDownload);                    
+                });
+                runningTasks.Add(t);
+            }
+        }   
+        Task w = Task.Run(() => {
+            Thread.Sleep(5);
+        });
+        runningTasks.Add(w);
+        while (runningTasks.Any(x => !x.IsCompleted))
+        {
+            
+        }
+
+        if (allfound.Count != allLocations.Count)
+        {
+            List<string> gone = [..allLocations.Except(allfound)];
+            foreach (string g in gone)
+            {
+                var s = ThisInstance.Files.First(x => x.Location == g);
+                if (s.GetType() == typeof(SimsPackage))
+                {
+                    gonepackages.Add(s as SimsPackage);
+                } else
+                {
+                    gonedownloads.Add(s as SimsDownload);
+                }
+                ThisInstance.Files.Remove(ThisInstance.Files.First(x => x.Location == g));
+            }
+        }
+
+        List<SimsPackage> newPackages = [..ThisInstance._packages];
+        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0} files in newPackages", newPackages.Count));
+        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0} files in _packages", ThisInstance._packages.Count));
+
+        if (!ThisInstance._packages.IsEmpty)
+        {
+            foreach (SimsPackage package in ThisInstance._packages.OrderBy(x=>x.FileName))
+            {
+                ThisInstance.Files.Add(package);
+            }            
+        }
+
+        if (!ThisInstance._downloads.IsEmpty)
+        {
+           foreach (SimsDownload dl in ThisInstance._downloads.OrderBy(x=>x.FileName))
+            {
+                ThisInstance.Files.Add(dl);
+            } 
+        }
+
+        ThisInstance._packages = [..ThisInstance.Files.OfType<SimsPackage>()];
+
+        ThisInstance = InstanceControllers.FindOrphans(ThisInstance);
+        
+
+        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Found {0} new packages, {1} new downloads, {2} packages that have been removed and {3} downloads that're gone", newPackages.Count, ThisInstance._downloads.Count, gonepackages.Count, gonedownloads.Count));
+
+        UIAllModsContainer.ReplaceFiles(newPackages, gonepackages);
+    }
+
+    public void TogglePleaseWait(bool Show)
+    {
+        LockInput = Show;
+        PleaseWaitWindow.Visible = Show;
+    }
+
+
     private void OpenManageCategoriesWindow()
     {
         categorymanagement = CategoryManagementWindowPS.Instantiate() as CategoryManagement;
@@ -232,11 +386,6 @@ public partial class PackageDisplay : MarginContainer
     {
         if (fromClose)
         {
-            //UIAllModsContainer.QueueFree();
-            //UIAllModsContainer = UIAllModsPS.Instantiate() as AllModsContainer;
-            //WhereAllModsContainerLives.AddChild(UIAllModsContainer);
-            //WhereAllModsContainerLives.MoveChild(UIAllModsContainer, 0);
-            //bool done = InitializeUIAllMods();
             List<DataGridRow> rows = UIAllModsContainer.DataGrid.RowData;
             List<DataGridRow> hide = new();
             StringBuilder sb = new();
@@ -376,7 +525,7 @@ public partial class PackageDisplay : MarginContainer
                 packageFolderLocation = ThisInstance.Sims2Folders.DownloadsFolder;
                 if (ThisInstance.LoadedProfile.LocalData)
                 {
-                    foreach (string folder in Sims2DataFolders)
+                    foreach (string folder in GlobalVariables.Sims2DataFolders)
                     {
                         string folderPath = Path.Combine(ThisInstance.InstanceFolders.InstanceDataFolder, folder);
                         string destinationPath = Path.Combine(ThisInstance.GameDocumentsFolder, folder);
@@ -394,7 +543,7 @@ public partial class PackageDisplay : MarginContainer
                         VirtualFileSystem.MakeJunction(folderPath, destinationPath);
                         VFSFileList.ItemsLinked.Add(new () { LinkLocation = destinationPath, IsFolder = true });
                     }
-                    foreach (string file in Sims2DataFiles)
+                    foreach (string file in GlobalVariables.Sims2DataFiles)
                     {                        
                         string filePath = Path.Combine(ThisInstance.InstanceFolders.InstanceDataFolder, file);
                         string destinationPath = Path.Combine(ThisInstance.GameDocumentsFolder, file);
@@ -416,7 +565,7 @@ public partial class PackageDisplay : MarginContainer
                 } 
                 if (ThisInstance.LoadedProfile.LocalMedia)
                 {
-                    foreach (string folder in Sims2MediaFolders)
+                    foreach (string folder in GlobalVariables.Sims2MediaFolders)
                     {
                         string folderPath = Path.Combine(ThisInstance.InstanceFolders.InstanceDataFolder, folder);
                         string destinationPath = Path.Combine(ThisInstance.GameDocumentsFolder, folder);
@@ -437,7 +586,7 @@ public partial class PackageDisplay : MarginContainer
                 }
                 if (ThisInstance.LoadedProfile.LocalSaves)
                 {
-                    foreach (string folder in Sims2SavesFolders)
+                    foreach (string folder in GlobalVariables.Sims2SavesFolders)
                     {
                         string folderPath = Path.Combine(ThisInstance.InstanceFolders.InstanceDataFolder, folder);
                         string destinationPath = Path.Combine(ThisInstance.GameDocumentsFolder, folder);
@@ -458,7 +607,7 @@ public partial class PackageDisplay : MarginContainer
                 }
                 if (ThisInstance.LoadedProfile.LocalSettings)
                 {
-                    foreach (string folder in Sims2SettingsFolders)
+                    foreach (string folder in GlobalVariables.Sims2SettingsFolders)
                     {
                         string folderPath = Path.Combine(ThisInstance.InstanceFolders.InstanceDataFolder, folder);
                         string destinationPath = Path.Combine(ThisInstance.GameDocumentsFolder, folder);
@@ -505,7 +654,7 @@ public partial class PackageDisplay : MarginContainer
                 packageFolderLocation = ThisInstance.Sims4Folders.ModsFolder;
                 if (ThisInstance.LoadedProfile.LocalData)
                 {
-                    /* dont forget to retrieve ALL OTHER .txt files on close */  
+                    //TODO: dont forget to retrieve ALL OTHER .txt files on close 
                 } 
                 if (ThisInstance.LoadedProfile.LocalMedia)
                 {
@@ -704,7 +853,6 @@ public partial class PackageDisplay : MarginContainer
     {
         GameRunningPopup.Visible = GameRunning;
     }
-
 }
 
 public class VirtualFileSystem

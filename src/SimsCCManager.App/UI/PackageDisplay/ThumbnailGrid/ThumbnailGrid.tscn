@@ -1,10 +1,27 @@
-[gd_scene load_steps=15 format=3 uid="uid://cqwmdnxfu6311"]
+[gd_scene load_steps=21 format=3 uid="uid://cqwmdnxfu6311"]
 
 [ext_resource type="Script" uid="uid://jq14cgu6se6i" path="res://UI/PackageDisplay/ThumbnailGrid/ThumbnailGrid.cs" id="1_3b7tn"]
 [ext_resource type="PackedScene" uid="uid://bni0s53myiito" path="res://UI/PackageDisplay/ThumbnailGrid/ThumbnailGridItem.tscn" id="1_aoyc0"]
 [ext_resource type="Texture2D" uid="uid://2mvtivometqs" path="res://addons/CustomDataGrid/assets/twotone_arrow_drop_up_black_48dp.png" id="2_obg04"]
 [ext_resource type="Texture2D" uid="uid://byk0nxabtoms4" path="res://addons/CustomDataGrid/assets/twotone_arrow_drop_down_black_48dp.png" id="3_3b7tn"]
 [ext_resource type="PackedScene" uid="uid://co0gkpc2bm4hh" path="res://tools/snapshotter/snapshotter.tscn" id="3_hd7b2"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_aoyc0"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_obg04"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_3b7tn"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_hd7b2"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ecatp"]
+
+[sub_resource type="Theme" id="Theme_aanee"]
+Button/styles/disabled = SubResource("StyleBoxFlat_aoyc0")
+Button/styles/focus = SubResource("StyleBoxFlat_obg04")
+Button/styles/hover = SubResource("StyleBoxFlat_3b7tn")
+Button/styles/normal = SubResource("StyleBoxFlat_hd7b2")
+Button/styles/pressed = SubResource("StyleBoxFlat_ecatp")
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_103ea"]
 content_margin_top = 3.0
@@ -49,17 +66,20 @@ VScrollBar/styles/grabber_pressed = SubResource("StyleBoxFlat_xpfl1")
 VScrollBar/styles/scroll = SubResource("StyleBoxFlat_84wla")
 VScrollBar/styles/scroll_focus = SubResource("StyleBoxFlat_ccn8i")
 
-[node name="ThumbnailGrid" type="MarginContainer" node_paths=PackedStringArray("ThumbGrid", "BGColorRect", "vScrollBar", "ScrollUpButton", "ScrollDownButton", "ScrollUpAccent", "ScrollDownAccent", "ScrollBackground")]
+[node name="ThumbnailGrid" type="MarginContainer" node_paths=PackedStringArray("ThumbGrid", "BGColorRect", "GridHolder", "vScrollBar", "ScrollUpButton", "ScrollDownButton", "ScrollUpAccent", "ScrollDownAccent", "ScrollBackground")]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
 script = ExtResource("1_3b7tn")
 ThumbGrid = NodePath("VBoxContainer/HBoxContainer/Control/MarginContainer/ThumbGrid")
 BGColorRect = NodePath("BackgroundColor")
 ThumbnailGridItemPS = ExtResource("1_aoyc0")
 SnapshotterPS = ExtResource("3_hd7b2")
+GridHolder = NodePath("VBoxContainer/HBoxContainer/Control")
 vScrollBar = NodePath("VBoxContainer/HBoxContainer/VScrollContainer/VScroller/VScrollBar")
 ScrollUpButton = NodePath("VBoxContainer/HBoxContainer/VScrollContainer/VScroller/ScrollUp/ScrollUp_Button")
 ScrollDownButton = NodePath("VBoxContainer/HBoxContainer/VScrollContainer/VScroller/ScrollDown/ScrollDown_Button")
@@ -86,13 +106,14 @@ size_flags_horizontal = 3
 
 [node name="MarginContainer" type="ScrollContainer" parent="VBoxContainer/HBoxContainer/Control"]
 layout_mode = 2
+mouse_filter = 2
 horizontal_scroll_mode = 3
 vertical_scroll_mode = 3
 
 [node name="ThumbGrid" type="GridContainer" parent="VBoxContainer/HBoxContainer/Control/MarginContainer"]
+clip_contents = true
 layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
+columns = 6
 
 [node name="VScrollContainer" type="MarginContainer" parent="VBoxContainer/HBoxContainer"]
 layout_mode = 2
@@ -113,6 +134,7 @@ layout_mode = 2
 [node name="ScrollUp_Button" type="Button" parent="VBoxContainer/HBoxContainer/VScrollContainer/VScroller/ScrollUp"]
 layout_mode = 2
 focus_mode = 0
+theme = SubResource("Theme_aanee")
 
 [node name="TextureRect" type="TextureRect" parent="VBoxContainer/HBoxContainer/VScrollContainer/VScroller/ScrollUp"]
 clip_children = 1
@@ -144,6 +166,7 @@ layout_mode = 2
 [node name="ScrollDown_Button" type="Button" parent="VBoxContainer/HBoxContainer/VScrollContainer/VScroller/ScrollDown"]
 layout_mode = 2
 focus_mode = 0
+theme = SubResource("Theme_aanee")
 
 [node name="TextureRect" type="TextureRect" parent="VBoxContainer/HBoxContainer/VScrollContainer/VScroller/ScrollDown"]
 clip_children = 1

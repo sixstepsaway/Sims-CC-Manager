@@ -1,4 +1,4 @@
-[gd_scene load_steps=16 format=3 uid="uid://q5rj0o1rl08t"]
+[gd_scene load_steps=18 format=3 uid="uid://q5rj0o1rl08t"]
 
 [ext_resource type="Script" uid="uid://cl4g4aievix7c" path="res://UI/MainMenu/InstancePicker.cs" id="1_n0l8h"]
 [ext_resource type="Texture2D" uid="uid://d08ycpo6imm84" path="res://assets/images/s2.png" id="2_4ads7"]
@@ -9,6 +9,7 @@
 [ext_resource type="Texture2D" uid="uid://det05huchvhht" path="res://assets/images/spore-icon-21.png" id="6_kxhiy"]
 [ext_resource type="Texture2D" uid="uid://c6j4tppifo6lj" path="res://assets/images/communityIcon_ywu8u94d60z51.png" id="7_hbrtj"]
 [ext_resource type="Texture2D" uid="uid://bpkgyr4ml2cbd" path="res://assets/images/TSM_Icon-2854286609.png" id="8_40v6e"]
+[ext_resource type="Texture2D" uid="uid://b8t85e67vwh7m" path="res://assets/icons/materialicons/twotone_folder_open_black_48dp.png" id="10_hbrtj"]
 [ext_resource type="Texture2D" uid="uid://b185kt0ftp88v" path="res://assets/icons/x-octagon.png" id="10_kxhiy"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_heice"]
@@ -24,13 +25,18 @@ Label/colors/font_color = Color(0.249581, 0.250574, 0.332425, 1)
 Label/font_sizes/font_size = 31
 Label/fonts/font = ExtResource("3_k6y3l")
 
+[sub_resource type="Theme" id="Theme_40v6e"]
+Label/colors/font_color = Color(0.249581, 0.250574, 0.332425, 1)
+Label/font_sizes/font_size = 31
+Label/fonts/font = ExtResource("3_k6y3l")
+
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_d71ra"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_6bb4u"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_hbrtj"]
 
-[node name="InstancePicker" type="MarginContainer" node_paths=PackedStringArray("GameIcon", "GameLabel", "ButtonClicker", "SelectedHighlight", "SelectionColor", "DeleteInstanceButton_Container", "DeleteInstanceButton", "DeleteInstanceButton_ColorMain", "DeleteInstanceButton_ColorHover", "DeleteInstanceButton_ColorClick")]
+[node name="InstancePicker" type="MarginContainer" node_paths=PackedStringArray("GameIcon", "GameLabel", "ButtonClicker", "SelectedHighlight", "SelectionColor", "GameBox", "LoadBox", "LoadIconColor", "DeleteInstanceButton_Container", "DeleteInstanceButton", "DeleteInstanceButton_ColorMain", "DeleteInstanceButton_ColorHover", "DeleteInstanceButton_ColorClick")]
 offset_right = 165.0
 offset_bottom = 75.0
 theme_override_constants/margin_left = 4
@@ -50,6 +56,9 @@ SimCity4Icon = ExtResource("7_hbrtj")
 SimsMedievalIcon = ExtResource("8_40v6e")
 SelectedHighlight = NodePath("MarginContainer")
 SelectionColor = NodePath("MarginContainer/Selected/ColorRect")
+GameBox = NodePath("MarginContainer2")
+LoadBox = NodePath("MarginContainer4")
+LoadIconColor = NodePath("MarginContainer4/Item/MarginContainer/TextureRect/ColorRect")
 DeleteInstanceButton_Container = NodePath("MarginContainer3")
 DeleteInstanceButton = NodePath("MarginContainer3/Button_RemoveInstance")
 DeleteInstanceButton_ColorMain = NodePath("MarginContainer3/TextureRect/ColorRect_Main")
@@ -101,6 +110,48 @@ theme_override_constants/margin_top = 7
 layout_mode = 2
 theme = SubResource("Theme_44hop")
 text = "Sims 2"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="MarginContainer4" type="MarginContainer" parent="."]
+visible = false
+layout_mode = 2
+theme_override_constants/margin_left = 15
+
+[node name="Item" type="HBoxContainer" parent="MarginContainer4"]
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer4/Item"]
+custom_minimum_size = Vector2(55, 55)
+layout_mode = 2
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="TextureRect" type="TextureRect" parent="MarginContainer4/Item/MarginContainer"]
+clip_children = 1
+layout_mode = 2
+texture = ExtResource("10_hbrtj")
+expand_mode = 5
+
+[node name="ColorRect" type="ColorRect" parent="MarginContainer4/Item/MarginContainer/TextureRect"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MarginContainer2" type="MarginContainer" parent="MarginContainer4/Item"]
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_constants/margin_top = 7
+
+[node name="Label2" type="Label" parent="MarginContainer4/Item/MarginContainer2"]
+layout_mode = 2
+theme = SubResource("Theme_40v6e")
+text = "Find Instance..."
 horizontal_alignment = 1
 vertical_alignment = 1
 

@@ -146,6 +146,8 @@ texture = SubResource("ViewportTexture_yyji0")
 expand_mode = 3
 
 [node name="SubViewport" type="SubViewport" parent="VBoxContainer/ThumbnailImage_RenderVersion/Panel"]
+own_world_3d = true
+transparent_bg = true
 
 [node name="MarginContainer2" type="MarginContainer" parent="VBoxContainer"]
 layout_mode = 2

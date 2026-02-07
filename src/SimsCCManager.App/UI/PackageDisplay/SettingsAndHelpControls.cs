@@ -14,13 +14,15 @@ public partial class SettingsAndHelpControls : MarginContainer
     TopbarButton Help;
     [Export]
     MarginContainer ErrorsDetectedCircle;
+    public int ErrorCount = 0;
 
     private bool _errorsdetected;
     public bool ErrorsDetected
     {
         get {return _errorsdetected;}
         set {_errorsdetected = value;
-        ErrorsDetectedCircle.Visible = value;}
+        ErrorsDetectedCircle.Visible = value;
+        if (value) ViewErrors.TooltipText = string.Format("{0} errors detected", ErrorCount); else ViewErrors.TooltipText = "No errors found."; }
     }
 
 

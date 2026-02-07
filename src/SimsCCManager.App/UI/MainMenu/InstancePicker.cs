@@ -31,6 +31,27 @@ public partial class InstancePicker : MarginContainer
     [Export]
     public ColorRect SelectionColor;
 
+    
+    [Export]
+    MarginContainer GameBox;
+    [Export]
+    MarginContainer LoadBox;
+
+    [Export]
+    public ColorRect LoadIconColor;
+
+    private bool _loadversion;
+    public bool LoadVersion
+    {
+        get { return _loadversion; }
+        set { _loadversion = value; 
+            LoadBox.Visible = value;
+            GameBox.Visible = !value;
+            DeleteInstanceButton.Visible = !value;
+        }
+    }
+
+
 
     [Export]
     MarginContainer DeleteInstanceButton_Container;
@@ -68,7 +89,13 @@ public partial class InstancePicker : MarginContainer
 
     public string HoverMessage
     {
-        get {return string.Format("Created {0}\nLast Changed: {1}", DateCreated.ToShortDateString(), DateModified.ToShortDateString()); }
+        
+        get { if (LoadVersion){
+            return "Load an instance";
+        } else
+            {
+                return string.Format("Created {0}\nLast Changed: {1}", DateCreated.ToShortDateString(), DateModified.ToShortDateString()); }
+            }           
     }
 
     public override void _Ready()
@@ -125,7 +152,14 @@ public partial class InstancePicker : MarginContainer
     {
         if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Button {0} selected: {1}", GameLabel.Text, isSelected));
         isSelected = !isSelected;
-        PickedInstance.Invoke(InstanceIdentifier, isSelected);        
+        if (LoadVersion)
+        {
+            PickedInstance.Invoke(Guid.Empty, isSelected);  
+        } else
+        {
+            PickedInstance.Invoke(InstanceIdentifier, isSelected);  
+        }
+              
     }
 
     public void SwapSelection(bool selected)

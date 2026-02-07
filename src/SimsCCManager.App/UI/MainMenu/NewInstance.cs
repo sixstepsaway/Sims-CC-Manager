@@ -237,6 +237,16 @@ public partial class NewInstance : MarginContainer
         //content
             GlobalVariables.mainWindow.IncrementLoadingScreen(10, "Creating folders...", "New Instance: First");
             currentInstance.InstanceFolders = new();
+            currentInstance.DateCreated = DateTime.Now;
+            currentInstance.DateModified = DateTime.Now;
+            currentInstance.InstanceFolder = InstanceFolderLE.Text;
+            if (Directory.Exists(currentInstance.InstanceFolder))
+            {
+                currentInstance.InstanceFolder = Utilities.IncrementName(currentInstance.InstanceFolder, true);
+            } else
+            {
+                Directory.CreateDirectory(currentInstance.InstanceFolder);
+            }
             if (PackagesFolderLE.Text.Contains("%INSTANCE%"))
             {
                 currentInstance.InstanceFolders.InstancePackagesFolder = InstancedFolderFromPlaceholder(PackagesFolderLE.Text);
@@ -295,13 +305,7 @@ public partial class NewInstance : MarginContainer
         }){IsBackground = true}.Start();
     }
 
-    public Dictionary<string, bool> Sims2Folders = new() { { "Cameras", true},{ "Collections", true},{ "Config", true},{ "Downloads", false},{ "LockedBins", true},{ "Logs", true},{ "LotCatalog", true},{ "Movies", true},{ "Music", true},{ "Neighborhoods", true},{ "PackagedLots", true},{ "Paintings", true},{ "PetBreeds", true},{ "PetCoats", true},{ "SC4Terrains", true},{ "Screenshots", true},{ "Storytelling", true},{ "Teleport", true},{ "Thumbnails", true} };
-    
-    public Dictionary<string,bool> Sims3Folders = new() { { "Collections", true},{ "ContentPatch", true},{ "CurrentGame.sims3", true},{ "Custom Music", true},{ "DCBackup", true},{ "DCCache", true},{ "Downloads", true},{ "Exports", true},{ "FeaturedItems", true},{ "IGACache", true},{ "InstalledWorlds", true},{ "Mods", false},{ "Recorded Videos", true},{ "SavedOutfits", true},{ "Screenshots", true},{ "SigsCache", true},{ "Thumbnails", true}};
-
-    public Dictionary<string,bool> Sims4Folders = new() { { "cachestr", true},{ "ConfigOverride", true},{ "Content", true},{ "Custom Music", true},{ "Mods", false},{ "onlinethumbnailcache", true},{ "Recorded Videos", true},{ "ReticulatedSplinesView", true},{ "Saves", true},{ "Screenshots", true},{ "Tray", true} };
-
-    
+      
 
     private void RetrieveFiles()
     {
@@ -309,20 +313,10 @@ public partial class NewInstance : MarginContainer
         {
             switch (GameSelected)
             {
-                case SimsGames.Sims2:                
-                    foreach (string folder in Directory.GetDirectories(currentInstance.GameDocumentsFolder))
-                    {
-                        DirectoryInfo directoryInfo = new(folder);
-                        bool move = false;
-                        Sims2Folders.TryGetValue(directoryInfo.Name, out move);
-                        if (move)
-                        {
-                            MoveFolder(folder, currentInstance.InstanceFolders.InstanceDataFolder);
-                        } else
-                        {
-                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("NOT moving {0}!", directoryInfo.Name));
-                        }
-                    }
+                case SimsGames.Sims2:
+
+                    InstanceControllers.GetSims2LocalFiles(currentInstance);
+
                     if (Directory.Exists(currentInstance.Sims2Folders.DownloadsFolder))
                     {
                         foreach (string folder in Directory.GetDirectories(currentInstance.Sims2Folders.DownloadsFolder))
@@ -338,19 +332,9 @@ public partial class NewInstance : MarginContainer
                     
                 break;
                 case SimsGames.Sims3:
-                    foreach (string folder in Directory.GetDirectories(currentInstance.GameDocumentsFolder))
-                    {
-                        DirectoryInfo directoryInfo = new(folder);
-                        bool move = false;
-                        Sims3Folders.TryGetValue(directoryInfo.Name, out move);
-                        if (move)
-                        {
-                            MoveFolder(folder, currentInstance.InstanceFolders.InstanceDataFolder);
-                        } else
-                        {
-                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("NOT moving {0}!", directoryInfo.Name));
-                        }
-                    }
+                    
+                    InstanceControllers.GetSims3LocalFiles(currentInstance);
+                    
                     if (Directory.Exists(currentInstance.Sims3Folders.DownloadsFolder))
                     {
                         foreach (string folder in Directory.GetDirectories(currentInstance.Sims3Folders.DownloadsFolder))
@@ -378,68 +362,14 @@ public partial class NewInstance : MarginContainer
                     
                 break;
                 case SimsGames.Sims4: 
-                    foreach (string folder in Directory.GetDirectories(currentInstance.GameDocumentsFolder))
-                    {
-                        DirectoryInfo directoryInfo = new(folder);
-                        bool move = false;
-                        Sims4Folders.TryGetValue(directoryInfo.Name, out move);
-                        if (move)
-                        {
-                            MoveFolder(folder, currentInstance.InstanceFolders.InstanceDataFolder);
-                        } else
-                        {
-                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("NOT moving {0}!", directoryInfo.Name));
-                        }
-                    }
-                    if (Directory.Exists(currentInstance.Sims4Folders.ModsFolder))
-                    {
-                        foreach (string folder in Directory.GetDirectories(currentInstance.Sims4Folders.ModsFolder))
-                        {
-                            MoveFolder(folder, currentInstance.InstanceFolders.InstancePackagesFolder);
-                        }
-                        foreach (string file in Directory.GetFiles(currentInstance.Sims4Folders.ModsFolder))
-                        {
-                            MoveFile(file, currentInstance.InstanceFolders.InstancePackagesFolder);
-                        }
-                    }   
+                    
+                    InstanceControllers.GetSims4LocalFiles(currentInstance);  
                     Directory.Delete(currentInstance.Sims4Folders.ModsFolder);                 
                 break;
 
             }
 
-            currentInstance = InstanceControllers.LoadInstanceFiles(currentInstance);
-
-            /*foreach (string file in Directory.GetFiles(currentInstance.InstanceFolders.InstancePackagesFolder))
-            {
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Found: {0}", file));
-                FileInfo fi = new(file);
-                if (GlobalVariables.SimsFileExtensions.Contains(fi.Extension))
-                {
-                    SimsPackage simsPackage = InstanceControllers.ReadPackage(file, currentInstance, fi);                    
-                    currentInstance.Files.Add(simsPackage);
-                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Added: {0}", file));
-                    
-                }
-                GlobalVariables.mainWindow.IncrementLoadingScreen(1, fi.Name);
-            }
-            foreach (string file in Directory.GetDirectories(currentInstance.InstanceFolders.InstancePackagesFolder))
-            {
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Found: {0}", file));
-                DirectoryInfo fi = new(file);
-                SimsPackage simsPackage = InstanceControllers.ReadPackage(file, currentInstance, fi);                
-                currentInstance.Files.Add(simsPackage);
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Added: {0}", file));
-                   
-                
-                GlobalVariables.mainWindow.IncrementLoadingScreen(1, fi.Name);
-            }
-            foreach (string file in Directory.GetFiles(currentInstance.InstanceFolders.InstanceDownloadsFolder))
-            {
-                FileInfo f = new(file);
-                SimsDownload simsDownload = InstanceControllers.ReadDownload(file, f);                
-                currentInstance.Files.Add(simsDownload);
-                GlobalVariables.mainWindow.IncrementLoadingScreen(1, f.Name);
-            } */
+            currentInstance = InstanceControllers.LoadInstanceFiles(currentInstance);            
         }
     }
 

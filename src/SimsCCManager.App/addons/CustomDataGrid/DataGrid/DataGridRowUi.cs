@@ -33,6 +33,7 @@ public partial class DataGridRowUi : MarginContainer
 	public List<DataGridCell> Cells = new(); 
 	public Color BackgroundColor;
 	public Color SelectedColor;
+	public Color SelectedTextColor;
 	private bool _selected;
 	public bool Selected
 	{
@@ -40,14 +41,17 @@ public partial class DataGridRowUi : MarginContainer
 		set { _selected = value; 
 			if (value) {
 				ColorHolder.Color = SelectedColor;
+				foreach (DataGridCell cell in Cells)
+				{
+					cell.FontColor = SelectedTextColor;
+				}
 			} else {
 				ColorHolder.Color = BackgroundColor;
+				foreach (DataGridCell cell in Cells)
+				{
+					cell.FontColor = TextColor;
+				}
 			}
-
-			/*if (IsSubGrid)
-			{
-				ShowSubgrid?.Invoke(SubGrid, this);
-			}*/
 		}
 	}
 
@@ -69,8 +73,7 @@ public partial class DataGridRowUi : MarginContainer
 	public bool Toggled
 	{
 		get {return _toggled;}
-		set {_toggled = value; 
-		}
+		set {_toggled = value; }
 	}
 	bool ToggleButtonHovered = false;
 	public DataGrid Datagrid;
@@ -127,6 +130,15 @@ public partial class DataGridRowUi : MarginContainer
 
 	}
 
+	public void SetCellSettings()
+	{
+		if (AdjustmentNumberCell != null) {
+			if (AdjustmentNumberCell.ToggleLinked) {
+				if (AdjustmentNumber == -1) AdjustmentNumberCell.NumberHolder.Text = string.Empty;
+			}
+		}
+	}
+
 	public void RowSelectedButtonPressed(bool SelectedToggle = false)
     {
 		if (!ToggleButtonHovered){
@@ -168,11 +180,13 @@ public partial class DataGridRowUi : MarginContainer
 
 	public void CellWasToggled(bool WhichWay){
 		Toggled = WhichWay;
+		if (!WhichWay && AdjustmentNumberCell.ToggleLinked) AdjustmentNumberCell.NumberContent = -1;
 	}
 
 	public void Toggle(bool WhichWay){
 		Toggled = WhichWay;
 		ToggleCell.SetToggle(WhichWay);
+		if (!WhichWay && AdjustmentNumberCell.ToggleLinked) AdjustmentNumberCell.NumberContent = -1;
 	} 
 
     public void AddCell(DataGridCell cell){

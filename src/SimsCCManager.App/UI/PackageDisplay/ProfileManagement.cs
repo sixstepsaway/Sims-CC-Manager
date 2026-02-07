@@ -2,9 +2,11 @@ using Godot;
 using SimsCCManager.Containers;
 using SimsCCManager.Debugging;
 using SimsCCManager.Globals;
+using SimsCCManager.OptionLists;
 using SimsCCManager.SettingsSystem;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection.Metadata.Ecma335;
 
@@ -60,6 +62,10 @@ public partial class ProfileManagement : MarginContainer
     Label LocalDataLabel;
     [Export]
     CustomCheckButton LocalDataCheck;
+    [Export]
+    Label AutoBackupsLabel;
+    [Export]
+    CustomCheckButton AutoBackupsCheck;
 
     List<Button> Buttons = new(); 
 
@@ -122,10 +128,13 @@ public partial class ProfileManagement : MarginContainer
             profile.ProfileName = name;
             profile.EnabledPackages = new();
             profile.ProfileDescription = ProfileDescriptionBox.Text;    
+            profile.ProfileFolder = Path.Combine(packageDisplay.ThisInstance.InstanceFolders.InstanceProfilesFolder, profile.SafeFileName());
+            Directory.CreateDirectory(profile.ProfileFolder);
             profile.LocalData = LocalDataCheck.IsToggled;
             profile.LocalSaves = LocalSavesCheck.IsToggled;
             profile.LocalMedia = LocalMediaCheck.IsToggled;
-            profile.LocalSettings = LocalSettingsCheck.IsToggled;        
+            profile.LocalSettings = LocalSettingsCheck.IsToggled;  
+            profile.AutoBackups = AutoBackupsCheck.IsToggled;        
             packageDisplay.ThisInstance.InstanceProfiles.Add(profile);
             if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format(profile.ToString()));
             packageDisplay.ThisInstance.WriteXML();
@@ -135,15 +144,36 @@ public partial class ProfileManagement : MarginContainer
             ProfileItem pi = ProfileItems.Where(x => x.IsSelected).First();
             ProfileItems.Remove(pi);
             pi.QueueFree();
-            InstanceProfile profile = packageDisplay.ThisInstance.InstanceProfiles.Where(x => x.ProfileName == pi.ProfileName.Text).First();
+            InstanceProfile profile = packageDisplay.ThisInstance.InstanceProfiles.First(x => x.ProfileName == pi.ProfileName.Text);
+            bool current = false;
+            if (packageDisplay.ThisInstance.LoadedProfile.ProfileIdentifier == profile.ProfileIdentifier) current = true;
             packageDisplay.ThisInstance.InstanceProfiles.Remove(profile);
             profile.ProfileName = ProfileNameBox.Text;
             profile.ProfileDescription = ProfileDescriptionBox.Text;
+            profile.ProfileFolder = Path.Combine(packageDisplay.ThisInstance.InstanceFolders.InstanceProfilesFolder, profile.SafeFileName());
+            Directory.CreateDirectory(profile.ProfileFolder);
             profile.LocalData = LocalDataCheck.IsToggled;
             profile.LocalSaves = LocalSavesCheck.IsToggled;
             profile.LocalMedia = LocalMediaCheck.IsToggled;
+            profile.AutoBackups = AutoBackupsCheck.IsToggled;     
             profile.LocalSettings = LocalSettingsCheck.IsToggled;
             packageDisplay.ThisInstance.InstanceProfiles.Add(profile);
+            if (current)
+            {
+                packageDisplay.ThisInstance.LoadedProfile = profile;
+                switch (packageDisplay.ThisInstance.GameChoice)
+                {
+                    case SimsGames.Sims2:
+                        InstanceControllers.GetSims2LocalFiles(packageDisplay.ThisInstance);
+                    break;
+                    case SimsGames.Sims3:
+                        InstanceControllers.GetSims3LocalFiles(packageDisplay.ThisInstance);
+                    break;
+                    case SimsGames.Sims4:
+                        InstanceControllers.GetSims4LocalFiles(packageDisplay.ThisInstance);
+                    break;
+                }
+            }
             packageDisplay.ThisInstance.WriteXML();
             AddProfileItem(profile);                       
         }
@@ -157,7 +187,7 @@ public partial class ProfileManagement : MarginContainer
     {
         inc++;
         name = string.Format("{0} ({1})", name, inc);
-        if (packageDisplay.ThisInstance.InstanceProfiles.Where(x => x.ProfileName == name).Any())
+        if (packageDisplay.ThisInstance.InstanceProfiles.Any(x => x.ProfileName == name))
         {
             name = IncProfileName(name, inc);
         }
@@ -198,6 +228,7 @@ public partial class ProfileManagement : MarginContainer
         profileCopy.LocalSaves = profile.LocalSaves;
         profileCopy.LocalMedia = profile.LocalMedia;
         profileCopy.LocalSettings = profile.LocalSettings;
+        profileCopy.AutoBackups = profile.AutoBackups;
         packageDisplay.ThisInstance.InstanceProfiles.Add(profileCopy);
         packageDisplay.ThisInstance.WriteXML();
         AddProfileItem(profileCopy);
@@ -227,6 +258,7 @@ public partial class ProfileManagement : MarginContainer
         LocalSettingsCheck.IsToggled = profile.LocalSettings;
         LocalMediaCheck.IsToggled = profile.LocalMedia;
         LocalDataCheck.IsToggled = profile.LocalData;
+        AutoBackupsCheck.IsToggled = profile.AutoBackups;
     }
 
     private void NewProfile()
@@ -304,6 +336,7 @@ public partial class ProfileManagement : MarginContainer
         LocalSettingsLabel.AddThemeColorOverride("font_color", theme.HeaderTextColor);
         LocalSavesLabel.AddThemeColorOverride("font_color", theme.HeaderTextColor);
         LocalMediaLabel.AddThemeColorOverride("font_color", theme.HeaderTextColor);
+        AutoBackupsCheck.AddThemeColorOverride("font_color", theme.HeaderTextColor);
     }
 
 }

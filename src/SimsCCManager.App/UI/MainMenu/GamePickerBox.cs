@@ -16,7 +16,6 @@ public partial class GamePickerBox : MarginContainer
     MarginContainer SelectedBorder;
     [Export]
     string GameString = "";
-
     private bool _selected;
     public bool Selected
     {

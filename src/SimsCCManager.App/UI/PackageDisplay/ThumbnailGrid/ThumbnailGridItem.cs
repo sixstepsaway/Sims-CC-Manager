@@ -159,4 +159,10 @@ public partial class ThumbnailGridItem : MarginContainer
         ItemSelected?.Invoke(IsSelected, PackageReference, this);
     }
 
+    public void FlipSelected(bool to)
+    {
+        IsSelected = to;
+        ItemSelected?.Invoke(IsSelected, PackageReference, this);
+    }
+
 }

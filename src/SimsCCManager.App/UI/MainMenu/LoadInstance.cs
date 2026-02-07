@@ -31,6 +31,8 @@ public partial class LoadInstance : MarginContainer
     Button AcceptDialogOK;
     [Export]
     Button AcceptDialogCANCEL;
+    [Export]
+    FileDialog loadInstance;
 
     Guid selectedInstance;
     Guid InstanceToDelete;
@@ -45,8 +47,14 @@ public partial class LoadInstance : MarginContainer
         AcceptDialogOK.Pressed += () => YesDelete();
         AcceptDialogCANCEL.Pressed += () => NoDelete();
 
+        loadInstance.DirSelected += (d) => InstanceFound(d);
+        loadInstance.RootSubfolder = GlobalVariables.AppFolder;
+
         RefreshList();        
     }
+
+    
+
 
     private void NoDelete()
     {
@@ -69,14 +77,65 @@ public partial class LoadInstance : MarginContainer
         InstanceToDelete = instance;
     }
 
+    private void MakeInstanceOption(Instance instance)
+    {
+        InstancePicker instancepicker = InstancePickerPS.Instantiate() as InstancePicker;
+        instancepicker.SelectionColor.Color = GlobalVariables.LoadedTheme.AccentColor;
+
+        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Creating pickerbox for Instance {0}:\n{1}\nCreated: {2}\nModified: {3}\nFor Game: {4}", instance.InstanceName, instance.InstanceID, instance.InstanceCreated, instance.InstanceLastModified, instance.Game.ToString()));
+
+        instancepicker.PickedInstance += (instance, selected) => InstancePicked(instance, selected);
+        instancepicker.InstanceIdentifier = instance.InstanceID;
+        instancepicker.GameLabel.Text = instance.InstanceName;
+        switch (instance.Game)
+        {
+            case SimsGames.Sims1:
+                instancepicker.GameIcon.Texture = instancepicker.Sims1Icon;
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Setting icon to Sims 1."));
+            break;
+            case SimsGames.Sims2:
+                instancepicker.GameIcon.Texture = instancepicker.Sims2Icon;
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Setting icon to Sims 2."));
+            break;
+            case SimsGames.Sims3:
+                instancepicker.GameIcon.Texture = instancepicker.Sims3Icon;
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Setting icon to Sims 3."));
+            break;
+            case SimsGames.Sims4:
+                instancepicker.GameIcon.Texture = instancepicker.Sims4Icon;
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Setting icon to Sims 4."));
+            break;
+            case SimsGames.SimCity4:
+                instancepicker.GameIcon.Texture = instancepicker.SimCity4Icon;
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Setting icon to SC4."));
+            break;
+            case SimsGames.Spore:
+                instancepicker.GameIcon.Texture = instancepicker.SporeIcon;
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Setting icon to spore."));
+            break;
+            case SimsGames.SimsMedieval:
+                instancepicker.GameIcon.Texture = instancepicker.SimsMedievalIcon;
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Setting icon to Sims Medieval."));
+            break;
+        }
+        instancepicker.DateCreated = instance.InstanceCreated;
+        instancepicker.DateModified = instance.InstanceLastModified;
+        instancepicker.DeleteInstance += (instance) => DeleteAnInstance(instance);
+        InstanceOptions.Add(instancepicker);
+        InstanceList.AddChild(instancepicker);
+    }
+
     private void RefreshList()
     {
         foreach (InstancePicker ip in InstanceOptions)
         {
+            InstanceList.RemoveChild(ip);
             ip.QueueFree();
         }
         InstanceOptions = new();
         List<Instance> toremove = new();
+
+
 
         foreach (Instance instance in GlobalVariables.LoadedSettings.InstanceFolders)
         {
@@ -85,57 +144,24 @@ public partial class LoadInstance : MarginContainer
                 toremove.Add(instance);                
             } else
             {               
-                InstancePicker instancepicker = InstancePickerPS.Instantiate() as InstancePicker;
-                instancepicker.SelectionColor.Color = GlobalVariables.LoadedTheme.AccentColor;
-
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Creating pickerbox for Instance {0}:\n{1}\nCreated: {2}\nModified: {3}\nFor Game: {4}", instance.InstanceName, instance.InstanceID, instance.InstanceCreated, instance.InstanceLastModified, instance.Game.ToString()));
-
-                instancepicker.PickedInstance += (instance, selected) => InstancePicked(instance, selected);
-                instancepicker.InstanceIdentifier = instance.InstanceID;
-                instancepicker.GameLabel.Text = instance.InstanceName;
-                switch (instance.Game)
-                {
-                    case SimsGames.Sims1:
-                        instancepicker.GameIcon.Texture = instancepicker.Sims1Icon;
-                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Setting icon to Sims 1."));
-                    break;
-                    case SimsGames.Sims2:
-                        instancepicker.GameIcon.Texture = instancepicker.Sims2Icon;
-                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Setting icon to Sims 2."));
-                    break;
-                    case SimsGames.Sims3:
-                        instancepicker.GameIcon.Texture = instancepicker.Sims3Icon;
-                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Setting icon to Sims 3."));
-                    break;
-                    case SimsGames.Sims4:
-                        instancepicker.GameIcon.Texture = instancepicker.Sims4Icon;
-                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Setting icon to Sims 4."));
-                    break;
-                    case SimsGames.SimCity4:
-                        instancepicker.GameIcon.Texture = instancepicker.SimCity4Icon;
-                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Setting icon to SC4."));
-                    break;
-                    case SimsGames.Spore:
-                        instancepicker.GameIcon.Texture = instancepicker.SporeIcon;
-                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Setting icon to spore."));
-                    break;
-                    case SimsGames.SimsMedieval:
-                        instancepicker.GameIcon.Texture = instancepicker.SimsMedievalIcon;
-                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Setting icon to Sims Medieval."));
-                    break;
-                }
-                instancepicker.DateCreated = instance.InstanceCreated;
-                instancepicker.DateModified = instance.InstanceLastModified;
-                instancepicker.DeleteInstance += (instance) => DeleteAnInstance(instance);
-                InstanceOptions.Add(instancepicker);
-                InstanceList.AddChild(instancepicker);
+                MakeInstanceOption(instance);
             }
 
-            foreach (Instance inst in toremove)
-            {
-                GlobalVariables.LoadedSettings.InstanceFolders.Remove(inst);
-            }
+            
         }
+        foreach (Instance inst in toremove)
+        {
+            GlobalVariables.LoadedSettings.InstanceFolders.Remove(inst);
+        }
+        InstancePicker instancepicker = InstancePickerPS.Instantiate() as InstancePicker;
+        instancepicker.SelectionColor.Color = GlobalVariables.LoadedTheme.AccentColor;
+        instancepicker.LoadIconColor.Color = GlobalVariables.LoadedTheme.ButtonMain;
+
+        instancepicker.PickedInstance += (instance, selected) => InstancePicked(instance, selected);
+        instancepicker.InstanceIdentifier = Guid.Empty;
+        instancepicker.LoadVersion = true;
+        InstanceOptions.Add(instancepicker);
+        InstanceList.AddChild(instancepicker);
     }
 
 
@@ -150,55 +176,120 @@ public partial class LoadInstance : MarginContainer
         }
 
         selectedInstance = instance;
+        if (instance == Guid.Empty) loadInstance.Visible = true;
+    }
+
+    private void InstanceFound(string dir)
+    {
+        bool found = false;
+        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Reclaiming instance from {0}", dir));
+        GameInstance gi = new();
+        if (Directory.Exists(dir))
+        {
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Found {0}", dir));
+            List<string> files = Directory.GetFiles(dir).ToList();
+            foreach (string f in files)
+            {
+                FileInfo fileInfo = new(f);
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Checking if {0} is instance.xml", fileInfo.Name.ToLower()));
+                if (fileInfo.Name.ToLower() == "instance.xml")
+                {
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Found instance!"));
+                    if (File.Exists(fileInfo.FullName))
+                    {
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Loading instance."));
+                        XmlSerializer InstanceSerializer = new XmlSerializer(typeof(GameInstance));
+                        using (FileStream fileStream = new(fileInfo.FullName, FileMode.Open, System.IO.FileAccess.Read)){
+                            using (StreamReader streamReader = new(fileStream)){
+                                gi = (GameInstance)InstanceSerializer.Deserialize(streamReader);
+                                streamReader.Close();
+                            }
+                            fileStream.Close();
+                        }
+                        found = true;
+                    }
+                }
+                break;
+            }
+        }
+
+        if (found)
+        {
+            gi.InstanceFolder = dir;
+            gi.WriteXML();
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Adding instance back to options."));
+            Instance instance = new();
+            instance.InstanceID = gi.InstanceID;
+            instance.Game = gi.GameChoice;
+            instance.InstanceCreated = gi.DateCreated;
+            instance.InstanceLastModified = gi.DateModified;
+            instance.InstanceLocation = dir;
+            instance.InstanceName = gi.InstanceName;
+            GlobalVariables.LoadedSettings.InstanceFolders.Add(instance);
+            GlobalVariables.LoadedSettings.SaveSettings();
+            RefreshList();    
+        }             
     }
 
 
     private void LoadPickedInstance()
     {
-        Instance loadedinstance = GlobalVariables.LoadedSettings.InstanceFolders.Where(x => x.InstanceID == selectedInstance).First();
-
-        gameInstance = new();
-        gameInstance.InstanceFolder = loadedinstance.InstanceLocation;        
-        
-        int pbarval = 0;
-        if (File.Exists(gameInstance.XMLfile()))
+        if (selectedInstance == Guid.Empty)
         {
-            XmlSerializer InstanceSerializer = new XmlSerializer(typeof(GameInstance));
-            using (FileStream fileStream = new(gameInstance.XMLfile(), FileMode.Open, System.IO.FileAccess.Read)){
-                using (StreamReader streamReader = new(fileStream)){
-                    gameInstance = (GameInstance)InstanceSerializer.Deserialize(streamReader);
-                    streamReader.Close();
+            loadInstance.Visible = true;
+        } else
+        {
+            Instance loadedinstance = GlobalVariables.LoadedSettings.InstanceFolders.First(x => x.InstanceID == selectedInstance);
+
+            gameInstance = new();
+            gameInstance.InstanceFolder = loadedinstance.InstanceLocation;        
+            
+            int pbarval = 0;
+            /*if (File.Exists(gameInstance.XMLfile()))
+            {
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Loading Instance from {0}", gameInstance.XMLfile()));
+                XmlSerializer InstanceSerializer = new XmlSerializer(typeof(GameInstance));
+                using (FileStream fileStream = new(gameInstance.XMLfile(), FileMode.Open, System.IO.FileAccess.Read)){
+                    using (StreamReader streamReader = new(fileStream)){
+                        gameInstance = (GameInstance)InstanceSerializer.Deserialize(streamReader);
+                        streamReader.Close();
+                    }
+                    fileStream.Close();
                 }
-                fileStream.Close();
-            }
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Loaded instance: {0} and its {1} profiles", gameInstance.InstanceName, gameInstance.InstanceProfileLocations.Count));
+            }*/
+            gameInstance = gameInstance.LoadInstance();
+
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Loaded instance {0}. Current profile: {1}", 
+            gameInstance.InstanceName, 
+            gameInstance.LoadedProfile.ProfileName));
+
+            List<string> files = Directory.EnumerateFiles(gameInstance.InstanceFolders.InstancePackagesFolder, "*.*", SearchOption.AllDirectories).Where(x => x.Contains(".package") || x.Contains(".ts4script")).ToList();
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Found {0} files to be read into grid.", files.Count));
+            List<string> downloadfiles = Directory.EnumerateFiles(gameInstance.InstanceFolders.InstanceDownloadsFolder, "*.*", SearchOption.AllDirectories).ToList();
+            
+            int fileCount = files.Count;
+            int dFileCount = downloadfiles.Count;
+            
+            int pbarmax = fileCount + 50 + 30;
+
+            
+
+
+
+            GlobalVariables.mainWindow.LoadingPackageDisplayStart(pbarmax);
+
+            new Thread(() => {
+            //content
+                GlobalVariables.mainWindow.IncrementLoadingScreen(10, "Loading instance...", "LoadInstance: First"); 
+                pbarval += 10;
+                GlobalVariables.mainWindow.IncrementLoadingScreen(10, "Loading packages...", "LoadInstance: Second");    
+                pbarval += 10;
+                gameInstance = InstanceControllers.LoadInstanceFiles(gameInstance);
+                CallDeferred(nameof(FinishLoading));
+            }){IsBackground = true}.Start();
         }
-
-        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Loaded instance {0}. Current profile: {1}", gameInstance.InstanceName, gameInstance.LoadedProfile.ProfileName));
-
-        List<string> files = Directory.EnumerateFiles(gameInstance.InstanceFolders.InstancePackagesFolder, "*.*", SearchOption.AllDirectories).Where(x => x.Contains(".package") || x.Contains(".ts4script")).ToList();
-        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Found {0} files to be read into grid.", files.Count));
-        List<string> downloadfiles = Directory.EnumerateFiles(gameInstance.InstanceFolders.InstanceDownloadsFolder, "*.*", SearchOption.AllDirectories).ToList();
         
-        int fileCount = files.Count;
-        int dFileCount = downloadfiles.Count;
-        
-        int pbarmax = fileCount + 50 + 30;
-
-        
-
-
-
-        GlobalVariables.mainWindow.LoadingPackageDisplayStart(pbarmax);
-
-        new Thread(() => {
-        //content
-            GlobalVariables.mainWindow.IncrementLoadingScreen(10, "Loading instance...", "LoadInstance: First"); 
-            pbarval += 10;
-            GlobalVariables.mainWindow.IncrementLoadingScreen(10, "Loading packages...", "LoadInstance: Second");    
-            pbarval += 10;
-            gameInstance = InstanceControllers.LoadInstanceFiles(gameInstance);
-            CallDeferred(nameof(FinishLoading));
-        }){IsBackground = true}.Start();
     }
 
     
