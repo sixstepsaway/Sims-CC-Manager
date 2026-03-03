@@ -91,14 +91,21 @@ public partial class MainMenu : MarginContainer
     List<SimsPackageReader> sims2packagereaders = new();
     private void DevClicked()
     {     
-        string file = @"E:\Documents\Sims CC Manager\Instances\Sims 2 Testing Version\Packages\MESH_Digi_Nightcrawler08.package";
+        /*string file = @"E:\Documents\Sims CC Manager\Instances\Sims 2 Testing Version\Packages\13pS2FarmhouseCandleHolder1Rec01.package";
         SimsPackageReader spr = new();
         spr.ReadPackage(file);
         SimsPackage package = new();
         package.Location = file;
         package.Game = SimsCCManager.OptionLists.SimsGames.Sims2;
         package.Sims2Data = spr.Sims2Data;
-        package.WriteXML();
+        package.WriteXML();*/
+
+        foreach (string package in Directory.EnumerateFiles(@"C:\Program Files (x86)\Mr DJ\The Sims 2 Ultimate Collection", "*.package", SearchOption.AllDirectories))
+        {
+            SimsPackageReader spr = new();
+            spr.ReadPackage(package);
+            
+        }
     }
 
     

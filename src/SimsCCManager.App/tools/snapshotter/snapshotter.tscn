@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3 uid="uid://co0gkpc2bm4hh"]
+[gd_scene load_steps=22 format=3 uid="uid://co0gkpc2bm4hh"]
 
 [ext_resource type="Script" uid="uid://dbbjdwavbnmsj" path="res://tools/snapshotter/Snapshotter.cs" id="1_pa3fr"]
 [ext_resource type="ArrayMesh" uid="uid://db0gc3p4vj0ls" path="res://assets/bases/af.obj" id="2_0ckba"]
@@ -27,6 +27,46 @@ ambient_light_source = 3
 ambient_light_color = Color(0.8934844, 0.9154048, 0.94047934, 1)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_0ckba"]
+albedo_color = Color(0.75, 0.75, 0.75, 1)
+roughness = 0.8
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_o1okv"]
+transparency = 1
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_v0l6e"]
+next_pass = SubResource("StandardMaterial3D_o1okv")
+albedo_color = Color(0.75, 0.75, 0.75, 1)
+roughness = 0.8
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_brbbg"]
+transparency = 1
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_5rvtu"]
+next_pass = SubResource("StandardMaterial3D_brbbg")
+albedo_color = Color(0.75, 0.75, 0.75, 1)
+roughness = 0.8
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_y061e"]
+transparency = 1
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_tjpfh"]
+next_pass = SubResource("StandardMaterial3D_y061e")
+albedo_color = Color(0.75, 0.75, 0.75, 1)
+roughness = 0.8
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_7jxn7"]
+transparency = 1
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_jbybj"]
+next_pass = SubResource("StandardMaterial3D_7jxn7")
+albedo_color = Color(0.75, 0.75, 0.75, 1)
+roughness = 0.8
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_0x1uc"]
+transparency = 1
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ud3sc"]
+next_pass = SubResource("StandardMaterial3D_0x1uc")
 albedo_color = Color(0.75, 0.75, 0.75, 1)
 roughness = 0.8
 
@@ -68,23 +108,28 @@ visible = false
 mesh = ExtResource("2_0ckba")
 skeleton = NodePath("../..")
 surface_material_override/0 = SubResource("StandardMaterial3D_0ckba")
+surface_material_override/1 = SubResource("StandardMaterial3D_v0l6e")
 
 [node name="tf" type="MeshInstance3D" parent="Node3D2"]
 mesh = ExtResource("2_0ckba")
 skeleton = NodePath("../..")
 surface_material_override/0 = SubResource("StandardMaterial3D_0ckba")
+surface_material_override/1 = SubResource("StandardMaterial3D_5rvtu")
 
 [node name="Am" type="MeshInstance3D" parent="Node3D2"]
 mesh = ExtResource("3_v0l6e")
 skeleton = NodePath("../..")
 surface_material_override/0 = SubResource("StandardMaterial3D_0ckba")
+surface_material_override/1 = SubResource("StandardMaterial3D_tjpfh")
 
 [node name="cu" type="MeshInstance3D" parent="Node3D2"]
 mesh = ExtResource("4_5rvtu")
 skeleton = NodePath("../..")
 surface_material_override/0 = SubResource("StandardMaterial3D_0ckba")
+surface_material_override/1 = SubResource("StandardMaterial3D_jbybj")
 
 [node name="pu" type="MeshInstance3D" parent="Node3D2"]
 mesh = ExtResource("5_tjpfh")
 skeleton = NodePath("../..")
 surface_material_override/0 = SubResource("StandardMaterial3D_0ckba")
+surface_material_override/1 = SubResource("StandardMaterial3D_ud3sc")

@@ -788,43 +788,23 @@ public partial class ThumbnailGrid : MarginContainer
     public ThumbnailGridItem MakeViewportItem(ThumbnailGridItem tgi, SimsPackage package)
     {
         try {
-            if (package.Mesh || package.Type.Contains("Hair"))
-            {
-                if (package.Game == SimsGames.Sims2)
-                {
+            if (package.PackageData != null)
+            {            
+                if (package.Mesh || !string.IsNullOrEmpty(package.MatchingMesh))
+                {   
                     Snapshotter snapshotter = SnapshotterPS.Instantiate() as Snapshotter;
-                    snapshotter.Packages = packages;
-                    tgi.subViewport.AddChild(snapshotter);
-                    snapshotter.BuildSims2Mesh(package);
-
-                    if (!package.Type.Contains("Hair")) snapshotter.GetTexturesForS2Meshes(package);
-                }
-            } else if (!package.Mesh && package.Recolor)
-            {
-                if (packages.Where(x => x.ObjectGUID == package.ObjectGUID).Any(p => p.Mesh))
-                {
-                    SimsPackage matchingMesh = packages.Where(x => x.ObjectGUID == package.ObjectGUID).First(p => p.Mesh);
-                    Snapshotter snapshotter = SnapshotterPS.Instantiate() as Snapshotter;
-                    snapshotter.Packages = packages;
-                    tgi.subViewport.AddChild(snapshotter);
-                    if (package.Game == SimsGames.Sims2)
-                    {
-                        snapshotter.BuildSims2Mesh(matchingMesh);
-                        snapshotter.ApplyS2Textures(package);
-                    }
-                } else if (packageDisplay.ThisInstance.Files.OfType<SimsPackage>().Where(x => x.Sims2Data.XNGBDataBlock.ModelName.Contains(package.Sims2Data.TXTRDataBlock[0].TextureNoSuffix)).Any(p => p.Mesh))
-                {
-                    SimsPackage matchingMesh = packageDisplay.ThisInstance.Files.OfType<SimsPackage>().Where(x => x.Sims2Data.XNGBDataBlock.ModelName.Contains(package.Sims2Data.TXTRDataBlock[0].TextureNoSuffix)).First(p => p.Mesh);
-                    Snapshotter snapshotter = SnapshotterPS.Instantiate() as Snapshotter;
-                    snapshotter = SnapshotterPS.Instantiate() as Snapshotter;
                     snapshotter.Packages = packageDisplay.ThisInstance.Files.OfType<SimsPackage>().ToList();
-                    
-                    snapshotter.BuildSims2Mesh(matchingMesh);
-                    if (!package.Type.Contains("Hair")) {
-                        if (package.Game == SimsGames.Sims2) snapshotter.ApplyS2Textures(package);
+                    tgi.subViewport.AddChild(snapshotter);
+                    bool done = snapshotter.BuildSims2Mesh(package);
+                    if (!done)
+                    {
+                        if (package.PackageImage != null)
+                        {
+                            tgi = MakeTextureItem(tgi, package);
+                        }
                     }
                 }
-            }            
+            }    
             return tgi;
         } catch {
             return null;
@@ -834,14 +814,20 @@ public partial class ThumbnailGrid : MarginContainer
 
     private ThumbnailGridItem MakeTextureItem(ThumbnailGridItem tgi, SimsPackage package)
     {
-        if (!package.Mesh && !package.Recolor)
-        {
+        /*if (!package.Mesh && !package.Recolor)
+        {*/
             if (package.Game == SimsGames.Sims2)
             {
-                TXTRData txtrdata = (package.PackageData as Sims2Data).TXTRDataBlock[0];
-                if (txtrdata != null) if (txtrdata.Texture != null) tgi.ThumbnailImage.Texture = ImageTexture.CreateFromImage(txtrdata.Texture);
+                if (package.Sims2Data != null)
+                {
+                    if (package.Sims2Data.TXTRDataBlock.Count > 0)
+                    {
+                        TXTRData txtrdata = package.Sims2Data.TXTRDataBlock[0];
+                        if (txtrdata != null) if (txtrdata.Texture != null) tgi.ThumbnailImage.Texture = ImageTexture.CreateFromImage(txtrdata.Texture);
+                    }
+                }                
             }
-        }
+        //}
         return tgi;
     }
 

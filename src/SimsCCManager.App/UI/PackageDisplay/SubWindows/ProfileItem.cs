@@ -1,4 +1,5 @@
 using Godot;
+using SimsCCManager.Globals;
 using System;
 
 public partial class ProfileItem : MarginContainer
@@ -15,6 +16,15 @@ public partial class ProfileItem : MarginContainer
     Label InactiveLabel;
     [Export]
     public Button ProfileButton;
+
+    private Color _textcolor;
+
+    public Color TextColor
+    {
+        get { return _textcolor; }
+        set { _textcolor = value; 
+        ProfileName.AddThemeColorOverride("font_color", value); }
+    }
 
     
 

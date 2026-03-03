@@ -35,6 +35,8 @@ public partial class NewInstance : MarginContainer
     [Export]
     GamePickerBox Sims4;
     [Export]
+    GamePickerBox SimsMedieval;
+    [Export]
     LineEdit InstanceName;
 
     [Export]
@@ -122,9 +124,11 @@ public partial class NewInstance : MarginContainer
         Sims2.thisGame = SimsGames.Sims2;
         Sims3.thisGame = SimsGames.Sims3;
         Sims4.thisGame = SimsGames.Sims4;
-        Sims2.GamePicked += (game, selected) => GamePicked(game, selected);
-        Sims3.GamePicked += (game, selected) => GamePicked(game, selected);
-        Sims4.GamePicked += (game, selected) => GamePicked(game, selected);
+        SimsMedieval.thisGame = SimsGames.SimsMedieval;
+        Sims2.GamePicked += (game, selected) => GamePicked(game, selected, Sims2);
+        Sims3.GamePicked += (game, selected) => GamePicked(game, selected, Sims3);
+        Sims4.GamePicked += (game, selected) => GamePicked(game, selected, Sims4);
+        SimsMedieval.GamePicked += (game, selected) => GamePicked(game, selected, SimsMedieval);
         Pg1ConfirmButton.ButtonClicked += () => Pg1ConfirmClicked();
         
         acceptDialogOK.Pressed += () => CloseAcceptDialog();
@@ -196,6 +200,7 @@ public partial class NewInstance : MarginContainer
         sbh.BgColor = GlobalVariables.LoadedTheme.DataGridSelected;
         sbh.BorderColor = GlobalVariables.LoadedTheme.AccentColor;
         acceptDialogButtonPanelHover.AddThemeStyleboxOverride("panel", sbh);
+        InstanceName.AddThemeColorOverride("font_placeholder_color", GlobalVariables.LoadedTheme.DataGridTextA);
     }
 
     private void Pg1ConfirmClicked()
@@ -366,6 +371,21 @@ public partial class NewInstance : MarginContainer
                     InstanceControllers.GetSims4LocalFiles(currentInstance);  
                     Directory.Delete(currentInstance.Sims4Folders.ModsFolder);                 
                 break;
+                case SimsGames.SimsMedieval:
+                    InstanceControllers.GetSimsMedievalLocalFiles(currentInstance);
+                    if (Directory.Exists(currentInstance.SimsMedievalFolders.ModsFolder))
+                    {
+                        foreach (string folder in Directory.GetDirectories(currentInstance.SimsMedievalFolders.ModsFolder))
+                        {
+                            MoveFolder(folder, currentInstance.InstanceFolders.InstancePackagesFolder);                          
+                        }
+                        foreach (string file in Directory.GetFiles(currentInstance.SimsMedievalFolders.ModsFolder))
+                        {
+                            MoveFile(file, currentInstance.InstanceFolders.InstancePackagesFolder);
+                        }
+                    }
+                    Directory.Delete(currentInstance.SimsMedievalFolders.ModsFolder);
+                break;
 
             }
 
@@ -384,7 +404,7 @@ public partial class NewInstance : MarginContainer
     {
         DirectoryInfo directoryInfo = new(folder);
         string newloc = Path.Combine(newDirectory, directoryInfo.Name);
-        Directory.Move(folder, newloc);   
+        Microsoft.VisualBasic.FileIO.FileSystem.MoveDirectory(folder, newloc);   
     }
 
 
@@ -421,6 +441,8 @@ public partial class NewInstance : MarginContainer
 
     private void GetInstanceInfo()
     {
+        bool hasCaw = false;
+        Executable cawexe = new();
         currentInstance = new();
         currentInstance.InstanceName = instanceName;
         Executable currentExe = new();
@@ -460,6 +482,18 @@ public partial class NewInstance : MarginContainer
             currentExe.Path = loc;
             currentExe.ExeName = "TS3W.Exe";
             currentInstance.GameDocumentsFolder = docloc;
+            string caw = @"SOFTWARE\WOW6432Node\Sims\The Sims 3 Create A World";
+            string cawloc = Utilities.GetPathForExe(caw);
+            string cawExeName = "CAW.exe";
+            string cawpath = Path.Combine(cawloc, cawExeName);
+            if (File.Exists(cawpath))
+            {
+                hasCaw = true;
+                cawexe.Path = cawloc;
+                cawexe.ExeName = cawExeName;
+                cawexe.Name = "Create a World";
+                cawexe.Selected = false;
+            }
 
         }
         else if (GameSelected == SimsGames.Sims4)
@@ -473,11 +507,23 @@ public partial class NewInstance : MarginContainer
             loc = Path.Combine(loc, "Bin");
             currentExe.Path = loc;
             currentExe.ExeName = "TS4_x64.exe";
+        }else if (GameSelected == SimsGames.SimsMedieval)
+        {
+            string gameloc = @"SOFTWARE\WOW6432Node\Electronic Arts\The Sims Medieval";
+            string loc = Utilities.GetPathForExe(gameloc);
+            string docloc = Path.Combine(GlobalVariables.MyDocuments, @"Electronic Arts\The Sims Medieval");
+            currentInstance.GameDocumentsFolder = docloc;
+            currentInstance.GameInstallFolder = loc;
+            loc = Path.Combine(loc, "Game");
+            loc = Path.Combine(loc, "Bin");
+            currentExe.Path = loc;
+            currentExe.ExeName = "TSM.exe";
         }
         currentExe.Name = "Default";
         currentExe.Selected = true;
         currentInstance.CurrentExecutableIndex = 0;
         currentInstance.Executables = new() {currentExe};
+        if (hasCaw) currentInstance.Executables.Add(cawexe);
         if (File.Exists(Path.Combine(currentInstance.ExecutablePath, currentInstance.ExecutableName))) if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("The exe \"{0}\" exists!", Path.Combine(currentInstance.ExecutablePath, currentInstance.ExecutableName)));
         if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Instance: {0}\nInstall Location: {1}\nDocs Folder: {2}\nExe Name: {3}\nInstance Folder: {4}", currentInstance.InstanceName, currentInstance.GameInstallFolder, currentInstance.GameDocumentsFolder, currentInstance.ExecutableName, currentInstance.InstanceFolder));   
     }
@@ -489,74 +535,81 @@ public partial class NewInstance : MarginContainer
         //this should be the sims 2 main folder, so Ultimate Collection etc
         List<DirectoryInfo> directories = directory.GetDirectories().ToList();
         //subfolders of this folder 
-        if (directories.Where(x => x.Name.Equals("The Sims 2 Mansion and Garden Stuff")).Any())
+        if (directories.Any(x => x.Name.Equals("The Sims 2 Mansion and Garden Stuff")))
         {
-            string mag = directories.Where(x => x.Name.Equals("The Sims 2 Mansion and Garden Stuff")).First().FullName;
+            string mag = directories.First(x => x.Name.Equals("The Sims 2 Mansion and Garden Stuff")).FullName;
             mag = Path.Combine(mag, "TSBin");
             List<FileInfo> files = new DirectoryInfo(mag).GetFiles().ToList();
-            if (files.Where(x => x.Name == "Sims2RPC.exe").Any())
+            if (files.Any(x => x.Name == "Sims2RPC.exe"))
             {
-                return new FileInfo(files.Where(x => x.Name == "Sims2RPC.exe").First().FullName);
+                return new FileInfo(files.First(x => x.Name == "Sims2RPC.exe").FullName);
             }
             else
             {
-                return new FileInfo(files.Where(x => x.Name == "Sims2EP9.exe").First().FullName);
+                return new FileInfo(files.First(x => x.Name == "Sims2EP9.exe").FullName);
             }
         }
-        else if (directories.Where(x => x.Name.Equals("Fun with Pets")).Any())
+        else if (directories.Any(x => x.Name.Equals("Fun with Pets")))
         {
-            string fwp = directories.Where(x => x.Name.Equals("Fun with Pets")).First().FullName;
+            string fwp = directories.First(x => x.Name.Equals("Fun with Pets")).FullName;
             fwp = Path.Combine(fwp, "SP9");
             fwp = Path.Combine(fwp, "TSBin");
             List<FileInfo> files = new DirectoryInfo(fwp).GetFiles().ToList();
-            if (files.Where(x => x.Name == "Sims2RPC.exe").Any())
+            if (files.Any(x => x.Name == "Sims2RPC.exe"))
             {
-                return new FileInfo(files.Where(x => x.Name == "Sims2RPC.exe").First().FullName);
+                return new FileInfo(files.First(x => x.Name == "Sims2RPC.exe").FullName);
             }
             else
             {
-                return new FileInfo(files.Where(x => x.Name == "Sims2EP9.exe").First().FullName);
+                return new FileInfo(files.First(x => x.Name == "Sims2EP9.exe").FullName);
             }
         }
-        else if (directories.Where(x => x.Name.Equals("EP9")).Any())
+        else if (directories.Any(x => x.Name.Equals("EP9")))
         {
-            string fwp = directories.Where(x => x.Name.Equals("EP9")).First().FullName;
+            string fwp = directories.First(x => x.Name.Equals("EP9")).FullName;
             fwp = Path.Combine(fwp, "TSBin");
             List<FileInfo> files = new DirectoryInfo(fwp).GetFiles().ToList();
-            if (files.Where(x => x.Name == "Sims2RPC.exe").Any())
+            if (files.Any(x => x.Name == "Sims2RPC.exe"))
             {
-                return new FileInfo(files.Where(x => x.Name == "Sims2RPC.exe").First().FullName);
+                return new FileInfo(files.First(x => x.Name == "Sims2RPC.exe").FullName);
             }
             else
             {
-                return new FileInfo(files.Where(x => x.Name == "Sims2EP9.exe").First().FullName);
+                return new FileInfo(files.First(x => x.Name == "Sims2EP9.exe").FullName);
             }
         } else {
             return new FileInfo("");
         }	
     }
 
-    private void GamePicked(SimsGames game, bool selected)
+    private void GamePicked(SimsGames game, bool selected, GamePickerBox pick)
     {
+        List<GamePickerBox> games = new() { Sims2, Sims3, Sims4, SimsMedieval };
         GameSelected = game;
-        if (selected)
+        foreach (GamePickerBox box in games)
         {
-            if (game == SimsGames.Sims2)
+            if (box != pick)
             {
-                Sims3.Selected = false;
-                Sims4.Selected = false;
-            }
-            else if (game == SimsGames.Sims3)
-            {
-                Sims2.Selected = false;
-                Sims4.Selected = false;
-            }
-            else if (game == SimsGames.Sims4)
-            {
-                Sims2.Selected = false;
-                Sims3.Selected = false;
+                box.Selected = false;
             }
         }
+        switch (game)
+        {
+            case SimsGames.Sims2:
+                InstanceName.PlaceholderText = "The Sims 2";
+            break;
+            case SimsGames.Sims3:
+                InstanceName.PlaceholderText = "The Sims 3";
+            break;
+            case SimsGames.Sims4:
+                InstanceName.PlaceholderText = "The Sims 4";
+            break;
+            case SimsGames.SimsMedieval:
+                InstanceName.PlaceholderText = "The Sims Medieval";
+            break;
+            
+        }
+        
     }
 
 

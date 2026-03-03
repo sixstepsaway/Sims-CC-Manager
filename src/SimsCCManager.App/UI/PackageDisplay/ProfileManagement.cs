@@ -67,6 +67,12 @@ public partial class ProfileManagement : MarginContainer
     [Export]
     CustomCheckButton AutoBackupsCheck;
 
+
+    [Export]
+    Panel SecondBackground;
+    [Export]
+    Panel InternalBackground;
+
     List<Button> Buttons = new(); 
 
     List<ProfileItem> ProfileItems = new();
@@ -135,7 +141,7 @@ public partial class ProfileManagement : MarginContainer
             profile.LocalMedia = LocalMediaCheck.IsToggled;
             profile.LocalSettings = LocalSettingsCheck.IsToggled;  
             profile.AutoBackups = AutoBackupsCheck.IsToggled;        
-            packageDisplay.ThisInstance.InstanceProfiles.Add(profile);
+            packageDisplay.ThisInstance.AddProfile(profile);
             if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format(profile.ToString()));
             packageDisplay.ThisInstance.WriteXML();
             AddProfileItem(profile);            
@@ -157,7 +163,7 @@ public partial class ProfileManagement : MarginContainer
             profile.LocalMedia = LocalMediaCheck.IsToggled;
             profile.AutoBackups = AutoBackupsCheck.IsToggled;     
             profile.LocalSettings = LocalSettingsCheck.IsToggled;
-            packageDisplay.ThisInstance.InstanceProfiles.Add(profile);
+            packageDisplay.ThisInstance.AddProfile(profile);
             if (current)
             {
                 packageDisplay.ThisInstance.LoadedProfile = profile;
@@ -238,6 +244,7 @@ public partial class ProfileManagement : MarginContainer
     private void AddProfileItem(InstanceProfile Profile)
     {
         ProfileItem profileItem = ProfileItemPS.Instantiate() as ProfileItem;
+        profileItem.TextColor = GlobalVariables.LoadedTheme.MainTextColor;
         ProfileItems.Add(profileItem);
         profileItem.ProfileButton.Pressed += () => ProfileItemClicked(profileItem);
         profileItem.ProfileName.Text = Profile.ProfileName;
@@ -336,7 +343,55 @@ public partial class ProfileManagement : MarginContainer
         LocalSettingsLabel.AddThemeColorOverride("font_color", theme.HeaderTextColor);
         LocalSavesLabel.AddThemeColorOverride("font_color", theme.HeaderTextColor);
         LocalMediaLabel.AddThemeColorOverride("font_color", theme.HeaderTextColor);
-        AutoBackupsCheck.AddThemeColorOverride("font_color", theme.HeaderTextColor);
+        AutoBackupsLabel.AddThemeColorOverride("font_color", theme.HeaderTextColor);
+
+
+        StyleBoxFlat sb = SecondBackground.GetThemeStylebox("panel") as StyleBoxFlat;
+        sb.BgColor = theme.BackgroundColor;
+        sb.BorderColor = theme.AccentColor;
+
+        StyleBoxFlat ib = InternalBackground.GetThemeStylebox("panel") as StyleBoxFlat;
+        ib.BgColor = theme.BackgroundColor;
+        ib.BorderColor = theme.AccentColor;
+        
+        Theme boxtheme = ProfileDescriptionBox.Theme;
+
+
+        StyleBoxFlat tbf = ProfileDescriptionBox.GetThemeStylebox("focus") as StyleBoxFlat;
+        StyleBoxFlat tbn = ProfileDescriptionBox.GetThemeStylebox("normal") as StyleBoxFlat;
+
+        if (theme.IsThemeLight())
+        {
+            tbn.BgColor = theme.BackgroundColor.Darkened(0.05f);
+            tbn.BorderColor = Color.FromHsv(theme.AccentColor.H, theme.AccentColor.S - 0.25f, theme.AccentColor.V);
+            tbf.BgColor = tbn.BgColor.Darkened(0.1f);
+        } else
+        {
+            tbn.BgColor = theme.BackgroundColor.Lightened(0.05f);
+            tbn.BorderColor = Color.FromHsv(theme.AccentColor.H, theme.AccentColor.S - 0.25f, theme.AccentColor.V);
+            tbf.BgColor = tbn.BgColor.Darkened(0.1f);
+        }
+        tbf.BorderColor = tbn.BorderColor.Lightened(0.1f);
+
+        boxtheme.SetStylebox("normal", "TextEdit", tbn);
+        boxtheme.SetStylebox("focus", "TextEdit", tbf);
+        boxtheme.SetStylebox("normal", "LineEdit", tbn);
+        boxtheme.SetStylebox("focus", "LineEdit", tbf);
+
+        boxtheme.SetColor("font_color", "TextEdit", theme.MainTextColor);
+        boxtheme.SetColor("font_color", "LineEdit", theme.MainTextColor);
+        boxtheme.SetColor("font_placeholder_color", "TextEdit", theme.MainTextColor.Lightened(0.2f));
+        boxtheme.SetColor("font_placeholder_color", "LineEdit", theme.MainTextColor.Lightened(0.2f));
+        
+
+
+
+
+
+
+
+
+
     }
 
 }

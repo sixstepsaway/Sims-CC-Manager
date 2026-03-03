@@ -1,4 +1,4 @@
-[gd_scene load_steps=26 format=3 uid="uid://bnb556r4b8okd"]
+[gd_scene load_steps=27 format=3 uid="uid://bnb556r4b8okd"]
 
 [ext_resource type="PackedScene" uid="uid://uo2724xgb1uw" path="res://UI/Background.tscn" id="1_sdman"]
 [ext_resource type="Script" uid="uid://dah7gonninlim" path="res://UI/MainMenu/NewInstance.cs" id="1_xanfm"]
@@ -9,6 +9,7 @@
 [ext_resource type="Texture2D" uid="uid://cdnxqocgy3qn0" path="res://assets/images/s3.png" id="7_2x6i4"]
 [ext_resource type="Texture2D" uid="uid://bvsroafqogyd0" path="res://assets/images/s4.png" id="8_3wbg4"]
 [ext_resource type="PackedScene" uid="uid://dpna1rktoenjc" path="res://UI/Buttons/MMButton.tscn" id="8_uin8o"]
+[ext_resource type="Texture2D" uid="uid://bpkgyr4ml2cbd" path="res://assets/images/TSM_Icon-2854286609.png" id="9_3wbg4"]
 [ext_resource type="PackedScene" uid="uid://cyfgp4vopp1cq" path="res://UI/Buttons/CustomCheckButton.tscn" id="10_2xn22"]
 [ext_resource type="FontFile" uid="uid://k4r0g5uck1l4" path="res://assets/fonts/Gantari/static/Gantari-Regular.ttf" id="13_vtgmf"]
 
@@ -117,7 +118,7 @@ Panel/styles/panel = SubResource("StyleBoxFlat_3wbg4")
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_2x6i4"]
 
-[node name="New Instance" type="MarginContainer" node_paths=PackedStringArray("BackgroundNode", "Page1", "Page2", "Pg1ConfirmButton", "Pg1CancelButton", "Pg2ConfirmButton", "Pg2CancelButton", "FromDownloadsCheck", "Sims2", "Sims3", "Sims4", "InstanceName", "InstallFolderLE", "InstallFolderBrowse", "DocsFolderLE", "DocsFolderBrowse", "InstanceFolderLE", "InstanceFolderBrowse", "PackagesFolderLE", "PackagesFolderBrowse", "DownloadsFolderLE", "DownloadsFolderBrowse", "ProfilesFolderLE", "ProfilesFolderBrowse", "DataCacheFolderLE", "DataCacheFolderBrowse", "fileDialog", "confirmationDialog", "acceptDialog", "acceptDialogText", "acceptDialogOK", "acceptDialogBack", "acceptDialogBG", "acceptDialogLabelA", "acceptDialogLabelB", "acceptDialogButtonPanelMain", "acceptDialogButtonPanelHover", "acceptDialogButtonContainerOK", "acceptDialogButtonContainerBack", "BGControl")]
+[node name="New Instance" type="MarginContainer" node_paths=PackedStringArray("BackgroundNode", "Page1", "Page2", "Pg1ConfirmButton", "Pg1CancelButton", "Pg2ConfirmButton", "Pg2CancelButton", "FromDownloadsCheck", "Sims2", "Sims3", "Sims4", "SimsMedieval", "InstanceName", "InstallFolderLE", "InstallFolderBrowse", "DocsFolderLE", "DocsFolderBrowse", "InstanceFolderLE", "InstanceFolderBrowse", "PackagesFolderLE", "PackagesFolderBrowse", "DownloadsFolderLE", "DownloadsFolderBrowse", "ProfilesFolderLE", "ProfilesFolderBrowse", "DataCacheFolderLE", "DataCacheFolderBrowse", "fileDialog", "confirmationDialog", "acceptDialog", "acceptDialogText", "acceptDialogOK", "acceptDialogBack", "acceptDialogBG", "acceptDialogLabelA", "acceptDialogLabelB", "acceptDialogButtonPanelMain", "acceptDialogButtonPanelHover", "acceptDialogButtonContainerOK", "acceptDialogButtonContainerBack", "BGControl")]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -133,9 +134,10 @@ Pg1CancelButton = NodePath("Page1/VBoxContainer/HBoxContainer/Pg1CancelButton")
 Pg2ConfirmButton = NodePath("Page2/VBoxContainer/HBoxContainer/Page2ConfirmButton")
 Pg2CancelButton = NodePath("Page2/VBoxContainer/HBoxContainer/Page2CancelButton")
 FromDownloadsCheck = NodePath("Page2/VBoxContainer/HBoxContainer2/CustomCheckButton")
-Sims2 = NodePath("Page1/VBoxContainer/MarginContainer/GamePicker/Sims 2")
-Sims3 = NodePath("Page1/VBoxContainer/MarginContainer/GamePicker/Sims 3")
-Sims4 = NodePath("Page1/VBoxContainer/MarginContainer/GamePicker/Sims 4")
+Sims2 = NodePath("Page1/VBoxContainer/MarginContainer/ScrollContainer/GamePicker/Sims 2")
+Sims3 = NodePath("Page1/VBoxContainer/MarginContainer/ScrollContainer/GamePicker/Sims 3")
+Sims4 = NodePath("Page1/VBoxContainer/MarginContainer/ScrollContainer/GamePicker/Sims 4")
+SimsMedieval = NodePath("Page1/VBoxContainer/MarginContainer/ScrollContainer/GamePicker/Sims Medieval")
 InstanceName = NodePath("Page1/VBoxContainer/InstanceName_LineEdit")
 InstallFolderLE = NodePath("Page2/VBoxContainer/InstallFolder/InstallFolder_LineEdit")
 InstallFolderBrowse = NodePath("Page2/VBoxContainer/InstallFolder/InstallFolder_Button")
@@ -184,7 +186,6 @@ horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="Page1" type="MarginContainer" parent="."]
-visible = false
 layout_mode = 2
 size_flags_horizontal = 4
 size_flags_vertical = 4
@@ -221,33 +222,49 @@ theme_override_constants/margin_bottom = 2
 layout_mode = 2
 color = Color(0.860369, 0.860369, 0.860369, 1)
 
-[node name="GamePicker" type="VBoxContainer" parent="Page1/VBoxContainer/MarginContainer"]
+[node name="ScrollContainer" type="ScrollContainer" parent="Page1/VBoxContainer/MarginContainer"]
+custom_minimum_size = Vector2(0, 200)
 layout_mode = 2
+
+[node name="GamePicker" type="VBoxContainer" parent="Page1/VBoxContainer/MarginContainer/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
 theme_override_constants/separation = 0
 
-[node name="Sims 2" parent="Page1/VBoxContainer/MarginContainer/GamePicker" instance=ExtResource("4_thfna")]
+[node name="Sims 2" parent="Page1/VBoxContainer/MarginContainer/ScrollContainer/GamePicker" instance=ExtResource("4_thfna")]
 layout_mode = 2
 GameString = "Sims 2"
 
-[node name="Sims 3" parent="Page1/VBoxContainer/MarginContainer/GamePicker" instance=ExtResource("4_thfna")]
+[node name="Sims 3" parent="Page1/VBoxContainer/MarginContainer/ScrollContainer/GamePicker" instance=ExtResource("4_thfna")]
 layout_mode = 2
 GameString = "Sims 3"
 
-[node name="TextureRect" parent="Page1/VBoxContainer/MarginContainer/GamePicker/Sims 3/MarginContainer2/Item/MarginContainer" index="0"]
+[node name="TextureRect" parent="Page1/VBoxContainer/MarginContainer/ScrollContainer/GamePicker/Sims 3/MarginContainer2/Item/MarginContainer" index="0"]
 texture = ExtResource("7_2x6i4")
 
-[node name="Label2" parent="Page1/VBoxContainer/MarginContainer/GamePicker/Sims 3/MarginContainer2/Item/MarginContainer2" index="0"]
+[node name="Label2" parent="Page1/VBoxContainer/MarginContainer/ScrollContainer/GamePicker/Sims 3/MarginContainer2/Item/MarginContainer2" index="0"]
 text = "Sims 3"
 
-[node name="Sims 4" parent="Page1/VBoxContainer/MarginContainer/GamePicker" instance=ExtResource("4_thfna")]
+[node name="Sims 4" parent="Page1/VBoxContainer/MarginContainer/ScrollContainer/GamePicker" instance=ExtResource("4_thfna")]
 layout_mode = 2
 GameString = "Sims 4"
 
-[node name="TextureRect" parent="Page1/VBoxContainer/MarginContainer/GamePicker/Sims 4/MarginContainer2/Item/MarginContainer" index="0"]
+[node name="TextureRect" parent="Page1/VBoxContainer/MarginContainer/ScrollContainer/GamePicker/Sims 4/MarginContainer2/Item/MarginContainer" index="0"]
 texture = ExtResource("8_3wbg4")
 
-[node name="Label2" parent="Page1/VBoxContainer/MarginContainer/GamePicker/Sims 4/MarginContainer2/Item/MarginContainer2" index="0"]
+[node name="Label2" parent="Page1/VBoxContainer/MarginContainer/ScrollContainer/GamePicker/Sims 4/MarginContainer2/Item/MarginContainer2" index="0"]
 text = "Sims 4"
+
+[node name="Sims Medieval" parent="Page1/VBoxContainer/MarginContainer/ScrollContainer/GamePicker" instance=ExtResource("4_thfna")]
+layout_mode = 2
+GameString = "Sims 4"
+
+[node name="TextureRect" parent="Page1/VBoxContainer/MarginContainer/ScrollContainer/GamePicker/Sims Medieval/MarginContainer2/Item/MarginContainer" index="0"]
+texture = ExtResource("9_3wbg4")
+
+[node name="Label2" parent="Page1/VBoxContainer/MarginContainer/ScrollContainer/GamePicker/Sims Medieval/MarginContainer2/Item/MarginContainer2" index="0"]
+text = "Sims Medieval"
 
 [node name="HBoxContainer" type="HBoxContainer" parent="Page1/VBoxContainer"]
 layout_mode = 2
@@ -285,6 +302,7 @@ size_flags_horizontal = 0
 text = "Confirm"
 
 [node name="Page2" type="MarginContainer" parent="."]
+visible = false
 layout_mode = 2
 size_flags_horizontal = 4
 size_flags_vertical = 4
@@ -561,7 +579,9 @@ layout_mode = 2
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/margin_left = 25
+theme_override_constants/margin_top = 15
 theme_override_constants/margin_right = 25
+theme_override_constants/margin_bottom = 15
 
 [node name="Label" type="Label" parent="Control/AcceptDialog/VBoxContainer/MarginContainer"]
 custom_minimum_size = Vector2(250, 49)
@@ -633,8 +653,9 @@ theme_override_styles/hover = SubResource("StyleBoxEmpty_2x6i4")
 theme_override_styles/disabled = SubResource("StyleBoxEmpty_2x6i4")
 theme_override_styles/focus = SubResource("StyleBoxEmpty_2x6i4")
 
-[editable path="Page1/VBoxContainer/MarginContainer/GamePicker/Sims 3"]
-[editable path="Page1/VBoxContainer/MarginContainer/GamePicker/Sims 4"]
+[editable path="Page1/VBoxContainer/MarginContainer/ScrollContainer/GamePicker/Sims 3"]
+[editable path="Page1/VBoxContainer/MarginContainer/ScrollContainer/GamePicker/Sims 4"]
+[editable path="Page1/VBoxContainer/MarginContainer/ScrollContainer/GamePicker/Sims Medieval"]
 [editable path="Page1/VBoxContainer/HBoxContainer/Pg1CancelButton"]
 [editable path="Page1/VBoxContainer/HBoxContainer/Pg1ConfirmButton"]
 [editable path="Page2/VBoxContainer/HBoxContainer/Page2CancelButton"]

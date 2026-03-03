@@ -48,7 +48,13 @@ public partial class Snapshotter : Node3D
 
     SimsPackage texturePackage = new();
 
-    bool foundTextures = false;
+    bool _foundtextures;
+    bool foundTextures
+    {
+        get {return _foundtextures; }
+        set { _foundtextures = value;
+        if (thisPackage != null) if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("FoundTextures for {0}: {1}", thisPackage.FileName, value));}
+    }
 
     List<Meshes> hairTypes = new();
     List<Meshes> bodyTypes = new();
@@ -88,49 +94,13 @@ public partial class Snapshotter : Node3D
 
     private void S2ClothingMesh()
     {
+        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Working with clothing mesh for {0}", thisPackage.FileName));
         foreach (string type in S2BodyAges)
         {
             Node3D node3D = new();
             foreach (Meshes age in bodyTypes.Where(x => x.ItemType.Contains(type)))
             {
-                if (age.MeshName.StartsWith("body_"))
-                {
-                    age.Mesh.Visible = false;
-                } else
-                {
-                   age.Mesh.Visible = true; 
-                }
-                
-                node3D.AddChild(age.Mesh);
-                /*if (type == "af" || type == "ef" || type == "yf")
-                {
-                    node3D.AddChild(Af.Duplicate());
-                    node3D.Position = new(0, -1.6f, 0);
-                } else if (type == "am" || type == "em" || type == "ym")
-                {
-                    node3D.AddChild(Am.Duplicate());
-                    node3D.Position = new(0, -1.6f, 0);
-                } else if (type == "tf")
-                {
-                    MeshInstance3D tf = Af.Duplicate() as MeshInstance3D;
-                    tf.Scale = new(0.94f, 0.94f, 0.94f);
-                    node3D.Position = new(0, -0.4f, 0);
-                    node3D.AddChild(tf);
-                } else if (type == "tm" || type == "tu")
-                {
-                    MeshInstance3D tm = Am.Duplicate() as MeshInstance3D;
-                    tm.Scale = new(9.4f, 9.4f, 9.4f);
-                    node3D.Position = new(0, -0.4f, 0);
-                    node3D.AddChild(tm);
-                } else if (type == "cf" || type == "cm" || type == "cu")
-                {
-                    node3D.AddChild(Cu.Duplicate());
-                    node3D.Position = new(0, -0.25f, 0);
-                } else if (type == "pu" || type == "pf" || type == "pm")
-                {
-                    node3D.AddChild(Pu.Duplicate());
-                    node3D.Position = new(0, 0.075f, 0);
-                }*/
+                node3D.AddChild(age.Mesh);                
                 age.ParentNode = node3D;
             }
             
@@ -152,32 +122,74 @@ public partial class Snapshotter : Node3D
         {
             foreach (Meshes body in bodyTypes)
             {
-                TXTRData txtr = new();
+                string meshprefix = "";
+                if (body.MeshName.Contains('_'))
+                {
+                    meshprefix = body.MeshName.Split('_')[0];
+                } else
+                {
+                    meshprefix = body.MeshName;
+                }
+
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Matching textures to prefix: {0}", meshprefix));
+                
+
+                //TXTRData txtr = new();
+                List<TXTRData> txtrs = new();
                 if (!string.IsNullOrEmpty(body.TextureName))
                 {
-                    txtr = texturePackage.Sims2Data.TXTRDataBlock.First(x => x.FullTXTRName.StartsWith(body.TextureName));
-
+                    txtrs.AddRange(texturePackage.Sims2Data.TXTRDataBlock.Where(x => x.FullTXTRName.StartsWith(body.TextureName)));
                 }
                 else
                 {
-                    txtr = texturePackage.Sims2Data.TXTRDataBlock.First(x => x.FullTXTRName.StartsWith(body.TextureFileName.Split('!')[0]));
+                    txtrs.AddRange(texturePackage.Sims2Data.TXTRDataBlock.Where(x => x.FullTXTRName.StartsWith(body.TextureFileName.Split('!')[0])));
+                }
+                StandardMaterial3D material = new();
+                foreach (TXTRData txtr in txtrs)
+                {
+                    Texture2D mattxt = new();
+                    mattxt = ImageTexture.CreateFromImage(txtr.Texture);
+
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Matching {0} against {1}", meshprefix, txtr.TextureName));
+                    
+                    if (txtr.TextureName.Contains(meshprefix))
+                    {
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{1} matches {0}", meshprefix, txtr.TextureName));
+                        if (txtr.TextureName.Contains("NormalMap"))
+                        {
+                            material.NormalTexture = mattxt;
+                        } else
+                        {
+                            material.AlbedoTexture = mattxt;
+                        }
+                    }   
+                    /* else if (txtr.TextureName.Contains("NormalMap"))
+                    {
+                        material.NormalTexture = mattxt;
+                    } else if (txtr.TextureName.Contains("BaseTexture"))
+                    {
+                        material.AlbedoTexture = mattxt;
+                    }*/
+                    
+                    if (body.Alpha)
+                        material.Transparency = BaseMaterial3D.TransparencyEnum.Alpha;
+                    if (flipepdInd)
+                    {
+                        material.CullMode = BaseMaterial3D.CullModeEnum.Back;
+                    } else
+                    {
+                        material.CullMode = BaseMaterial3D.CullModeEnum.Front;
+                    }
                 }
 
-                StandardMaterial3D material = new();
-                Texture2D mattxt = new();
-                mattxt = ImageTexture.CreateFromImage(txtr.Texture);
-                material.AlbedoTexture = mattxt;
-                if (body.Alpha)
-                    material.Transparency = BaseMaterial3D.TransparencyEnum.Alpha;
-                if (flipepdInd)
-                {
-                    material.CullMode = BaseMaterial3D.CullModeEnum.Back;
-                } else
-                {
-                    material.CullMode = BaseMaterial3D.CullModeEnum.Front;
-                }
+                int surfaces = body.Mesh.Mesh.GetSurfaceCount();
+
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Mesh {0} has {1} surfaces", thisPackage.FileName, surfaces));
                 
-                body.Mesh.Mesh.SurfaceSetMaterial(0, material);
+                if (surfaces > 0) { 
+
+                    body.Mesh.Mesh.SurfaceSetMaterial(0, material);
+                }
             }                                    
         }
 
@@ -347,7 +359,27 @@ public partial class Snapshotter : Node3D
 
     bool flipepdInd = true;
 
-    public void BuildSims2Mesh(SimsPackage d)
+    public void DisplaySkin(SimsPackage d)
+    {
+        thisPackage = d;
+
+    }
+    public void DisplayEyes(SimsPackage d)
+    {        
+        Node3D eyedisplay = new();        
+        MeshInstance3D eyes = Af.Duplicate() as MeshInstance3D;
+        StandardMaterial3D mat = eyes.GetSurfaceOverrideMaterial(1) as StandardMaterial3D;
+        StandardMaterial3D nextpass = mat.NextPass as StandardMaterial3D;
+        nextpass.AlbedoTexture = ImageTexture.CreateFromImage(d.Sims2Data.TXTRDataBlock[0].Texture);
+        eyes.SetSurfaceOverrideMaterial(1, mat);
+        eyedisplay.AddChild(eyes);
+        eyedisplay.RotationDegrees = new(0, -90.3f, 26.2f);
+        eyedisplay.Scale = new(5.0f, 5.0f, 5.0f);
+        eyedisplay.Position = new(0, -4.775f, 7.175f);
+        AddChild(eyedisplay);
+    }
+
+    public bool BuildSims2Mesh(SimsPackage d)
     {
         string type = d.Type;
         if (type.Contains("Hair"))
@@ -357,20 +389,56 @@ public partial class Snapshotter : Node3D
         else if (type.Contains("Clothing"))
         {
             meshType = 2;
+        } else if (type.Contains("Slider") || type.Contains("Preset") || type.Contains("Neighbourhood"))
+        {
+            return false;
         } else
         {
             meshType = 0;
         }
 
-        thisPackage = d;
-        data = d.PackageData as Sims2Data;
-
-        if (Packages.Any(x => x.Sims2Data.EIDRDataBlock.Any(e => e.ResourceKeys.Any(r => thisPackage.Sims2Data.SHPEDataBlock.Any(s => s.FullKey == r.FullKey)))))
+        if (!d.Mesh && d.Recolor)
         {
-            texturePackage = Packages.First(x => x.Sims2Data.EIDRDataBlock.Any(e => e.ResourceKeys.Any(r => thisPackage.Sims2Data.SHPEDataBlock.Any(s => s.FullKey == r.FullKey))));
+            if (!string.IsNullOrEmpty(d.MatchingMesh))
+            {
+                thisPackage = Packages.First(x => x.FileName == d.MatchingMesh);
+                texturePackage = d;
+                foundTextures = true;
+            } else
+            {
+                return false;
+            }
+        } else if (d.Mesh && d.Recolor)
+        {
+            thisPackage = d;
+            texturePackage = d;
             foundTextures = true;
+        } else if (d.Mesh && !d.Recolor)
+        {
+            thisPackage = d;            
+            if (thisPackage.MatchingRecolors.Count > 0)
+            {
+                List<SimsPackage> txt = new();
+                foreach (string matching in thisPackage.MatchingRecolors)
+                {
+                    txt.Add(Packages.First(x => x.FileName == matching));
+                }
+                texturePackage = txt.OrderBy(qu => Guid.NewGuid()).First();
+                foundTextures = true;                          
+            }            
         }
-      
+
+        if (thisPackage != null) { 
+            if (thisPackage.Sims2Data != null)
+            {                
+                data = thisPackage.Sims2Data; 
+            } else { 
+                return false; 
+            }            
+        } else
+        {
+            return false;
+        }
 
         if (data.GMDCDataBlock.Count > 0)
         {
@@ -522,7 +590,28 @@ public partial class Snapshotter : Node3D
                         } else
                         {
                            flipepdInd = false; 
-                        }               
+                        }
+                        if (Verts.Count != UVs.Count || Verts.Count != Normals.Count)
+                        {
+                            List<int> lengths = [Verts.Count, UVs.Count, Normals.Count];
+                            if (Indices.Count != 0) lengths.Add(Indices.Count);
+                            int shortest = lengths.Min();
+                            List<Vector3> verts = new();
+                            List<Vector2> uvs = new();
+                            List<Vector3> normals = new();
+                            List<int> indc = new();
+                            for (int i = 0; i < shortest; i++)
+                            {
+                                verts.Add(Verts[i]);
+                                uvs.Add(UVs[i]);
+                                normals.Add(Normals[i]);
+                                if (Indices.Count != 0) indc.Add(Indices[i]);
+                            }
+                            Verts = verts;
+                            UVs = uvs;
+                            Normals = normals;
+                            if (Indices.Count != 0) Indices = indc;
+                        }
                         array[(int)Mesh.ArrayType.Vertex] = Verts.ToArray();
                         array[(int)Mesh.ArrayType.TexUV] = UVs.ToArray();
                         array[(int)Mesh.ArrayType.Normal] = Normals.ToArray();
@@ -545,8 +634,6 @@ public partial class Snapshotter : Node3D
 
                     //if (meshType != 1) AddChild(newmesh);
                     Meshes.Add(newmesh);
-
-
 
 
 
@@ -791,7 +878,7 @@ public partial class Snapshotter : Node3D
                         if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Mesh {0} is {1}", MeshName, bodyType));
                     }
 
-                    if (meshType != 1)
+                    if (meshType != 1 && meshType != 2)
                     {
                         if (foundTextures)
                         {
@@ -815,7 +902,11 @@ public partial class Snapshotter : Node3D
                             material.CullMode = BaseMaterial3D.CullModeEnum.Front;
                             newmesh.Mesh.SurfaceSetMaterial(0, material);
                             newmesh.Visible = false;                        
+                        } else
+                        {
+                            if (thisPackage.MatchingRecolors.Count > 0) GetTexturesForS2Meshes(d);
                         }
+                        newmesh.Visible = true;
                     }
                     count++;
                 }
@@ -828,8 +919,9 @@ public partial class Snapshotter : Node3D
                 S2ClothingMesh();
             } else {
                 SetMeshScale();
-            }            
+            }                        
         }
+        return true;
     }
 
     public void ApplyS2Textures(SimsPackage texturePackage)
@@ -839,7 +931,7 @@ public partial class Snapshotter : Node3D
         MMATData mmat = null;
         XNGBData xngb = null;
         if ((texturePackage.PackageData as Sims2Data).MMATDataBlock.Count > 0) mmat = (texturePackage.PackageData as Sims2Data).MMATDataBlock[0];
-        if ((texturePackage.PackageData as Sims2Data).XNGBDataBlock != null) xngb = (texturePackage.PackageData as Sims2Data).XNGBDataBlock;
+        if ((texturePackage.PackageData as Sims2Data).XNGBDataBlock != null) xngb = (texturePackage.PackageData as Sims2Data).XNGBDataBlock[0];
 
         if (mmat != null)
         {
@@ -975,7 +1067,7 @@ public partial class Snapshotter : Node3D
         MMATData mmat = null;
         XNGBData xngb = null;
         if ((package.PackageData as Sims2Data).MMATDataBlock.Count > 0) mmat = (package.PackageData as Sims2Data).MMATDataBlock[0];
-        if ((package.PackageData as Sims2Data).XNGBDataBlock != null) xngb = (package.PackageData as Sims2Data).XNGBDataBlock;
+        if ((package.PackageData as Sims2Data).XNGBDataBlock != null) xngb = (package.PackageData as Sims2Data).XNGBDataBlock[0];
 
         if (mmat != null)
         {
@@ -1073,7 +1165,7 @@ public partial class Snapshotter : Node3D
             }
             else
             {
-                string TextureName = package.Sims2Data.XNGBDataBlock.ModelName;
+                string TextureName = package.Sims2Data.XNGBDataBlock[0].ModelName;
                 if (TextureName.Contains('!')) TextureName = TextureName.Split('!')[^1];
                 if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Mesh package has no textures. Searching for {0}", TextureName));
 

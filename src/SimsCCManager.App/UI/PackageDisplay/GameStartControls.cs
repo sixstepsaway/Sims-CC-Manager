@@ -89,7 +89,7 @@ public partial class GameStartControls : MarginContainer
 
     private void Play()
     {
-        FilesLinked = PackageDisplay.LinkFiles();
+        FilesLinked = PackageDisplay.LinkFiles(ThisInstance.ExecutablePath);
     }
 
 
@@ -276,7 +276,19 @@ public partial class GameStartControls : MarginContainer
                     anything = true;
                 }
             }
-        }
+        }  else if (game == SimsGames.SimsMedieval){
+            foreach (string exe in GlobalVariables.SimsMedievalExes){
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Checking for {0}", exe));
+                if (Process.GetProcessesByName(exe).Length == 0){
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Didn't find {0}", exe));
+                    anything = false;
+                } else {
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Found {0}", exe));
+                    RunningProcess = exe;
+                    anything = true;
+                }
+            }
+        } 
         
         return anything;            
     }

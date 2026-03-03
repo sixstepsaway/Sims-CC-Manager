@@ -1,0 +1,71 @@
+# ResourceConfig file for platform-independent resources
+#
+# See ResourceConfig/doc/ResourceConfig.htm for details on format.
+# Intranet link as of this moment:
+#  http://ears-wiki/ctg/_docs/depot/UTF/HTML/UTFApp/Resource/ResourceConfig/doc/ResourceConfig.htm
+
+#
+#  UI
+#
+Priority -29
+PackedFile UI/UI.package
+PackedFile Automation/AutomationData.package
+PackedFile Jazz/JazzData.package
+PackedFile Misc/fallback.package
+
+#
+# Folder associations using Group IDs
+#
+#Group 0x001407ec Audio
+#Group 0x0051185b EffectsBinary
+
+#
+# File associations using FileType IDs. Put them here instead of in a DDFMap.txt
+#
+#FileType 0x0175e5cd script
+#FileType 0x0175e5d9 scriptsym
+#FileType 0x8eaf13de rig
+#FileType 0x6b20c4f3 clip
+#FileType 0x00b2d882 dds
+#FileType 0x025ed6f4 simoutfit
+#FileType 0xd55f7caf lightrigs
+FileType 0xf0ff5598 triggers
+#FileType 0x11c258c0 ctriggers
+FileType 0x0333406c xml
+FileType 0x1a3201cd mod
+#FileType 0xd3044521 slot
+#FileType 0x00b552ea spt
+#FileType 0x021d7e8c spt2
+#FileType 0x1f886ead ini
+FileType 0x025c95b6 layout
+FileType 0x025c90a6 css
+FileType 0x062e9ee0 ttf
+FileType 0x062e9ee0 otf
+FileType 0x062e9ee0 ttc
+#FileType 0x2f7d0006 tga
+#FileType 0x2f7d0004 png
+#FileType 0x2f7d0002 jpg 
+#FileType 0x2f7d0002 jpeg 
+#FileType 0x03b4c61d lightingdata
+#FileType 0xea5118b0 swb
+#Audio files
+#FileType 0x02b9f662 prop
+#FileType 0x010077c4 wav
+#FileType 0x010077bb mp3
+#FileType 0x010077ca xa	   
+#FileType 0x01a527db snr
+#FileType 0x01eef63a sns
+#FileType 0x0181b0d2 abk
+#FileType 0x02c9eff2 submix  
+#FileType 0x029e333b voice
+FileType 0x03b33ddf mod
+FileType 0x0604abda dreamtree
+
+Priority 501
+DirectoryFiles Files/… autoupdate
+Priority 500
+PackedFile Packages/.package
+PackedFile Packages//.package
+PackedFile Packages///.package
+PackedFile Packages////.package
+PackedFile Packages/////*.package

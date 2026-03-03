@@ -38,6 +38,9 @@ public partial class DataGrid : Control
 	public delegate void DataChangedEvent(DataGridRow rowIdx, string dataChanged, int Item);
 	public event DataChangedEvent DataChanged;
 
+	public delegate void ItemToggledAdjEvent(DataGridRow row);
+	public ItemToggledAdjEvent ItemToggledAdj;
+
 	public delegate void MouseAffectingEvent(bool inside, int idx);
 	public MouseAffectingEvent MouseAffectingGrid;
 
@@ -74,7 +77,7 @@ public partial class DataGrid : Control
 	public DataGridHeaderRow HeaderRow;
 	public VScrollBar ScrollContainerScrollBarV;
 	public HScrollBar ScrollContainerScrollBarH;
-	public HeaderClickMenuHolder HeaderMenu;	
+	public HeaderClickMenuHolder HeaderMenu;
 
 	//Controls
 	private bool ShiftHeld = false;
@@ -89,8 +92,13 @@ public partial class DataGrid : Control
 	private bool ScrollDownHeld = false;
 	private bool ScrollUpHeld = false;
 	private bool ScrollReleased = false;
+
+	public bool DontAnnounceEdit = false;
+
 	public ConcurrentQueue<Task> ScrollerTasks = new();
 	private bool ScrollerTasksRunning = false;
+
+	public ParallelOptions ParallelSettings;
 
 	public bool DarkMode = false;
 
@@ -764,12 +772,17 @@ public partial class DataGrid : Control
 			PleasePassLog(string.Format("Items in _rowdata holder: {0}", _rowdata.Count));
 
 			foreach (DataGridRow row in _rowdata){
-				Task t = Task.Run( () => {
+				Task t = new Task( () => {
 					PleasePassLog(string.Format("Creating row {0}: (Item {1})", row.PopulatedIdx, row.OverallIdx));
 					bool r = CreateRow(row, row.OverallIdx);
 				});
 				runningTasks.Add(t);
 			}
+
+			Parallel.ForEach(runningTasks, ParallelSettings, t =>
+            {
+                t.Start();
+            });
 
 
 			while (runningTasks.Any(x => !x.IsCompleted)){
@@ -931,8 +944,6 @@ public partial class DataGrid : Control
 					row.ToggleCell = cell;
 					bool toggleresult = ToBool(importedRowData.Items[i].ItemContent);
 					row.Toggled = toggleresult;
-					cell.ToggleToggled = toggleresult;
-					cell.ToggleFlipped += (w) => row.CellWasToggled(w);
 				}
 				if (cell.CellOptions == CellOptions.Picture)
 				{
@@ -973,11 +984,11 @@ public partial class DataGrid : Control
 				PleasePassLog(string.Format("Cell {0} for row {1} size: {2}", i, num, size));
 				cell.TextContent = importedRowData.Items[i].ItemContent;
 				cell.Editable = Headers[i].ContentEditable;
-				cell.ToggleFlipped += (Toggle) => ToggleFlipped(Toggle, row.PopulatedIndex);
-				cell.Resizeable = Headers[i].Resizeable;
+				cell.ToggleFlipped += () => ToggleItem(cell.Toggled, row.RowData);
 				cell.AssociatedHeader = header;
 				cell.AssociatedHeaderSizer = sizeadjuster;
 				cell.ProduceTooltip += (t) => TooltipProduced(t);
+				cell.CellIdx = i;
 				row.AddCell(cell);
 				hc++;
 			}
@@ -1158,8 +1169,12 @@ public partial class DataGrid : Control
 
 	private void InvokeDataChanged(DataGridRow row, string headerData, int headerIdx)
 	{
-		if (!Populating) DataChanged?.Invoke(row, headerData, headerIdx);
-		if (rHidden || Sorted || Searched) RowsUnhidden[row.OverallIdx] = RowData[row.PopulatedIdx];
+		if (!DontAnnounceEdit)
+		{
+			if (!Populating) DataChanged?.Invoke(row, headerData, headerIdx);
+			if (rHidden || Sorted || Searched) RowsUnhidden[row.OverallIdx] = RowData[row.PopulatedIdx];
+		}
+		
 	}
 
     private void AdjustmentNumberAdjusted(DataGridRowUi x, int c)
@@ -1173,21 +1188,12 @@ public partial class DataGrid : Control
     private void RowWasEdited(DataGridRowUi r, DataGridCell c)
     {
         if (c.CellOptions == CellOptions.AdjustableNumber){
-			//int an = RowData[0].Items.IndexOf(RowData[0].Items.Where(x => x.CellType == CellOptions.AdjustableNumber).First());
-			
-			List<DataGridRow> reorderlist = RowData;
-
-			reorderlist = reorderlist.OrderBy(x => x.AdjustmentNumber).ToList();
-			
-			if(RowData.Any(x => x.AdjustmentNumber != -1)){
-				for (int i = 0; i < RowData.Count; i++){
-					if (RowData[i].AdjustmentNumber == c.NumberContent){
-						//TODO: what the fuck was this D:
-					}
-				}
-			}
-			
+			RowData.First(x => x.Identifier == r.RowData.Identifier).AdjustmentNumber = r.AdjustmentNumber;			
+		} else if (c.CellOptions == CellOptions.Toggle)
+		{
+			RowData.First(x => x.Identifier == r.RowData.Identifier).Toggled = r.Toggled;			
 		}
+		ItemToggledAdj?.Invoke(RowData.First(x => x.Identifier == r.RowData.Identifier));
     }
 
 	private void AdjustableNumberEnabledAdd(DataGridRow row, bool remove){
@@ -1195,14 +1201,14 @@ public partial class DataGrid : Control
 
 		if (remove){			
 			row.AdjustmentNumber = -1;	
-			RowData.Where(x => x.Identifier == row.Identifier).First().AdjustmentNumber = -1;
-			reorderlist.Remove(RowData.Where(x => x.Identifier == row.Identifier).First());
+			RowData.First(x => x.Identifier == row.Identifier).AdjustmentNumber = -1;
+			reorderlist.Remove(RowData.First(x => x.Identifier == row.Identifier));
 			reorderlist = [.. reorderlist.OrderBy(x => x.AdjustmentNumber)];
 			for (int c = 0; c < reorderlist.Count; c++) {
 				reorderlist[c].AdjustmentNumber = c;
-				RowData.Where(x => x.Identifier == reorderlist[c].Identifier).First().AdjustmentNumber = c;
+				RowData.First(x => x.Identifier == reorderlist[c].Identifier).AdjustmentNumber = c;
 				if (VisibleRows.Any(x => x.RowData.Identifier == reorderlist[c].Identifier)){
-					VisibleRows.Where(x => x.RowData.Identifier == reorderlist[c].Identifier).First().AdjustmentNumber = c;
+					VisibleRows.First(x => x.RowData.Identifier == reorderlist[c].Identifier).AdjustmentNumber = c;
 					UpdateRow(reorderlist[c]);
 				}
 			}
@@ -1210,7 +1216,7 @@ public partial class DataGrid : Control
 			reorderlist = reorderlist.OrderBy(x => x.AdjustmentNumber).ToList();			
 			row.AdjustmentNumber = reorderlist.Count-1;	
 			if (VisibleRows.Any(x => x.RowData.Identifier == row.Identifier)){
-				VisibleRows.Where(x => x.RowData.Identifier == row.Identifier).First().AdjustmentNumber = row.AdjustmentNumber;
+				VisibleRows.First(x => x.RowData.Identifier == row.Identifier).AdjustmentNumber = row.AdjustmentNumber;
 				UpdateRow(row);
 			}	
 		}
@@ -1219,28 +1225,28 @@ public partial class DataGrid : Control
 
 	private void AdjustableNumberOneNumberChanged(DataGridRowUi changed, int oldnum, int newnum)
 	{
-		/*List<DataGridRow> reorderlist = RowData;
-		reorderlist = reorderlist.Where(x => x.AdjustmentNumber != -1).ToList();
-		reorderlist = reorderlist.OrderBy(x => x.AdjustmentNumber).ToList();*/
-
-		int cellidx = RowData[0].Items.IndexOf(RowData[0].Items.First(x => x.CellType == CellOptions.AdjustableNumber));
-
-		foreach (DataGridRow row in RowData)
+		int cellidx = RowData[0].Items.IndexOf(RowData[0].Items.First(x => x.CellType == CellOptions.AdjustableNumber));		
+		if (RowData.Any(x => x.AdjustmentNumber == newnum))
 		{
-			PleasePassLog(string.Format("Row {0}: {1}", row.OverallIdx, row.AdjustmentNumber));
+			DataGridRow rowSwapped = RowData.First(x => x.AdjustmentNumber == newnum);
+			if (RowData.Any(x => x.AdjustmentNumber == oldnum))
+			{
+				DataGridRow rowChanged = RowData.First(x => x.AdjustmentNumber == oldnum);
+				rowChanged.AdjustmentNumber = newnum;
+				rowSwapped.AdjustmentNumber = oldnum;
+				if (VisibleRows.Any(x => x.OverallIndex == rowChanged.OverallIdx)) VisibleRows.First(x => x.OverallIndex == rowChanged.OverallIdx).AdjustmentNumber = rowChanged.AdjustmentNumber;
+				if (VisibleRows.Any(x => x.OverallIndex == rowSwapped.OverallIdx)) VisibleRows.First(x => x.OverallIndex == rowSwapped.OverallIdx).AdjustmentNumber = rowSwapped.AdjustmentNumber;
+				InvokeDataChanged(rowChanged, Headers[cellidx].Data, cellidx);
+				InvokeDataChanged(rowSwapped, Headers[cellidx].Data, cellidx);
+			}
+		} else if (RowData.Any(x => x.AdjustmentNumber == oldnum))
+		{
+			DataGridRow rowChanged = RowData.First(x => x.AdjustmentNumber == oldnum);
+			rowChanged.AdjustmentNumber = newnum;
+			if (VisibleRows.Any(x => x.OverallIndex == rowChanged.OverallIdx)) VisibleRows.First(x => x.OverallIndex == rowChanged.OverallIdx).AdjustmentNumber = rowChanged.AdjustmentNumber;
+			InvokeDataChanged(rowChanged, Headers[cellidx].Data, cellidx);
 		}
-
-		if (RowData.Where(x => x.AdjustmentNumber == newnum).Any())
-		{
-			DataGridRow newnumrow = RowData.Where(x => x.AdjustmentNumber == oldnum).First();
-			DataGridRow oldnumrow = RowData.Where(x => x.AdjustmentNumber == newnum).First();
-			oldnumrow.AdjustmentNumber = oldnum;			
-			newnumrow.AdjustmentNumber = newnum;
-			VisibleRows.First(x => x.OverallIndex == oldnumrow.OverallIdx).AdjustmentNumber = oldnum;
-			VisibleRows.First(x => x.OverallIndex == newnumrow.OverallIdx).AdjustmentNumber = newnum;
-			InvokeDataChanged(oldnumrow, Headers[cellidx].Data, cellidx);
-			InvokeDataChanged(newnumrow, Headers[cellidx].Data, cellidx);
-		}		
+		
 	}
 
 	private void AdjustReorderList(List<DataGridRow> reorderlist, int newnum, bool Up)
@@ -1270,14 +1276,14 @@ public partial class DataGrid : Control
 	{
 		List<DataGridRow> reorderlist = RowData;
 
-		reorderlist = reorderlist.Where(x => x.Toggled).ToList();
-		reorderlist = reorderlist.OrderBy(x => x.AdjustmentNumber).ToList();
+		reorderlist = [.. reorderlist.Where(x => x.Toggled)];
+		reorderlist = [.. reorderlist.OrderBy(x => x.AdjustmentNumber)];
 
 		if (reorderlist.Any(x => x.AdjustmentNumber != -1))
 		{
 			int c = 0;
-			List<DataGridRow> justminus = reorderlist.Where(x => x.AdjustmentNumber == -1).ToList();
-			List<DataGridRow> alreadynumbered = reorderlist.Where(x => x.AdjustmentNumber != -1).ToList();
+			List<DataGridRow> justminus = [.. reorderlist.Where(x => x.AdjustmentNumber == -1)];
+			List<DataGridRow> alreadynumbered = [.. reorderlist.Where(x => x.AdjustmentNumber != -1)];
 			reorderlist.Clear();
 			foreach (DataGridRow r in alreadynumbered)
 			{
@@ -1304,13 +1310,10 @@ public partial class DataGrid : Control
 		}
 	}
 
-    
-
-
-    private void ToggleFlipped(bool toggle, int rowIndex)
+    public void ToggleItem(bool toggle, DataGridRow row)
     {
-		DataGridRow thisRow = RowData[rowIndex];
-		int togglecell = thisRow.Items.IndexOf(thisRow.Items.Where(x => x.CellType == CellOptions.Toggle).First());
+		DataGridRow thisRow = row;
+		int togglecell = thisRow.Items.IndexOf(thisRow.Items.First(x => x.CellType == CellOptions.Toggle));
 		thisRow.Items[togglecell].ItemContent = toggle.ToString();
 		thisRow.Toggled = toggle;
 		if (LinkToggleToAdjustmentNumber){

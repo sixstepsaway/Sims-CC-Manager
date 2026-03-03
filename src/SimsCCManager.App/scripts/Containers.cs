@@ -13,6 +13,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
 using Godot;
+using ICSharpCode.SharpZipLib.Zip;
 using SimsCCManager.Debugging;
 using SimsCCManager.Globals;
 using SimsCCManager.OptionLists;
@@ -48,8 +49,9 @@ namespace SimsCCManager.Containers
         public Sims2Folders Sims2Folders {get; set;}
         public Sims3Folders Sims3Folders {get; set;}
         public Sims4Folders Sims4Folders {get; set;}
+        public SimsMedievalFolders SimsMedievalFolders {get; set;}
         public InstanceFolders InstanceFolders {get; set;}
-        public List<string> InstanceProfileLocations {get; set;}
+        public List<string> InstanceProfileLocations {get; set;} = new();
         [XmlIgnore]
         public List<InstanceProfile> InstanceProfiles {get; set;}
 
@@ -129,6 +131,12 @@ namespace SimsCCManager.Containers
             Categories.Add(category);
         }
 
+        public void AddProfile(InstanceProfile profile)
+        {
+            InstanceProfiles = new(){profile};
+            InstanceProfileLocations.Add(profile.ProfileFolder);
+        }
+
         private void DefaultProfile()
         {
             InstanceProfile instanceProfile = new() {
@@ -138,7 +146,7 @@ namespace SimsCCManager.Containers
             };
             instanceProfile.ProfileFolder = Path.Combine(InstanceFolders.InstanceProfilesFolder, instanceProfile.SafeFileName());
             Directory.CreateDirectory(instanceProfile.ProfileFolder);
-            InstanceProfiles = new(){instanceProfile};
+            AddProfile(instanceProfile);
             LoadedProfile = instanceProfile;
         }
 
@@ -164,7 +172,7 @@ namespace SimsCCManager.Containers
         }
 
         public void WriteXML()
-        {
+        {            
             if (File.Exists(this.XMLfile()))
             {
                 File.Delete(this.XMLfile());
@@ -305,6 +313,23 @@ namespace SimsCCManager.Containers
 
                     Sims4Folders.ThumbnailsFiles.Add(Path.Combine(GameDocumentsFolder, "localthumbcache.package"));
                 break;
+                case SimsGames.SimsMedieval:
+                    SimsMedievalFolders = new();
+                    SimsMedievalFolders.ArchiveFolder = Path.Combine(GameDocumentsFolder, "Archive");
+                    SimsMedievalFolders.CurrentGameFolder = Path.Combine(GameDocumentsFolder, "CurrentGame.tsm");
+                    SimsMedievalFolders.InstalledWorldsFolder = Path.Combine(GameDocumentsFolder, "InstalledWorlds");
+                    SimsMedievalFolders.SavedSimsFolder = Path.Combine(GameDocumentsFolder, "SavedSims");
+                    SimsMedievalFolders.SavesFolder = Path.Combine(GameDocumentsFolder, "Saves");
+                    SimsMedievalFolders.ScreenshotsFolder = Path.Combine(GameDocumentsFolder, "Screenshots");
+                    SimsMedievalFolders.ThumbnailsFolder = Path.Combine(GameDocumentsFolder, "Thumbnails");
+
+                    SimsMedievalFolders.ModsFolder = Path.Combine(Path.Combine(GameInstallFolder, "Mods"), "Packages");
+
+                    SimsMedievalFolders.CacheFiles.Add(Path.Combine(GameDocumentsFolder, "CASPartCache.package"));
+                    SimsMedievalFolders.CacheFiles.Add(Path.Combine(GameDocumentsFolder, "compositorCache.package"));
+                    SimsMedievalFolders.CacheFiles.Add(Path.Combine(GameDocumentsFolder, "simCompositorCache.package"));
+
+                break;
             }
         }
 
@@ -313,6 +338,7 @@ namespace SimsCCManager.Containers
             if (GameChoice == SimsGames.Sims2) ver = GetSims2Version(GameDocumentsFolder);
             if (GameChoice == SimsGames.Sims3) ver = GetSims3Version(GameDocumentsFolder);
             if (GameChoice == SimsGames.Sims4) ver = GetSims4Version(GameDocumentsFolder);
+            if (GameChoice == SimsGames.SimsMedieval) ver = GetSimsMedievalVersion(GameDocumentsFolder);
             if (ver != "") {
                 ver = Regex.Replace(ver, @"[\p{C}-[\t\r\n]]+", "");
             } 
@@ -332,6 +358,22 @@ namespace SimsCCManager.Containers
                     fileStream.Close();
                 }
             }
+            return version;
+        }
+        public static string GetSimsMedievalVersion(string docfolder){
+            string version = "";
+            string versionfile = Path.Combine(docfolder, "Version.tag");
+            if (File.Exists(versionfile)){
+                using (FileStream fileStream = new(versionfile, FileMode.Open, System.IO.FileAccess.Read)){
+                    using (StreamReader streamReader = new(versionfile)){
+                        streamReader.ReadLine();
+                        version = streamReader.ReadLine();
+                        streamReader.Close();
+                    }
+                    fileStream.Close();
+                }
+            }
+            version = version.Replace("Latest = ", "");
             return version;
         }
         public static string GetSims3Version(string docfolder){
@@ -456,6 +498,23 @@ namespace SimsCCManager.Containers
         public List<string> ThumbnailsFiles { get; set; } = new();
     }
 
+    public class SimsMedievalFolders
+    {
+        public string ArchiveFolder { get; set; }
+        public string CurrentGameFolder { get; set; }
+        public string InstalledWorldsFolder { get; set; }
+        public string ModsFolder { get; set; }
+        public string SavedSimsFolder { get; set; }
+        public string SavesFolder { get; set; }
+        public string ScreenshotsFolder { get; set; }
+        public string ThumbnailsFolder { get; set; }
+
+        public string InstanceThumbnailsFolder { get; set; }
+
+        public List<string> CacheFiles { get; set; } = new();
+        public List<string> ThumbnailsFiles { get; set; } = new();
+    }
+
 
 
 
@@ -469,6 +528,12 @@ namespace SimsCCManager.Containers
         public int Packages {get; set;}
         [XmlIgnore]
         public bool Hidden {get; set;}
+        public string FolderLocation {get; set;}
+
+        public void SetFolderLocation(string InstancePackagesFolder)
+        {
+            FolderLocation = Path.Combine(InstancePackagesFolder, string.Format("__CATEGORY_{0}", Name));
+        }
     }
 
     public class Executable {
@@ -615,10 +680,8 @@ namespace SimsCCManager.Containers
         public string FileName {get; set;}
         public string InfoFile
         {
-            get { 
-                    
-                        return string.Format("{0}.info", Location); 
-                    
+            get {                     
+                    return string.Format("{0}.info", Location);                     
                 }
         }
         private string _location;
@@ -648,6 +711,86 @@ namespace SimsCCManager.Containers
                 }
             }
         }
+
+        public void MovePackage(string newfolder)
+        {
+            if (!Directory.Exists(newfolder)) Directory.CreateDirectory(newfolder);
+            FileInfo inf = new(InfoFile);
+            if (File.Exists(Location))
+            {
+                FileInfo fi = new(Location);           
+                string newpath = Path.Combine(newfolder, fi.Name);
+                if (File.Exists(newpath))
+                {
+                    newpath = Utilities.IncrementName(newpath);
+                }
+                File.Move(Location, newpath);
+                this.Location = newpath;
+            } else if (Directory.Exists(Location))
+            {
+                DirectoryInfo di = new(Location);
+                string newpath = Path.Combine(newfolder, di.Name);
+                if (Directory.Exists(newpath))
+                {
+                    newpath = Utilities.IncrementName(newpath, true);
+                }
+                Directory.Move(Location, newpath);
+                this.Location = newpath;
+
+                List<string> files = Directory.EnumerateFiles(Location, "*.info", SearchOption.AllDirectories).ToList();
+                foreach (string file in files)
+                {
+                    SimsPackage p = new();
+                    XmlSerializer simsPackageSerializer = new XmlSerializer(typeof(SimsPackage));
+                    using (FileStream fileStream = new(file, FileMode.Open, System.IO.FileAccess.Read)){
+                        using (StreamReader streamReader = new(fileStream)){
+                            p = (SimsPackage)simsPackageSerializer.Deserialize(streamReader);
+                            streamReader.Close();
+                        }
+                        fileStream.Close();
+                    }
+                    string plc = file.Replace(".info", "");
+                    p.Location = plc;
+                    p.WriteXML();
+                }
+                if (LinkedFiles.Any())
+                {
+                    for (int i = 0; i < LinkedFiles.Count; i++)
+                    {
+                        if (LinkedFiles[i].StartsWith(di.FullName))
+                        {
+                            FileInfo fl = new(LinkedFiles[i]);                            
+                            LinkedFiles[i] = Path.Combine(Location, fl.Name);
+                        }
+                    }
+                }
+                if (LinkedFolders.Any())
+                {
+                    for (int i = 0; i < LinkedFolders.Count; i++)
+                    {
+                        if (LinkedFolders[i].StartsWith(di.FullName))
+                        {
+                            DirectoryInfo fl = new(LinkedFolders[i]);                            
+                            LinkedFolders[i] = Path.Combine(Location, fl.Name);
+                        }
+                    }
+                }
+            } 
+
+               
+
+
+
+            if (File.Exists(inf.FullName))
+            {
+                string newpath = Path.Combine(newfolder, inf.Name);
+                File.Move(inf.FullName, newpath);
+            }
+
+
+                    
+        }
+
         public FileTypes FileType { get; set; }
         public DateTime DateAdded {get; set;}
         public DateTime DateUpdated {get; set;}
@@ -936,7 +1079,7 @@ namespace SimsCCManager.Containers
                 }
             } else
                 {
-                    return "";
+                    return string.Empty;
                 }
         }}
         public bool Favorite {get; set;}
@@ -1007,24 +1150,59 @@ namespace SimsCCManager.Containers
         static ReaderWriterLock locker = new ReaderWriterLock();
         public void WriteXML()
         {
-            try
+            XmlSerializer InfoSerializer = new XmlSerializer(this.GetType());
+            if (GlobalVariables.DebugMode)
             {
-                locker.AcquireWriterLock(int.MaxValue); 
+                try
+                {
+                    locker.AcquireWriterLock(int.MaxValue); 
+                    if (File.Exists(this.InfoFile))
+                    {
+                        File.Delete(this.InfoFile);
+                    }                    
+                    using (var writer = new StreamWriter(this.InfoFile))
+                    {
+                        InfoSerializer.Serialize(writer, this);
+                    }
+                }
+                finally
+                {
+                    locker.ReleaseWriterLock();
+                }  
+            } else
+            {
                 if (File.Exists(this.InfoFile))
                 {
                     File.Delete(this.InfoFile);
                 }
-                XmlSerializer InfoSerializer = new XmlSerializer(this.GetType());
-                using (var writer = new StreamWriter(this.InfoFile))
+                
+                using (FileStream fs = File.Create(this.InfoFile))
+                using (ZipOutputStream zipStream = new ZipOutputStream(fs))
                 {
-                    InfoSerializer.Serialize(writer, this);
+                    // Add a file entry to the ZIP archive
+                    ZipEntry entry = new ZipEntry(this.FileName)
+                    {
+                        DateTime = this.DateUpdated
+                    };
+
+                    zipStream.PutNextEntry(entry);
+
+                    // Write file data to the ZIP stream
+                    
+
+                    byte[] buffer = new byte[4096];
+                    using (MemoryStream memoryStream = new())
+                    {
+                        InfoSerializer.Serialize(memoryStream, this);
+                        int bytesRead;
+                        while ((bytesRead = memoryStream.Read(buffer, 0, buffer.Length)) > 0)
+                        {
+                            zipStream.Write(buffer, 0, bytesRead);
+                        }
+                    }
+                    zipStream.CloseEntry();
                 }
-            }
-            finally
-            {
-                locker.ReleaseWriterLock();
-            }
-               
+            }               
         }
 
         public void SetProperty(string propName, dynamic input){
@@ -1086,6 +1264,7 @@ namespace SimsCCManager.Containers
         
 
         void Serialize();
+        void GetPackageType();
 
         int EntryCount(string entry);   
 
@@ -1120,7 +1299,7 @@ namespace SimsCCManager.Containers
                 }
             }
         }
-        public string AltType {get; set;}
+        public string AltType {get; set;} = "";
 
         public List<FunctionSortList> FunctionSort {get; set;} = new();
         private string _guid;
@@ -1137,7 +1316,7 @@ namespace SimsCCManager.Containers
                     }
                 } else
                 {
-                    return "";
+                    return string.Empty;
                 }
                 
             } set
@@ -1171,16 +1350,274 @@ namespace SimsCCManager.Containers
         }
 
         public List<EntryCount> IndexEntryCounts {get; set;} = new();
+        public List<CTSSData> CTSSDataBlock {get; set;} = new();
+        public List<OBJDData> OBJDDataBlock {get; set;} = new();
+        public List<XOBJData> XOBJDataBlock {get; set;} = new();
         public List<GMDCData> GMDCDataBlock {get; set;} = new();
         public List<MMATData> MMATDataBlock {get; set;} = new();
-        public XFLRData XFLRDataBlock {get; set;} = new();
+        public List<XFLRData> XFLRDataBlock {get; set;} = new();
         public List<TXTRData> TXTRDataBlock {get; set;} = new();
-        public XNGBData XNGBDataBlock {get; set;} = new();
+        public List<XNGBData> XNGBDataBlock {get; set;} = new();
         public List<GZPSData> GZPSDataBlock {get; set;} = new();
         public List<EIDRData> EIDRDataBlock {get; set;} = new();
         public List<SHPEData> SHPEDataBlock {get; set;} = new();
         public List<TXMTData> TXMTDataBlock {get; set;} = new();
         public List<XHTNData> XHTNDataBlock {get; set;} = new();
+        public List<XTOLData> XTOLDataBlock {get; set;} = new();
+
+
+        public void GetPackageType()
+        {
+            if (FunctionSort.Count > 0) return;
+            
+            if (IsMod())
+            {
+                IsGameMod();
+                Orphan = false;
+            } else if (EntryCount("xhtn") > 0)
+            {
+                AltType = "Hair";
+            } else if (EntryCount("xstn") > 0 || TXMTDataBlock.Any(x => x.MaterialDescription.Contains("naked_nude_")))
+            {
+                AltType = "Skin";
+                Mesh = false;
+                Recolor = false;
+                Orphan = false;
+            } else if (EntryCount("coll") > 0)
+            {
+                AltType = "Collection";
+                Mesh = false;
+                Recolor = false;
+                Orphan = false;
+            } else if (EntryCount("xngb") > 0)
+            {
+                AltType = "Hood Deco";
+            } else if (EntryCount("lxnr") > 0
+            && EntryCount("AGED") > 0
+            && EntryCount("3IDR") > 0
+            && EntryCount("IMG") == 0
+            && EntryCount("gzps") > 0
+            && EntryCount("binx") > 0
+            && EntryCount("txmt") > 0)
+            {
+                AltType = "Face Template";
+                Mesh = false;
+                Recolor = false;
+                Orphan = false;
+            } else if (EntryCount("lxnr") > 0
+            && EntryCount("AGED") > 0
+            && EntryCount("3IDR") > 0
+            && EntryCount("IMG") > 0
+            && EntryCount("gzps") > 0
+            && EntryCount("binx") > 0
+            && EntryCount("txmt") > 0
+            && EntryCount("bhav") > 0)
+            {
+                AltType = "NPC"; 
+            }if (EntryCount("gmdc") > 0
+            &&EntryCount("gmnd") > 0
+            && EntryCount("xfmd") > 0
+            && EntryCount("coll") == 0)
+            {
+                AltType = "Slider"; 
+                Mesh = false;
+                Recolor = false;
+                Orphan = false;
+            } else if (EntryCount("XOBJ") > 0
+            && EntryCount("objd") == 0
+            && EntryCount("gmdc") == 0
+            && EntryCount("str#") == 0
+            && EntryCount("bhav") == 0
+            && EntryCount("xngb") == 0
+            && EntryCount("txtr") == 0
+            && EntryCount("txmt") == 0
+            && EntryCount("slot") == 0
+            && EntryCount("nref") == 0
+            && EntryCount("ctss") == 0)
+            {
+                AltType = "Build Object Hider";
+                Orphan = false; 
+            } else if (EntryCount("XOBJ") == 0
+            && EntryCount("objd") > 0
+            && EntryCount("gmdc") == 0
+            && EntryCount("str#") == 0
+            && EntryCount("bhav") == 0
+            && EntryCount("xngb") == 0
+            && EntryCount("txtr") == 0
+            && EntryCount("txmt") == 0
+            && EntryCount("slot") == 0
+            && EntryCount("nref") == 0
+            && EntryCount("ctss") == 0)
+            {
+                AltType = "Buy Object Hider"; 
+                Orphan = false;
+            } else if (EntryCount("XOBJ") == 0
+            && EntryCount("objd") == 0
+            && EntryCount("gmdc") == 0
+            && EntryCount("str#") == 0
+            && EntryCount("bhav") == 0
+            && EntryCount("xngb") == 0
+            && EntryCount("txtr") == 0
+            && EntryCount("txmt") == 0
+            && EntryCount("slot") == 0
+            && EntryCount("nref") == 0
+            && EntryCount("ctss") == 0
+            && EntryCount("gzps") > 0)
+            {
+                AltType = "CAS Hider"; 
+                Orphan = false;
+            } else if (EntryCount("XOBJ") == 0
+            && EntryCount("objd") == 0
+            && EntryCount("gmdc") == 0
+            && EntryCount("str#") == 0
+            && EntryCount("bhav") == 0
+            && EntryCount("xngb") == 0
+            && EntryCount("txtr") == 0
+            && EntryCount("txmt") == 0
+            && EntryCount("slot") == 0
+            && EntryCount("nref") == 0
+            && EntryCount("ctss") == 0
+            && EntryCount("xtol") > 0)
+            {
+                AltType = "CAS Makeup Hider"; 
+                Orphan = false;
+            } else if (EntryCount("XOBJ") == 0
+            && EntryCount("objd") == 0
+            && EntryCount("gmdc") == 0
+            && EntryCount("str#") == 0
+            && EntryCount("bhav") == 0
+            && EntryCount("xngb") == 0
+            && EntryCount("txtr") == 0
+            && EntryCount("txmt") == 0
+            && EntryCount("slot") == 0
+            && EntryCount("nref") == 0
+            && EntryCount("ctss") == 0
+            && EntryCount("xmol") > 0)
+            {
+                AltType = "CAS Accesory Hider"; 
+                Orphan = false;
+            } else if (EntryCount("XOBJ") == 0
+            && EntryCount("objd") == 0
+            && EntryCount("gmdc") == 0
+            && EntryCount("str#") == 0
+            && EntryCount("bhav") == 0
+            && EntryCount("xngb") == 0
+            && EntryCount("txtr") == 0
+            && EntryCount("txmt") == 0
+            && EntryCount("slot") == 0
+            && EntryCount("nref") == 0
+            && EntryCount("ctss") == 0
+            && EntryCount("xngb") > 0)
+            {
+                AltType = "Hood Deco Hider";
+                Orphan = false; 
+            }
+
+            if (EntryCount("gmdc") > 0 && AltType != "Slider" && AltType != "Face Template" && AltType != "Collection") Mesh = true;
+            if (EntryCount("txtr") > 0 && AltType != "Slider" && AltType != "Face Template" && AltType != "Collection") Recolor = true;
+
+
+        }
+
+
+        private bool IsMod()
+        {
+            if (EntryCount("bhav") > 0
+            && EntryCount("dir") == 1
+            && EntryCount("gmdc") == 0)
+            {
+                return true;
+            } else if (EntryCount("bhav") > 0
+            && EntryCount("bcon") > 0
+            && EntryCount("dir") == 0
+            && EntryCount("gmdc") == 0
+            && EntryCount("objd") == 0)
+            {
+                return true;
+            } else if (EntryCount("bhav") > 0
+            && EntryCount("nref") > 0
+            && EntryCount("objd") > 0
+            && EntryCount("objf") > 0
+            && EntryCount("slot") > 0
+            && EntryTypes() == 5)
+            {
+                return true;
+            } else if (EntryCount("ttab") > 0
+            && EntryCount("ttas") > 0
+            && EntryTypes() == 2)
+            {
+                return true;
+            } else if (EntryCount("bhav") > 0
+            && EntryCount("ttas") > 0
+            && EntryCount("ttab") > 0
+            && EntryTypes() == 3)
+            {
+                return true;
+            } else if (EntryCount("bhav") > 0
+            && EntryCount("ctss") > 0
+            && EntryCount("STR#") > 0
+            && EntryTypes() == 3)
+            {
+                return true;
+            } else if (EntryCount("bcon") > 0
+            && EntryTypes() == 1)
+            {
+                return true;
+            } else if (EntryCount("bhav") > 0
+            && EntryTypes() == 1)
+            {
+                return true;
+            } else if (EntryCount("bhav") > 0
+            && EntryCount("objf") > 0
+            && EntryTypes() == 2)
+            {
+                return true;
+            } else if (EntryCount("ttab") > 0
+            && EntryTypes() == 1)
+            {
+                return true;
+            } else if (EntryCount("cres") > 0
+            && EntryCount("STR#") > 0
+            && EntryTypes() == 2)
+            {
+                return true;
+            } else if (EntryCount("STR#") > 0
+            && EntryTypes() == 1)
+            {
+                return true;
+            } else if (EntryCount("objd") > 0
+            && EntryCount("objf") > 0
+            && EntryCount("slot") > 0
+            && EntryCount("nref") > 0
+            && EntryTypes() == 4)
+            {
+                return true;
+            } else if (EntryCount("bhav") > 0
+            && EntryCount("ttab") > 0
+            && EntryCount("ttas") > 0
+            && EntryCount("STR#") > 0
+            && EntryTypes() == 4)
+            {
+                return true;
+            } else if (EntryCount("bhav") > 0
+            && EntryCount("STR#") > 0
+            && EntryCount("ttab") > 0
+            && EntryCount("ttas") > 0
+            && EntryCount("anim") > 0
+            && EntryTypes() == 5)
+            {
+                return true;
+            } else
+            {
+                return false;
+            }
+        }
+        
+
+
+
+
+
 
         public int EntryCount(string entry)
         {
@@ -1194,8 +1631,19 @@ namespace SimsCCManager.Containers
         }
 
         public int EntryTypes()
-        {
+        {            
             return IndexEntryCounts.Count;
+        }
+
+        public string WriteEntryList()
+        {
+            StringBuilder sb = new();
+            foreach (EntryCount entry in IndexEntryCounts.Where(x => x.Count > 0))
+            {
+                sb.AppendLine(string.Format("{0}: {1}", entry.EntryTag, entry.Count));
+            }            
+            string result = sb.ToString();
+            return result;
         }
 
         
@@ -1259,7 +1707,7 @@ namespace SimsCCManager.Containers
                 }
             }
         }
-        public string AltType {get; set;}
+        public string AltType {get; set;} = "";
 
         public List<FunctionSortList> FunctionSort {get; set;} = new();
         private List<IndexEntry> _indexentries;
@@ -1306,6 +1754,11 @@ namespace SimsCCManager.Containers
         {
             throw new NotImplementedException();
         }
+
+        public void GetPackageType()
+        {
+            throw new NotImplementedException();
+        }
     }
     
     public class Sims4Data : ISimsData
@@ -1323,7 +1776,7 @@ namespace SimsCCManager.Containers
                 }
             }
         }
-        public string AltType {get; set;}
+        public string AltType {get; set;} = "";
 
         public List<FunctionSortList> FunctionSort {get; set;} = new();
         private List<IndexEntry> _indexentries;
@@ -1367,6 +1820,11 @@ namespace SimsCCManager.Containers
         }
 
         public void DictionaryEntries()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void GetPackageType()
         {
             throw new NotImplementedException();
         }

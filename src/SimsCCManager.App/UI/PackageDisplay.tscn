@@ -161,7 +161,6 @@ use_native_dialog = true
 
 [node name="CustomPopupWindow" parent="." instance=ExtResource("19_aasf2")]
 visible = false
-force_native = false
 
 [node name="MarginContainer" type="MarginContainer" parent="."]
 visible = false

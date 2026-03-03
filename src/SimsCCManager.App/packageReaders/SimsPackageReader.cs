@@ -137,6 +137,7 @@ namespace SimsCCManager.PackageReaders
             new EntryType(){ Tag = "XA", TypeID = "2026960B", Description = "XA Audio" },
             new EntryType(){ Tag = "XFMD", TypeID = "0C93E3DE", Description = "Face Modifier XML" },
             new EntryType(){ Tag = "XHTN", TypeID = "8C1580B5", Description = "Hairtone XML" },
+            new EntryType(){ Tag = "XSTN", TypeID = "4C158081", Description = "Skintone XML" },
             new EntryType(){ Tag = "XMTO", TypeID = "584D544F", Description = "Material Object Class Dump" },
             new EntryType(){ Tag = "XNGB", TypeID = "6D619378", Description = "Neighborhood Object XML" },
             new EntryType(){ Tag = "XOBJ", TypeID = "CCA8E925", Description = "Object Class Dump" },
@@ -625,15 +626,51 @@ namespace SimsCCManager.PackageReaders
 
             ListEntries(IndexData);
 
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Adding index entries to SimsData for {0}", fileinfo.Name));
+
+            SimsData.IndexEntries = IndexData;
+            SimsData.DictionaryEntries();
+
+            Sims2Data.GetPackageType();
+        
+
+            if (!string.IsNullOrEmpty(SimsData.AltType)) if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Package {0} has entries: {1}. Its alt type is: {2}", fileinfo.Name, Sims2Data.WriteEntryList(), SimsData.AltType));
+
+            
 
             if (IndexData.Exists(x => x.EntryType == "CTSS"))
             {
-                S2ReadCTSS(IndexData.First(x => x.EntryType == "CTSS"));
-
+                int c = 0;
+                foreach (IndexEntry entry in IndexData.Where(x => x.EntryType == "CTSS"))
+                {
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Reading {0} CTSS #{1}", fileinfo.Name, c));
+                    try
+                    {
+                        S2ReadCTSS(entry);
+                    } catch
+                    {
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Unable to read CTSS #{0} for {1}", c, fileinfo.Name));                    
+                    }                    
+                    c++;
+                }
             }
             else if (IndexData.Exists(x => x.EntryType == "XOBJ"))
             {
-                S2ReadXOBJ(IndexData.First(x => x.EntryType == "XOBJ"));
+                int c = 0;
+                foreach (IndexEntry entry in IndexData.Where(x => x.EntryType == "XOBJ"))
+                {
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Reading {0} XOBJ #{1}", fileinfo.Name, c));
+                    try
+                    {
+                        S2ReadXOBJ(entry);
+                    } catch
+                    {
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Unable to read XOBJ #{0} for {1}", c, fileinfo.Name));                    
+                    }
+                    
+                    c++;
+                }
+                
             }
             if (IndexData.Exists(x => x.EntryType == "OBJD"))
             {
@@ -641,7 +678,14 @@ namespace SimsCCManager.PackageReaders
                 foreach (IndexEntry entry in IndexData.Where(x => x.EntryType == "OBJD"))
                 {
                     if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Reading {0} OBJD #{1}", fileinfo.Name, c));
-                    S2ReadOBJD(entry);
+                    try
+                    {
+                        S2ReadOBJD(entry);
+                    } catch
+                    {
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Unable to read OBJD #{0} for {1}", c, fileinfo.Name));                    
+                    }
+                    
                     c++;
                 }
             }
@@ -651,37 +695,79 @@ namespace SimsCCManager.PackageReaders
                 foreach (IndexEntry entry in IndexData.Where(x => x.EntryType == "GMDC"))
                 {
                     if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Reading {0} GMDC #{1}", fileinfo.Name, c));
-                    S2ReadGMDC(entry);
+                    try
+                    {
+                        S2ReadGMDC(entry);
+                    } catch
+                    {
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Unable to read GMDC #{0} for {1}", c, fileinfo.Name));                    
+                    }
+                    
                     c++;
                 }
 
             }
             if (IndexData.Exists(x => x.EntryType == "MMAT"))
             {
+                int c = 0;
                 foreach (IndexEntry entry in IndexData.Where(x => x.EntryType == "MMAT"))
                 {
-                    S2ReadMMAT(entry);
+                    try
+                    {
+                        S2ReadMMAT(entry);
+                    } catch
+                    {
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Unable to read MMAT #{0} for {1}", c, fileinfo.Name));                                     
+                    }
+                    c++;
                 }
             }
             if (IndexData.Exists(x => x.EntryType == "XFLR"))
             {
+                int c = 0;
                 foreach (IndexEntry entry in IndexData.Where(x => x.EntryType == "XFLR"))
                 {
-                    S2ReadXFLR(entry);
+                    try
+                    {
+                        S2ReadXFLR(entry);
+                    } catch
+                    {
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Unable to read XFLR #{0} for {1}", c, fileinfo.Name));                                  
+                    }
+                    
+                    c++;
                 }
             }
             if (IndexData.Exists(x => x.EntryType == "XNGB"))
             {
+                int c = 0;
                 foreach (IndexEntry entry in IndexData.Where(x => x.EntryType == "XNGB"))
                 {
-                    S2ReadXNGB(entry);
+                    try
+                    {
+                        S2ReadXNGB(entry);
+                    } catch
+                    {
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Unable to read XNGB #{0} for {1}", c, fileinfo.Name));                 
+                    }
+                    
+                    c++;
                 }
             }
             if (IndexData.Exists(x => x.EntryType == "GZPS"))
             {
+                int c = 0;
                 foreach (IndexEntry entry in IndexData.Where(x => x.EntryType == "GZPS"))
                 {
-                    S2ReadGZPS(entry);                    
+                    try
+                    {
+                        S2ReadGZPS(entry); 
+                    } catch
+                    {
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Unable to read GZPS #{0} for {1}", c, fileinfo.Name));                      
+                    }
+                     
+                    c++;                  
                 }                
             }
 
@@ -690,6 +776,11 @@ namespace SimsCCManager.PackageReaders
                 int c = 0;
                 foreach (IndexEntry entry in IndexData.Where(x => x.EntryType == "TXTR"))
                 {
+                    try { 
+                    } catch
+                    {
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Unable to read TXTR #{0} for {1}", c, fileinfo.Name));                       
+                    }
                     S2ReadTXTR(entry, c);
                     c++;
                 }
@@ -700,6 +791,11 @@ namespace SimsCCManager.PackageReaders
                 int c = 0;
                 foreach (IndexEntry entry in IndexData.Where(x => x.EntryType == "3IDR"))
                 {
+                    try { 
+                    } catch
+                    {
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Unable to read 3IDR #{0} for {1}", c, fileinfo.Name));                       
+                    }
                     S2Read3DIR(entry, c);
                     c++;
                 }
@@ -710,7 +806,14 @@ namespace SimsCCManager.PackageReaders
                 int c = 0;
                 foreach (IndexEntry entry in IndexData.Where(x => x.EntryType == "SHPE"))
                 {
-                    S2ReadSHPE(entry, c);
+                    try
+                    {
+                        S2ReadSHPE(entry, c);
+                    } catch
+                    {
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Unable to read SHPE #{0} for {1}", c, fileinfo.Name));                        
+                    }
+                    
                     c++;
                 }
             }
@@ -720,7 +823,14 @@ namespace SimsCCManager.PackageReaders
                 int c = 0;
                 foreach (IndexEntry entry in IndexData.Where(x => x.EntryType == "TXMT"))
                 {
-                    S2ReadTXMT(entry, c);
+                    try
+                    {
+                        S2ReadTXMT(entry, c);
+                    } catch
+                    {
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Unable to read TXMT #{0} for {1}", c, fileinfo.Name));                          
+                    }
+                    
                     c++;
                 }
             }
@@ -730,7 +840,30 @@ namespace SimsCCManager.PackageReaders
                 int c = 0;
                 foreach (IndexEntry entry in IndexData.Where(x => x.EntryType == "XHTN"))
                 {
-                    S2ReadXHTN(entry, c);
+                    try
+                    {                        
+                        S2ReadXHTN(entry, c);
+                    } catch
+                    {
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Unable to read XHTN #{0} for {1}", c, fileinfo.Name));                        
+                    }
+                    c++;
+                }
+            }
+            if (IndexData.Exists(x => x.EntryType == "XTOL"))
+            {
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Found {0} XTOL entries in {1}", IndexData.Count(x => x.EntryType == "XTOL"), fileinfo.Name));
+                int c = 0;
+                foreach (IndexEntry entry in IndexData.Where(x => x.EntryType == "XTOL"))
+                {
+                    try
+                    {
+                        S2ReadXTOL(entry, c);
+                    } catch
+                    {
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Unable to read XTOL #{0} for {1}", c, fileinfo.Name));                      
+                    }
+                   
                     c++;
                 }
             }
@@ -742,311 +875,53 @@ namespace SimsCCManager.PackageReaders
                 if (!string.IsNullOrEmpty(Sims2Data.MMATDataBlock[0]?.ObjectGUID) && (string.IsNullOrEmpty(Sims2Data.GUID) || Sims2Data.GUID == "N/a")) Sims2Data.GUID = Sims2Data.MMATDataBlock[0].ObjectGUID;
             }
 
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Adding index entries to SimsData for {0}", fileinfo.Name));
-
-            SimsData.IndexEntries = IndexData;
-            SimsData.DictionaryEntries();
-
-            if (SimsData.EntryCount("BHAV") > 0
-            && SimsData.EntryCount("DIR") == 1
-            && SimsData.EntryCount("GMDC") == 0)
-            {
-                Sims2Data.IsGameMod(); if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Package {0} is Sims2Data.IsGameMod()", fileinfo.Name));
-            }
-
-            if (SimsData.EntryCount("bhav") > 0
-            && SimsData.EntryCount("bcon") > 0
-            && SimsData.EntryCount("dir") == 0
-            && SimsData.EntryCount("gmdc") == 0
-            && SimsData.EntryCount("objd") == 0)
-            {
-                Sims2Data.IsGameMod(); if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Package {0} is Sims2Data.IsGameMod()", fileinfo.Name));
-            }
-
-            if (SimsData.EntryCount("bhav") > 0
-            && SimsData.EntryCount("nref") > 0
-            && SimsData.EntryCount("objd") > 0
-            && SimsData.EntryCount("objf") > 0
-            && SimsData.EntryCount("slot") > 0
-            && SimsData.EntryTypes() == 5)
-            {
-                Sims2Data.IsGameMod(); if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Package {0} is Sims2Data.IsGameMod()", fileinfo.Name));
-            }
-
-            if (SimsData.EntryCount("ttab") > 0
-            && SimsData.EntryCount("ttas") > 0
-            && SimsData.EntryTypes() == 2)
-            {
-                Sims2Data.IsGameMod(); if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Package {0} is Sims2Data.IsGameMod()", fileinfo.Name));
-            }
-
-            if (SimsData.EntryCount("bhav") > 0
-            && SimsData.EntryCount("ttas") > 0
-            && SimsData.EntryCount("ttab") > 0
-            && SimsData.EntryTypes() == 3)
-            {
-                Sims2Data.IsGameMod(); if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Package {0} is Sims2Data.IsGameMod()", fileinfo.Name));
-            }
-
-            if (SimsData.EntryCount("bhav") > 0
-            && SimsData.EntryCount("ctss") > 0
-            && SimsData.EntryCount("STR#") > 0
-            && SimsData.EntryTypes() == 3)
-            {
-                Sims2Data.IsGameMod(); if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Package {0} is Sims2Data.IsGameMod()", fileinfo.Name));
-            }
-
-            if (SimsData.EntryCount("bcon") > 0
-            && SimsData.EntryTypes() == 1)
-            {
-                Sims2Data.IsGameMod(); if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Package {0} is Sims2Data.IsGameMod()", fileinfo.Name));
-            }
-
-            if (SimsData.EntryCount("bhav") > 0
-            && SimsData.EntryTypes() == 1)
-            {
-                Sims2Data.IsGameMod(); if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Package {0} is Sims2Data.IsGameMod()", fileinfo.Name));
-            }
-
-            if (SimsData.EntryCount("bhav") > 0
-            && SimsData.EntryCount("objf") > 0
-            && SimsData.EntryTypes() == 2)
-            {
-                Sims2Data.IsGameMod(); if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Package {0} is Sims2Data.IsGameMod()", fileinfo.Name));
-            }
-
-            if (SimsData.EntryCount("ttab") > 0
-            && SimsData.EntryTypes() == 1)
-            {
-                Sims2Data.IsGameMod(); if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Package {0} is Sims2Data.IsGameMod()", fileinfo.Name));
-            }
-
-            if (SimsData.EntryCount("cres") > 0
-            && SimsData.EntryCount("STR#") > 0
-            && SimsData.EntryTypes() == 2)
-            {
-                Sims2Data.IsGameMod(); if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Package {0} is Sims2Data.IsGameMod()", fileinfo.Name));
-            }
-
-            if (SimsData.EntryCount("STR#") > 0
-            && SimsData.EntryTypes() == 1)
-            {
-                Sims2Data.IsGameMod(); if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Package {0} is Sims2Data.IsGameMod()", fileinfo.Name));
-            }
-
-            if (SimsData.EntryCount("objd") > 0
-            && SimsData.EntryCount("objf") > 0
-            && SimsData.EntryCount("slot") > 0
-            && SimsData.EntryCount("nref") > 0
-            && SimsData.EntryTypes() == 4)
-            {
-                Sims2Data.IsGameMod(); if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Package {0} is Sims2Data.IsGameMod()", fileinfo.Name));
-            }
-
-            if (SimsData.EntryCount("bhav") > 0
-            && SimsData.EntryCount("ttab") > 0
-            && SimsData.EntryCount("ttas") > 0
-            && SimsData.EntryCount("STR#") > 0
-            && SimsData.EntryTypes() == 4)
-            {
-                Sims2Data.IsGameMod(); if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Package {0} is Sims2Data.IsGameMod()", fileinfo.Name));
-            }
-
-            if (SimsData.EntryCount("bhav") > 0
-            && SimsData.EntryCount("STR#") > 0
-            && SimsData.EntryCount("ttab") > 0
-            && SimsData.EntryCount("ttas") > 0
-            && SimsData.EntryCount("anim") > 0
-            && SimsData.EntryTypes() == 5)
-            {
-                Sims2Data.IsGameMod(); if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Package {0} is Sims2Data.IsGameMod()", fileinfo.Name));
-            }
-
-            if (SimsData.EntryCount("coll") > 0)
-            {
-                Sims2Data.AltType = "Collection"; if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Package {0} is Sims2Data.AltType = Collection", fileinfo.Name));
-            }
-            if (SimsData.EntryCount("xngb") > 0)
-            {
-                Sims2Data.AltType = "Hood Deco"; if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Package {0} is Sims2Data.AltType = Hood Deco", fileinfo.Name));
-            }
-            /*if (SimsData.EntryCount("xhtn") > 0)
-            {
-                Sims2Data.AltType = "Hair"; if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Package {0} is Sims2Data.AltType = Hair", fileinfo.Name));
-            }*/
-
-
-            if (SimsData.EntryCount("lxnr") > 0
-            && SimsData.EntryCount("AGED") > 0
-            && SimsData.EntryCount("3IDR") > 0
-            && SimsData.EntryCount("IMG") == 0
-            && SimsData.EntryCount("gzps") > 0
-            && SimsData.EntryCount("binx") > 0
-            && SimsData.EntryCount("txmt") > 0)
-            {
-                Sims2Data.AltType = "Face Template"; if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Package {0} is Sims2Data.AltType = Face Template", fileinfo.Name));
-            }
-
-            if (SimsData.EntryCount("lxnr") > 0
-            && SimsData.EntryCount("AGED") > 0
-            && SimsData.EntryCount("3IDR") > 0
-            && SimsData.EntryCount("IMG") > 0
-            && SimsData.EntryCount("gzps") > 0
-            && SimsData.EntryCount("binx") > 0
-            && SimsData.EntryCount("txmt") > 0
-            && SimsData.EntryCount("bhav") > 0)
-            {
-                Sims2Data.AltType = "NPC"; if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Package {0} is Sims2Data.AltType = NPC", fileinfo.Name));
-            }
-
-            if (SimsData.EntryCount("gmdc") > 0
-            &&SimsData.EntryCount("gmnd") > 0
-            && SimsData.EntryCount("xfmd") > 0)
-            {
-                Sims2Data.AltType = "Slider"; if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Package {0} is Sims2Data.AltType = Slider", fileinfo.Name));
-            }
-
-            if (SimsData.EntryCount("XOBJ") > 0
-            && SimsData.EntryCount("objd") == 0
-            && SimsData.EntryCount("gmdc") == 0
-            && SimsData.EntryCount("str#") == 0
-            && SimsData.EntryCount("bhav") == 0
-            && SimsData.EntryCount("xngb") == 0
-            && SimsData.EntryCount("txtr") == 0
-            && SimsData.EntryCount("txmt") == 0
-            && SimsData.EntryCount("slot") == 0
-            && SimsData.EntryCount("nref") == 0
-            && SimsData.EntryCount("ctss") == 0)
-            {
-                Sims2Data.AltType = "Build Object Hider"; if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Package {0} is Sims2Data.AltType = Build Object Hider", fileinfo.Name));
-            }
-            if (SimsData.EntryCount("XOBJ") == 0
-            && SimsData.EntryCount("objd") > 0
-            && SimsData.EntryCount("gmdc") == 0
-            && SimsData.EntryCount("str#") == 0
-            && SimsData.EntryCount("bhav") == 0
-            && SimsData.EntryCount("xngb") == 0
-            && SimsData.EntryCount("txtr") == 0
-            && SimsData.EntryCount("txmt") == 0
-            && SimsData.EntryCount("slot") == 0
-            && SimsData.EntryCount("nref") == 0
-            && SimsData.EntryCount("ctss") == 0)
-            {
-                Sims2Data.AltType = "Buy Object Hider"; if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Package {0} is Sims2Data.AltType = Buy Object Hider", fileinfo.Name));
-            }
-            if (SimsData.EntryCount("XOBJ") == 0
-            && SimsData.EntryCount("objd") == 0
-            && SimsData.EntryCount("gmdc") == 0
-            && SimsData.EntryCount("str#") == 0
-            && SimsData.EntryCount("bhav") == 0
-            && SimsData.EntryCount("xngb") == 0
-            && SimsData.EntryCount("txtr") == 0
-            && SimsData.EntryCount("txmt") == 0
-            && SimsData.EntryCount("slot") == 0
-            && SimsData.EntryCount("nref") == 0
-            && SimsData.EntryCount("ctss") == 0
-            && SimsData.EntryCount("gzps") > 0)
-            {
-                Sims2Data.AltType = "CAS Hider"; if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Package {0} is Sims2Data.AltType = CAS Hider", fileinfo.Name));
-            }
-
-            if (SimsData.EntryCount("XOBJ") == 0
-            && SimsData.EntryCount("objd") == 0
-            && SimsData.EntryCount("gmdc") == 0
-            && SimsData.EntryCount("str#") == 0
-            && SimsData.EntryCount("bhav") == 0
-            && SimsData.EntryCount("xngb") == 0
-            && SimsData.EntryCount("txtr") == 0
-            && SimsData.EntryCount("txmt") == 0
-            && SimsData.EntryCount("slot") == 0
-            && SimsData.EntryCount("nref") == 0
-            && SimsData.EntryCount("ctss") == 0
-            && SimsData.EntryCount("xtol") > 0)
-            {
-                Sims2Data.AltType = "CAS Makeup Hider"; if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Package {0} is Sims2Data.AltType = CAS Makeup Hider", fileinfo.Name));
-            }
-
-            if (SimsData.EntryCount("XOBJ") == 0
-            && SimsData.EntryCount("objd") == 0
-            && SimsData.EntryCount("gmdc") == 0
-            && SimsData.EntryCount("str#") == 0
-            && SimsData.EntryCount("bhav") == 0
-            && SimsData.EntryCount("xngb") == 0
-            && SimsData.EntryCount("txtr") == 0
-            && SimsData.EntryCount("txmt") == 0
-            && SimsData.EntryCount("slot") == 0
-            && SimsData.EntryCount("nref") == 0
-            && SimsData.EntryCount("ctss") == 0
-            && SimsData.EntryCount("xmol") > 0)
-            {
-                Sims2Data.AltType = "CAS Accesory Hider"; if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Package {0} is Sims2Data.AltType = CAS Accesory Hider", fileinfo.Name));
-            }
-
-            if (SimsData.EntryCount("XOBJ") == 0
-            && SimsData.EntryCount("objd") == 0
-            && SimsData.EntryCount("gmdc") == 0
-            && SimsData.EntryCount("str#") == 0
-            && SimsData.EntryCount("bhav") == 0
-            && SimsData.EntryCount("xngb") == 0
-            && SimsData.EntryCount("txtr") == 0
-            && SimsData.EntryCount("txmt") == 0
-            && SimsData.EntryCount("slot") == 0
-            && SimsData.EntryCount("nref") == 0
-            && SimsData.EntryCount("ctss") == 0
-            && SimsData.EntryCount("xngb") > 0)
-            {
-                Sims2Data.AltType = "Hood Deco Hider"; if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Package {0} is Sims2Data.AltType = Hood Deco Hider", fileinfo.Name));
-            }
-
-            if (SimsData.EntryCount("XOBJ") == 0
-            && SimsData.EntryCount("objd") == 0
-            && SimsData.EntryCount("gmdc") == 0
-            && SimsData.EntryCount("str#") == 0
-            && SimsData.EntryCount("bhav") > 0
-            && SimsData.EntryCount("xngb") == 0
-            && SimsData.EntryCount("txtr") == 0
-            && SimsData.EntryCount("txmt") == 0
-            && SimsData.EntryCount("slot") == 0
-            && SimsData.EntryCount("nref") == 0
-            && SimsData.EntryCount("ctss") == 0
-            && SimsData.EntryCount("xngb") == 0)
-            {
-                Sims2Data.GameMod = true; if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Package {0} is Sims2Data.GameMod = true", fileinfo.Name));
-            }
-
             
-            if (SimsData.EntryCount("GMDC") > 0) { 
-                SimsData.Mesh = true; 
-                if (Sims2Data.GMDCDataBlock.Any(x => x.Groups.Any(g => g.ObjectName.StartsWith("hair"))))
-                {
-                    SimsData.AltType = "Hair";
-                }
-            }
-            if (SimsData.EntryCount("TXTR") > 0) SimsData.Recolor = true;
+        }
 
 
-            if (SimsData.EntryCount("MMAT") > 0 && SimsData.EntryCount("GMDC") == 0)
+        public void S2ReadXTOL(IndexEntry entry, int num)
+        {
+            S2ReadXTOLChunk xtol = new();
+
+            packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
+            int cFileSize = packagereader.ReadInt32();
+            string cTypeID = packagereader.ReadUInt16().ToString("X4");
+            if (cTypeID == "FB10")
             {
-                if (SimsData.FunctionSort.Count != 0)
+                byte[] tempBytes = packagereader.ReadBytes(3);
+                uint cFullSize = Sims2EntryReaders.QFSLengthToInt(tempBytes);
+                string cpfTypeID = packagereader.ReadUInt32().ToString("X8");
+                if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
                 {
-                    if (SimsData.FunctionSort[0].Category.Equals("wall", StringComparison.CurrentCultureIgnoreCase) || SimsData.FunctionSort[0].Category.Equals("floor", StringComparison.CurrentCultureIgnoreCase) || SimsData.FunctionSort[0].Category.Equals("terrainpaint", StringComparison.CurrentCultureIgnoreCase))
-                    {
-                        //no
-                    }
-                    else
-                    {
-                        SimsData.Recolor = true;
-                    }
+                    xtol = new(packagereader);
                 }
                 else
                 {
-                    SimsData.Recolor = true;
+                    packagereader.BaseStream.Position = ChunkOffset + entry.Offset + 9;
+                    DecryptByteStream decompressed = new DecryptByteStream(Sims2EntryReaders.Uncompress(packagereader.ReadBytes(cFileSize), cFullSize, 0));
+                    if (cpfTypeID == "E750E0E2")
+                    {
+                        // Read first four bytes
+                        cpfTypeID = decompressed.ReadUInt32().ToString("X8");
+                        if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
+                        {
+                            xtol = new(decompressed);
+                        }
+                    }
+                    else
+                    {
+                        xtol = new(decompressed, true);
+                    }
                 }
             }
-
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Package {0} alt type: {1}", fileinfo.Name, SimsData.AltType));
+            if (xtol.XTOLData != null)
+            {
+                xtol.XTOLData.CopyEntryInfo(entry);
+                if (xtol.XTOLData.Name.Contains("face_eye_")) SimsData.AltType = "Eyecolor";
+                (SimsData as Sims2Data).XTOLDataBlock.Add(xtol.XTOLData);
+            }
+            
         }
-
 
 
         public void S2ReadXHTN(IndexEntry entry, int num)
@@ -1214,140 +1089,139 @@ namespace SimsCCManager.PackageReaders
             switch (gzps.GZPSData.Product)
             {
                 case "0":
-                Sims2Data.Expansions.Add(Sims2Expansions.BaseGame);
+                if (!Sims2Data.Expansions.Contains(Sims2Expansions.BaseGame)) Sims2Data.Expansions.Add(Sims2Expansions.BaseGame);
                 break;
             }
 
-
-            switch (gzps.GZPSData.Override0subset)
-            {                    
-                case "body":
-                category = "Clothing";
-                subcategory = "Full body";
-                break;           
-                case "top":
-                category = "Clothing";
-                subcategory = "Top";
-                break;           
-                case "bottom":
-                category = "Clothing";
-                subcategory = "Bottom";
-                break;         
-                case "hair":
-                category = "Hair";
-                break;
-
-            }
-            Sims2Data.FunctionSort.Add(new () { Category = category, Subcategory = subcategory});
-
-            switch (gzps.GZPSData.Category)
+            if (Sims2Data.AltType != "Hair" && Sims2Data.AltType != "Skin")
             {
-                case "4991":
-                    Sims2Data.ClothingInfo.Category.Add("All");
-                break;
-                case "1":
-                    Sims2Data.ClothingInfo.Category.Add("Casual1");
-                break;
-                case "2":
-                    Sims2Data.ClothingInfo.Category.Add("Casual2");
-                break;
-                case "4":
-                    Sims2Data.ClothingInfo.Category.Add("Casual3");
-                break;
-                case "7":
-                    Sims2Data.ClothingInfo.Category.Add("Everyday");
-                break;
-                case "8":
-                    Sims2Data.ClothingInfo.Category.Add("Swimwear");
-                break;
-                case "10":
-                    Sims2Data.ClothingInfo.Category.Add("Swimwear");
-                break;
-                case "20":
-                    Sims2Data.ClothingInfo.Category.Add("Formal");
-                break;
-                case "40":
-                    Sims2Data.ClothingInfo.Category.Add("Underwear");
-                break;
-                case "80":
-                    Sims2Data.FunctionSort = [new() { Category = "Skintone"}];
-                    //Sims2Data.ClothingInfo.Category.Add("Skintone");
-                break;
-                case "100":
-                    Sims2Data.ClothingInfo.Category.Add("Maternity");
-                break;
-                case "200":
-                    Sims2Data.ClothingInfo.Category.Add("Activewear");
-                break;
-                case "400":
-                    Sims2Data.ClothingInfo.Category.Add("TryOn");
-                break;
-                case "800":
-                    Sims2Data.ClothingInfo.Category.Add("NakedOverlay");
-                break;
-                case "1000":
-                    Sims2Data.ClothingInfo.Category.Add("Outerwear");
-                break;
-                
-            }
+                    switch (gzps.GZPSData.Override0subset)
+                {                    
+                    case "body":
+                    category = "Clothing";
+                    subcategory = "Full body";
+                    break;           
+                    case "top":
+                    category = "Clothing";
+                    subcategory = "Top";
+                    break;           
+                    case "bottom":
+                    category = "Clothing";
+                    subcategory = "Bottom";
+                    break;
+                }
+                Sims2Data.FunctionSort.Add(new () { Category = category, Subcategory = subcategory});
+                        
 
-            switch (gzps.GZPSData.Age)
-            {
-                case "48":
-                Sims2Data.ClothingInfo.Age.Add("Adult");
-                break;
-                case "2":
-                Sims2Data.ClothingInfo.Age.Add("Child");
-                break;
-                case "10":
-                Sims2Data.ClothingInfo.Age.Add("Elder");
-                break;
-                case "4":
-                Sims2Data.ClothingInfo.Age.Add("Teen");
-                break;
-                case "1":
-                Sims2Data.ClothingInfo.Age.Add("Toddler");
-                break;
-                case "20":
-                Sims2Data.ClothingInfo.Age.Add("Baby");
-                break;
-                case "40":
-                Sims2Data.ClothingInfo.Age.Add("Young Adult");
-                break;
-            }
-            switch (gzps.GZPSData.Gender)
-            {
-                case "1":
-                Sims2Data.ClothingInfo.Age.Add("Female");
-                break;
-                case "2":
-                Sims2Data.ClothingInfo.Age.Add("Male");
-                break;
-                case "3":
-                Sims2Data.ClothingInfo.Age.Add("Unisex");
-                break;
-            }
+                switch (gzps.GZPSData.Category)
+                {
+                    case "4991":
+                        Sims2Data.ClothingInfo.Category.Add("All");
+                    break;
+                    case "1":
+                        Sims2Data.ClothingInfo.Category.Add("Casual1");
+                    break;
+                    case "2":
+                        Sims2Data.ClothingInfo.Category.Add("Casual2");
+                    break;
+                    case "4":
+                        Sims2Data.ClothingInfo.Category.Add("Casual3");
+                    break;
+                    case "7":
+                        Sims2Data.ClothingInfo.Category.Add("Everyday");
+                    break;
+                    case "8":
+                        Sims2Data.ClothingInfo.Category.Add("Swimwear");
+                    break;
+                    case "10":
+                        Sims2Data.ClothingInfo.Category.Add("Swimwear");
+                    break;
+                    case "20":
+                        Sims2Data.ClothingInfo.Category.Add("Formal");
+                    break;
+                    case "40":
+                        Sims2Data.ClothingInfo.Category.Add("Underwear");
+                    break;
+                    case "80":
+                        Sims2Data.FunctionSort = [new() { Category = "Skintone"}];
+                        //Sims2Data.ClothingInfo.Category.Add("Skintone");
+                    break;
+                    case "100":
+                        Sims2Data.ClothingInfo.Category.Add("Maternity");
+                    break;
+                    case "200":
+                        Sims2Data.ClothingInfo.Category.Add("Activewear");
+                    break;
+                    case "400":
+                        Sims2Data.ClothingInfo.Category.Add("TryOn");
+                    break;
+                    case "800":
+                        Sims2Data.ClothingInfo.Category.Add("NakedOverlay");
+                    break;
+                    case "1000":
+                        Sims2Data.ClothingInfo.Category.Add("Outerwear");
+                    break;
+                    
+                }
 
-            switch (gzps.GZPSData.Hairtone)
-            {
-                case "00000001-0000-0000-0000-000000000000":
-                    gzps.GZPSData.HairColor = "Black";
-                break; 
-                case "00000002-0000-0000-0000-000000000000":
-                    gzps.GZPSData.HairColor = "Brown";
-                break;
-                case "00000003-0000-0000-0000-000000000000":
-                    gzps.GZPSData.HairColor = "Blond";
-                break;
-                case "00000004-0000-0000-0000-000000000000":
-                    gzps.GZPSData.HairColor = "Red";
-                break;
-                case "00000005-0000-0000-0000-000000000000":
-                    gzps.GZPSData.HairColor = "Grey";
-                break;
-                default:
-                    gzps.GZPSData.HairColor = "Other";
-                break;
+                switch (gzps.GZPSData.Age)
+                {
+                    case "48":
+                    Sims2Data.ClothingInfo.Age.Add("Adult");
+                    break;
+                    case "2":
+                    Sims2Data.ClothingInfo.Age.Add("Child");
+                    break;
+                    case "10":
+                    Sims2Data.ClothingInfo.Age.Add("Elder");
+                    break;
+                    case "4":
+                    Sims2Data.ClothingInfo.Age.Add("Teen");
+                    break;
+                    case "1":
+                    Sims2Data.ClothingInfo.Age.Add("Toddler");
+                    break;
+                    case "20":
+                    Sims2Data.ClothingInfo.Age.Add("Baby");
+                    break;
+                    case "40":
+                    Sims2Data.ClothingInfo.Age.Add("Young Adult");
+                    break;
+                }
+                switch (gzps.GZPSData.Gender)
+                {
+                    case "1":
+                    Sims2Data.ClothingInfo.Age.Add("Female");
+                    break;
+                    case "2":
+                    Sims2Data.ClothingInfo.Age.Add("Male");
+                    break;
+                    case "3":
+                    Sims2Data.ClothingInfo.Age.Add("Unisex");
+                    break;
+                }
+
+                switch (gzps.GZPSData.Hairtone)
+                {
+                    case "00000001-0000-0000-0000-000000000000":
+                        gzps.GZPSData.HairColor = "Black";
+                    break; 
+                    case "00000002-0000-0000-0000-000000000000":
+                        gzps.GZPSData.HairColor = "Brown";
+                    break;
+                    case "00000003-0000-0000-0000-000000000000":
+                        gzps.GZPSData.HairColor = "Blond";
+                    break;
+                    case "00000004-0000-0000-0000-000000000000":
+                        gzps.GZPSData.HairColor = "Red";
+                    break;
+                    case "00000005-0000-0000-0000-000000000000":
+                        gzps.GZPSData.HairColor = "Grey";
+                    break;
+                    default:
+                        gzps.GZPSData.HairColor = "Other";
+                    break;
+                }
             }
         
             (SimsData as Sims2Data).GZPSDataBlock.Add(gzps.GZPSData);
@@ -1389,8 +1263,8 @@ namespace SimsCCManager.PackageReaders
                 }
             }
             xngb.XNGBData.CopyEntryInfo(entry);
-            (SimsData as Sims2Data).XNGBDataBlock = xngb.XNGBData;
-            if (xngb.XNGBData.Type != null) SimsData.AltType = xngb.XNGBData.Type;
+            Sims2Data.XNGBDataBlock.Add(xngb.XNGBData);
+            //if (xngb.XNGBData.Type != null) SimsData.AltType = xngb.XNGBData.Type;
             if (xngb.XNGBData.Name != null) SimsData.Title = xngb.XNGBData.Name;
             if (xngb.XNGBData.Description != null) SimsData.Description = xngb.XNGBData.Description;
             if (xngb.XNGBData.Guid != null) SimsData.GUID = xngb.XNGBData.Guid;
@@ -1457,7 +1331,7 @@ namespace SimsCCManager.PackageReaders
                 }
             }
             xflr.XFLRData.CopyEntryInfo(entry);
-            (SimsData as Sims2Data).XFLRDataBlock = xflr.XFLRData;
+            Sims2Data.XFLRDataBlock.Add(xflr.XFLRData);
             if (xflr.XFLRData.Type == "terrainPaint")
             {
                 if (Sims2PackageStatics.Sims2BuildFunctionSortList.Any(x => x.Category.Equals(xflr.XFLRData.Type, StringComparison.CurrentCultureIgnoreCase) && x.Subcategory.Equals(xflr.XFLRData.SoundSuffix, StringComparison.CurrentCultureIgnoreCase)))
@@ -1564,8 +1438,10 @@ namespace SimsCCManager.PackageReaders
             }
             
             if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("File {0}. CTSS: {1}", fileinfo.Name, cts.ToString()));
-            SimsData.Title = cts.Title;
-            SimsData.Description = cts.Description;
+            cts.CTSSData.CopyEntryInfo(entry);
+            Sims2Data.CTSSDataBlock.Add(cts.CTSSData);
+            SimsData.Title = cts.CTSSData.Title;
+            SimsData.Description = cts.CTSSData.Description;
         }
 
         public void S2ReadOBJD(IndexEntry entry)
@@ -1588,8 +1464,10 @@ namespace SimsCCManager.PackageReaders
                 objd = new(packagereader);
             }
             //if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("File {0}. OBJD: {1}", fileinfo.Name, objd.ToString()));
-            SimsData.FunctionSort.AddRange(objd.FunctionSort);
-            if (string.IsNullOrEmpty(SimsData.GUID)) SimsData.GUID = objd.ObjectGUID;
+            objd.OBJDData.CopyEntryInfo(entry);
+            Sims2Data.OBJDDataBlock.Add(objd.OBJDData);
+            SimsData.FunctionSort.AddRange(objd.OBJDData.FunctionSort);
+            if (string.IsNullOrEmpty(SimsData.GUID)) SimsData.GUID = objd.OBJDData.ObjectGUID;
         }
         public void S2ReadXOBJ(IndexEntry entry)
         {
@@ -1627,26 +1505,29 @@ namespace SimsCCManager.PackageReaders
                 }
             }
 
-            if (xobj.Category != null)
+            xobj.XOBJData.CopyEntryInfo(entry);
+            Sims2Data.XOBJDataBlock.Add(xobj.XOBJData);
+
+            if (xobj.XOBJData.Category != null)
             {
-                if (Sims2PackageStatics.Sims2BuildFunctionSortList.Any(x => x.Category.Equals(xobj.Type, StringComparison.CurrentCultureIgnoreCase)))
+                if (Sims2PackageStatics.Sims2BuildFunctionSortList.Any(x => x.Category.Equals(xobj.XOBJData.Type, StringComparison.CurrentCultureIgnoreCase)))
                 {
-                    SimsData.FunctionSort.Add(Sims2PackageStatics.Sims2BuildFunctionSortList.First(x => x.Category.Equals(xobj.Type, StringComparison.CurrentCultureIgnoreCase)));
+                    SimsData.FunctionSort.Add(Sims2PackageStatics.Sims2BuildFunctionSortList.First(x => x.Category.Equals(xobj.XOBJData.Type, StringComparison.CurrentCultureIgnoreCase)));
                 }
             }
-            if (xobj.Title != null) SimsData.Title = xobj.Title;
-            if (xobj.Description != null) SimsData.Description = xobj.Description;
-            if (xobj.Type != null)
+            if (xobj.XOBJData.Title != null) SimsData.Title = xobj.XOBJData.Title;
+            if (xobj.XOBJData.Description != null) SimsData.Description = xobj.XOBJData.Description;
+            if (xobj.XOBJData.Type != null)
             {
-                if (Sims2PackageStatics.Sims2BuildFunctionSortList.Any(x => x.Category.Equals(xobj.Type, StringComparison.CurrentCultureIgnoreCase) && (x.Subcategory.Equals(xobj.Subsort, StringComparison.CurrentCultureIgnoreCase) || x.Subcategory.Equals(xobj.Subtype, StringComparison.CurrentCultureIgnoreCase))))
+                if (Sims2PackageStatics.Sims2BuildFunctionSortList.Any(x => x.Category.Equals(xobj.XOBJData.Type, StringComparison.CurrentCultureIgnoreCase) && (x.Subcategory.Equals(xobj.XOBJData.Subsort, StringComparison.CurrentCultureIgnoreCase) || x.Subcategory.Equals(xobj.XOBJData.Subtype, StringComparison.CurrentCultureIgnoreCase))))
                 {
-                    if (!Sims2Data.FunctionSort.Contains(Sims2PackageStatics.Sims2BuildFunctionSortList.First(x => x.Category.Equals(xobj.Type, StringComparison.CurrentCultureIgnoreCase))))
+                    if (!Sims2Data.FunctionSort.Contains(Sims2PackageStatics.Sims2BuildFunctionSortList.First(x => x.Category.Equals(xobj.XOBJData.Type, StringComparison.CurrentCultureIgnoreCase))))
                     {
-                        SimsData.FunctionSort.Add(Sims2PackageStatics.Sims2BuildFunctionSortList.First(x => x.Category.Equals(xobj.Type, StringComparison.CurrentCultureIgnoreCase)));
+                        SimsData.FunctionSort.Add(Sims2PackageStatics.Sims2BuildFunctionSortList.First(x => x.Category.Equals(xobj.XOBJData.Type, StringComparison.CurrentCultureIgnoreCase)));
                     }
                 }
             }
-            if (xobj.ObjectGUID != null) SimsData.GUID = xobj.ObjectGUID;
+            if (xobj.XOBJData.ObjectGUID != null) SimsData.GUID = xobj.XOBJData.ObjectGUID;
 
 
 
@@ -1711,6 +1592,320 @@ namespace SimsCCManager.PackageReaders
             Sims4Data = new();
             SimsData = Sims2Data;
 
+        }
+    }
+
+    public struct S2ReadXTOLChunk
+    {
+        public XTOLData XTOLData = new();
+
+        public S2ReadXTOLChunk(BinaryReader readFile)
+        {
+            uint NumItems = readFile.ReadUInt32();
+            // Read the items
+            for (int i = 0; i < NumItems; i++)
+            {
+                // Get type of the item
+                string dataType = readFile.ReadUInt32().ToString("X8");
+                uint nameLength = readFile.ReadUInt32();
+                string fieldName = Encoding.UTF8.GetString(readFile.ReadBytes((int)nameLength));
+
+                uint fieldValueInt = 0;
+                uint fieldValueFloat = 0;
+                string fieldValueString = "";
+                bool fieldValueBool = false;
+
+                switch (dataType)
+                {
+                    // Int
+                    case "EB61E4F7":
+                        fieldValueInt = readFile.ReadUInt32();
+                        break;
+                    // Int #2 - Not Used
+                    case "0C264712":
+                        fieldValueInt = readFile.ReadUInt32();
+                        break;
+                    // String
+                    case "0B8BEA18":
+                        uint stringLength = readFile.ReadUInt32();
+                        fieldValueString = Encoding.UTF8.GetString(readFile.ReadBytes((int)stringLength));
+                        break;
+                    // Float
+                    case "ABC78708":
+                        // Ignore for now
+                        fieldValueFloat = readFile.ReadUInt32();
+                        break;
+                    // Boolean
+                    case "CBA908E1":
+                        fieldValueBool = readFile.ReadBoolean();
+                        break;
+                }
+
+                switch (fieldName.ToLower())
+                {
+                    case "age":
+                    XTOLData.Age = fieldValueInt.ToString();
+                    break;
+                    case "bin":
+                    XTOLData.Bin = fieldValueInt.ToString();
+                    break;
+                    case "category":
+                    XTOLData.Category = fieldValueInt.ToString();
+                    break;
+                    case "creator":
+                    XTOLData.Creator = fieldValueString;
+                    break;
+                    case "family":
+                    XTOLData.Family = fieldValueString;
+                    break;
+                    case "flags":
+                    XTOLData.Flags = fieldValueInt.ToString();
+                    break;
+                    case "gender":
+                    XTOLData.Gender = fieldValueInt.ToString();
+                    break;
+                    case "genetic":
+                    XTOLData.Genetic = fieldValueFloat.ToString();
+                    break;
+                    case "hairtone":
+                    XTOLData.Hairtone = fieldValueString;
+                    break;
+                    case "layer":
+                    XTOLData.Layer = fieldValueInt.ToString();
+                    break;
+                    case "materialkeyidx":
+                    XTOLData.MaterialKeyIdx = fieldValueInt.ToString();
+                    break;
+                    case "name":
+                    XTOLData.Name = fieldValueString;
+                    break;
+                    case "outfit":
+                    XTOLData.Outfit = fieldValueInt.ToString();
+                    break;
+                    case "skintone":
+                    XTOLData.Skintone = fieldValueString;
+                    break;
+                    case "species":
+                    XTOLData.Species = fieldValueInt.ToString();
+                    break;
+                    case "subtype":
+                    XTOLData.Subtype = fieldValueInt.ToString();
+                    break;
+                    case "type":
+                    XTOLData.Type = fieldValueString;
+                    break;
+                }
+            }
+        }
+
+        public S2ReadXTOLChunk(DecryptByteStream readFile)
+        {
+            readFile.ReadUInt16();
+            uint NumItems = readFile.ReadUInt32();
+            // Read the items
+            for (int i = 0; i < NumItems; i++)
+            {
+                // Get type of the item
+                string dataType = readFile.ReadUInt32().ToString("X8");
+                uint nameLength = readFile.ReadUInt32();
+                string fieldName = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
+
+                uint fieldValueInt = 0;
+                string fieldValueString = "";
+                uint fieldValueFloat = 0;
+                bool fieldValueBool = false;
+
+                switch (dataType)
+                {
+                    // Int
+                    case "EB61E4F7":
+                        fieldValueInt = readFile.ReadUInt32();
+                        break;
+                    // Int #2 - Not Used
+                    case "0C264712":
+                        fieldValueInt = readFile.ReadUInt32();
+                        break;
+                    // String
+                    case "0B8BEA18":
+                        uint stringLength = readFile.ReadUInt32();
+                        fieldValueString = Encoding.UTF8.GetString(readFile.ReadBytes(stringLength));
+                        break;
+                    // Float
+                    case "ABC78708":
+                        // Ignore for now
+                        fieldValueFloat = readFile.ReadUInt32();
+                        break;
+                    // Boolean
+                    case "CBA908E1":
+                        fieldValueBool = readFile.ReadBoolean();
+                        break;
+                }
+
+                switch (fieldName.ToLower())
+                {
+                    case "age":
+                    XTOLData.Age = fieldValueInt.ToString();
+                    break;
+                    case "bin":
+                    XTOLData.Bin = fieldValueInt.ToString();
+                    break;
+                    case "category":
+                    XTOLData.Category = fieldValueInt.ToString();
+                    break;
+                    case "creator":
+                    XTOLData.Creator = fieldValueString;
+                    break;
+                    case "family":
+                    XTOLData.Family = fieldValueString;
+                    break;
+                    case "flags":
+                    XTOLData.Flags = fieldValueInt.ToString();
+                    break;
+                    case "gender":
+                    XTOLData.Gender = fieldValueInt.ToString();
+                    break;
+                    case "genetic":
+                    XTOLData.Genetic = fieldValueFloat.ToString();
+                    break;
+                    case "hairtone":
+                    XTOLData.Hairtone = fieldValueString;
+                    break;
+                    case "layer":
+                    XTOLData.Layer = fieldValueInt.ToString();
+                    break;
+                    case "materialkeyidx":
+                    XTOLData.MaterialKeyIdx = fieldValueInt.ToString();
+                    break;
+                    case "name":
+                    XTOLData.Name = fieldValueString;
+                    break;
+                    case "outfit":
+                    XTOLData.Outfit = fieldValueInt.ToString();
+                    break;
+                    case "skintone":
+                    XTOLData.Skintone = fieldValueString;
+                    break;
+                    case "species":
+                    XTOLData.Species = fieldValueInt.ToString();
+                    break;
+                    case "subtype":
+                    XTOLData.Subtype = fieldValueInt.ToString();
+                    break;
+                    case "type":
+                    XTOLData.Type = fieldValueString;
+                    break;
+                }
+            }
+        }
+
+        public S2ReadXTOLChunk(DecryptByteStream readFile, bool xml)
+        {
+            XmlTextReader xmlDoc = new XmlTextReader(new StringReader(Encoding.UTF8.GetString(readFile.GetEntireStream())));
+            bool inDesc = false;
+            string inAttrDesc = "";
+            while (xmlDoc.Read())
+            {
+                if (xmlDoc.NodeType == XmlNodeType.Element)
+                {
+                    if (xmlDoc.Name == "AnyString") inDesc = true;
+                    if (xmlDoc.Name == "AnyUint32") inDesc = true;
+                }
+                if (xmlDoc.NodeType == XmlNodeType.EndElement)
+                {
+                    inDesc = false;
+                    inAttrDesc = "";
+                }
+                if (inDesc == true)
+                {
+                    if (xmlDoc.AttributeCount > 0)
+                    {
+                        while (xmlDoc.MoveToNextAttribute())
+                        {
+                            switch (xmlDoc.Value.ToLower())
+                            {
+                                case "version":
+                                case "product":
+                                case "age":
+                                case "gender":
+                                case "species":
+                                case "parts":
+                                case "outfit":
+                                case "flags":
+                                case "name":
+                                case "creator":
+                                case "family":
+                                case "genetic":
+                                case "priority":
+                                case "type":
+                                case "preview":
+                                case "proxy":
+                                    inAttrDesc = xmlDoc.Value;
+                                    break;
+                            }
+                        }
+                    }
+                }
+                if (xmlDoc.NodeType == XmlNodeType.Text)
+                {
+                    if (inAttrDesc != "")
+                    {
+                        switch (inAttrDesc.ToLower())
+                        {
+                            case "age":
+                            XTOLData.Age = xmlDoc.Value;
+                            break;
+                            case "bin":
+                            XTOLData.Bin = xmlDoc.Value;
+                            break;
+                            case "category":
+                            XTOLData.Category = xmlDoc.Value;
+                            break;
+                            case "creator":
+                            XTOLData.Creator = xmlDoc.Value;
+                            break;
+                            case "family":
+                            XTOLData.Family = xmlDoc.Value;
+                            break;
+                            case "flags":
+                            XTOLData.Flags = xmlDoc.Value;
+                            break;
+                            case "gender":
+                            XTOLData.Gender = xmlDoc.Value;
+                            break;
+                            case "genetic":
+                            XTOLData.Genetic = xmlDoc.Value;
+                            break;
+                            case "hairtone":
+                            XTOLData.Hairtone = xmlDoc.Value;
+                            break;
+                            case "layer":
+                            XTOLData.Layer = xmlDoc.Value;
+                            break;
+                            case "materialkeyidx":
+                            XTOLData.MaterialKeyIdx = xmlDoc.Value;
+                            break;
+                            case "name":
+                            XTOLData.Name = xmlDoc.Value;
+                            break;
+                            case "outfit":
+                            XTOLData.Outfit = xmlDoc.Value;
+                            break;
+                            case "skintone":
+                            XTOLData.Skintone = xmlDoc.Value;
+                            break;
+                            case "species":
+                            XTOLData.Species = xmlDoc.Value;
+                            break;
+                            case "subtype":
+                            XTOLData.Subtype = xmlDoc.Value;
+                            break;
+                            case "type":
+                            XTOLData.Type = xmlDoc.Value;
+                            break;
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -1796,7 +1991,7 @@ namespace SimsCCManager.PackageReaders
         }     
     }
 
-public struct S2ReadSHPEChunk
+    public struct S2ReadSHPEChunk
     {
         public SHPEData SHPEData = new();
         public FileInfo file;
@@ -3680,13 +3875,6 @@ public struct S2ReadSHPEChunk
                 }
             }
 
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Mips:"));
-
-            foreach (uint m in Mips)
-            {
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0}", m));
-            }
-
         }
 
 
@@ -4903,21 +5091,11 @@ public struct S2ReadSHPEChunk
 
     public struct S2ReadXOBJChunk
     {
-        public string Title;
-        public string Description;
-        public string Type = "";
-        public string Subtype = "";
-        public string Category = "";
-        public string Subsort = "";
-        public string ModelName;
-        public string ObjectGUID;
-        public string Creator;
-        public string Age;
-        public string Gender;
+        public XOBJData XOBJData = new();
 
         public void DebugFinish()
         {
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Type: {0}, Category: {1}, Subtype: {2}, Subsort: {3}", Type, Category, Subtype, Subsort));
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Type: {0}, Category: {1}, Subtype: {2}, Subsort: {3}", XOBJData.Type, XOBJData.Category, XOBJData.Subtype, XOBJData.Subsort));
         }
         public S2ReadXOBJChunk(BinaryReader readFile)
         {
@@ -4963,37 +5141,37 @@ public struct S2ReadSHPEChunk
                 switch (fieldName)
                 {
                     case "name":
-                        Title = fieldValueString;
+                        XOBJData.Title = fieldValueString;
                         break;
                     case "description":
-                        Description = fieldValueString;
+                        XOBJData.Description = fieldValueString;
                         break;
                     case "type":
-                        Type = fieldValueString;
+                        XOBJData.Type = fieldValueString;
                         break;
                     case "subtype":
-                        Subtype = fieldValueInt.ToString();
+                        XOBJData.Subtype = fieldValueInt.ToString();
                         break;
                     case "subsort":
-                        Subtype = fieldValueInt.ToString();
+                        XOBJData.Subtype = fieldValueInt.ToString();
                         break;
                     case "category":
-                        Category = fieldValueInt.ToString();
+                        XOBJData.Category = fieldValueInt.ToString();
                         break;
                     case "modelName":
-                        ModelName = fieldValueString;
+                        XOBJData.ModelName = fieldValueString;
                         break;
                     case "objectGUID":
-                        ObjectGUID = fieldValueInt.ToString("X8");
+                        XOBJData.ObjectGUID = fieldValueInt.ToString("X8");
                         break;
                     case "creator":
-                        Creator = fieldValueString;
+                        XOBJData.Creator = fieldValueString;
                         break;
                     case "age":
-                        Age = fieldValueInt.ToString();
+                        XOBJData.Age = fieldValueInt.ToString();
                         break;
                     case "gender":
-                        Gender = fieldValueInt.ToString();
+                        XOBJData.Gender = fieldValueInt.ToString();
                         break;
                 }
             }
@@ -5045,37 +5223,37 @@ public struct S2ReadSHPEChunk
                 switch (fieldName)
                 {
                     case "name":
-                        Title = fieldValueString;
+                        XOBJData.Title = fieldValueString;
                         break;
                     case "description":
-                        Description = fieldValueString;
+                        XOBJData.Description = fieldValueString;
                         break;
                     case "type":
-                        Type = fieldValueString;
+                        XOBJData.Type = fieldValueString;
                         break;
                     case "subtype":
-                        Subtype = fieldValueInt.ToString();
+                        XOBJData.Subtype = fieldValueInt.ToString();
                         break;
                     case "subsort":
-                        Subtype = fieldValueInt.ToString();
+                        XOBJData.Subtype = fieldValueInt.ToString();
                         break;
                     case "category":
-                        Category = fieldValueInt.ToString();
+                        XOBJData.Category = fieldValueInt.ToString();
                         break;
                     case "modelName":
-                        ModelName = fieldValueString;
+                        XOBJData.ModelName = fieldValueString;
                         break;
                     case "objectGUID":
-                        ObjectGUID = fieldValueInt.ToString("X8");
+                        XOBJData.ObjectGUID = fieldValueInt.ToString("X8");
                         break;
                     case "creator":
-                        Creator = fieldValueString;
+                        XOBJData.Creator = fieldValueString;
                         break;
                     case "age":
-                        Age = fieldValueInt.ToString();
+                        XOBJData.Age = fieldValueInt.ToString();
                         break;
                     case "gender":
-                        Gender = fieldValueInt.ToString();
+                        XOBJData.Gender = fieldValueInt.ToString();
                         break;
                 }
             }
@@ -5126,22 +5304,22 @@ public struct S2ReadSHPEChunk
                         switch (inAttrDesc)
                         {
                             case "subtype":
-                                Subtype = xmlDoc.Value;
+                                XOBJData.Subtype = xmlDoc.Value;
                                 break;
                             case "subsort":
-                                Subsort = xmlDoc.Value;
+                                XOBJData.Subsort = xmlDoc.Value;
                                 break;
                             case "category":
-                                Category = xmlDoc.Value;
+                                XOBJData.Category = xmlDoc.Value;
                                 break;
                             case "name":
-                                Title = xmlDoc.Value;
+                                XOBJData.Title = xmlDoc.Value;
                                 break;
                             case "type":
-                                Type = xmlDoc.Value;
+                                XOBJData.Type = xmlDoc.Value;
                                 break;
                             case "description":
-                                Description = xmlDoc.Value.Replace("\n", " ");
+                                XOBJData.Description = xmlDoc.Value.Replace("\n", " ");
                                 break;
                         }
                     }
@@ -5153,61 +5331,41 @@ public struct S2ReadSHPEChunk
 
         public override string ToString()
         {
-            return string.Format("Title: {0}, Description: {1}, Type: {2}, Subtype: {3}, Category: {4}, Subsort: {5}, ModelName: {6}, ObjectGUID: {7}, Creator: {8}, Age: {9}, Gender: {10}", Title, Description, Type, Subtype, Category, Subsort, ModelName, ObjectGUID, Creator, Age, Gender);
+            return string.Format("Title: {0}, Description: {1}, Type: {2}, Subtype: {3}, Category: {4}, Subsort: {5}, ModelName: {6}, ObjectGUID: {7}, Creator: {8}, Age: {9}, Gender: {10}", XOBJData.Title, XOBJData.Description, XOBJData.Type, XOBJData.Subtype, XOBJData.Category, XOBJData.Subsort, XOBJData.ModelName, XOBJData.ObjectGUID, XOBJData.Creator, XOBJData.Age, XOBJData.Gender);
         }
     }
 
     public struct S2ReadOBJDChunk
     {
-        public string ObjectGUID;
-        public byte[] FileName;
-
-        public List<FunctionSortList> FunctionSort = new();
-
-        public uint Version;
-        public uint InitialStackSize;
-        public uint DefaultWallAdjacentFlags;
-        public uint DefaultPlacementFlags;
-        public uint DefaultWallPlacementFlags;
-        public uint DefaultAllowedHeightFlags;
-        public uint InteractionTableID;
-        public uint InteractionGroup;
-        public uint ObjectType;
-        public uint MasterTileMasterId;
-        public uint MasterTileSubIndex;
-        public uint UseDefaultPlacementFlags;
-        public uint LookAtScore;
-        public uint RoomSortFlag;
-        public uint ExpansionFlag;
-        public string OriginalGUID;
-        public string ObjectModelGUID;
+        public OBJDData OBJDData = new();
 
 
         public S2ReadOBJDChunk(BinaryReader readFile)
-        {
-            FileName = readFile.ReadBytes(64);
-            Version = readFile.ReadUInt32();
-            InitialStackSize = readFile.ReadUInt16();
-            DefaultWallAdjacentFlags = readFile.ReadUInt16();
-            DefaultPlacementFlags = readFile.ReadUInt16();
-            DefaultWallPlacementFlags = readFile.ReadUInt16();
-            DefaultAllowedHeightFlags = readFile.ReadUInt16();
-            InteractionTableID = readFile.ReadUInt16();
-            InteractionGroup = readFile.ReadUInt16();
-            ObjectType = readFile.ReadUInt16();
-            MasterTileMasterId = readFile.ReadUInt16();
-            MasterTileSubIndex = readFile.ReadUInt16();
+        {            
+
+            OBJDData.FileName = readFile.ReadBytes(64);
+            OBJDData.Version = readFile.ReadUInt32();
+            OBJDData.InitialStackSize = readFile.ReadUInt16();
+            OBJDData.DefaultWallAdjacentFlags = readFile.ReadUInt16();
+            OBJDData.DefaultPlacementFlags = readFile.ReadUInt16();
+            OBJDData.DefaultWallPlacementFlags = readFile.ReadUInt16();
+            OBJDData.DefaultAllowedHeightFlags = readFile.ReadUInt16();
+            OBJDData.InteractionTableID = readFile.ReadUInt16();
+            OBJDData.InteractionGroup = readFile.ReadUInt16();
+            OBJDData.ObjectType = readFile.ReadUInt16();
+            OBJDData.MasterTileMasterId = readFile.ReadUInt16();
+            OBJDData.MasterTileSubIndex = readFile.ReadUInt16();
 
             // Only check further if this is a Master ID or single id
-            if ((MasterTileSubIndex == 65535) || (MasterTileMasterId == 0))
+            if ((OBJDData.MasterTileSubIndex == 65535) || (OBJDData.MasterTileMasterId == 0))
             {
-                UseDefaultPlacementFlags = readFile.ReadUInt16();
-                LookAtScore = readFile.ReadUInt16();
-                ObjectGUID = readFile.ReadUInt32().ToString("X8");
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("OBJD Guid: {0}", ObjectGUID));
+                OBJDData.UseDefaultPlacementFlags = readFile.ReadUInt16();
+                OBJDData.LookAtScore = readFile.ReadUInt16();
+                OBJDData.ObjectGUID = readFile.ReadUInt32().ToString("X8");
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("OBJD Guid: {0}", OBJDData.ObjectGUID));
                 // Skip stuff we don't need
                 readFile.ReadBytes(46);
-                RoomSortFlag = readFile.ReadUInt16();
+                OBJDData.RoomSortFlag = readFile.ReadUInt16();
                 int[] functionSortFlag = new int[1];
                 functionSortFlag[0] = (int)readFile.ReadUInt16();
                 BitArray functionSortFlags = new BitArray(functionSortFlag);
@@ -5225,17 +5383,17 @@ public struct S2ReadSHPEChunk
                 {
                     // Skip until we hit the Build Mode sort and EP
                     readFile.ReadBytes(46);
-                    ExpansionFlag = readFile.ReadUInt16();
+                    OBJDData.ExpansionFlag = readFile.ReadUInt16();
 
                     readFile.ReadBytes(8);
                     uint BuildModeType = readFile.ReadUInt16();
-                    OriginalGUID = readFile.ReadUInt32().ToString("X8");
-                    ObjectModelGUID = readFile.ReadUInt32().ToString("X8");
+                    OBJDData.OriginalGUID = readFile.ReadUInt32().ToString("X8");
+                    OBJDData.ObjectModelGUID = readFile.ReadUInt32().ToString("X8");
                     uint BuildModeSubsort = readFile.ReadUInt16();
 
                     if (Sims2PackageStatics.Sims2BuildFunctionSortList.Any(x => x.FlagNum == BuildModeType && x.FunctionSubsortNum == BuildModeSubsort))
                     {
-                        FunctionSort.Add(Sims2PackageStatics.Sims2BuildFunctionSortList.First(x => x.FlagNum == BuildModeType && x.FunctionSubsortNum == BuildModeSubsort));
+                        OBJDData.FunctionSort.Add(Sims2PackageStatics.Sims2BuildFunctionSortList.First(x => x.FlagNum == BuildModeType && x.FunctionSubsortNum == BuildModeSubsort));
                     }
                     else
                     {
@@ -5250,8 +5408,8 @@ public struct S2ReadSHPEChunk
 
                     readFile.ReadBytes(8);
                     uint BuildModeType = readFile.ReadUInt16();
-                    OriginalGUID = readFile.ReadUInt32().ToString("X8");
-                    ObjectModelGUID = readFile.ReadUInt32().ToString("X8");
+                    OBJDData.OriginalGUID = readFile.ReadUInt32().ToString("X8");
+                    OBJDData.ObjectModelGUID = readFile.ReadUInt32().ToString("X8");
                     uint BuildModeSubsort = readFile.ReadUInt16();
                     readFile.ReadBytes(38);
                     uint FunctionSubsort = readFile.ReadUInt16();
@@ -5263,7 +5421,7 @@ public struct S2ReadSHPEChunk
                         {
                             if (Sims2PackageStatics.Sims2BuyFunctionSortList.Any(x => x.FlagNum == f && x.FunctionSubsortNum == FunctionSubsort))
                             {
-                                FunctionSort.Add(Sims2PackageStatics.Sims2BuyFunctionSortList.First(x => x.FlagNum == f && x.FunctionSubsortNum == FunctionSubsort));
+                                OBJDData.FunctionSort.Add(Sims2PackageStatics.Sims2BuyFunctionSortList.First(x => x.FlagNum == f && x.FunctionSubsortNum == FunctionSubsort));
                             }
                             else
                             {
@@ -5276,28 +5434,28 @@ public struct S2ReadSHPEChunk
         }
         public S2ReadOBJDChunk(DecryptByteStream readFile)
         {
-            FileName = readFile.ReadBytes(64);
-            Version = readFile.ReadUInt32();
-            InitialStackSize = readFile.ReadUInt16();
-            DefaultWallAdjacentFlags = readFile.ReadUInt16();
-            DefaultPlacementFlags = readFile.ReadUInt16();
-            DefaultWallPlacementFlags = readFile.ReadUInt16();
-            DefaultAllowedHeightFlags = readFile.ReadUInt16();
-            InteractionTableID = readFile.ReadUInt16();
-            InteractionGroup = readFile.ReadUInt16();
-            ObjectType = readFile.ReadUInt16();
-            MasterTileMasterId = readFile.ReadUInt16();
-            MasterTileSubIndex = readFile.ReadUInt16();
+            OBJDData.FileName = readFile.ReadBytes(64);
+            OBJDData.Version = readFile.ReadUInt32();
+            OBJDData.InitialStackSize = readFile.ReadUInt16();
+            OBJDData.DefaultWallAdjacentFlags = readFile.ReadUInt16();
+            OBJDData.DefaultPlacementFlags = readFile.ReadUInt16();
+            OBJDData.DefaultWallPlacementFlags = readFile.ReadUInt16();
+            OBJDData.DefaultAllowedHeightFlags = readFile.ReadUInt16();
+            OBJDData.InteractionTableID = readFile.ReadUInt16();
+            OBJDData.InteractionGroup = readFile.ReadUInt16();
+            OBJDData.ObjectType = readFile.ReadUInt16();
+            OBJDData.MasterTileMasterId = readFile.ReadUInt16();
+            OBJDData.MasterTileSubIndex = readFile.ReadUInt16();
 
             // Only check further if this is a Master ID or single id
-            if ((MasterTileSubIndex == 65535) || (MasterTileMasterId == 0))
+            if ((OBJDData.MasterTileSubIndex == 65535) || (OBJDData.MasterTileMasterId == 0))
             {
-                UseDefaultPlacementFlags = readFile.ReadUInt16();
-                LookAtScore = readFile.ReadUInt16();
-                ObjectGUID = readFile.ReadUInt32().ToString("X8");
+                OBJDData.UseDefaultPlacementFlags = readFile.ReadUInt16();
+                OBJDData.LookAtScore = readFile.ReadUInt16();
+                OBJDData.ObjectGUID = readFile.ReadUInt32().ToString("X8");
                 // Skip stuff we don't need
                 readFile.ReadBytes(46);
-                RoomSortFlag = readFile.ReadUInt16();
+                OBJDData.RoomSortFlag = readFile.ReadUInt16();
                 int[] functionSortFlag = new int[1];
                 functionSortFlag[0] = (int)readFile.ReadUInt16();
                 BitArray functionSortFlags = new BitArray(functionSortFlag);
@@ -5315,17 +5473,17 @@ public struct S2ReadSHPEChunk
                 {
                     // Skip until we hit the Build Mode sort and EP
                     readFile.ReadBytes(46);
-                    ExpansionFlag = readFile.ReadUInt16();
+                    OBJDData.ExpansionFlag = readFile.ReadUInt16();
 
                     readFile.ReadBytes(8);
                     uint BuildModeType = readFile.ReadUInt16();
-                    OriginalGUID = readFile.ReadUInt32().ToString("X8");
-                    ObjectModelGUID = readFile.ReadUInt32().ToString("X8");
+                    OBJDData.OriginalGUID = readFile.ReadUInt32().ToString("X8");
+                    OBJDData.ObjectModelGUID = readFile.ReadUInt32().ToString("X8");
                     uint BuildModeSubsort = readFile.ReadUInt16();
 
                     if (Sims2PackageStatics.Sims2BuildFunctionSortList.Any(x => x.FlagNum == BuildModeType && x.FunctionSubsortNum == BuildModeSubsort))
                     {
-                        FunctionSort.Add(Sims2PackageStatics.Sims2BuildFunctionSortList.First(x => x.FlagNum == BuildModeType && x.FunctionSubsortNum == BuildModeSubsort));
+                        OBJDData.FunctionSort.Add(Sims2PackageStatics.Sims2BuildFunctionSortList.First(x => x.FlagNum == BuildModeType && x.FunctionSubsortNum == BuildModeSubsort));
                     }
                     else
                     {
@@ -5340,8 +5498,8 @@ public struct S2ReadSHPEChunk
 
                     readFile.ReadBytes(8);
                     uint BuildModeType = readFile.ReadUInt16();
-                    OriginalGUID = readFile.ReadUInt32().ToString("X8");
-                    ObjectModelGUID = readFile.ReadUInt32().ToString("X8");
+                    OBJDData.OriginalGUID = readFile.ReadUInt32().ToString("X8");
+                    OBJDData.ObjectModelGUID = readFile.ReadUInt32().ToString("X8");
                     uint BuildModeSubsort = readFile.ReadUInt16();
                     readFile.ReadBytes(38);
                     uint FunctionSubsort = readFile.ReadUInt16();
@@ -5352,7 +5510,7 @@ public struct S2ReadSHPEChunk
                         {
                             if (Sims2PackageStatics.Sims2BuyFunctionSortList.Any(x => x.FlagNum == f && x.FunctionSubsortNum == FunctionSubsort))
                             {
-                                FunctionSort.Add(Sims2PackageStatics.Sims2BuyFunctionSortList.First(x => x.FlagNum == f && x.FunctionSubsortNum == FunctionSubsort));
+                                OBJDData.FunctionSort.Add(Sims2PackageStatics.Sims2BuyFunctionSortList.First(x => x.FlagNum == f && x.FunctionSubsortNum == FunctionSubsort));
                             }
                             else
                             {
@@ -5366,12 +5524,12 @@ public struct S2ReadSHPEChunk
 
         public override string ToString()
         {
-            string name = CleanInput(Encoding.UTF8.GetString(FileName));
+            string name = CleanInput(Encoding.UTF8.GetString(OBJDData.FileName));
             StringBuilder sorts = new();
             sorts.Append(string.Format("OBJD Name: {0}, ", name));
-            sorts.Append(string.Format("ObjectGUID: {0}, ", ObjectGUID));
+            sorts.Append(string.Format("ObjectGUID: {0}, ", OBJDData.ObjectGUID));
             sorts.Append(string.Format("Function: "));
-            foreach (FunctionSortList sort in FunctionSort)
+            foreach (FunctionSortList sort in OBJDData.FunctionSort)
             {
                 if (string.IsNullOrEmpty(sort.Subcategory))
                 {
@@ -5405,8 +5563,7 @@ public struct S2ReadSHPEChunk
 
     public struct S2ReadCTSSChunk
     {
-        public string Description;
-        public string Title;
+        public CTSSData CTSSData = new();
 
         public S2ReadCTSSChunk(BinaryReader readFile)
         {
@@ -5425,8 +5582,8 @@ public struct S2ReadSHPEChunk
 
                 if (langCode == 1)
                 {
-                    if (foundLang == true && !string.IsNullOrEmpty(blah)) { Description = blah.Replace("\n", " "); break; }
-                    if (foundLang == false && !string.IsNullOrEmpty(blah)) { Title = blah.Replace("\n", " "); foundLang = true; }
+                    if (foundLang == true && !string.IsNullOrEmpty(blah)) { CTSSData.Description = blah.Replace("\n", " "); break; }
+                    if (foundLang == false && !string.IsNullOrEmpty(blah)) { CTSSData.Title = blah.Replace("\n", " "); foundLang = true; }
                 }
 
             }
@@ -5448,8 +5605,8 @@ public struct S2ReadSHPEChunk
 
                 if (langCode[0] == 1)
                 {
-                    if (foundLang == true && !string.IsNullOrEmpty(blah)) { Description = blah.Replace("\n", " "); break; }
-                    if (foundLang == false && !string.IsNullOrEmpty(blah)) { Title = blah.Replace("\n", " "); foundLang = true; }
+                    if (foundLang == true && !string.IsNullOrEmpty(blah)) { CTSSData.Description = blah.Replace("\n", " "); break; }
+                    if (foundLang == false && !string.IsNullOrEmpty(blah)) { CTSSData.Title = blah.Replace("\n", " "); foundLang = true; }
                 }
 
             }
@@ -5457,7 +5614,7 @@ public struct S2ReadSHPEChunk
 
         public override string ToString()
         {
-            return string.Format("Title: {0}, Description: {1}", Title, Description);
+            return string.Format("Title: {0}, Description: {1}", CTSSData.Title, CTSSData.Description);
         }
     }
 
@@ -5854,6 +6011,93 @@ public struct S2ReadSHPEChunk
         void CopyEntryInfo(IndexEntry entry);
     }
 
+    public class CTSSData : IIndexEntry
+    {
+        public string TypeID {get; set;}
+        public string GroupID {get; set;}
+        public string InstanceID {get; set;}
+        private string _fullkeyproxy;
+        public string FullKey { get { return string.Format("{0}-{1}-{2}", TypeID, GroupID, InstanceID); }
+        set { _fullkeyproxy = value; } }
+        
+        public void CopyEntryInfo(IndexEntry entry)
+        {
+            TypeID = entry.TypeID; 
+            GroupID = entry.GroupID; 
+            InstanceID = entry.InstanceID; 
+        }
+        public string Description {get; set;}
+        public string Title {get; set;}
+    }
+    public class OBJDData : IIndexEntry
+    {
+        public string TypeID {get; set;}
+        public string GroupID {get; set;}
+        public string InstanceID {get; set;}
+        private string _fullkeyproxy;
+        public string FullKey { get { return string.Format("{0}-{1}-{2}", TypeID, GroupID, InstanceID); }
+        set { _fullkeyproxy = value; } }
+        
+        public void CopyEntryInfo(IndexEntry entry)
+        {
+            TypeID = entry.TypeID; 
+            GroupID = entry.GroupID; 
+            InstanceID = entry.InstanceID; 
+        }
+
+        public string ObjectGUID;
+        public byte[] FileName;
+
+        public List<FunctionSortList> FunctionSort = new();
+
+        public uint Version {get; set;}
+        public uint InitialStackSize {get; set;}
+        public uint DefaultWallAdjacentFlags {get; set;}
+        public uint DefaultPlacementFlags {get; set;}
+        public uint DefaultWallPlacementFlags {get; set;}
+        public uint DefaultAllowedHeightFlags {get; set;}
+        public uint InteractionTableID {get; set;}
+        public uint InteractionGroup {get; set;}
+        public uint ObjectType {get; set;}
+        public uint MasterTileMasterId {get; set;}
+        public uint MasterTileSubIndex {get; set;}
+        public uint UseDefaultPlacementFlags {get; set;}
+        public uint LookAtScore {get; set;}
+        public uint RoomSortFlag {get; set;}
+        public uint ExpansionFlag {get; set;}
+        public string OriginalGUID {get; set;}
+        public string ObjectModelGUID {get; set;}
+    }
+
+    public class XOBJData : IIndexEntry
+    {
+        public string TypeID {get; set;}
+        public string GroupID {get; set;}
+        public string InstanceID {get; set;}
+        private string _fullkeyproxy;
+        public string FullKey { get { return string.Format("{0}-{1}-{2}", TypeID, GroupID, InstanceID); }
+        set { _fullkeyproxy = value; } }
+        
+        public void CopyEntryInfo(IndexEntry entry)
+        {
+            TypeID = entry.TypeID; 
+            GroupID = entry.GroupID; 
+            InstanceID = entry.InstanceID; 
+        }
+
+        public string Title {get; set;} = "";
+        public string Description {get; set;} = "";
+        public string Type {get; set;} = "";
+        public string Subtype {get; set;} = "";
+        public string Category {get; set;} = "";
+        public string Subsort {get; set;} = "";
+        public string ModelName {get; set;} = "";
+        public string ObjectGUID {get; set;} = "";
+        public string Creator {get; set;} = "";
+        public string Age {get; set;} = "";
+        public string Gender {get; set;} = "";
+    }
+
     public class XHTNData : IIndexEntry
     {
         public string TypeID {get; set;}
@@ -6185,21 +6429,21 @@ public struct S2ReadSHPEChunk
         {
             get
             {
-                if (FullTXTRName.Contains('!')) return FullTXTRName.Split('!')[0].TrimStart('#'); else return "N/a";
+                if (FullTXTRName.Contains('!')) return FullTXTRName.Split('!')[0].TrimStart('#'); else return string.Empty;
             }
         }
         public string TextureName
         {
             get
             {
-                if (FullTXTRName.Contains('!')) return FullTXTRName.Split('!')[1]; else return "N/a";
+                if (FullTXTRName.Contains('!')) return FullTXTRName.Split('!')[1]; else return string.Empty;
             }
         }
         public string TextureNoSuffix
         {
             get
             {
-                if (FullTXTRName.Contains('-')) return FullTXTRName.Split('-')[^1]; else return "N/a";
+                if (FullTXTRName.Contains('-')) return FullTXTRName.Split('-')[^1]; else return string.Empty;
             }
         }
 
@@ -6293,6 +6537,41 @@ public struct S2ReadSHPEChunk
         public string TextureTName { get; set; }
         public string Type { get; set; } = "";
         public uint Version { get; set; }
+
+    }
+
+    public class XTOLData : IIndexEntry
+    {
+        public string TypeID {get; set;}
+        public string GroupID {get; set;}
+        public string InstanceID {get; set;}
+        private string _fullkeyproxy;
+        public string FullKey { get { return string.Format("{0}-{1}-{2}", TypeID, GroupID, InstanceID); }
+        set { _fullkeyproxy = value; } }
+        public void CopyEntryInfo(IndexEntry entry)
+        {
+            TypeID = entry.TypeID; 
+            GroupID = entry.GroupID; 
+            InstanceID = entry.InstanceID; 
+        }
+
+        public string Age {get; set;}
+        public string Bin {get; set;}
+        public string Category {get; set;}
+        public string Creator {get; set;}
+        public string Family {get; set;}
+        public string Flags {get; set;}
+        public string Gender {get; set;}
+        public string Genetic {get; set;}
+        public string Hairtone {get; set;}
+        public string Layer {get; set;}
+        public string MaterialKeyIdx {get; set;}
+        public string Name {get; set;}
+        public string Outfit {get; set;}
+        public string Skintone {get; set;}
+        public string Species {get; set;}
+        public string Subtype {get; set;}
+        public string Type {get; set;}
 
     }
 

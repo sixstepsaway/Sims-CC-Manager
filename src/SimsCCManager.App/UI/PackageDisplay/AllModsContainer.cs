@@ -257,6 +257,8 @@ public partial class AllModsContainer : MarginContainer
 
     public override void _Ready()
     {
+        SelectedItems = new();
+        SelectedPackages = new();
         UpdateTheme();      
         DataGrid.LinkToggleToAdjustmentNumber = true;
         DataGrid.MiniGridItemAdd += ChangeLinkedItemsAdd;
@@ -264,6 +266,7 @@ public partial class AllModsContainer : MarginContainer
         DataGrid.MakeRCMenu += (menu) => ShowRCMenu(menu); 
         DataGrid.DataGridFinishedFirstLoad += () => DataGridLoaded();
         DataGrid.HeadersChanged += (h) => HeadersChanged(h);
+        DataGrid.ParallelSettings = GlobalVariables.ParallelSettings;
 
         SwapDisplaysCheck.CheckToggled += (v) => ViewFlipped(v);
 
@@ -424,41 +427,37 @@ public partial class AllModsContainer : MarginContainer
         { 
             new Thread(() => {
 
-            List<EnabledPackages> enabled = packageDisplay.ThisInstance.LoadedProfile.EnabledPackages;
-            List<Guid> IDs = enabled.Select(x => x.PackageIdentifier).ToList();
+                List<EnabledPackages> enabled = packageDisplay.ThisInstance.LoadedProfile.EnabledPackages;
+                List<Guid> IDs = enabled.Select(x => x.PackageIdentifier).ToList();
 
-            Parallel.ForEach(DataGrid.VisibleRows, row =>
-            {
-                if (IDs.Contains(row.RowData.Identifier))
+                Parallel.ForEach(DataGrid.VisibleRows, row =>
                 {
-                    int loadorder = enabled.Where(x => x.PackageIdentifier == row.RowData.Identifier).First().LoadOrder;
-                    CallDeferred(nameof(ChangeRowInfo), row, true, loadorder);
-                    /* row.Toggle(true);
-                    row.RowData.Toggled = true;
-                    row.AdjustmentNumber = loadorder;
-                    row.RowData.AdjustmentNumber = loadorder;*/
-                } else
-                {
-                    CallDeferred(nameof(ChangeRowInfo), row, false, -1);
-                    /*row.Toggle(false);
-                    row.RowData.Toggled = false;
-                    row.AdjustmentNumber = -1;
-                    row.RowData.AdjustmentNumber = -1;*/
-                }
-            });            
-        }){IsBackground = true}.Start();
+                    if (IDs.Contains(row.RowData.Identifier))
+                    {
+                        int loadorder = enabled.First(x => x.PackageIdentifier == row.RowData.Identifier).LoadOrder;
+                        CallDeferred(nameof(ChangeRowInfo), row, true, loadorder);
+                    } else
+                    {
+                        CallDeferred(nameof(ChangeRowInfo), row, false, -1);
+                    }
+                });            
+            }){IsBackground = true}.Start();
+        }
+    }
 
-        }// else
-            //CreateRows();
-        
+    public void ToggleItem(bool WhichWay, SimsPackage package)
+    {        
+        DataGrid.ToggleItem(WhichWay, DataGrid.RowData.First(x => x.Identifier == package.Identifier));
     }
 
     private void ChangeRowInfo(DataGridRowUi row, bool toggle, int num)
     {
+        row.DontAnnounceEdit = true;
         row.Toggle(toggle);
         row.RowData.Toggled = toggle;
         row.AdjustmentNumber = num;
         row.RowData.AdjustmentNumber = num;
+        row.DontAnnounceEdit = false;
     }
 
     public DataGridRow CreateSubRow(DataGridRow newrow, SimsPackage pack)
@@ -637,7 +636,7 @@ public partial class AllModsContainer : MarginContainer
             foreach (SimsPackage pack in Packages.OrderBy(x => x.IsDirectory).ThenBy(x => x.FileName)){
                 if (pack.StandAlone)
                 {                    
-                    Task t = Task.Run( () => {
+                    Task t = new Task( () => {
                         DataGridRow newrow = CreateRow(pack, i);
                         if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Row {0}: {1}", i, pack.FileName));
                         if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("-- Is Subrow: {0}\n -- Has Subitems: {1}", newrow.SubRow, newrow.SubRowItems.Count));
@@ -650,6 +649,11 @@ public partial class AllModsContainer : MarginContainer
                     if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Row {0}: {1} wasn't standalone.", i, pack.FileName));
                 }         
             }
+
+            Parallel.ForEach(runningTasks, GlobalVariables.ParallelSettings, t =>
+            {
+                t.Start();
+            });
 
             while (runningTasks.Any(x => !x.IsCompleted)){
                 if (completedTasks != runningTasks.Count(x => x.IsCompleted)) {
@@ -768,7 +772,8 @@ public partial class AllModsContainer : MarginContainer
         DataGrid.Headers = DataGridHeaders;
         DataGrid.ItemSelected += (item) => ItemSelected(item);
 		//DataGrid.DataChanged += (rowIdx, dataChanged, Item) => DataChanged(rowIdx, dataChanged, Item);
-		DataGrid.SelectionChanged += (SelectedRows, SelectedRowsIdxs) => SelectionChanged(SelectedRows, SelectedRowsIdxs);
+		DataGrid.ItemToggledAdj += (row) => ItemToggledOrAdjusted(row);
+        DataGrid.SelectionChanged += (SelectedRows, SelectedRowsIdxs) => SelectionChanged(SelectedRows, SelectedRowsIdxs);
 		DataGrid.MakeTooltip += (tooltip) => ShowTooltip(tooltip);
 		DataGrid.MakeRCMenu += (headerMenu) => CreateHeaderClickMenu(headerMenu);
 		DataGrid.LinkToggleToAdjustmentNumber = true;
@@ -782,6 +787,90 @@ public partial class AllModsContainer : MarginContainer
             DataGridLoaded();
         }
     }
+
+    private void ItemToggledOrAdjusted(DataGridRow row)
+    {
+        new Thread(() => {
+            SimsPackage package = Packages.First(x => x.Identifier == row.Identifier);
+            int headeridx = 0;
+            foreach (DataGridHeader header in DataGridHeaders)
+            {
+                if (!string.IsNullOrEmpty(header.Data))
+                {
+                    switch (header.Data)
+                    {
+                        case "IsEnabled":
+                            package.IsEnabled = bool.Parse(row.Items[headeridx].ItemContent);
+                            if (package.IsEnabled)
+                            {
+                                if (!packageDisplay.ThisInstance.LoadedProfile.EnabledPackages.Any(x => x.PackageIdentifier == package.Identifier)) packageDisplay.ThisInstance.LoadedProfile.EnabledPackages.Add(new () { PackageIdentifier = package.Identifier, LoadOrder = package.LoadOrder, PackageLocation = package.Location, PackageName = package.FileName});
+                            } else
+                            {
+                                if (packageDisplay.ThisInstance.LoadedProfile.EnabledPackages.Any(x => x.PackageIdentifier == package.Identifier))
+                                {
+                                    EnabledPackages pa = packageDisplay.ThisInstance.LoadedProfile.EnabledPackages.First(x => x.PackageIdentifier == package.Identifier);
+                                    packageDisplay.ThisInstance.LoadedProfile.RemoveEnabled(pa);
+                                }
+                            }
+                        break;
+                        case "FileName":
+
+                        break;
+                        case "LoadOrder":
+                            package.LoadOrder = int.Parse(row.Items[headeridx].ItemContent);
+                            if (package.LoadOrder == -1)
+                            {
+                                if (packageDisplay.ThisInstance.LoadedProfile.EnabledPackages.Any(x => x.PackageIdentifier == package.Identifier)) packageDisplay.ThisInstance.LoadedProfile.EnabledPackages.Remove(packageDisplay.ThisInstance.LoadedProfile.EnabledPackages.First(x => x.PackageIdentifier == package.Identifier));
+                            } else {
+                                if (packageDisplay.ThisInstance.LoadedProfile.EnabledPackages.Any(x => x.PackageIdentifier == package.Identifier))
+                                {
+                                    packageDisplay.ThisInstance.LoadedProfile.EnabledPackages.First(x => x.PackageIdentifier == package.Identifier).LoadOrder = package.LoadOrder;
+                                } else
+                                {
+                                    packageDisplay.ThisInstance.LoadedProfile.EnabledPackages.Add(new () { PackageIdentifier = package.Identifier, LoadOrder = package.LoadOrder});
+                                }
+                            }
+                        break;
+                        case "Location":
+
+                        break;
+                        case "Type":
+
+                        break;
+                        case "Creator":
+
+                        break;
+                        case "CategoryName":
+
+                        break;
+                        case "Image":
+
+                        break;
+                        case "FileSize":
+
+                        break;
+                        case "FileType":
+
+                        break;
+                        case "DateUpdated":
+
+                        break;
+                        case "DateAdded":
+
+                        break;
+                        case "Game":
+
+                        break;
+                    }
+                }
+                headeridx++;
+            }
+            package.WriteXML();
+        }){IsBackground = true}.Start();
+        PackagesChanged();
+        
+    }
+
 
     private void DGReloadDone()
     {
@@ -1235,34 +1324,34 @@ public partial class AllModsContainer : MarginContainer
         {
             for (int i = 0; i < SelectedPackages.Count; i++)
             {
-                SimsPackage package = Packages.First(x => x.Identifier == SelectedPackages[i].Identifier);
-                package.PackageCategory = c;
-                package.WriteXML();
-                /*DataGridRow rowdata = DataGrid.RowData.First(x => x.Identifier == package.Identifier);
-                rowdata.UseCategoryColor = true;
-                rowdata.BackgroundColor = c.Background;
-                rowdata.TextColor = c.TextColor;
-                rowdata = CreateRow(package, rowdata.OverallIdx);
-                DataGrid.UpdateRow(rowdata);*/
-                UpdateItem(package);
+                ChangeCategory(Packages.First(x => x.Identifier == SelectedPackages[i].Identifier), c);                
             }
         } else
         {
             for (int i = 0; i < SelectedItems.Count; i++)
             {
-                SimsPackage package = Packages.First(x => x.Identifier == SelectedItems[i].Identifier);
-                package.PackageCategory = c;
-                package.WriteXML();
-                /*DataGridRow rowdata = DataGrid.RowData.First(x => x.Identifier == package.Identifier);
-                rowdata.UseCategoryColor = true;
-                rowdata.BackgroundColor = c.Background;
-                rowdata.TextColor = c.TextColor;
-                rowdata = CreateRow(package, rowdata.OverallIdx);
-                DataGrid.UpdateRow(rowdata);*/
-                UpdateItem(package);
+                ChangeCategory(Packages.First(x => x.Identifier == SelectedItems[i].Identifier), c);
             }
         }
         
+    }
+
+    private void ChangeCategory(SimsPackage package, Category c)
+    {
+        Category prevcat = package.PackageCategory;
+        package.PackageCategory = c;
+        if (c.Name == "Default")
+        {
+            if (prevcat.Name != "Default")
+            {
+                package.MovePackage(packageDisplay.ThisInstance.InstanceFolders.InstancePackagesFolder);
+            }
+        } else
+        {
+            package.MovePackage(c.FolderLocation);
+        }
+        package.WriteXML();
+        UpdateItem(package);        
     }
 
 

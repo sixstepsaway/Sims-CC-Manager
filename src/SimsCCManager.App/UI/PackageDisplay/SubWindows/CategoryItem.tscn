@@ -1,8 +1,10 @@
-[gd_scene load_steps=8 format=3 uid="uid://cqsw5fjta1myu"]
+[gd_scene load_steps=11 format=3 uid="uid://cqsw5fjta1myu"]
 
 [ext_resource type="FontFile" uid="uid://dtg02tgiyc1sy" path="res://assets/fonts/Averia_Sans_Libre/AveriaSansLibre-Light.ttf" id="1_c4u6x"]
 [ext_resource type="Script" uid="uid://b8f71cik0w34x" path="res://UI/PackageDisplay/SubWindows/CategoryItem.cs" id="1_qjet1"]
 [ext_resource type="PackedScene" uid="uid://cyfgp4vopp1cq" path="res://UI/Buttons/CustomCheckButton.tscn" id="3_8kao3"]
+[ext_resource type="Texture2D" uid="uid://ca88qfx7ki186" path="res://assets/icons/materialicons/twotone_check_box_black_48dp.png" id="4_2boqr"]
+[ext_resource type="Texture2D" uid="uid://cnkm88exmqnd8" path="res://assets/icons/materialicons/twotone_indeterminate_check_box_black_48dp.png" id="5_pj8s5"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_6q3kc"]
 bg_color = Color(0.6, 0.6, 0.6, 0)
@@ -23,23 +25,41 @@ expand_margin_right = 2.0
 
 [sub_resource type="Theme" id="Theme_rscmb"]
 Label/colors/font_color = Color(0.140447, 0.140447, 0.140447, 1)
+Label/font_sizes/font_size = 17
 Label/fonts/font = ExtResource("1_c4u6x")
+
+[sub_resource type="Theme" id="Theme_2boqr"]
+Label/font_sizes/font_size = 11
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_7oqi7"]
 
-[node name="CategoryItem" type="MarginContainer" node_paths=PackedStringArray("Normal", "Highlight", "CategoryName", "PackageCount", "CategoryColor", "button", "CheckButton")]
-theme_override_constants/margin_left = 5
-theme_override_constants/margin_top = 4
-theme_override_constants/margin_right = 7
-theme_override_constants/margin_bottom = 2
+[node name="CategoryItem" type="MarginContainer" node_paths=PackedStringArray("Normal", "Highlight", "CategoryName", "PackageCount", "CategoryColor", "CategoryTextColor", "button", "enablebutton", "disablebutton", "CheckButton", "NameContainer", "CountContainer", "ColorContainer", "HideContainer", "EDContainer", "EnableContainer", "DisableContainer", "EnableButtonColor", "DisableButtonColor")]
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 46.0
+grow_horizontal = 2
+size_flags_horizontal = 3
+theme_override_constants/margin_bottom = -2
 script = ExtResource("1_qjet1")
 Normal = NodePath("Panel_Norm")
 Highlight = NodePath("Panel_Highlight")
-CategoryName = NodePath("HBoxContainer/MarginContainer/CatName_Label")
-PackageCount = NodePath("HBoxContainer/MarginContainer2/PackagesCount_Label")
+CategoryName = NodePath("HBoxContainer/MarginContainer/MarginContainer/CatName_Label")
+PackageCount = NodePath("HBoxContainer/MarginContainer2/MarginContainer/PackagesCount_Label")
 CategoryColor = NodePath("HBoxContainer/MarginContainer3/MarginContainer/MarginContainer/CatColor")
+CategoryTextColor = NodePath("HBoxContainer/MarginContainer3/MarginContainer/MarginContainer/Label")
 button = NodePath("Button")
+enablebutton = NodePath("")
+disablebutton = NodePath("")
 CheckButton = NodePath("HBoxContainer/MarginContainer4/CustomCheckButton")
+NameContainer = NodePath("HBoxContainer/MarginContainer")
+CountContainer = NodePath("HBoxContainer/MarginContainer2")
+ColorContainer = NodePath("HBoxContainer/MarginContainer3")
+HideContainer = NodePath("HBoxContainer/MarginContainer4")
+EDContainer = NodePath("HBoxContainer/MarginContainer5")
+EnableContainer = NodePath("HBoxContainer/MarginContainer5/HBoxContainer/MarginContainer")
+DisableContainer = NodePath("HBoxContainer/MarginContainer5/HBoxContainer/MarginContainer2")
+EnableButtonColor = NodePath("HBoxContainer/MarginContainer5/HBoxContainer/MarginContainer/TextureRect/ColorRect")
+DisableButtonColor = NodePath("HBoxContainer/MarginContainer5/HBoxContainer/MarginContainer2/TextureRect/ColorRect2")
 
 [node name="Panel_Norm" type="Panel" parent="."]
 layout_mode = 2
@@ -52,37 +72,68 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_k3wvy")
 
 [node name="HBoxContainer" type="HBoxContainer" parent="."]
 layout_mode = 2
+theme_override_constants/separation = 0
 
-[node name="MarginContainer" type="MarginContainer" parent="HBoxContainer"]
+[node name="MarginContainer" type="Control" parent="HBoxContainer"]
+custom_minimum_size = Vector2(100, 0)
 layout_mode = 2
 size_flags_horizontal = 3
+
+[node name="MarginContainer" type="MarginContainer" parent="HBoxContainer/MarginContainer"]
+clip_contents = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 theme_override_constants/margin_left = 5
 
-[node name="CatName_Label" type="Label" parent="HBoxContainer/MarginContainer"]
+[node name="CatName_Label" type="Label" parent="HBoxContainer/MarginContainer/MarginContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme = SubResource("Theme_rscmb")
 text = "Default"
+vertical_alignment = 1
+clip_text = true
+text_overrun_behavior = 3
 
-[node name="MarginContainer2" type="MarginContainer" parent="HBoxContainer"]
+[node name="MarginContainer2" type="Control" parent="HBoxContainer"]
+clip_contents = true
+custom_minimum_size = Vector2(100, 0)
 layout_mode = 2
-size_flags_horizontal = 3
+size_flags_horizontal = 0
 
-[node name="PackagesCount_Label" type="Label" parent="HBoxContainer/MarginContainer2"]
+[node name="MarginContainer" type="MarginContainer" parent="HBoxContainer/MarginContainer2"]
+clip_contents = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="PackagesCount_Label" type="Label" parent="HBoxContainer/MarginContainer2/MarginContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme = SubResource("Theme_rscmb")
 text = "# Packages in Category"
+horizontal_alignment = 1
+vertical_alignment = 1
 
-[node name="MarginContainer3" type="MarginContainer" parent="HBoxContainer"]
+[node name="MarginContainer3" type="Control" parent="HBoxContainer"]
+clip_contents = true
 custom_minimum_size = Vector2(50, 40)
 layout_mode = 2
-size_flags_horizontal = 3
-theme_override_constants/margin_left = 10
-theme_override_constants/margin_right = 10
+size_flags_horizontal = 0
 
 [node name="MarginContainer" type="MarginContainer" parent="HBoxContainer/MarginContainer3"]
-layout_mode = 2
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 theme_override_constants/margin_left = 3
 theme_override_constants/margin_top = 5
 theme_override_constants/margin_right = 3
@@ -102,19 +153,84 @@ theme_override_constants/margin_bottom = 1
 layout_mode = 2
 color = Color(0.766719, 0.372844, 0.774744, 1)
 
-[node name="MarginContainer4" type="MarginContainer" parent="HBoxContainer"]
+[node name="Label" type="Label" parent="HBoxContainer/MarginContainer3/MarginContainer/MarginContainer"]
+layout_mode = 2
+theme = SubResource("Theme_2boqr")
+text = "Text"
+horizontal_alignment = 1
+
+[node name="MarginContainer4" type="Control" parent="HBoxContainer"]
+clip_contents = true
 custom_minimum_size = Vector2(50, 40)
 layout_mode = 2
-size_flags_horizontal = 3
-theme_override_constants/margin_left = 10
-theme_override_constants/margin_right = 10
+size_flags_horizontal = 0
 
 [node name="CustomCheckButton" parent="HBoxContainer/MarginContainer4" instance=ExtResource("3_8kao3")]
+layout_mode = 1
+offset_left = -17.5
+offset_top = -7.0
+offset_right = 17.5
+offset_bottom = 7.0
+
+[node name="MarginContainer5" type="Control" parent="HBoxContainer"]
+clip_contents = true
+custom_minimum_size = Vector2(50, 40)
 layout_mode = 2
+size_flags_horizontal = 0
+
+[node name="HBoxContainer" type="HBoxContainer" parent="HBoxContainer/MarginContainer5"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+alignment = 1
+
+[node name="MarginContainer" type="MarginContainer" parent="HBoxContainer/MarginContainer5/HBoxContainer"]
+custom_minimum_size = Vector2(25, 25)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+
+[node name="TextureRect" type="TextureRect" parent="HBoxContainer/MarginContainer5/HBoxContainer/MarginContainer"]
+clip_children = 1
+layout_mode = 2
+texture = ExtResource("4_2boqr")
+expand_mode = 3
+
+[node name="ColorRect" type="ColorRect" parent="HBoxContainer/MarginContainer5/HBoxContainer/MarginContainer/TextureRect"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MarginContainer2" type="MarginContainer" parent="HBoxContainer/MarginContainer5/HBoxContainer"]
+custom_minimum_size = Vector2(25, 25)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+
+[node name="TextureRect" type="TextureRect" parent="HBoxContainer/MarginContainer5/HBoxContainer/MarginContainer2"]
+clip_children = 1
+layout_mode = 2
+texture = ExtResource("5_pj8s5")
+expand_mode = 3
+
+[node name="ColorRect2" type="ColorRect" parent="HBoxContainer/MarginContainer5/HBoxContainer/MarginContainer2/TextureRect"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 
 [node name="Button" type="Button" parent="."]
 layout_mode = 2
 mouse_filter = 1
+mouse_default_cursor_shape = 2
 theme_override_styles/normal = SubResource("StyleBoxEmpty_7oqi7")
 theme_override_styles/normal_mirrored = SubResource("StyleBoxEmpty_7oqi7")
 theme_override_styles/pressed = SubResource("StyleBoxEmpty_7oqi7")

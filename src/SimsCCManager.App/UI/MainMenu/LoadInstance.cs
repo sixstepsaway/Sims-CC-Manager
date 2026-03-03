@@ -245,19 +245,7 @@ public partial class LoadInstance : MarginContainer
             gameInstance.InstanceFolder = loadedinstance.InstanceLocation;        
             
             int pbarval = 0;
-            /*if (File.Exists(gameInstance.XMLfile()))
-            {
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Loading Instance from {0}", gameInstance.XMLfile()));
-                XmlSerializer InstanceSerializer = new XmlSerializer(typeof(GameInstance));
-                using (FileStream fileStream = new(gameInstance.XMLfile(), FileMode.Open, System.IO.FileAccess.Read)){
-                    using (StreamReader streamReader = new(fileStream)){
-                        gameInstance = (GameInstance)InstanceSerializer.Deserialize(streamReader);
-                        streamReader.Close();
-                    }
-                    fileStream.Close();
-                }
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Loaded instance: {0} and its {1} profiles", gameInstance.InstanceName, gameInstance.InstanceProfileLocations.Count));
-            }*/
+            
             gameInstance = gameInstance.LoadInstance();
 
             if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Loaded instance {0}. Current profile: {1}", 

@@ -253,97 +253,68 @@ public partial class PackageViewerContainer : MarginContainer
         }
 
         if (package.PackageData != null)
-        {
-            if (package.Mesh || !string.IsNullOrEmpty(package.MatchingMesh))
+        {       
+            if (package.Type.Contains("Skin"))
             {
                 ImageContainer.Visible = true;
                 ImageTextureRect.Visible = false;
                 SubviewportTexture.Visible = true;
-                if (package.Recolor)
+                currSnapshotter = SnapshotterPS.Instantiate() as Snapshotter;
+                currSnapshotter.Packages = packageDisplay.ThisInstance.Files.OfType<SimsPackage>().ToList();
+                SnapshotterActive = true; 
+                Subviewport.AddChild(currSnapshotter);
+                currSnapshotter.DisplaySkin(package);                
+            } else if (package.Type.Contains("Eyecolor"))
+            {
+                ImageContainer.Visible = true;
+                ImageTextureRect.Visible = false;
+                SubviewportTexture.Visible = true;
+                currSnapshotter = SnapshotterPS.Instantiate() as Snapshotter;
+                currSnapshotter.Packages = packageDisplay.ThisInstance.Files.OfType<SimsPackage>().ToList();
+                SnapshotterActive = true; 
+                Subviewport.AddChild(currSnapshotter);
+                currSnapshotter.DisplayEyes(package);  
+            } else if ((package.Mesh && package.MatchingRecolors.Count > 0)|| !string.IsNullOrEmpty(package.MatchingMesh))
+            {   
+                ImageContainer.Visible = true;
+                ImageTextureRect.Visible = false;
+                SubviewportTexture.Visible = true;
+                currSnapshotter = SnapshotterPS.Instantiate() as Snapshotter;
+                currSnapshotter.Packages = packageDisplay.ThisInstance.Files.OfType<SimsPackage>().ToList();
+                SnapshotterActive = true; 
+                Subviewport.AddChild(currSnapshotter);
+                bool done = currSnapshotter.BuildSims2Mesh(package);
+                if (!done)
                 {
-                    currSnapshotter = SnapshotterPS.Instantiate() as Snapshotter;
-                    currSnapshotter.Packages = packageDisplay.ThisInstance.Files.OfType<SimsPackage>().ToList();
-                    SnapshotterActive = true;
-                    Subviewport.AddChild(currSnapshotter);
-                    currSnapshotter.BuildSims2Mesh(package);
-                    if (!package.Type.Contains("Hair")) {
-                        if (package.Game == SimsGames.Sims2) currSnapshotter.GetTexturesForS2Meshes(package);
-                    }
-                }
-                else if (!string.IsNullOrEmpty(package.MatchingMesh))
-                {
-                    SimsPackage matchingMesh = new();
-                    SimsPackage color = new();
-                    if (package.Mesh)
+                    SnapshotterActive = false;
+                    if (package.PackageImage != null)
                     {
-                        matchingMesh = package;
-                        if (packageDisplay.ThisInstance.Files.OfType<SimsPackage>().Any(x => x.FileName == package.MatchingRecolors[0])) 
-                        { 
-                            color = packageDisplay.ThisInstance.Files.OfType<SimsPackage>().First(x => x.FileName == package.MatchingRecolors[0]);
+                        ImageContainer.Visible = true;
+                        ImageTextureRect.Visible = true;
+                        SubviewportTexture.Visible = false;
+                        if (package.Sims2Data != null)
+                        {
+                            if (package.Sims2Data.TXTRDataBlock.Count > 0)
+                            {
+                                foreach (TXTRData txtr in package.Sims2Data.TXTRDataBlock)
+                                {
+                                    Images.Add(txtr.Texture);                                    
+                                }
+                                ImageTextureRect.Texture = ImageTexture.CreateFromImage(Images[0]);
+                            } else
+                            {
+                                Images.Insert(0, package.PackageImage);
+                                ImageTextureRect.Texture = ImageTexture.CreateFromImage(package.PackageImage);   
+                            }
                         } else
                         {
-                            color = package;
+                            Images.Insert(0, package.PackageImage);
+                            ImageTextureRect.Texture = ImageTexture.CreateFromImage(package.PackageImage);
                         }
                     } else
                     {
-                        color = package;
-                        matchingMesh = packageDisplay.ThisInstance.Files.OfType<SimsPackage>().First(x => x.FileName == package.MatchingMesh);
-                    }                    
-                    currSnapshotter = SnapshotterPS.Instantiate() as Snapshotter;
-                    currSnapshotter.Packages = packageDisplay.ThisInstance.Files.OfType<SimsPackage>().ToList();
-                    SnapshotterActive = true;                     
-                    Subviewport.AddChild(currSnapshotter);
-                    if (package.Game == SimsGames.Sims2)
-                    {
-                        currSnapshotter.BuildSims2Mesh(matchingMesh);
-                        if (!package.Type.Contains("Hair")) {
-                            currSnapshotter.GetTexturesForS2Meshes(color); 
-                        } else { 
-                            currSnapshotter.ApplyS2Textures(color); 
-                        }
+                        ImageContainer.Visible = false;
                     }
-                } else
-                {
-                    currSnapshotter = SnapshotterPS.Instantiate() as Snapshotter;
-                    currSnapshotter.Packages = packageDisplay.ThisInstance.Files.OfType<SimsPackage>().ToList();
-                    SnapshotterActive = true;
-                    Subviewport.AddChild(currSnapshotter);
-                    currSnapshotter.BuildSims2Mesh(package);
-                    if (!package.Type.Contains("Hair")) {
-                        if (package.Game == SimsGames.Sims2) currSnapshotter.GetTexturesForS2Meshes(package);
-                    }
-                }
-            } else if (!package.Mesh && package.Recolor)
-            {
-                ImageContainer.Visible = true;
-                ImageTextureRect.Visible = false;
-                SubviewportTexture.Visible = true;
-                if (packageDisplay.ThisInstance.Files.OfType<SimsPackage>().Any(x => x.ObjectGUID == package.ObjectGUID && x.Mesh))
-                {
-                    SimsPackage matchingMesh = packageDisplay.ThisInstance.Files.OfType<SimsPackage>().Where(x => x.ObjectGUID == package.ObjectGUID).First(p => p.Mesh);
-                    currSnapshotter = SnapshotterPS.Instantiate() as Snapshotter;
-                    currSnapshotter.Packages = packageDisplay.ThisInstance.Files.OfType<SimsPackage>().ToList();
-                    SnapshotterActive = true;                     
-                    Subviewport.AddChild(currSnapshotter);
-                    if (package.Game == SimsGames.Sims2)
-                    {
-                        currSnapshotter.BuildSims2Mesh(matchingMesh);
-                        currSnapshotter.ApplyS2Textures(package);
-                    }
-                    MultipleSnapshotters = currSnapshotter.MultipleOptions;
-                                           
-                } else if (packageDisplay.ThisInstance.Files.OfType<SimsPackage>().Any(x => x.Sims2Data.XNGBDataBlock.ModelName.Contains(package.Sims2Data.TXTRDataBlock[0].TextureNoSuffix) && x.Mesh))
-                {
-                    SimsPackage matchingMesh = packageDisplay.ThisInstance.Files.OfType<SimsPackage>().Where(x => x.Sims2Data.XNGBDataBlock.ModelName.Contains(package.Sims2Data.TXTRDataBlock[0].TextureNoSuffix)).First(p => p.Mesh);
-                    currSnapshotter = SnapshotterPS.Instantiate() as Snapshotter;
-                    currSnapshotter.Packages = packageDisplay.ThisInstance.Files.OfType<SimsPackage>().ToList();
-                    SnapshotterActive = true; 
-                    Subviewport.AddChild(currSnapshotter);
-                    currSnapshotter.BuildSims2Mesh(matchingMesh);
-                    if (!package.Type.Contains("Hair")) {
-                        if (package.Game == SimsGames.Sims2) currSnapshotter.ApplyS2Textures(package);
-                    }
-                    MultipleSnapshotters = currSnapshotter.MultipleOptions;
                 }
             } else if (package.PackageImage != null)
             {
@@ -360,7 +331,7 @@ public partial class PackageViewerContainer : MarginContainer
             }
             
         }
-        if (MultipleSnapshotters)
+        if (MultipleSnapshotters && SnapshotterActive)
         {
             ImageControls.Visible = true;
         } else if (Images.Count > 1 || (Images.Count > 0 && SnapshotterActive))

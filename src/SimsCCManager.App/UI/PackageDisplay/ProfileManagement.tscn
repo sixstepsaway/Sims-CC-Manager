@@ -1,10 +1,12 @@
-[gd_scene load_steps=11 format=3 uid="uid://brdr53bjv2rqf"]
+[gd_scene load_steps=19 format=3 uid="uid://brdr53bjv2rqf"]
 
 [ext_resource type="Script" uid="uid://rlsrt82g768p" path="res://UI/PackageDisplay/ProfileManagement.cs" id="1_1r50d"]
 [ext_resource type="Theme" uid="uid://b4fe82i5mblf5" path="res://themes/packagedisplay_headers.tres" id="1_j3obd"]
 [ext_resource type="Theme" uid="uid://elq77dslte5a" path="res://themes/ManageCategories_buttons.tres" id="2_1r50d"]
 [ext_resource type="PackedScene" uid="uid://x3br0dh2qyld" path="res://UI/PackageDisplay/SubWindows/ProfileItem.tscn" id="2_yq3p3"]
 [ext_resource type="PackedScene" uid="uid://cyfgp4vopp1cq" path="res://UI/Buttons/CustomCheckButton.tscn" id="3_yq3p3"]
+[ext_resource type="FontFile" uid="uid://dsv3tma4glemy" path="res://assets/fonts/Averia_Sans_Libre/AveriaSansLibre-Bold.ttf" id="5_c8g7m"]
+[ext_resource type="FontFile" uid="uid://b6qecjkljkdcj" path="res://assets/fonts/Averia_Sans_Libre/AveriaSansLibre-Regular.ttf" id="6_x1mqo"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_1r50d"]
 bg_color = Color(0.85, 0.85, 0.85, 0.2901961)
@@ -24,6 +26,9 @@ expand_margin_top = 10.0
 expand_margin_right = 10.0
 expand_margin_bottom = 10.0
 
+[sub_resource type="Theme" id="Theme_v5xwj"]
+Panel/styles/panel = SubResource("StyleBoxFlat_yq3p3")
+
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_l055a"]
 bg_color = Color(0.6, 0.6, 0.6, 0)
 border_width_left = 3
@@ -36,25 +41,83 @@ corner_radius_top_right = 3
 corner_radius_bottom_right = 3
 corner_radius_bottom_left = 3
 
+[sub_resource type="Theme" id="Theme_38p7h"]
+Panel/styles/panel = SubResource("StyleBoxFlat_l055a")
+
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_r2byt"]
 bg_color = Color(0.6, 0.6, 0.6, 0)
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_wkl23"]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_cmua1"]
+content_margin_left = 5.0
+content_margin_top = 2.0
+content_margin_right = 5.0
+content_margin_bottom = 2.0
+bg_color = Color(0.3515629, 0.35156292, 0.35156274, 1)
 border_width_left = 2
 border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
-border_color = Color(0.38549247, 0.38549256, 0.38549227, 1)
-corner_radius_top_left = 10
-corner_radius_top_right = 10
-corner_radius_bottom_right = 10
-corner_radius_bottom_left = 10
-expand_margin_left = 10.0
-expand_margin_top = 10.0
-expand_margin_right = 10.0
-expand_margin_bottom = 10.0
+border_color = Color(0.89492244, 0.89492244, 0.8949223, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
 
-[node name="ProfileManagement" type="MarginContainer" node_paths=PackedStringArray("BgPanel", "ProfilesLabel", "ListBg", "ProfilesList", "NewProfileButton", "EditProfileButton", "DupeProfileButton", "DeleteProfileButton", "CloseButton", "MiniWindow", "ProfileNameBox", "ProfileDescriptionBox", "ConfirmButton", "CancelButton", "LocalSavesLabel", "LocalSavesCheck", "LocalSettingsLabel", "LocalSettingsCheck", "LocalMediaLabel", "LocalMediaCheck", "LocalDataLabel", "LocalDataCheck", "AutoBackupsLabel", "AutoBackupsCheck")]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_g1ll2"]
+content_margin_left = 5.0
+content_margin_top = 2.0
+content_margin_right = 5.0
+content_margin_bottom = 2.0
+bg_color = Color(0.47397572, 0.47397578, 0.4739756, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_u40k4"]
+content_margin_left = 5.0
+content_margin_top = 2.0
+content_margin_right = 5.0
+content_margin_bottom = 2.0
+bg_color = Color(0.3515629, 0.35156292, 0.35156274, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.89492244, 0.89492244, 0.8949223, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ye2jy"]
+content_margin_left = 5.0
+content_margin_top = 2.0
+content_margin_right = 5.0
+content_margin_bottom = 2.0
+bg_color = Color(0.47397572, 0.47397578, 0.4739756, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+
+[sub_resource type="Theme" id="Theme_bpv20"]
+LineEdit/fonts/font = ExtResource("5_c8g7m")
+LineEdit/styles/focus = SubResource("StyleBoxFlat_cmua1")
+LineEdit/styles/normal = SubResource("StyleBoxFlat_g1ll2")
+TextEdit/fonts/font = ExtResource("6_x1mqo")
+TextEdit/styles/focus = SubResource("StyleBoxFlat_u40k4")
+TextEdit/styles/normal = SubResource("StyleBoxFlat_ye2jy")
+
+[node name="ProfileManagement" type="MarginContainer" node_paths=PackedStringArray("BgPanel", "ProfilesLabel", "ListBg", "ProfilesList", "NewProfileButton", "EditProfileButton", "DupeProfileButton", "DeleteProfileButton", "CloseButton", "MiniWindow", "ProfileNameBox", "ProfileDescriptionBox", "ConfirmButton", "CancelButton", "LocalSavesLabel", "LocalSavesCheck", "LocalSettingsLabel", "LocalSettingsCheck", "LocalMediaLabel", "LocalMediaCheck", "LocalDataLabel", "LocalDataCheck", "AutoBackupsLabel", "AutoBackupsCheck", "SecondBackground", "InternalBackground")]
 script = ExtResource("1_1r50d")
 ProfileItemPS = ExtResource("2_yq3p3")
 BgPanel = NodePath("MarginContainer/Panel")
@@ -81,6 +144,8 @@ LocalDataLabel = NodePath("MarginContainer2/MarginContainer/VBoxContainer/VBoxCo
 LocalDataCheck = NodePath("MarginContainer2/MarginContainer/VBoxContainer/VBoxContainer/HBoxContainer/HBoxContainer4/LocalData_CheckButton")
 AutoBackupsLabel = NodePath("MarginContainer2/MarginContainer/VBoxContainer/VBoxContainer/HBoxContainer2/HBoxContainer3/Label")
 AutoBackupsCheck = NodePath("MarginContainer2/MarginContainer/VBoxContainer/VBoxContainer/HBoxContainer2/HBoxContainer3/AutoBackups_CheckButton")
+SecondBackground = NodePath("MarginContainer/Panel")
+InternalBackground = NodePath("MarginContainer/VBoxContainer/HBoxContainer2/MarginContainer/Panel")
 
 [node name="Panel" type="Panel" parent="."]
 layout_mode = 2
@@ -95,7 +160,7 @@ theme_override_constants/margin_bottom = 125
 
 [node name="Panel" type="Panel" parent="MarginContainer"]
 layout_mode = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_yq3p3")
+theme = SubResource("Theme_v5xwj")
 
 [node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
 layout_mode = 2
@@ -121,13 +186,14 @@ layout_mode = 2
 
 [node name="Panel" type="Panel" parent="MarginContainer/VBoxContainer/HBoxContainer2/MarginContainer"]
 layout_mode = 2
+theme = SubResource("Theme_38p7h")
 theme_override_styles/panel = SubResource("StyleBoxFlat_l055a")
 
 [node name="MarginContainer" type="MarginContainer" parent="MarginContainer/VBoxContainer/HBoxContainer2/MarginContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
-theme_override_constants/margin_left = 5
+theme_override_constants/margin_left = 3
 theme_override_constants/margin_top = 5
 theme_override_constants/margin_right = 5
 theme_override_constants/margin_bottom = 5
@@ -142,6 +208,7 @@ horizontal_scroll_mode = 0
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
+theme_override_constants/separation = -2
 
 [node name="MarginContainer2" type="MarginContainer" parent="MarginContainer/VBoxContainer/HBoxContainer2"]
 layout_mode = 2
@@ -181,13 +248,14 @@ theme = ExtResource("2_1r50d")
 text = "Close"
 
 [node name="MarginContainer2" type="MarginContainer" parent="."]
+visible = false
 layout_mode = 2
 size_flags_horizontal = 4
 size_flags_vertical = 4
 
 [node name="Panel" type="Panel" parent="MarginContainer2"]
 layout_mode = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_wkl23")
+theme = SubResource("Theme_v5xwj")
 
 [node name="MarginContainer2" type="MarginContainer" parent="MarginContainer2"]
 layout_mode = 2
@@ -213,11 +281,13 @@ layout_mode = 2
 [node name="LineEdit" type="LineEdit" parent="MarginContainer2/MarginContainer/VBoxContainer"]
 custom_minimum_size = Vector2(250, 0)
 layout_mode = 2
+theme = SubResource("Theme_bpv20")
 placeholder_text = "Profile name..."
 
 [node name="TextEdit" type="TextEdit" parent="MarginContainer2/MarginContainer/VBoxContainer"]
 custom_minimum_size = Vector2(0, 150)
 layout_mode = 2
+theme = SubResource("Theme_bpv20")
 placeholder_text = "Profile description..."
 wrap_mode = 1
 

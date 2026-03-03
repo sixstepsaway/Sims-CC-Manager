@@ -21,6 +21,80 @@ using System.Xml.Serialization;
 
 public partial class PackageDisplay : MarginContainer
 {
+    [Export]
+    Godot.FileAccess CAWResourceFile;
+    string CAWResource = @"# ResourceConfig file for platform-independent resources
+#
+# See ResourceConfig/doc/ResourceConfig.htm for details on format.
+# Intranet link as of this moment:
+#  http://ears-wiki/ctg/_docs/depot/UTF/HTML/UTFApp/Resource/ResourceConfig/doc/ResourceConfig.htm
+
+#
+#  UI
+#
+Priority -29
+PackedFile UI/UI.package
+PackedFile Automation/AutomationData.package
+PackedFile Jazz/JazzData.package
+PackedFile Misc/fallback.package
+
+#
+# Folder associations using Group IDs
+#
+#Group 0x001407ec Audio
+#Group 0x0051185b EffectsBinary
+
+#
+# File associations using FileType IDs. Put them here instead of in a DDFMap.txt
+#
+#FileType 0x0175e5cd script
+#FileType 0x0175e5d9 scriptsym
+#FileType 0x8eaf13de rig
+#FileType 0x6b20c4f3 clip
+#FileType 0x00b2d882 dds
+#FileType 0x025ed6f4 simoutfit
+#FileType 0xd55f7caf lightrigs
+FileType 0xf0ff5598 triggers
+#FileType 0x11c258c0 ctriggers
+FileType 0x0333406c xml
+FileType 0x1a3201cd mod
+#FileType 0xd3044521 slot
+#FileType 0x00b552ea spt
+#FileType 0x021d7e8c spt2
+#FileType 0x1f886ead ini
+FileType 0x025c95b6 layout
+FileType 0x025c90a6 css
+FileType 0x062e9ee0 ttf
+FileType 0x062e9ee0 otf
+FileType 0x062e9ee0 ttc
+#FileType 0x2f7d0006 tga
+#FileType 0x2f7d0004 png
+#FileType 0x2f7d0002 jpg 
+#FileType 0x2f7d0002 jpeg 
+#FileType 0x03b4c61d lightingdata
+#FileType 0xea5118b0 swb
+#Audio files
+#FileType 0x02b9f662 prop
+#FileType 0x010077c4 wav
+#FileType 0x010077bb mp3
+#FileType 0x010077ca xa	   
+#FileType 0x01a527db snr
+#FileType 0x01eef63a sns
+#FileType 0x0181b0d2 abk
+#FileType 0x02c9eff2 submix  
+#FileType 0x029e333b voice
+FileType 0x03b33ddf mod
+FileType 0x0604abda dreamtree
+
+Priority 501
+DirectoryFiles Files/… autoupdate
+Priority 500
+PackedFile Packages/.package
+PackedFile Packages//.package
+PackedFile Packages///.package
+PackedFile Packages////.package
+PackedFile Packages/////*.package
+";
     public GameInstance ThisInstance;
     public InstanceProfile CurrentProfile { get { return ThisInstance.LoadedProfile; } set {ThisInstance.LoadedProfile = value; ThisInstance.WriteXML(); EnabledFromProfile(); } }
     [Export]
@@ -170,7 +244,7 @@ public partial class PackageDisplay : MarginContainer
         string name = directoryInfo.Name;
         string newloc = Path.Combine(ThisInstance.InstanceFolders.InstancePackagesFolder, name);
         if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Moving {0} to {1}", directory, newloc));
-        Directory.Move(directory, newloc);
+        Microsoft.VisualBasic.FileIO.FileSystem.MoveDirectory(directory, newloc);
     }
 
 
@@ -235,6 +309,7 @@ public partial class PackageDisplay : MarginContainer
 
     public void RefreshFiles()
     {
+        runningTasks = new();
         TogglePleaseWait(true);
 
         //List<SimsPackage> newpackages = [];
@@ -250,13 +325,23 @@ public partial class PackageDisplay : MarginContainer
         List<string> allLocations = [..ThisInstance.Files.Select(x => x.Location)];
         List<string> allfound = new();
 
-        foreach (string file in Directory.GetFiles(ThisInstance.InstanceFolders.InstancePackagesFolder))
+        List<string> files = Directory.GetFiles(ThisInstance.InstanceFolders.InstancePackagesFolder).ToList();
+        List<string> folders = Directory.GetDirectories(ThisInstance.InstanceFolders.InstancePackagesFolder).ToList();
+
+        List<string> catFolders = folders.Where(x => x.Contains("__CATEGORY_")).ToList();
+        foreach (string dir in catFolders)
+        {
+            files.AddRange(Directory.GetFiles(dir));
+            folders.AddRange(Directory.GetDirectories(dir));
+        }
+
+        foreach (string file in files)
         {
             allfound.Add(file);
             FileInfo fi = new(file);
             if (!ThisInstance.Files.Any(x=>x.Location == file) && GlobalVariables.SimsFileExtensions.Contains(fi.Extension))
             {
-                Task t = Task.Run(() => {
+                Task t = new Task(() => {
                     if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Found new file: {0}", file));
                                         
                     SimsPackage simsPackage = InstanceControllers.ReadPackage(file, ThisInstance, fi);                    
@@ -275,31 +360,35 @@ public partial class PackageDisplay : MarginContainer
             }            
         }
 
-        foreach (string file in Directory.GetDirectories(ThisInstance.InstanceFolders.InstancePackagesFolder))
-        {
+        foreach (string file in folders)
+        {            
             allfound.Add(file);
-            if (!ThisInstance.Files.Any(x=>x.Location == file))
-            {
-                Task t = Task.Run(() => {
-                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Found: {0}", file));
-                    DirectoryInfo fi = new(file);
-                    SimsPackage simsPackage = InstanceControllers.ReadPackage(file, ThisInstance, fi);                
-                    ThisInstance._packages.Add(simsPackage);
-                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Added: {0}", file));
-                    
-                    if (!simsPackage.RootMod) ThisInstance = InstanceControllers.GetSubDirectories(ThisInstance, file, simsPackage);
-                    
-                    //GlobalVariables.mainWindow.IncrementLoadingScreen(incBy, fi.Name.Replace(".info", ""), "Globals: ReadPackages 3");
-                });
-                runningTasks.Add(t);
-            }
+            DirectoryInfo fi = new(file);
+                    if (!fi.Name.StartsWith("__CATEGORY_"))
+                    {
+                        if (!ThisInstance.Files.Any(x=>x.Location == file))
+                        {
+                            Task t = new Task(() => {
+                                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Found: {0}", file));
+                                DirectoryInfo fi = new(file);
+                                SimsPackage simsPackage = InstanceControllers.ReadPackage(file, ThisInstance, fi);                
+                                ThisInstance._packages.Add(simsPackage);
+                                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Added: {0}", file));
+                                
+                                if (!simsPackage.RootMod) ThisInstance = InstanceControllers.GetSubDirectories(ThisInstance, file, simsPackage);
+                                
+                                //GlobalVariables.mainWindow.IncrementLoadingScreen(incBy, fi.Name.Replace(".info", ""), "Globals: ReadPackages 3");
+                            });
+                            runningTasks.Add(t);
+                        }
+                    }
         }
         foreach (string file in Directory.GetFiles(ThisInstance.InstanceFolders.InstanceDownloadsFolder))
         {
             allfound.Add(file);
             if (!ThisInstance.Files.Any(x=>x.Location == file))
             {
-                Task t = Task.Run(() => {
+                Task t = new Task(() => {
                     FileInfo f = new(file);
                     SimsDownload simsDownload = InstanceControllers.ReadDownload(file, f);
                     ThisInstance._downloads.Add(simsDownload);                    
@@ -307,10 +396,14 @@ public partial class PackageDisplay : MarginContainer
                 runningTasks.Add(t);
             }
         }   
-        Task w = Task.Run(() => {
+        Task w = new Task(() => {
             Thread.Sleep(5);
         });
         runningTasks.Add(w);
+        Parallel.ForEach(runningTasks, GlobalVariables.ParallelSettings, t =>
+        {
+            t.Start();
+        });
         while (runningTasks.Any(x => !x.IsCompleted))
         {
             
@@ -400,7 +493,7 @@ public partial class PackageDisplay : MarginContainer
                 List<SimsPackage> matching = new();
                 foreach (Category cat in HideCategoriesInGrid)
                 {
-                    matching.AddRange(UIAllModsContainer.Packages.Where(x => x.PackageCategory.Identifier == cat.Identifier));
+                    matching.AddRange(ThisInstance.Files.OfType<SimsPackage>().Where(x => x.PackageCategory.Identifier == cat.Identifier));
                 }
                 foreach (SimsPackage p in matching)
                 {
@@ -429,33 +522,43 @@ public partial class PackageDisplay : MarginContainer
 
     private void EnabledFromProfile()
     {
-        List<EnabledPackages> remove = new();
-        foreach (EnabledPackages package in ThisInstance.LoadedProfile.EnabledPackages)
-        {
-            if (!ThisInstance.Files.Any(x => x.Identifier == package.PackageIdentifier))
+        new Thread(() => {
+            if (!ThisInstance.Files.OfType<SimsPackage>().Any(x => ThisInstance.LoadedProfile.EnabledPackages.Any(p => p.PackageIdentifier == x.Identifier)))
             {
-                remove.Add(package);
+                List<EnabledPackages> ep = ThisInstance.LoadedProfile.EnabledPackages.Where(x => !ThisInstance.Files.OfType<SimsPackage>().Any(p => p.Identifier == x.PackageIdentifier)).ToList();
+                foreach (EnabledPackages en in ep)
+                {
+                    ThisInstance.LoadedProfile.EnabledPackages.Remove(en);
+                }
+                ThisInstance.WriteXML();
             }
-        }
-        foreach (EnabledPackages p in remove)
-        {
-            ThisInstance.LoadedProfile.EnabledPackages.Remove(p);
-        }
+
+            if (ThisInstance.Files.OfType<SimsPackage>().Any(x => x.IsEnabled))
+            {
+                foreach (SimsPackage p in ThisInstance.Files.OfType<SimsPackage>().Where(x => x.IsEnabled))
+                {
+                    p.IsEnabled = false;
+                    p.LoadOrder = -1;
+                }
+            }
+            
+            foreach (SimsPackage pack in ThisInstance.Files.OfType<SimsPackage>())
+            {
+                if (ThisInstance.LoadedProfile.EnabledPackages.Any(x => x.PackageIdentifier == pack.Identifier))
+                {
+                    EnabledPackages ep = ThisInstance.LoadedProfile.EnabledPackages.First(x => x.PackageIdentifier == pack.Identifier);
+                    pack.IsEnabled = true;
+                    pack.LoadOrder = ep.LoadOrder;                
+                }
+            }
+
+            CallDeferred(nameof(DeferredUpdatePP));
+        }){IsBackground = true}.Start();
         
-        ThisInstance.WriteXML();
-        foreach (SimsPackage pack in ThisInstance.Files.OfType<SimsPackage>())
-        {
-            if (ThisInstance.LoadedProfile.EnabledPackages.Where(x => x.PackageIdentifier == pack.Identifier).Any())
-            {
-                EnabledPackages ep = ThisInstance.LoadedProfile.EnabledPackages.Where(x => x.PackageIdentifier == pack.Identifier).First();
-                pack.IsEnabled = true;
-                pack.LoadOrder = ep.LoadOrder;                
-            } else
-            {
-                pack.IsEnabled = false;
-                pack.LoadOrder = -1; 
-            }
-        }
+    }
+
+    private void DeferredUpdatePP()
+    {
         UIAllModsContainer.UpdateProfilePackages();
     }
 
@@ -488,7 +591,7 @@ public partial class PackageDisplay : MarginContainer
     }
 
 
-    public bool LinkFiles()
+    public bool LinkFiles(string exe)
     {
         if (File.Exists(GlobalVariables.MovedItemsFile))
         {
@@ -496,7 +599,7 @@ public partial class PackageDisplay : MarginContainer
         }
         if (!GlobalVariables.IsElevated)
         {
-            if (ThisInstance.Files.OfType<SimsPackage>().Any(x => x.RootMod))
+            if (ThisInstance.Files.OfType<SimsPackage>().Any(x => x.RootMod) || ThisInstance.GameChoice == SimsGames.SimsMedieval)
             {            
                 try { var fs = new FileSecurity(ThisInstance.GameInstallFolder, AccessControlSections.All); }
                 catch (Exception e)
@@ -508,7 +611,7 @@ public partial class PackageDisplay : MarginContainer
                         return false;
                     } else
                     {
-                        
+                        return false;
                     }               
                 }
             }
@@ -527,7 +630,7 @@ public partial class PackageDisplay : MarginContainer
                 {
                     foreach (string folder in GlobalVariables.Sims2DataFolders)
                     {
-                        string folderPath = Path.Combine(ThisInstance.InstanceFolders.InstanceDataFolder, folder);
+                        string folderPath = Path.Combine(ThisInstance.LoadedProfile.LocalDataFolder, folder);
                         string destinationPath = Path.Combine(ThisInstance.GameDocumentsFolder, folder);
                         if (Directory.Exists(folderPath))
                         {
@@ -535,7 +638,7 @@ public partial class PackageDisplay : MarginContainer
                             {
                                 if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("EXISTS: {0}", destinationPath));
                                 string moveloc = Path.Combine(GlobalVariables.TempFolder, folder);
-                                Directory.Move(destinationPath, moveloc);
+                                Microsoft.VisualBasic.FileIO.FileSystem.MoveDirectory(destinationPath, moveloc);
                                 VFSFileList.ItemsMoved.Add(new(){ IsFolder = true, MovedTo = moveloc, OriginalLocation = destinationPath});
                             }
                         }
@@ -545,7 +648,7 @@ public partial class PackageDisplay : MarginContainer
                     }
                     foreach (string file in GlobalVariables.Sims2DataFiles)
                     {                        
-                        string filePath = Path.Combine(ThisInstance.InstanceFolders.InstanceDataFolder, file);
+                        string filePath = Path.Combine(ThisInstance.LoadedProfile.LocalDataFolder, file);
                         string destinationPath = Path.Combine(ThisInstance.GameDocumentsFolder, file);
                         if (File.Exists(filePath))
                         {
@@ -553,7 +656,7 @@ public partial class PackageDisplay : MarginContainer
                             {
                                 if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("EXISTS: {0}", destinationPath));
                                 string moveloc = Path.Combine(GlobalVariables.TempFolder, file);
-                                Directory.Move(destinationPath, moveloc);
+                                Microsoft.VisualBasic.FileIO.FileSystem.MoveDirectory(destinationPath, moveloc);
                                 VFSFileList.ItemsMoved.Add(new(){ IsFolder = false, MovedTo = moveloc, OriginalLocation = destinationPath});
                             }
                         }
@@ -567,7 +670,7 @@ public partial class PackageDisplay : MarginContainer
                 {
                     foreach (string folder in GlobalVariables.Sims2MediaFolders)
                     {
-                        string folderPath = Path.Combine(ThisInstance.InstanceFolders.InstanceDataFolder, folder);
+                        string folderPath = Path.Combine(ThisInstance.LoadedProfile.LocalMediaFolder, folder);
                         string destinationPath = Path.Combine(ThisInstance.GameDocumentsFolder, folder);
                         if (Directory.Exists(folderPath))
                         {
@@ -575,7 +678,7 @@ public partial class PackageDisplay : MarginContainer
                             {
                                 if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("EXISTS: {0}", destinationPath));
                                 string moveloc = Path.Combine(GlobalVariables.TempFolder, folder);
-                                Directory.Move(destinationPath, moveloc);
+                                Microsoft.VisualBasic.FileIO.FileSystem.MoveDirectory(destinationPath, moveloc);
                                 VFSFileList.ItemsMoved.Add(new(){ IsFolder = true, MovedTo = moveloc, OriginalLocation = destinationPath});
                             }
                         }
@@ -588,7 +691,7 @@ public partial class PackageDisplay : MarginContainer
                 {
                     foreach (string folder in GlobalVariables.Sims2SavesFolders)
                     {
-                        string folderPath = Path.Combine(ThisInstance.InstanceFolders.InstanceDataFolder, folder);
+                        string folderPath = Path.Combine(ThisInstance.LoadedProfile.LocalSaveFolder, folder);
                         string destinationPath = Path.Combine(ThisInstance.GameDocumentsFolder, folder);
                         if (Directory.Exists(folderPath))
                         {
@@ -596,7 +699,7 @@ public partial class PackageDisplay : MarginContainer
                             {
                                 if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("EXISTS: {0}", destinationPath));
                                 string moveloc = Path.Combine(GlobalVariables.TempFolder, folder);
-                                Directory.Move(destinationPath, moveloc);
+                                Microsoft.VisualBasic.FileIO.FileSystem.MoveDirectory(destinationPath, moveloc);
                                 VFSFileList.ItemsMoved.Add(new(){ IsFolder = true, MovedTo = moveloc, OriginalLocation = destinationPath});
                             }
                         }
@@ -609,7 +712,7 @@ public partial class PackageDisplay : MarginContainer
                 {
                     foreach (string folder in GlobalVariables.Sims2SettingsFolders)
                     {
-                        string folderPath = Path.Combine(ThisInstance.InstanceFolders.InstanceDataFolder, folder);
+                        string folderPath = Path.Combine(ThisInstance.LoadedProfile.LocalSettingsFolder, folder);
                         string destinationPath = Path.Combine(ThisInstance.GameDocumentsFolder, folder);
                         if (Directory.Exists(folderPath))
                         {
@@ -617,7 +720,7 @@ public partial class PackageDisplay : MarginContainer
                             {
                                 if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("EXISTS: {0}", destinationPath));
                                 string moveloc = Path.Combine(GlobalVariables.TempFolder, folder);
-                                Directory.Move(destinationPath, moveloc);
+                                Microsoft.VisualBasic.FileIO.FileSystem.MoveDirectory(destinationPath, moveloc);
                                 VFSFileList.ItemsMoved.Add(new(){ IsFolder = true, MovedTo = moveloc, OriginalLocation = destinationPath});
                             }
                         }
@@ -630,7 +733,24 @@ public partial class PackageDisplay : MarginContainer
 
             break;
             case SimsGames.Sims3:
-                packageFolderLocation = ThisInstance.Sims3Folders.ModsFolder;
+                if (exe.Contains("Sims 3 Create A World"))
+                {
+                    packageFolderLocation = Path.Combine(exe, "Packages");
+                    if (!Directory.Exists(packageFolderLocation))
+                    {
+                        Directory.CreateDirectory(packageFolderLocation);
+                    }
+                    string resourcecfg = Path.Combine(exe, "Resource.cfg");
+                    if (File.Exists(resourcecfg))
+                    {
+                        string move = Path.Combine(exe, "Resource__Backup.cfg.bk");
+                        File.Move(resourcecfg, move);
+                    }
+                    File.WriteAllText(resourcecfg, CAWResource);
+                } else
+                {                    
+                    packageFolderLocation = ThisInstance.Sims3Folders.ModsFolder;
+                }
                 if (ThisInstance.LoadedProfile.LocalData)
                 {
                     
@@ -668,11 +788,97 @@ public partial class PackageDisplay : MarginContainer
                 {
                     
                 }
-
-
             break;
-
-            
+            case SimsGames.SimsMedieval:
+                packageFolderLocation = ThisInstance.SimsMedievalFolders.ModsFolder;
+                
+                if (ThisInstance.LoadedProfile.LocalMedia)
+                {
+                    foreach (string folder in GlobalVariables.SimsMedievalMediaFolders)
+                    {
+                        string folderPath = Path.Combine(ThisInstance.LoadedProfile.LocalMediaFolder, folder);
+                        string destinationPath = Path.Combine(ThisInstance.GameDocumentsFolder, folder);
+                        if (Directory.Exists(folderPath))
+                        {
+                            if (Directory.Exists(destinationPath))
+                            {
+                                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("EXISTS: {0}", destinationPath));
+                                string moveloc = Path.Combine(GlobalVariables.TempFolder, folder);
+                                Utilities.MoveExisting(moveloc, true);
+                                Microsoft.VisualBasic.FileIO.FileSystem.MoveDirectory(destinationPath, moveloc);
+                                VFSFileList.ItemsMoved.Add(new(){ IsFolder = true, MovedTo = moveloc, OriginalLocation = destinationPath});
+                            }
+                        }
+                        
+                        VirtualFileSystem.MakeJunction(folderPath, destinationPath);
+                        VFSFileList.ItemsLinked.Add(new () { LinkLocation = destinationPath, IsFolder = true });
+                    }  
+                }
+                if (ThisInstance.LoadedProfile.LocalSaves)
+                {
+                    foreach (string folder in GlobalVariables.SimsMedievalSavesFolders)
+                    {
+                        string folderPath = Path.Combine(ThisInstance.LoadedProfile.LocalSaveFolder, folder);
+                        string destinationPath = Path.Combine(ThisInstance.GameDocumentsFolder, folder);
+                        if (Directory.Exists(folderPath))
+                        {
+                            if (Directory.Exists(destinationPath))
+                            {
+                                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("EXISTS: {0}", destinationPath));
+                                string moveloc = Path.Combine(GlobalVariables.TempFolder, folder);
+                                Utilities.MoveExisting(moveloc, true);
+                                Microsoft.VisualBasic.FileIO.FileSystem.MoveDirectory(destinationPath, moveloc);
+                                VFSFileList.ItemsMoved.Add(new(){ IsFolder = true, MovedTo = moveloc, OriginalLocation = destinationPath});
+                            }
+                        }
+                        
+                        VirtualFileSystem.MakeJunction(folderPath, destinationPath);
+                        VFSFileList.ItemsLinked.Add(new () { LinkLocation = destinationPath, IsFolder = true });
+                    }
+                    foreach (string file in GlobalVariables.SimsMedievalSavesFiles)
+                    {                        
+                        string filePath = Path.Combine(ThisInstance.LoadedProfile.LocalSaveFolder, file);
+                        string destinationPath = Path.Combine(ThisInstance.GameDocumentsFolder, file);
+                        if (File.Exists(filePath))
+                        {
+                            if (File.Exists(destinationPath))
+                            {
+                                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("EXISTS: {0}", destinationPath));
+                                string moveloc = Path.Combine(GlobalVariables.TempFolder, file);
+                                Utilities.MoveExisting(moveloc);
+                                File.Move(destinationPath, moveloc);
+                                VFSFileList.ItemsMoved.Add(new(){ IsFolder = false, MovedTo = moveloc, OriginalLocation = destinationPath});
+                            }
+                        }
+                        
+                        VirtualFileSystem.MakeSymbolicLink(filePath, destinationPath);
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Linking: {0}", destinationPath));
+                        VFSFileList.ItemsLinked.Add(new () { LinkLocation = destinationPath, IsFolder = false });
+                    }
+                }
+                if (ThisInstance.LoadedProfile.LocalSettings)
+                {
+                     foreach (string file in GlobalVariables.SimsMedievalSettingsFiles)
+                    {                        
+                        string filePath = Path.Combine(ThisInstance.LoadedProfile.LocalSettingsFolder, file);
+                        string destinationPath = Path.Combine(ThisInstance.GameDocumentsFolder, file);
+                        if (File.Exists(filePath))
+                        {
+                            if (File.Exists(destinationPath))
+                            {
+                                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("EXISTS: {0}", destinationPath));
+                                string moveloc = Path.Combine(GlobalVariables.TempFolder, file);
+                                Utilities.MoveExisting(moveloc);
+                                File.Move(destinationPath, moveloc);
+                                VFSFileList.ItemsMoved.Add(new(){ IsFolder = false, MovedTo = moveloc, OriginalLocation = destinationPath});
+                            }
+                        }                        
+                        VirtualFileSystem.MakeSymbolicLink(filePath, destinationPath);
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Linking: {0}", destinationPath));
+                        VFSFileList.ItemsLinked.Add(new () { LinkLocation = destinationPath, IsFolder = false });
+                    }
+                }
+            break;            
         }
         
         
@@ -713,24 +919,17 @@ public partial class PackageDisplay : MarginContainer
                     path = path[1..];
                     string pathcheck = Path.Combine(ThisInstance.GameInstallFolder, path);
                     if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Checking path: {0}", pathcheck)); 
-                    if (!File.Exists(pathcheck))
-                    {
-                        VFSFileList.ItemsLinked.Add(new() { IsFolder = false, LinkLocation = pathcheck});
-                        VirtualFileSystem.MakeSymbolicLink(file, pathcheck);
-                    } else
-                    {
-                        if (File.Exists(file))
-                        {
-                            if (File.Exists(pathcheck))
-                            {
-                                FileInfo f = new(file);
-                                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("EXISTS: {0}", pathcheck));
-                                string moveloc = Path.Combine(GlobalVariables.TempFolder, f.Name);
-                                Directory.Move(file, moveloc);
-                                VFSFileList.ItemsMoved.Add(new(){ IsFolder = false, MovedTo = moveloc, OriginalLocation = pathcheck});
-                            }
-                        }
+                    if (File.Exists(pathcheck))
+                    {                 
+                        FileInfo f = new(file);
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("EXISTS: {0}", pathcheck));
+                        string moveloc = Path.Combine(GlobalVariables.TempFolder, f.Name);
+                        Utilities.MoveExisting(moveloc);
+                        File.Move(pathcheck, moveloc);
+                        VFSFileList.ItemsMoved.Add(new(){ IsFolder = false, MovedTo = moveloc, OriginalLocation = pathcheck});
                     }
+                    VFSFileList.ItemsLinked.Add(new() { IsFolder = false, LinkLocation = pathcheck});
+                    VirtualFileSystem.MakeSymbolicLink(file, pathcheck);
                 }
                 
             }
@@ -748,7 +947,8 @@ public partial class PackageDisplay : MarginContainer
                 {
                     if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("EXISTS: {0}", newpath));
                     string moveloc = Path.Combine(GlobalVariables.TempFolder, fileInfo.Name);
-                    Directory.Move(newpath, moveloc);
+                    Utilities.MoveExisting(moveloc);
+                    File.Move(newpath, moveloc);
                     VFSFileList.ItemsMoved.Add(new(){ IsFolder = false, MovedTo = moveloc, OriginalLocation = newpath});
                 }
 
@@ -768,7 +968,8 @@ public partial class PackageDisplay : MarginContainer
                         {
                             if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("EXISTS: {0}", newp));
                             string moveloc = Path.Combine(GlobalVariables.TempFolder, fileInf.Name);
-                            Directory.Move(newp, moveloc);
+                            Utilities.MoveExisting(moveloc);
+                            File.Move(newp, moveloc);
                             VFSFileList.ItemsMoved.Add(new(){ IsFolder = false, MovedTo = moveloc, OriginalLocation = newp});
                         }
                         VirtualFileSystem.MakeSymbolicLink(file, newp); 
@@ -917,7 +1118,7 @@ public class VirtualFileSystem
             string ren = og.Replace("--DISABLED", "");
             try {
                 if(new DirectoryInfo(Item).Attributes.HasFlag(FileAttributes.ReparsePoint)){
-                    Directory.Move(og, ren);
+                    Microsoft.VisualBasic.FileIO.FileSystem.MoveDirectory(og, ren);
                 } else {
                     File.Move(og, ren);
                 }                    

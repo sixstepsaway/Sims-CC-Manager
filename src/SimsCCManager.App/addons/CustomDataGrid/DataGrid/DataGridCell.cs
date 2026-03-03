@@ -14,9 +14,11 @@ public partial class DataGridCell : Control
 	
 	//public SceneTree ThisSceneTree;
 
-	public delegate void ToggleHoverEvent(bool Hover);
-	public ToggleHoverEvent ToggleHovered;
-	public delegate void ToggleFlippedEvent(bool Toggled);
+	public int CellIdx;
+	public delegate void HoverEvent(bool Hover);
+	public HoverEvent ToggleHovered;
+	public HoverEvent AdjustableNumberHovered;
+	public delegate void ToggleFlippedEvent();
 	public ToggleFlippedEvent ToggleFlipped;
 	public delegate void ShowNumberAdjusterEvent(bool Bool);
 	public ShowNumberAdjusterEvent ShowNumberAdjuster;
@@ -95,8 +97,38 @@ public partial class DataGridCell : Control
 	public ColorRect ToggleSelectedColor;
 	[Export]
 	public ColorRect ToggleUnselectedColor;
+
 	[Export]
 	public ColorRect ToggleHoverColor;
+
+
+	private Color _toggleselectedc;
+	public Color ToggleSelectedC
+	{
+		get { return _toggleselectedc; }
+		set { _toggleselectedc = value; 
+		ToggleSelectedColor.Color = value; }
+	}
+	private Color _togglec;
+	public Color ToggleC
+	{
+		get { return _togglec; }
+		set { _togglec = value; 
+		ToggleUnselectedColor.Color = value; }
+	}
+	private Color _togglehoverc;
+	public Color ToggleHoverC
+	{
+		get { return _togglehoverc; }
+		set { _togglehoverc = value; 
+		ToggleHoverColor.Color = value; }
+	}
+
+
+
+
+
+
 	[ExportGroup("Custom")]
 	[Export]
 	public MarginContainer CustomContainer;
@@ -139,12 +171,13 @@ public partial class DataGridCell : Control
 			}
 		}
 	}
-	private bool _toggletoggled;
-	public bool ToggleToggled {
-		get { return _toggletoggled; }
-		set { _toggletoggled = value; 
+	private bool _toggled;
+	public bool Toggled {
+		get { return _toggled; }
+		set { _toggled = value; 
 			ToggleSelectedImage.Visible = value;
 			ToggleUnselectedImage.Visible = !value;
+			ToggleFlipped?.Invoke();
 		}
 	}
 	public bool Resizeable = false;
@@ -161,7 +194,13 @@ public partial class DataGridCell : Control
 		set { _fontcolor = value; 
 		SetTextOptions(); }
 	}
-	public Color AccentColor;
+	private Color _accentcolor;
+	public Color AccentColor
+	{
+		get { return _accentcolor; }
+		set { ToggleSelectedC = value; 
+		_accentcolor = value; }
+	}
 	public int FontSize;
 	public Font MainFont;
 	public DataGridHeaderCell AssociatedHeader;
@@ -369,18 +408,6 @@ public partial class DataGridCell : Control
 		}				
 	}
 
-	public void Toggle()
-	{
-		ToggleToggled = !ToggleToggled;
-		ToggleFlipped?.Invoke(ToggleToggled);
-	}
-
-	public void SetToggle(bool WhichWay)
-	{
-		ToggleToggled = WhichWay;
-		ToggleFlipped?.Invoke(ToggleToggled);
-	}
-
 	private void SetTextOptions()
 	{
 		TextHolder.AddThemeColorOverride("font_uneditable_color", FontColor);
@@ -452,7 +479,7 @@ public partial class DataGridCell : Control
 	{
 		if (@event is InputEventMouseMotion movement)
 		{
-			if (CellOptions == CellOptions.Toggle || CellOptions == CellOptions.AdjustableNumber)
+			if (CellOptions == CellOptions.Toggle)
 			{
 				if (IsMouseInCell())
 				{
@@ -470,6 +497,24 @@ public partial class DataGridCell : Control
 					}
 					Hovering = false;
 				}
+			} else if (CellOptions == CellOptions.AdjustableNumber)
+			{
+				if (IsMouseInCell())
+				{
+					if (!Hovering)
+					{
+						AdjustableNumberHovered?.Invoke(true);
+					}
+					Hovering = true;
+				}
+				else
+				{
+					if (Hovering)
+					{
+						AdjustableNumberHovered?.Invoke(false);
+					}
+					Hovering = false;
+				}
 			}
 			if (IsMouseInCell() && CellOptions != CellOptions.Icons)
 			{
@@ -477,78 +522,10 @@ public partial class DataGridCell : Control
 			}
 		}
 
-		if (IsMouseInCell() && CellOptions == CellOptions.Toggle)
-		{
-			if (@event is InputEventMouseButton mouseEvent && mouseEvent.ButtonIndex == MouseButton.Left && mouseEvent.Pressed)
-			{
-				Toggle();
-			}
-		}
-		/*else if (IsMouseInCell() && CellOptions == CellOptions.Picture && !thumbnailvisible)
-		{
-			if (ThumbnailImage != null && AllowThumbs)
-			{
-				thumbnailvisible = true;
-				SpawnThumbnail();
-			}
-		}*/
-		else if (IsMouseInCell() && CellOptions == CellOptions.AdjustableNumber && !ShowNumberAdjusterControls)
-		{
-			if (@event is InputEventMouseButton mouseEvent)
-			{
-				if (mouseEvent.ButtonIndex == MouseButton.Left && mouseEvent.DoubleClick)
-				{
-					if (ToggleLinked && thisRow.Toggled)
-					{
-						ShowNumberAdjusterControls = true;
-						ShowNumberAdjuster?.Invoke(ShowNumberAdjusterControls);
-					} else if (ToggleLinked && !thisRow.Toggled)
-					{
-						ShowNumberAdjusterControls = false;
-						ShowNumberAdjuster?.Invoke(ShowNumberAdjusterControls);
-					}
-					else if (!ToggleLinked)
-					{
-						ShowNumberAdjusterControls = true;
-						ShowNumberAdjuster?.Invoke(ShowNumberAdjusterControls);
-					}
-
-				}
-			}
-		}
-
 		if (!IsMouseInCell() && CellOptions == CellOptions.Picture && thumbnailvisible)
 		{
 			KillThumbnail();
 		}
-
-		if (!IsMouseInCell() && CellOptions == CellOptions.AdjustableNumber && ShowNumberAdjusterControls)
-		{
-			if (@event is InputEventMouseButton mouseEvent)
-			{
-				if (mouseEvent.ButtonIndex == MouseButton.Left)
-				{
-					if (int.Parse(NumberHolder.Text) != NumberContent)
-					{
-						if (!dataGrid.IsThereMultipleAdjustmentNumbers())
-						{
-							NumberContent = int.Parse(NumberHolder.Text);
-							NumAdjusted(int.Parse(NumberHolder.Text), true);
-						}
-						else
-						{
-							//NumberContent = int.Parse(NumberHolder.Text);
-							NumAdjusted(int.Parse(NumberHolder.Text), false);
-						}
-						
-					}
-					ShowNumberAdjusterControls = false;
-					ShowNumberAdjuster?.Invoke(ShowNumberAdjusterControls);
-				}
-			}
-		}
-
-		
 	}
 
 	private void SpawnThumbnail()
@@ -596,13 +573,17 @@ public partial class DataGridCell : Control
 		TextHolder.Editable = true;
 	}
 
-	private bool IsMouseInCell()
+	public bool IsMouseInCell()
 	{
-		Vector2 mousepos = GetGlobalMousePosition();
+		if (IsInsideTree())
+		{
+			Vector2 mousepos = GetGlobalMousePosition();
 
-		Rect2 rect = new(this.GlobalPosition, this.Size);
+			Rect2 rect = new(this.GlobalPosition, this.Size);
 
-		return rect.HasPoint(mousepos);
+			return rect.HasPoint(mousepos);
+		} else { return false; }
+		
 	}
 	
 
