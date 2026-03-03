@@ -345,6 +345,321 @@ namespace SimsCCManager.PackageReaders
             new FunctionSortList(){Category = "TerrainPaint"}
         };
 
+        public static List<string> skinnames = new()
+        {
+            "afbodynaked_nude_s1",
+            "afbodynaked_nudecut_s1",
+            "afbodynaked_nudesoft_s1",
+            "afbottomnaked_nude_s1",
+            "afbottomnaked_nudecut_s1",
+            "afbottomnaked_nudesoft_s1",
+            "afface_s1",
+            "afhairbald_skin_s1",
+            "aftopnaked_nude_s1",
+            "aftopnaked_nudecut_s1",
+            "aftopnaked_nudesoft_s1",
+            "bubodynaked_nude_s1",
+            "buface_s1",
+            "buhairbald_s1",
+            "buheadbald_s1",
+            "cubodynaked_nude_s1",
+            "cubottomnaked_nude_s1",
+            "cuface_s1",
+            "cuhairbald_skin_s1",
+            "cutopnaked_nude_s1",
+            "efbodynaked_nude_s1",
+            "efbodynaked_nudecut_s1",
+            "efbodynaked_nudesoft_s1",
+            "efbottomnaked_nudecut_s1",
+            "efbottomnaked_nudesoft_s1",
+            "efbottomnaked_s1",
+            "efface_s1",
+            "efhairbald_skin_s1",
+            "eftopnaked_nude_s1",
+            "eftopnaked_nudecut_s1",
+            "eftopnaked_nudesoft_s1",
+            "pubodynaked_nude_s1",
+            "puface_s1",
+            "puhairbald_s1",
+            "tfbodynaked_nude_s1",
+            "tfbodynaked_nudecut_s1",
+            "tfbodynaked_nudesoft_s1",
+            "tfbottomnaked_nude_s1",
+            "tfbottomnaked_nudecut_s1",
+            "tfbottomnaked_nudesoft_s1",
+            "tfface_s1",
+            "tfhairbald_skin_s1",
+            "tftopnaked_nude_s1",
+            "tftopnaked_nudecut_s1",
+            "tftopnaked_nudesoft_s1",
+            "ambodynaked_nude_s1",
+            "ambodynaked_nudecut_s1",
+            "ambodynaked_nudesoft_s1",
+            "ambottomnaked_nude_s1",
+            "ambottomnaked_nudecut_s1",
+            "ambottomnaked_nudesoft_s1",
+            "amface_s1",
+            "amhairbald_skin_s1",
+            "amtopnaked_nude_s1",
+            "amtopnaked_nudecut_s1",
+            "amtopnaked_nudesoft_s1",
+            "embodynaked_nude_s1",
+            "embodynaked_nudecut_s1",
+            "embodynaked_nudesoft_s1",
+            "embottomnaked_nude_s1",
+            "embottomnaked_nudecut_s1",
+            "afbodynaked_nude_s2",
+            "afbodynaked_nudecut_s2",
+            "afbodynaked_nudesoft_s2",
+            "afbottomnaked_nude_s2",
+            "afbottomnaked_nudecut_s2",
+            "afbottomnaked_nudesoft_s2",
+            "afface_s2",
+            "afhairbald_skin_s2",
+            "aftopnaked_nude_s2",
+            "aftopnaked_nudecut_s2",
+            "aftopnaked_nudesoft_s2",
+            "ambodynaked_nude_s2",
+            "ambodynaked_nudecut_s2",
+            "ambodynaked_nudesoft_s2",
+            "ambottomnaked_nude_s2",
+            "ambottomnaked_nudecut_s2",
+            "ambottomnaked_nudesoft_s2",
+            "amface_s2",
+            "amhairbald_skin_s2",
+            "amtopnaked_nude_s2",
+            "amtopnaked_nudecut_s2",
+            "amtopnaked_nudesoft_s2",
+            "bubodynaked_nude_s2",
+            "buface_s2",
+            "buhairbald_s2",
+            "buheadbald_s2",
+            "cubodynaked_nude_s2",
+            "cubottomnaked_nude_s2",
+            "cuface_s2",
+            "cuhairbald_skin_s2",
+            "cutopnaked_nude_s2",
+            "efbodynaked_nude_s2",
+            "efbodynaked_nudecut_s2",
+            "efbodynaked_nudesoft_s2",
+            "efbottomnaked_nudecut_s2",
+            "efbottomnaked_nudesoft_s2",
+            "efbottomnaked_s2",
+            "efface_s2",
+            "efhairbald_skin_s2",
+            "eftopnaked_nude_s2",
+            "eftopnaked_nudecut_s2",
+            "eftopnaked_nudesoft_s2",
+            "embodynaked_nude_s2",
+            "embodynaked_nudecut_s2",
+            "embodynaked_nudesoft_s2",
+            "embottomnaked_nude_s2",
+            "embottomnaked_nudecut_s2",
+            "embottomnaked_nudesoft_s2",
+            "emface_s2",
+            "emhairbald_skin_s2",
+            "emtopnaked_nude_s2",
+            "emtopnaked_nudecut_s2",
+            "emtopnaked_nudesoft_s2",
+            "pubodynaked_nude_s2",
+            "puface_s2",
+            "puhairbald_s2",
+            "tfbodynaked_nude_s2",
+            "tfbodynaked_nudecut_s2",
+            "tfbodynaked_nudesoft_s2",
+            "tfbottomnaked_nude_s2",
+            "tfbottomnaked_nudecut_s2",
+            "tfbottomnaked_nudesoft_s2",
+            "tfface_s2",
+            "tfhairbald_skin_s2",
+            "tftopnaked_nude_s2",
+            "tftopnaked_nudecut_s2",
+            "tftopnaked_nudesoft_s2",
+            "tmbodynaked_nude_s2",
+            "tmbodynaked_nudecut_s2",
+            "tmbodynaked_nudesoft_s2",
+            "tmbottomnaked_nude_s2",
+            "tmbottomnaked_nudecut_s2",
+            "tmbottomnaked_nudesoft_s2",
+            "tmface_s2",
+            "tmhairbald_skin_s2",
+            "tmtopnaked_nude_s2",
+            "tmtopnaked_nudecut_s2",
+            "tmtopnaked_nudesoft_s2",
+            "embottomnaked_nudesoft_s1",
+            "emface_s1",
+            "emhairbald_skin_s1",
+            "emtopnaked_nude_s1",
+            "emtopnaked_nudecut_s1",
+            "emtopnaked_nudesoft_s1",
+            "tmbodynaked_nude_s1",
+            "tmbodynaked_nudecut_s1",
+            "tmbodynaked_nudesoft_s1",
+            "tmbottomnaked_nude_s1",
+            "tmbottomnaked_nudecut_s1",
+            "tmbottomnaked_nudesoft_s1",
+            "tmface_s1",
+            "tmhairbald_skin_s1",
+            "tmtopnaked_nude_s1",
+            "tmtopnaked_nudecut_s1",
+            "tmtopnaked_nudesoft_s1",
+            "afbodynaked_nude_s3",
+            "afbodynaked_nudecut_s3",
+            "afbodynaked_nudesoft_s3",
+            "afbottomnaked_nude_s3",
+            "afbottomnaked_nudecut_s3",
+            "afbottomnaked_nudesoft_s3",
+            "afface_s3",
+            "afhairbald_skin_s3",
+            "aftopnaked_nude_s3",
+            "aftopnaked_nudecut_s3",
+            "aftopnaked_nudesoft_s3",
+            "ambodynaked_nude_s3",
+            "ambodynaked_nudecut_s3",
+            "ambodynaked_nudesoft_s3",
+            "ambottomnaked_nude_s3",
+            "ambottomnaked_nudecut_s3",
+            "ambottomnaked_nudesoft_s3",
+            "amface_s3",
+            "amhairbald_skin_s3",
+            "amtopnaked_nude_s3",
+            "amtopnaked_nudecut_s3",
+            "amtopnaked_nudesoft_s3",
+            "bubodynaked_nude_s3",
+            "buface_s3",
+            "buhairbald_s3",
+            "buheadbald_s3",
+            "cubodynaked_nude_s3",
+            "cubottomnaked_nude_s3",
+            "cuface_s3",
+            "cuhairbald_skin_s3",
+            "cutopnaked_nude_s3",
+            "efbodynaked_nude_s3",
+            "efbodynaked_nudecut_s3",
+            "efbodynaked_nudesoft_s3",
+            "efbottomnaked_nudecut_s3",
+            "efbottomnaked_nudesoft_s3",
+            "efbottomnaked_s3",
+            "efface_s3",
+            "efhairbald_skin_s3",
+            "eftopnaked_nude_s3",
+            "eftopnaked_nudecut_s3",
+            "eftopnaked_nudesoft_s3",
+            "embodynaked_nude_s3",
+            "embodynaked_nudecut_s3",
+            "embodynaked_nudesoft_s3",
+            "embottomnaked_nude_s3",
+            "embottomnaked_nudecut_s3",
+            "embottomnaked_nudesoft_s3",
+            "emface_s3",
+            "emhairbald_skin_s3",
+            "emtopnaked_nude_s3",
+            "emtopnaked_nudecut_s3",
+            "emtopnaked_nudesoft_s3",
+            "pubodynaked_nude_s3",
+            "puface_s3",
+            "puhairbald_s3",
+            "tfbodynaked_nude_s3",
+            "tfbodynaked_nudecut_s3",
+            "tfbodynaked_nudesoft_s3",
+            "tfbottomnaked_nude_s3",
+            "tfbottomnaked_nudecut_s3",
+            "tfbottomnaked_nudesoft_s3",
+            "tfface_s3",
+            "tfhairbald_skin_s3",
+            "tftopnaked_nude_s3",
+            "tftopnaked_nudecut_s3",
+            "tftopnaked_nudesoft_s3",
+            "tmbodynaked_nude_s3",
+            "tmbodynaked_nudecut_s3",
+            "tmbodynaked_nudesoft_s3",
+            "tmbottomnaked_nude_s3",
+            "tmbottomnaked_nudecut_s3",
+            "tmbottomnaked_nudesoft_s3",
+            "tmface_s3",
+            "tmhairbald_skin_s3",
+            "tmtopnaked_nude_s3",
+            "tmtopnaked_nudecut_s3",
+            "tmtopnaked_nudesoft_s3",
+            "afbodynaked_nude_s4",
+            "afbodynaked_nudecut_s4",
+            "afbodynaked_nudesoft_s4",
+            "afbottomnaked_nude_s4",
+            "afbottomnaked_nudecut_s4",
+            "afbottomnaked_nudesoft_s4",
+            "afface_s4",
+            "afhairbald_skin_s4",
+            "aftopnaked_nude_s4",
+            "aftopnaked_nudecut_s4",
+            "aftopnaked_nudesoft_s4",
+            "ambodynaked_nude_s4",
+            "ambodynaked_nudecut_s4",
+            "ambodynaked_nudesoft_s4",
+            "ambottomnaked_nude_s4",
+            "ambottomnaked_nudecut_s4",
+            "ambottomnaked_nudesoft_s4",
+            "amface_s4",
+            "amhairbald_skin_s4",
+            "amtopnaked_nude_s4",
+            "amtopnaked_nudecut_s4",
+            "amtopnaked_nudesoft_s4",
+            "bubodynaked_nude_s4",
+            "buface_s4",
+            "buhairbald_s4",
+            "buheadbald_s4",
+            "cubodynaked_nude_s4",
+            "cubottomnaked_nude_s4",
+            "cuface_s4",
+            "cuhairbald_skin_s4",
+            "cutopnaked_nude_s4",
+            "efbodynaked_nude_s4",
+            "efbodynaked_nudecut_s4",
+            "efbodynaked_nudesoft_s4",
+            "efbottomnaked_nudecut_s4",
+            "efbottomnaked_nudesoft_s4",
+            "efbottomnaked_s4",
+            "efface_s4",
+            "efhairbald_skin_s4",
+            "eftopnaked_nude_s4",
+            "eftopnaked_nudecut_s4",
+            "eftopnaked_nudesoft_s4",
+            "embodynaked_nude_s4",
+            "embodynaked_nudecut_s4",
+            "embodynaked_nudesoft_s4",
+            "embottomnaked_nude_s4",
+            "embottomnaked_nudecut_s4",
+            "embottomnaked_nudesoft_s4",
+            "emface_s4",
+            "emhairbald_skin_s4",
+            "emtopnaked_nude_s4",
+            "emtopnaked_nudecut_s4",
+            "emtopnaked_nudesoft_s4",
+            "pubodynaked_nude_s4",
+            "puface_s4",
+            "puhairbald_s4",
+            "tfbodynaked_nude_s4",
+            "tfbodynaked_nudecut_s4",
+            "tfbodynaked_nudesoft_s4",
+            "tfbottomnaked_nude_s4",
+            "tfbottomnaked_nudecut_s4",
+            "tfbottomnaked_nudesoft_s4",
+            "tfface_s4",
+            "tfhairbald_skin_s4",
+            "tftopnaked_nude_s4",
+            "tftopnaked_nudecut_s4",
+            "tftopnaked_nudesoft_s4",
+            "tmbodynaked_nude_s4",
+            "tmbodynaked_nudecut_s4",
+            "tmbodynaked_nudesoft_s4",
+            "tmbottomnaked_nude_s4",
+            "tmbottomnaked_nudecut_s4",
+            "tmbottomnaked_nudesoft_s4",
+            "tmface_s4",
+            "tmhairbald_skin_s4",
+            "tmtopnaked_nude_s4",
+            "tmtopnaked_nudecut_s4",
+            "tmtopnaked_nudesoft_s4",
+        };
 
     }
     public class SimsPackageReader : IDisposable
@@ -647,9 +962,9 @@ namespace SimsCCManager.PackageReaders
                     try
                     {
                         S2ReadCTSS(entry);
-                    } catch
+                    } catch (Exception e)
                     {
-                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Unable to read CTSS #{0} for {1}", c, fileinfo.Name));                    
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Unable to read CTSS #{0} for {1}: {2}", c, fileinfo.Name, e.StackTrace));                    
                     }                    
                     c++;
                 }
@@ -663,9 +978,9 @@ namespace SimsCCManager.PackageReaders
                     try
                     {
                         S2ReadXOBJ(entry);
-                    } catch
+                    } catch (Exception e)
                     {
-                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Unable to read XOBJ #{0} for {1}", c, fileinfo.Name));                    
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Unable to read XOBJ #{0} for {1}: {2}", c, fileinfo.Name, e.StackTrace));                    
                     }
                     
                     c++;
@@ -681,9 +996,9 @@ namespace SimsCCManager.PackageReaders
                     try
                     {
                         S2ReadOBJD(entry);
-                    } catch
+                    } catch (Exception e)
                     {
-                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Unable to read OBJD #{0} for {1}", c, fileinfo.Name));                    
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Unable to read OBJD #{0} for {1}: {2}", c, fileinfo.Name, e.StackTrace));                    
                     }
                     
                     c++;
@@ -698,9 +1013,9 @@ namespace SimsCCManager.PackageReaders
                     try
                     {
                         S2ReadGMDC(entry);
-                    } catch
+                    } catch (Exception e)
                     {
-                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Unable to read GMDC #{0} for {1}", c, fileinfo.Name));                    
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Unable to read GMDC #{0} for {1}: {2}", c, fileinfo.Name, e.StackTrace));                    
                     }
                     
                     c++;
@@ -715,9 +1030,9 @@ namespace SimsCCManager.PackageReaders
                     try
                     {
                         S2ReadMMAT(entry);
-                    } catch
+                    } catch (Exception e)
                     {
-                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Unable to read MMAT #{0} for {1}", c, fileinfo.Name));                                     
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Unable to read MMAT #{0} for {1}: {2}", c, fileinfo.Name, e.StackTrace));                                     
                     }
                     c++;
                 }
@@ -730,9 +1045,9 @@ namespace SimsCCManager.PackageReaders
                     try
                     {
                         S2ReadXFLR(entry);
-                    } catch
+                    } catch (Exception e)
                     {
-                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Unable to read XFLR #{0} for {1}", c, fileinfo.Name));                                  
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Unable to read XFLR #{0} for {1}: {2}", c, fileinfo.Name, e.StackTrace));                                  
                     }
                     
                     c++;
@@ -746,9 +1061,9 @@ namespace SimsCCManager.PackageReaders
                     try
                     {
                         S2ReadXNGB(entry);
-                    } catch
+                    } catch (Exception e)
                     {
-                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Unable to read XNGB #{0} for {1}", c, fileinfo.Name));                 
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Unable to read XNGB #{0} for {1}: {2}", c, fileinfo.Name, e.StackTrace));                 
                     }
                     
                     c++;
@@ -762,9 +1077,9 @@ namespace SimsCCManager.PackageReaders
                     try
                     {
                         S2ReadGZPS(entry); 
-                    } catch
+                    } catch (Exception e)
                     {
-                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Unable to read GZPS #{0} for {1}", c, fileinfo.Name));                      
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Unable to read GZPS #{0} for {1}: {2}", c, fileinfo.Name, e.StackTrace));                      
                     }
                      
                     c++;                  
@@ -777,11 +1092,11 @@ namespace SimsCCManager.PackageReaders
                 foreach (IndexEntry entry in IndexData.Where(x => x.EntryType == "TXTR"))
                 {
                     try { 
-                    } catch
+                        S2ReadTXTR(entry, c);
+                    } catch (Exception e)
                     {
-                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Unable to read TXTR #{0} for {1}", c, fileinfo.Name));                       
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Unable to read TXTR #{0} for {1}: {2}", c, fileinfo.Name, e.StackTrace));                       
                     }
-                    S2ReadTXTR(entry, c);
                     c++;
                 }
             }
@@ -792,11 +1107,11 @@ namespace SimsCCManager.PackageReaders
                 foreach (IndexEntry entry in IndexData.Where(x => x.EntryType == "3IDR"))
                 {
                     try { 
-                    } catch
-                    {
-                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Unable to read 3IDR #{0} for {1}", c, fileinfo.Name));                       
-                    }
                     S2Read3DIR(entry, c);
+                    } catch (Exception e)
+                    {
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Unable to read 3IDR #{0} for {1}: {2}", c, fileinfo.Name, e.StackTrace));                       
+                    }
                     c++;
                 }
             }
@@ -809,9 +1124,9 @@ namespace SimsCCManager.PackageReaders
                     try
                     {
                         S2ReadSHPE(entry, c);
-                    } catch
+                    } catch (Exception e)
                     {
-                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Unable to read SHPE #{0} for {1}", c, fileinfo.Name));                        
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Unable to read SHPE #{0} for {1}: {2}", c, fileinfo.Name, e.StackTrace));                        
                     }
                     
                     c++;
@@ -826,9 +1141,9 @@ namespace SimsCCManager.PackageReaders
                     try
                     {
                         S2ReadTXMT(entry, c);
-                    } catch
+                    } catch (Exception e)
                     {
-                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Unable to read TXMT #{0} for {1}", c, fileinfo.Name));                          
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Unable to read TXMT #{0} for {1}: {2}", c, fileinfo.Name, e.StackTrace));                          
                     }
                     
                     c++;
@@ -843,9 +1158,9 @@ namespace SimsCCManager.PackageReaders
                     try
                     {                        
                         S2ReadXHTN(entry, c);
-                    } catch
+                    } catch (Exception e)
                     {
-                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Unable to read XHTN #{0} for {1}", c, fileinfo.Name));                        
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Unable to read XHTN #{0} for {1}: {2}", c, fileinfo.Name, e.StackTrace));                        
                     }
                     c++;
                 }
@@ -859,9 +1174,9 @@ namespace SimsCCManager.PackageReaders
                     try
                     {
                         S2ReadXTOL(entry, c);
-                    } catch
+                    } catch (Exception e)
                     {
-                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Unable to read XTOL #{0} for {1}", c, fileinfo.Name));                      
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Unable to read XTOL #{0} for {1}: {2}", c, fileinfo.Name, e.StackTrace));                      
                     }
                    
                     c++;
@@ -965,7 +1280,7 @@ namespace SimsCCManager.PackageReaders
 
 
 
-
+        
 
         public void S2ReadTXMT(IndexEntry entry, int txtrc)
         {
@@ -988,6 +1303,10 @@ namespace SimsCCManager.PackageReaders
                 txmt = new(packagereader, fileinfo, txtrc);
             }
             txmt.TXMTData.CopyEntryInfo(entry);
+            if (Sims2PackageStatics.skinnames.Any(x => txmt.TXMTData.FileName.Contains(x)))
+            {
+                Sims2Data.AltType = "Skin";
+            }
             (SimsData as Sims2Data).TXMTDataBlock.Add(txmt.TXMTData);
             
 
@@ -1599,6 +1918,30 @@ namespace SimsCCManager.PackageReaders
     {
         public XTOLData XTOLData = new();
 
+
+        public void WriteXTOLData()
+        {
+            StringBuilder sb = new();
+            sb.AppendLine(string.Format("Age: {0}", XTOLData.Age));
+            sb.AppendLine(string.Format("Bin: {0}", XTOLData.Bin));
+            sb.AppendLine(string.Format("Category: {0}", XTOLData.Category));
+            sb.AppendLine(string.Format("Creator: {0}", XTOLData.Creator));
+            sb.AppendLine(string.Format("Family: {0}", XTOLData.Family));
+            sb.AppendLine(string.Format("Flags: {0}", XTOLData.Flags));
+            sb.AppendLine(string.Format("Gender: {0}", XTOLData.Gender));
+            sb.AppendLine(string.Format("Genetic: {0}", XTOLData.Genetic));
+            sb.AppendLine(string.Format("Hairtone: {0}", XTOLData.Hairtone));
+            sb.AppendLine(string.Format("Layer: {0}", XTOLData.Layer));
+            sb.AppendLine(string.Format("MaterialKeyIdx: {0}", XTOLData.MaterialKeyIdx));
+            sb.AppendLine(string.Format("Name: {0}", XTOLData.Name));
+            sb.AppendLine(string.Format("Outfit: {0}", XTOLData.Outfit));
+            sb.AppendLine(string.Format("Skintone: {0}", XTOLData.Skintone));
+            sb.AppendLine(string.Format("Species: {0}", XTOLData.Species));
+            sb.AppendLine(string.Format("Subtype: {0}", XTOLData.Subtype));
+            sb.AppendLine(string.Format("Type: {0}", XTOLData.Type));
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("XTOL: {0}", sb.ToString()));
+        }
+
         public S2ReadXTOLChunk(BinaryReader readFile)
         {
             uint NumItems = readFile.ReadUInt32();
@@ -1696,6 +2039,7 @@ namespace SimsCCManager.PackageReaders
                     break;
                 }
             }
+            WriteXTOLData();
         }
 
         public S2ReadXTOLChunk(DecryptByteStream readFile)
@@ -1796,6 +2140,7 @@ namespace SimsCCManager.PackageReaders
                     break;
                 }
             }
+            WriteXTOLData();
         }
 
         public S2ReadXTOLChunk(DecryptByteStream readFile, bool xml)
@@ -1906,6 +2251,7 @@ namespace SimsCCManager.PackageReaders
                     }
                 }
             }
+            WriteXTOLData();
         }
     }
 
@@ -1968,6 +2314,7 @@ namespace SimsCCManager.PackageReaders
             if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("MaterialType: {0}", TXMTData.MaterialType));
 
             TXMTData.PropertyCount = readFile.ReadUInt32();
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("PropertyCount: {0}", TXMTData.PropertyCount));
             for (int i = 0; i < TXMTData.PropertyCount; i++)
             {
                 TXMTMaterial mat = new();
@@ -1976,11 +2323,13 @@ namespace SimsCCManager.PackageReaders
                 nameLength = readFile.ReadByte();
                 mat.PropertyValue = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
                 TXMTData.MaterialProperties.Add(mat);
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Mat #{0}: PropertyName: {1}, PropertyValue: {2}", i, mat.PropertyName, mat.PropertyValue));
             }
 
-            if (Version == 8)
+            if (Version > 8)
             {
                 TXMTData.TextureNameCount = readFile.ReadUInt32();
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Texture Name Count: {0}", TXMTData.TextureNameCount));
                 for (int i = 0; i < TXMTData.TextureNameCount; i++)
                 {
                     nameLength = readFile.ReadByte();
@@ -2371,7 +2720,7 @@ namespace SimsCCManager.PackageReaders
                 rk.TypeID = readFile.ReadUInt32().ToString("X8");
                 rk.GroupID = readFile.ReadUInt32().ToString("X8");
                 rk.InstanceID = readFile.ReadUInt32().ToString("X8");
-                rk.ResourceID = readFile.ReadUInt32().ToString("X8");
+                if (IndexType == 2) rk.ResourceID = readFile.ReadUInt32().ToString("X8");
                 if (Sims2PackageStatics.Sims2EntryTypes.Any(x => x.TypeID == rk.TypeID)) rk.TypeName = Sims2PackageStatics.Sims2EntryTypes.First(x => x.TypeID == rk.TypeID).Tag;
                 EIDRData.ResourceKeys.Add(rk);
             }
@@ -2388,7 +2737,7 @@ namespace SimsCCManager.PackageReaders
                 rk.TypeID = readFile.ReadUInt32().ToString("X8");
                 rk.GroupID = readFile.ReadUInt32().ToString("X8");
                 rk.InstanceID = readFile.ReadUInt32().ToString("X8");
-                rk.ResourceID = readFile.ReadUInt32().ToString("X8");
+                if (IndexType == 2) rk.ResourceID = readFile.ReadUInt32().ToString("X8");
                 if (Sims2PackageStatics.Sims2EntryTypes.Any(x => x.TypeID == rk.TypeID)) rk.TypeName = Sims2PackageStatics.Sims2EntryTypes.First(x => x.TypeID == rk.TypeID).Tag;
                 EIDRData.ResourceKeys.Add(rk);
             }
@@ -3555,8 +3904,12 @@ namespace SimsCCManager.PackageReaders
             file = fileInfo;
             uint CreatorID;
             uint FormatFlag;
-            readFile.ReadBytes(16);
+            //readFile.ReadBytes(16);
             byte namelength = readFile.ReadByte();
+            while (namelength != 10)
+            {
+                namelength = readFile.ReadByte();
+            }
             string blockName = CleanInput(Encoding.UTF8.GetString(readFile.ReadBytes(namelength)));
             if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("BlockName: {0}", blockName));
             string BlockID = readFile.ReadUInt32().ToString("X8");
@@ -3680,8 +4033,11 @@ namespace SimsCCManager.PackageReaders
             file = fileInfo;
             uint CreatorID;
             uint FormatFlag;
-            readFile.ReadBytes(16);
             byte namelength = readFile.ReadByte();
+            while (namelength != 10)
+            {
+                namelength = readFile.ReadByte();
+            }
             string blockName = CleanInput(Encoding.UTF8.GetString(readFile.ReadBytes(namelength)));
             if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("BlockName: {0}", blockName));
             string BlockID = readFile.ReadUInt32().ToString("X8");

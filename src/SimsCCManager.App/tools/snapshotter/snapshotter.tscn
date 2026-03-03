@@ -1,7 +1,8 @@
-[gd_scene load_steps=22 format=3 uid="uid://co0gkpc2bm4hh"]
+[gd_scene load_steps=21 format=3 uid="uid://co0gkpc2bm4hh"]
 
 [ext_resource type="Script" uid="uid://dbbjdwavbnmsj" path="res://tools/snapshotter/Snapshotter.cs" id="1_pa3fr"]
 [ext_resource type="ArrayMesh" uid="uid://db0gc3p4vj0ls" path="res://assets/bases/af.obj" id="2_0ckba"]
+[ext_resource type="Texture2D" uid="uid://00somgfxusrw" path="res://assets/images/blurred-mosaic-censor-blur-effect-texture_540598-64-3625959969.png" id="3_5rvtu"]
 [ext_resource type="ArrayMesh" uid="uid://b42fm76a7nb6q" path="res://assets/bases/am.obj" id="3_v0l6e"]
 [ext_resource type="ArrayMesh" uid="uid://b8sart3a4ufwe" path="res://assets/bases/cu.obj" id="4_5rvtu"]
 [ext_resource type="ArrayMesh" uid="uid://bje7vh3rwcr3a" path="res://assets/bases/pu.obj" id="5_tjpfh"]
@@ -30,43 +31,35 @@ ambient_light_color = Color(0.8934844, 0.9154048, 0.94047934, 1)
 albedo_color = Color(0.75, 0.75, 0.75, 1)
 roughness = 0.8
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_o1okv"]
-transparency = 1
-
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_v0l6e"]
-next_pass = SubResource("StandardMaterial3D_o1okv")
 albedo_color = Color(0.75, 0.75, 0.75, 1)
 roughness = 0.8
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_brbbg"]
-transparency = 1
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_o1okv"]
+albedo_texture = ExtResource("3_5rvtu")
+uv1_scale = Vector3(5, 1.5, 5)
+
+[sub_resource type="BoxMesh" id="BoxMesh_ud3sc"]
+material = SubResource("StandardMaterial3D_o1okv")
+size = Vector3(0.255, 0.125, 0.385)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_5rvtu"]
-next_pass = SubResource("StandardMaterial3D_brbbg")
 albedo_color = Color(0.75, 0.75, 0.75, 1)
 roughness = 0.8
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_y061e"]
-transparency = 1
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_tjpfh"]
-next_pass = SubResource("StandardMaterial3D_y061e")
 albedo_color = Color(0.75, 0.75, 0.75, 1)
 roughness = 0.8
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_7jxn7"]
-transparency = 1
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_jbybj"]
-next_pass = SubResource("StandardMaterial3D_7jxn7")
 albedo_color = Color(0.75, 0.75, 0.75, 1)
 roughness = 0.8
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_0x1uc"]
-transparency = 1
+[sub_resource type="BoxMesh" id="BoxMesh_brbbg"]
+material = SubResource("StandardMaterial3D_o1okv")
+size = Vector3(0.255, 0.125, 0.385)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ud3sc"]
-next_pass = SubResource("StandardMaterial3D_0x1uc")
 albedo_color = Color(0.75, 0.75, 0.75, 1)
 roughness = 0.8
 
@@ -74,10 +67,10 @@ roughness = 0.8
 script = ExtResource("1_pa3fr")
 Box = NodePath("Node3D/Box")
 AabBox = NodePath("Node3D/AabSize")
-Af = NodePath("Node3D2/Af")
-Am = NodePath("Node3D2/Am")
-Pu = NodePath("Node3D2/cu")
-Cu = NodePath("Node3D2/pu")
+Af = NodePath("Sims2/Af")
+Am = NodePath("Sims2/Am")
+Pu = NodePath("Sims2/cu")
+Cu = NodePath("Sims2/pu")
 
 [node name="Node3D" type="Node3D" parent="."]
 
@@ -101,35 +94,90 @@ environment = SubResource("Environment_mi4d4")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="Node3D/WorldEnvironment"]
 
-[node name="Node3D2" type="Node3D" parent="."]
+[node name="Sims2" type="Node3D" parent="."]
 visible = false
 
-[node name="Af" type="MeshInstance3D" parent="Node3D2"]
+[node name="Af" type="MeshInstance3D" parent="Sims2"]
 mesh = ExtResource("2_0ckba")
 skeleton = NodePath("../..")
 surface_material_override/0 = SubResource("StandardMaterial3D_0ckba")
 surface_material_override/1 = SubResource("StandardMaterial3D_v0l6e")
 
-[node name="tf" type="MeshInstance3D" parent="Node3D2"]
+[node name="Censor" type="Node3D" parent="Sims2/Af"]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Sims2/Af/Censor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.3650873, 0)
+mesh = SubResource("BoxMesh_ud3sc")
+skeleton = NodePath("../..")
+
+[node name="MeshInstance3D2" type="MeshInstance3D" parent="Sims2/Af/Censor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.942165, 0)
+mesh = SubResource("BoxMesh_ud3sc")
+skeleton = NodePath("../..")
+
+[node name="tf" type="MeshInstance3D" parent="Sims2"]
 mesh = ExtResource("2_0ckba")
 skeleton = NodePath("../..")
 surface_material_override/0 = SubResource("StandardMaterial3D_0ckba")
 surface_material_override/1 = SubResource("StandardMaterial3D_5rvtu")
 
-[node name="Am" type="MeshInstance3D" parent="Node3D2"]
+[node name="Censor2" type="Node3D" parent="Sims2/tf"]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Sims2/tf/Censor2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.3650873, 0)
+mesh = SubResource("BoxMesh_ud3sc")
+skeleton = NodePath("../../../Af")
+
+[node name="MeshInstance3D2" type="MeshInstance3D" parent="Sims2/tf/Censor2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.942165, 0)
+mesh = SubResource("BoxMesh_ud3sc")
+skeleton = NodePath("../../../Af")
+
+[node name="Am" type="MeshInstance3D" parent="Sims2"]
 mesh = ExtResource("3_v0l6e")
 skeleton = NodePath("../..")
 surface_material_override/0 = SubResource("StandardMaterial3D_0ckba")
 surface_material_override/1 = SubResource("StandardMaterial3D_tjpfh")
 
-[node name="cu" type="MeshInstance3D" parent="Node3D2"]
+[node name="Censor3" type="Node3D" parent="Sims2/Am"]
+
+[node name="MeshInstance3D2" type="MeshInstance3D" parent="Sims2/Am/Censor3"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.942165, 0)
+mesh = SubResource("BoxMesh_ud3sc")
+skeleton = NodePath("../../../Af")
+
+[node name="cu" type="MeshInstance3D" parent="Sims2"]
 mesh = ExtResource("4_5rvtu")
 skeleton = NodePath("../..")
 surface_material_override/0 = SubResource("StandardMaterial3D_0ckba")
 surface_material_override/1 = SubResource("StandardMaterial3D_jbybj")
 
-[node name="pu" type="MeshInstance3D" parent="Node3D2"]
+[node name="Censor4" type="Node3D" parent="Sims2/cu"]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Sims2/cu/Censor4"]
+transform = Transform3D(0.83647776, 0, 0, 0, 1, 0, 0, 0, 0.5349458, 0, 0.9260397, 0)
+mesh = SubResource("BoxMesh_ud3sc")
+skeleton = NodePath("../../../Af")
+
+[node name="MeshInstance3D2" type="MeshInstance3D" parent="Sims2/cu/Censor4"]
+transform = Transform3D(0.6937727, 0, 0, 0, 1, 0, 0, 0, 0.6626679, 0, 0.6013556, 0)
+mesh = SubResource("BoxMesh_brbbg")
+skeleton = NodePath("../../../Af")
+
+[node name="pu" type="MeshInstance3D" parent="Sims2"]
 mesh = ExtResource("5_tjpfh")
 skeleton = NodePath("../..")
 surface_material_override/0 = SubResource("StandardMaterial3D_0ckba")
 surface_material_override/1 = SubResource("StandardMaterial3D_ud3sc")
+
+[node name="Censor5" type="Node3D" parent="Sims2/pu"]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Sims2/pu/Censor5"]
+transform = Transform3D(0.5344812, 0, 0, 0, 0.627571, 0, 0, 0, 0.5349458, 0.02730009, 0.54682887, 0)
+mesh = SubResource("BoxMesh_ud3sc")
+skeleton = NodePath("../../../Af")
+
+[node name="MeshInstance3D2" type="MeshInstance3D" parent="Sims2/pu/Censor5"]
+transform = Transform3D(0.5221923, 0, 0, 0, 1, 0, 0, 0, 0.4400254, 0.014562383, 0.32978278, 0)
+mesh = SubResource("BoxMesh_brbbg")
+skeleton = NodePath("../../../Af")

@@ -362,15 +362,52 @@ public partial class Snapshotter : Node3D
     public void DisplaySkin(SimsPackage d)
     {
         thisPackage = d;
+        List<TXMTData> mats = thisPackage.Sims2Data.TXMTDataBlock;
+        
+        TXMTData affacemat = null;
+        TXMTData afbody = null;
+        if (mats.Any(x => x.FileName.Contains("afface")))
+        {
+            affacemat = mats.First(x => x.FileName.Contains("afface"));
+        }
+        if (mats.Any(x => x.FileName.Contains("afbody")))
+        {
+            afbody = mats.First(x => x.FileName.Contains("afbody"));
+        }
+        Node3D skindisplay = new();        
+        MeshInstance3D skin = Af.Duplicate() as MeshInstance3D;
+        StandardMaterial3D bodymat = skin.GetSurfaceOverrideMaterial(0).Duplicate() as StandardMaterial3D;
+        StandardMaterial3D facemat = skin.GetSurfaceOverrideMaterial(1).Duplicate() as StandardMaterial3D;
+        
 
+        if (affacemat == null) { 
+            facemat.AlbedoTexture = ImageTexture.CreateFromImage(d.Sims2Data.TXTRDataBlock.First(x => x.FullTXTRName.Contains("afface")).Texture); 
+        } else {
+            facemat.AlbedoTexture = ImageTexture.CreateFromImage(d.Sims2Data.TXTRDataBlock.First(x => x.FullTXTRName.Contains(affacemat.MaterialProperties.First(x => x.PropertyName == "stdMatBaseTextureName").PropertyValue)).Texture);
+        }
+        if (afbody == null) { 
+            bodymat.AlbedoTexture = ImageTexture.CreateFromImage(d.Sims2Data.TXTRDataBlock.First(x => x.FullTXTRName.Contains("afbody")).Texture); 
+        } else {
+            bodymat.AlbedoTexture = ImageTexture.CreateFromImage(d.Sims2Data.TXTRDataBlock.First(x => x.FullTXTRName.Contains(afbody.MaterialProperties.First(x => x.PropertyName == "stdMatBaseTextureName").PropertyValue)).Texture);
+        }        
+        
+        skin.SetSurfaceOverrideMaterial(0, bodymat);
+        skin.SetSurfaceOverrideMaterial(1, facemat);
+        skindisplay.AddChild(skin);
+        skindisplay.RotationDegrees = new(0, -89.3f, 0f);
+        skindisplay.Scale = new(3.0f, 3.0f, 3.0f);
+        skindisplay.Position = new(0, -1.125f, 0f);
+        AddChild(skindisplay);
     }
     public void DisplayEyes(SimsPackage d)
     {        
         Node3D eyedisplay = new();        
         MeshInstance3D eyes = Af.Duplicate() as MeshInstance3D;
-        StandardMaterial3D mat = eyes.GetSurfaceOverrideMaterial(1) as StandardMaterial3D;
-        StandardMaterial3D nextpass = mat.NextPass as StandardMaterial3D;
+        StandardMaterial3D mat = eyes.GetSurfaceOverrideMaterial(1).Duplicate() as StandardMaterial3D;
+        StandardMaterial3D nextpass = new();        
         nextpass.AlbedoTexture = ImageTexture.CreateFromImage(d.Sims2Data.TXTRDataBlock[0].Texture);
+        nextpass.Transparency = BaseMaterial3D.TransparencyEnum.Alpha;
+        mat.NextPass = nextpass;
         eyes.SetSurfaceOverrideMaterial(1, mat);
         eyedisplay.AddChild(eyes);
         eyedisplay.RotationDegrees = new(0, -90.3f, 26.2f);
