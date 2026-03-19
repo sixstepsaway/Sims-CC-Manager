@@ -1,17 +1,22 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime;
+using System.Runtime.InteropServices;
 using System.Security.Principal;
+using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
 using Godot;
 using ICSharpCode.SharpZipLib.Zip;
 using Microsoft.Win32;
+using MoreLinq.Extensions;
 using SimsCCManager.Containers;
 using SimsCCManager.Debugging;
 using SimsCCManager.OptionLists;
@@ -47,6 +52,7 @@ namespace SimsCCManager.Globals
         public static bool DebugMode { get { if (LoadedSettings != null) return LoadedSettings.DebugMode; else return false; }}
         public static bool PortableMode { get { if (LoadedSettings != null) return LoadedSettings.PortableMode; else return false; }}
         public static bool RestrictCPU { get { if (LoadedSettings != null) return LoadedSettings.CPURestrict; else return false; }}
+        public static bool CensorSkins { get { if (LoadedSettings != null) return LoadedSettings.CensorSkins; else return false; }}
         public static bool DebugToConsole = false;
         public static bool LoggedIn = false;
         public static bool GameRunning = false;
@@ -67,14 +73,30 @@ namespace SimsCCManager.Globals
                 
                 if (RestrictCPU)
                 {
-                    return new()
+                    if (System.Environment.ProcessorCount > 1)
                     {
-                        MaxDegreeOfParallelism = System.Environment.ProcessorCount > 1 ? 
-                                        System.Environment.ProcessorCount / 2 : 1
-                    };
+                        return new() { 
+                            MaxDegreeOfParallelism = System.Environment.ProcessorCount - ((System.Environment.ProcessorCount / 4)*3)
+                        };
+                    } else
+                    {
+                        return new() { 
+                            MaxDegreeOfParallelism = 1
+                        };
+                    }
                 } else
                 {
-                    return new() { MaxDegreeOfParallelism = -1 };
+                    if (System.Environment.ProcessorCount > 1)
+                    {
+                        return new() { 
+                            MaxDegreeOfParallelism = System.Environment.ProcessorCount - (System.Environment.ProcessorCount / 8)
+                        };
+                    } else
+                    {
+                        return new() { 
+                            MaxDegreeOfParallelism = 1
+                        };
+                    }
                 }
             }
         }
@@ -120,12 +142,11 @@ namespace SimsCCManager.Globals
 
         public static List<string> SimsMedievalMediaFolders = new() { "Screenshots" };
 
+        public static List<List<SimsOverrides>> Sims2Overrides = new();
 
+        public static List<SpecificOverrides> Sims2SpecificOverrides = new();
 
-
-
-
-
+        public static List<string> Sims2OverrideImages = new();
 
 
 
@@ -349,6 +370,26 @@ namespace SimsCCManager.Globals
         {
             var invalids = System.IO.Path.GetInvalidFileNameChars();
             return String.Join("_", input.Split(invalids, StringSplitOptions.RemoveEmptyEntries) ).TrimEnd('.');
+        }
+
+        public static void MoveToRecycleBin(string path)
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)){
+                //credit: https://www.meziantou.net/moving-files-and-folders-to-recycle-bin-in-dotnet.htm
+                var shellType = Type.GetTypeFromProgID("Shell.Application", throwOnError: true)!;
+                dynamic shellApp = Activator.CreateInstance(shellType)!;
+
+                // https://learn.microsoft.com/en-us/windows/win32/api/shldisp/ne-shldisp-shellspecialfolderconstants?WT.mc_id=DT-MVP-5003978
+                var recycleBin = shellApp.Namespace(0xa);
+
+                // https://learn.microsoft.com/en-us/windows/win32/shell/folder-movehere?WT.mc_id=DT-MVP-5003978
+                recycleBin.MoveHere(path);
+            }
+        }
+
+        public static string RemoveInvalidXmlChars(string content)
+        {
+            return  new string(content.Where(ch =>System.Xml.XmlConvert.IsXmlChar(ch)).ToArray());
         }
     }
 
@@ -913,7 +954,27 @@ namespace SimsCCManager.Globals
                 
             }
 
-            gameInstance = FindOrphans(gameInstance);
+            runningTasks.Clear();
+            Task r = new Task(() => {
+               gameInstance = FindOrphans(gameInstance);
+            });
+            runningTasks.Add(r);
+            /*t = new Task(() => {
+               gameInstance = FindDupes(gameInstance);
+            });
+            runningTasks.Add(t);*/
+            Parallel.ForEach(runningTasks, GlobalVariables.ParallelSettings, t =>
+            {
+                t.Start();
+            });
+            
+            while (runningTasks.Any(x => !x.IsCompleted))
+            {
+                
+            }
+            
+            
+            //gameInstance = FindOverrides(gameInstance);
 
 
             foreach (SimsPackage package in gameInstance._packages.OrderBy(x=>x.FileName))
@@ -927,6 +988,341 @@ namespace SimsCCManager.Globals
             if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Packages: {0}, Downloads: {1}, Files: {2}", gameInstance._packages.Count, gameInstance._downloads.Count, gameInstance.Files.Count));
             return gameInstance;      
         }
+
+        public static GameInstance FindDupes(GameInstance gameInstance)
+        {
+            if (gameInstance._packages.Any(x => x.Game == SimsGames.Sims2))
+            {
+                gameInstance = FindS2Dupes(gameInstance);
+            }
+
+            return gameInstance;
+        }
+        public static GameInstance FindOverrides(GameInstance gameInstance)
+        {
+            
+            if (gameInstance._packages.Any(x => x.Game == SimsGames.Sims2))
+            {
+                gameInstance = FindS2Overrides(gameInstance);
+            }
+
+            return gameInstance;
+        }
+
+        public static GameInstance FindS2Dupes(GameInstance gameInstance)
+        {
+            /*List<SimsPackage> dupes = gameInstance._packages.Where(x => gameInstance._packages.Any(p => x.ObjectGUID == p.ObjectGUID && x.Identifier != p.Identifier && !string.IsNullOrEmpty(x.ObjectGUID) && !string.IsNullOrEmpty(p.ObjectGUID))).ToList();
+                     
+            StringBuilder sb = new();
+            foreach (SimsPackage package in dupes)
+            {
+                
+                sb.AppendLine(package.FileName);
+            }
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("DUPLICATES/CONFLICTS FOUND: {0}", sb.ToString()));*/
+
+            
+
+            return gameInstance;
+        }
+
+        public static GameInstance FindS2Overrides(GameInstance gameInstance)
+        {
+            List<List<SimsOverrides>> overrides = new();   
+
+            XmlSerializer serializer = new XmlSerializer(typeof(List<SimsOverrides>));
+
+            string[] xmls = [..Directory.EnumerateFiles(@"O:\Godot Projects\SimsCCManager\src\SimsCCManager.App\Data\Overrides\Sims 2", "*.xml")];
+
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Found {0} xml files for overrides.", xmls.Count()));
+
+            foreach (string xml in xmls)
+            {
+                using (FileStream fileStream = new(xml, FileMode.Open, System.IO.FileAccess.Read)){
+                    using (StreamReader streamReader = new(fileStream)){
+                        List<SimsOverrides> ovrd = (List<SimsOverrides>)serializer.Deserialize(streamReader);         
+                        overrides.Add(ovrd);               
+                        streamReader.Close();
+                    }
+                    fileStream.Close();
+                }
+            }
+
+            int ovc = 0;
+            foreach (List<SimsOverrides> list in overrides)
+            {
+                ovc += list.Count;
+            }
+
+            GlobalVariables.mainWindow.ChangeStage(ovc, "Finding defaults and overrides", 4);
+
+            ConcurrentBag<OverrideMatch> Matches = new();
+
+            Parallel.ForEach(overrides, GlobalVariables.ParallelSettings, or =>
+            {
+                Parallel.ForEach(or, GlobalVariables.ParallelSettings, o =>
+                {   
+                    GlobalVariables.mainWindow.IncrementLoadingScreen(1, "", "Globals: Overrides: entries");
+                    foreach (SimsID id in o.Entries)
+                    {                            
+                        List<SimsPackage> packages = [..gameInstance._packages.Where(x => x.Sims2Data.IndexEntries.Any(i => i.CompleteID == id.FullKey && !string.IsNullOrEmpty(i.CompleteID) && !string.IsNullOrEmpty(id.FullKey)))];
+                        foreach (SimsPackage p in packages)
+                        {
+                            OverrideMatch match = new() {
+                                Package = p, OverrideReference = o
+                            };
+                            
+                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0}", match.ToString()));
+                            Matches.Add(match);
+                        }
+                    }                    
+                });
+                Parallel.ForEach(or, GlobalVariables.ParallelSettings, o =>
+                {        
+                    GlobalVariables.mainWindow.IncrementLoadingScreen(1, "", "Globals: Overrides: guids");            
+                    foreach (ItemOverride io in o.GuidOverrides)
+                    {                            
+                        List<SimsPackage> packages = [..gameInstance._packages.Where(x => x.ObjectGUID == io.Overridden && !string.IsNullOrEmpty(x.ObjectGUID) && !string.IsNullOrEmpty(io.Overridden))];
+                        foreach (SimsPackage p in packages)
+                        {
+                            OverrideMatch match = new() {
+                                Package = p, OverrideReference = o
+                            };                                
+                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0}", match.ToString()));
+                            Matches.Add(match);
+                        }
+                    }                    
+                });
+                Parallel.ForEach(or, GlobalVariables.ParallelSettings, o =>
+                {
+                    GlobalVariables.mainWindow.IncrementLoadingScreen(1, "", "Globals: Overrides: texture name overrides");
+                    foreach (ItemOverride io in o.TextureNameOverrides)
+                    {                            
+                        List<SimsPackage> packages = [..gameInstance._packages.Where(p => p.Sims2Data.TXTRDataBlock.Any(t => t.FullTXTRName == io.Overridden && !string.IsNullOrEmpty(t.FullTXTRName) && !string.IsNullOrEmpty(io.Overridden)))];
+
+                        packages.AddRange(gameInstance._packages.Where(p => p.Sims2Data.TXMTDataBlock.Any(t => t.stdMatBaseTextureName == io.Overridden && !string.IsNullOrEmpty(t.stdMatBaseTextureName) && !string.IsNullOrEmpty(io.Overridden))));
+
+                        packages = [..packages.Distinct()];
+
+                        foreach (SimsPackage p in packages)
+                        {
+                            OverrideMatch match = new() {
+                                Package = p, OverrideReference = o
+                            };                                
+                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0}", match.ToString()));
+                            Matches.Add(match);
+                        }
+                    }
+                });
+                Parallel.ForEach(or, GlobalVariables.ParallelSettings, o =>
+                {
+                    GlobalVariables.mainWindow.IncrementLoadingScreen(1, "", "Globals: Overrides: filenameoverrides");
+                    foreach (ItemOverride io in o.FileNameOverrides)
+                    {                            
+                        List<SimsPackage> packages = [..gameInstance._packages.Where(x => x.Sims2Data.SHPEDataBlock.Any(s => s.FileName == io.Overridden && !string.IsNullOrEmpty(s.FileName) && !string.IsNullOrEmpty(io.Overridden)))];
+                        foreach (SimsPackage p in packages)
+                        {
+                            OverrideMatch match = new() {
+                                Package = p, OverrideReference = o
+                            };                                
+                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0}", match.ToString()));
+                            Matches.Add(match);
+                        }
+                    }
+                });
+                Parallel.ForEach(or, GlobalVariables.ParallelSettings, o =>
+                {
+                    GlobalVariables.mainWindow.IncrementLoadingScreen(1, "", "Globals: Overrides: refs");
+                    foreach (ItemOverride io in o.References)
+                    {                            
+                        List<SimsPackage> packages = [..gameInstance._packages.Where(x => x.Sims2Data.TXMTDataBlock.Any(t => t.MaterialDescription == io.Overridden && !string.IsNullOrEmpty(t.MaterialDescription) && !string.IsNullOrEmpty(io.Overridden)))];
+                        foreach (SimsPackage p in packages)
+                        {
+                            OverrideMatch match = new() {
+                                Package = p, OverrideReference = o
+                            };                                
+                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0}", match.ToString()));
+                            Matches.Add(match);
+                        }
+                    }
+                });
+
+            });
+
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Found {0} matches", Matches.Count));
+
+            Matches = [..Matches.GroupBy(x => x.Package).SelectMany(group => group)];
+            
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Found {0} package matches", Matches.Count));
+
+            foreach (OverrideMatch match in Matches)
+            {
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Updating {0} with overrides.", match.Package.FileName));
+                //gameInstance._packages.First(x => x.Identifier == match.Package.Identifier).Override = true;
+                gameInstance._packages.First(x => x.Identifier == match.Package.Identifier).OverrideReference.Add(match.OverrideReference);
+                gameInstance._packages.First(x => x.Identifier == match.Package.Identifier).WriteXML();
+            }
+
+            /*if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Found {0} overrides.", overrides.Count));
+
+            List<SimsOverrides> overwrittenguids = [..og];
+
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Overwritten guids: {0}", overwrittenguids.Count));
+
+            List<SimsOverrides> overwrittentextures = [..ot];
+            
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Overwritten textures: {0}", overwrittentextures.Count));
+
+            List<SimsOverrides> overwrittenfilenames = [..of];
+            
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Overwritten filenames: {0}", overwrittenfilenames.Count));
+
+            List<SimsOverrides> overwrittenreferences = [..oref];
+            
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Overwritten refs: {0}", overwrittenreferences.Count));
+
+            List<SimsOverrides> overwrittenentries = [..oe];
+            
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Overwritten entries: {0}", overwrittenentries.Count));
+            
+            StringBuilder sb = new();
+            sb.Append("List:");
+            int i = 0;
+            foreach (SimsOverrides package in overwrittenguids)
+            {
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Getting guid override #{0}.", i));
+                List<SimsPackage> p = new();
+                if (gameInstance._packages.Any(x => package.Entries.Any(g => x.Sims2Data.IndexEntries.Any(p => p.CompleteID == g.FullKey && !string.IsNullOrEmpty(p.CompleteID) && !string.IsNullOrEmpty(g.FullKey))))) {
+                    p = [..gameInstance._packages.Where(x => package.Entries.Any(g => x.Sims2Data.IndexEntries.Any(p => p.CompleteID == g.FullKey && !string.IsNullOrEmpty(p.CompleteID) && !string.IsNullOrEmpty(g.FullKey))))];
+                    
+                    foreach (SimsPackage pack in p)
+                    {
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Package {0} is a GUID override.", pack.FileName));
+                        sb.AppendLine(string.Format("Package {0} is a GUID override.", pack.FileName));
+                        gameInstance._packages.First(x => x.Identifier == pack.Identifier).Override = true;
+                        gameInstance._packages.First(x => x.Identifier == pack.Identifier).OverrideReference.Add(package);
+                    }
+                } else
+                {
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Couldn't find a package to match guid override #{0}.", overwrittenguids.IndexOf(package)));
+                }
+                i++;
+            }
+            foreach (SimsOverrides package in overwrittentextures)
+            {
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Getting texture overrides #{0}.", i));
+                List<SimsPackage> p = new();
+                if (gameInstance._packages.Any(x => package.TextureNameOverrides.Any(g => x.Sims2Data.TXTRDataBlock.Any(t => t.FullTXTRName == g.Overridden && !string.IsNullOrEmpty(t.FullTXTRName) && !string.IsNullOrEmpty(g.Overridden)))))
+                {
+                    p = [..gameInstance._packages.Where(x => package.TextureNameOverrides.Any(g => x.Sims2Data.TXTRDataBlock.Any(t => t.FullTXTRName == g.Overridden && !string.IsNullOrEmpty(t.FullTXTRName) && !string.IsNullOrEmpty(g.Overridden))))];
+                    foreach (SimsPackage pack in p)
+                    {
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Package {0} is a texture override.", pack.FileName));
+                        sb.AppendLine(string.Format("Package {0} is a texture override.", pack.FileName));
+                        gameInstance._packages.First(x => x.Identifier == pack.Identifier).Override = true;
+                        gameInstance._packages.First(x => x.Identifier == pack.Identifier).OverrideReference.Add(package);
+                    }                
+                } else if (gameInstance._packages.Any(x => package.TextureNameOverrides.Any(g => x.Sims2Data.TXMTDataBlock.Any(t => t.MaterialDescription == g.Overridden && !string.IsNullOrEmpty(g.Overridden) && !string.IsNullOrEmpty(t.MaterialDescription)))))
+                {
+                    p = [..gameInstance._packages.Where(x => package.TextureNameOverrides.Any(g => x.Sims2Data.TXMTDataBlock.Any(t => t.MaterialDescription == g.Overridden && !string.IsNullOrEmpty(g.Overridden) && !string.IsNullOrEmpty(t.MaterialDescription))))];
+                    foreach (SimsPackage pack in p)
+                    {
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Package {0} is a texture override.", pack.FileName));
+                        sb.AppendLine(string.Format("Package {0} is a texture override.", pack.FileName));
+                        gameInstance._packages.First(x => x.Identifier == pack.Identifier).Override = true;
+                        gameInstance._packages.First(x => x.Identifier == pack.Identifier).OverrideReference.Add(package);
+                    }
+                } else if (gameInstance._packages.Any(x => package.TextureNameOverrides.Any(g => x.Sims2Data.TXMTDataBlock.Any(t => t.stdMatBaseTextureName == g.Overridden && !string.IsNullOrEmpty(t.stdMatBaseTextureName) && !string.IsNullOrEmpty(g.Overridden)))))
+                {
+                    p = [..gameInstance._packages.Where(x => package.TextureNameOverrides.Any(g => x.Sims2Data.TXMTDataBlock.Any(t => t.stdMatBaseTextureName == g.Overridden && !string.IsNullOrEmpty(t.stdMatBaseTextureName) && !string.IsNullOrEmpty(g.Overridden))))];
+                    foreach (SimsPackage pack in p)
+                    {
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Package {0} is a texture override.", pack.FileName));
+                        sb.AppendLine(string.Format("Package {0} is a texture override.", pack.FileName));
+                        gameInstance._packages.First(x => x.Identifier == pack.Identifier).Override = true;
+                        gameInstance._packages.First(x => x.Identifier == pack.Identifier).OverrideReference.Add(package);
+                    } 
+                }
+                i++;              
+            }
+            i=0;
+            foreach (SimsOverrides package in overwrittenreferences)
+            {
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Getting reference overrides #{0}.", i));
+                List<SimsPackage> p = new();
+                if (gameInstance._packages.Any(x => package.TextureNameOverrides.Any(g => x.Sims2Data.TXMTDataBlock.Any(t => t.MaterialDescription == g.Overridden && !string.IsNullOrEmpty(g.Overridden) && !string.IsNullOrEmpty(t.MaterialDescription)))))
+                {
+                    p = [..gameInstance._packages.Where(x => package.TextureNameOverrides.Any(g => x.Sims2Data.TXMTDataBlock.Any(t => t.MaterialDescription == g.Overridden && !string.IsNullOrEmpty(g.Overridden) && !string.IsNullOrEmpty(t.MaterialDescription))))];
+                    foreach (SimsPackage pack in p)
+                    {
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Package {0} is a reference override.", pack.FileName));
+                        sb.AppendLine(string.Format("Package {0} is a reference override.", pack.FileName));
+                        gameInstance._packages.First(x => x.Identifier == pack.Identifier).Override = true;
+                        gameInstance._packages.First(x => x.Identifier == pack.Identifier).OverrideReference.Add(package);
+                    }  
+                }
+                i++;        
+            }    
+            i = 0;       
+            foreach (SimsOverrides package in overwrittenentries)
+            {
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Getting entry ovrrides #{0}.", i));
+                List<SimsPackage> p = new();
+                if (gameInstance._packages.Any(x => package.Entries.Any(g => x.Sims2Data.IndexEntries.Any(i => i.CompleteID == g.FullKey && !string.IsNullOrEmpty(i.CompleteID) && !string.IsNullOrEmpty(g.FullKey)))))
+                {
+                    p = [..gameInstance._packages.Where(x => package.Entries.Any(g => x.Sims2Data.IndexEntries.Any(i => i.CompleteID == g.FullKey && !string.IsNullOrEmpty(i.CompleteID) && !string.IsNullOrEmpty(g.FullKey))))];
+                    foreach (SimsPackage pack in p)
+                    {
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Package {0} is an entry override.", pack.FileName));
+                        sb.AppendLine(string.Format("Package {0} is an entry GUID override.", pack.FileName));
+                        gameInstance._packages.First(x => x.Identifier == pack.Identifier).Override = true;
+                        gameInstance._packages.First(x => x.Identifier == pack.Identifier).OverrideReference.Add(package);
+                    }  
+                }
+                i++;     
+            }
+            
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("OVERRIDES FOUND: {0}", sb.ToString()));
+                        
+
+            /*List<SimsPackage> clothingdefaults = [..gameInstance._packages.Where(x => x.Sims2Data.TXTRDataBlock.Any(t => GlobalVariables.Sims2DefaultOverrideTextureNames_Clothing.Any(c => t.TextureName.Contains(c))))];
+            List<SimsPackage> hairdefaults = [..gameInstance._packages.Where(x => x.Sims2Data.TXTRDataBlock.Any(t => GlobalVariables.Sims2DefaultOverrideTextureNames_Hair.Any(c => t.TextureName.Contains(c))))];
+
+            foreach (SimsPackage p in clothingdefaults)
+            {
+                gameInstance._packages.First(x => x.Identifier == p.Identifier).Override = true;                
+                string reff = GlobalVariables.Sims2DefaultOverrideTextureNames_Clothing.First(x => p.Sims2Data.TXTRDataBlock.Any(t => t.TextureName.Contains(x)));
+                FunctionSortList functionSort = new();
+                if (reff.Contains("body"))
+                {
+                    functionSort = new() { Category = "Clothing", Subcategory = "Full Body"};
+                } else if (reff.Contains("bottom"))
+                {
+                    functionSort = new() { Category = "Clothing", Subcategory = "Bottom"};
+                } else if (reff.Contains("top"))
+                {
+                    functionSort = new() { Category = "Clothing", Subcategory = "Top"};
+                } else
+                {
+                    functionSort = new() { Category = "Clothing"};
+                }
+                gameInstance._packages.First(x => x.Identifier == p.Identifier).Sims2Data.FunctionSort.Add(functionSort);
+                gameInstance._packages.First(x => x.Identifier == p.Identifier).OverrideReference = reff;
+                gameInstance._packages.First(x => x.Identifier == p.Identifier).WriteXML();
+            }
+            foreach (SimsPackage p in hairdefaults)
+            {
+                gameInstance._packages.First(x => x.Identifier == p.Identifier).Override = true;
+                gameInstance._packages.First(x => x.Identifier == p.Identifier).Sims2Data.AltType = "Hair";
+                string reff = GlobalVariables.Sims2DefaultOverrideTextureNames_Clothing.First(x => p.Sims2Data.TXTRDataBlock.Any(t => t.TextureName.Contains(x)));
+                gameInstance._packages.First(x => x.Identifier == p.Identifier).OverrideReference = reff;
+                gameInstance._packages.First(x => x.Identifier == p.Identifier).WriteXML();
+            }*/
+
+            return gameInstance;
+        }
+
+        
 
         public static GameInstance FindOrphans(GameInstance gameInstance)
         {
@@ -960,8 +1356,13 @@ namespace SimsCCManager.Globals
 
             if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Found {0} orphans", orphans.Count));
 
+            int msv = orphans.Count + recolors.Count + meshes.Count;
+
+            GlobalVariables.mainWindow.ChangeStage(gameInstance._packages.Count, "Finding orphans", 2);
+
             foreach (SimsPackage orphan in orphans)
-            {          
+            {   
+                GlobalVariables.mainWindow.IncrementLoadingScreen(1, orphan.FileName.Replace(".package", ""), "Globals: Orphans: orphan");       
                 if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Checking orphan file {0}", orphan.FileName));
                 if (orphan.Sims2Data != null)
                 {
@@ -1116,6 +1517,7 @@ namespace SimsCCManager.Globals
 
             foreach (SimsPackage recolor in recolors)
             {      
+                GlobalVariables.mainWindow.IncrementLoadingScreen(1, recolor.FileName.Replace(".package", ""), "Globals: Orphans: recolor");       
                 if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Checking recolor file {0}", recolor.FileName));
                 if (recolor.Sims2Data != null)
                 {
@@ -1206,6 +1608,7 @@ namespace SimsCCManager.Globals
 
             foreach (SimsPackage mesh in meshes)
             {  
+                GlobalVariables.mainWindow.IncrementLoadingScreen(1, mesh.FileName.Replace(".package", ""), "Globals: Orphans: meshes");       
                 if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Checking mesh file {0}", mesh.FileName));
                 if (mesh.Sims2Data != null)
                 {
@@ -1296,7 +1699,7 @@ namespace SimsCCManager.Globals
                 }
                                 subpackage.PackageData = simsPackageReader.SimsData;
                             }
-                            subpackage.DateAdded = DateTime.Now;
+                            subpackage.DateCreated = File.GetCreationTime(file);
                             subpackage.DateUpdated = DateTime.Now;
                             subpackage.PackageCategory = gameInstance.Categories.First(x => x.Name == "Default");
                             subpackage.WriteXML();
@@ -1348,7 +1751,7 @@ namespace SimsCCManager.Globals
                                 break;
                             }
                             subpackage.Location = file;
-                            subpackage.DateAdded = DateTime.Now;
+                            subpackage.DateCreated = File.GetCreationTime(file);
                             subpackage.DateUpdated = DateTime.Now;
                             subpackage.PackageCategory = gameInstance.Categories.First(x => x.Name == "Default");
                             subpackage.WriteXML();
@@ -1544,10 +1947,10 @@ namespace SimsCCManager.Globals
                     break;
                 }
                 simsPackage.Location = file;
-                simsPackage.DateAdded = DateTime.Now;
+                simsPackage.DateCreated = Directory.GetCreationTime(file);
                 simsPackage.DateUpdated = DateTime.Now;
                 simsPackage.PackageCategory = loadedinstance.Categories.First(x => x.Name == "Default");
-                simsPackage.WriteXML();
+                simsPackage.WriteXML();                
             }
             return simsPackage;
         }
@@ -1640,12 +2043,16 @@ namespace SimsCCManager.Globals
                 } catch (Exception e)
                 {
                     if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Couldn't read package {0}: {1} ({2})", simsPackage.FileName, e.Message, e.StackTrace));
-                }                
+                }               
                 simsPackage.PackageCategory = loadedinstance.Categories.First(x => x.Name == "Default");                
                 simsPackageReader.Dispose();
-                simsPackage.DateAdded = DateTime.Now;
+                simsPackage.DateCreated = File.GetCreationTime(file);
                 simsPackage.DateUpdated = DateTime.Now;
                 simsPackage.WriteXML();
+                new Thread(() => {
+                    simsPackageReader.CheckOverrides(simsPackage);
+                    simsPackageReader.CheckDuplicates(simsPackage, loadedinstance._packages.ToList());
+                }){IsBackground = true}.Start(); 
             }
 
             return simsPackage;
@@ -1670,7 +2077,7 @@ namespace SimsCCManager.Globals
             {   
                 simsDownload.Location = file;
                 simsDownload.FileName = f.Name;
-                simsDownload.DateAdded = DateTime.Now;
+                simsDownload.DateCreated = File.GetCreationTime(file);
                 simsDownload.DateUpdated = DateTime.Now;
                 simsDownload.WriteXML();
             } 

@@ -1,0 +1,73 @@
+[gd_scene load_steps=9 format=3 uid="uid://bj1ppfpvsdymk"]
+
+[ext_resource type="Script" uid="uid://bpkh1pdqhbck3" path="res://UI/PackageDisplay/VedItem.cs" id="1_hc7cq"]
+[ext_resource type="FontFile" uid="uid://bob4v2pndpu0q" path="res://assets/fonts/Convergence/Convergence-Regular.ttf" id="1_nkfv8"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_hc7cq"]
+bg_color = Color(0.6, 0.6, 0.6, 0)
+border_width_top = 2
+border_width_bottom = 2
+border_color = Color(0.54497427, 0.5449743, 0.5449741, 1)
+
+[sub_resource type="Theme" id="Theme_irilo"]
+Panel/styles/panel = SubResource("StyleBoxFlat_hc7cq")
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ww46o"]
+bg_color = Color(0.6, 0.6, 0.6, 0)
+border_width_top = 2
+border_width_bottom = 2
+border_color = Color(0.80049086, 0.80049074, 0.80049074, 1)
+
+[sub_resource type="Theme" id="Theme_puvba"]
+Panel/styles/panel = SubResource("StyleBoxFlat_ww46o")
+
+[sub_resource type="Theme" id="Theme_1ovyn"]
+Label/font_sizes/font_size = 14
+Label/fonts/font = ExtResource("1_nkfv8")
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_hc7cq"]
+
+[node name="VED_Item" type="MarginContainer" node_paths=PackedStringArray("SelectedPanel", "NormalPanel", "DisplayLabel", "button")]
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 20.0
+grow_horizontal = 2
+script = ExtResource("1_hc7cq")
+SelectedPanel = NodePath("PanelSelected")
+NormalPanel = NodePath("PanelNormal")
+DisplayLabel = NodePath("MarginContainer/Label")
+button = NodePath("Button")
+
+[node name="PanelNormal" type="Panel" parent="."]
+layout_mode = 2
+theme = SubResource("Theme_irilo")
+
+[node name="PanelSelected" type="Panel" parent="."]
+layout_mode = 2
+theme = SubResource("Theme_puvba")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 2
+theme_override_constants/margin_left = 2
+theme_override_constants/margin_top = 1
+theme_override_constants/margin_right = 2
+theme_override_constants/margin_bottom = 1
+
+[node name="Label" type="Label" parent="MarginContainer"]
+layout_mode = 2
+theme = SubResource("Theme_1ovyn")
+text = "folder/sinfulsimming_mydefault.package"
+
+[node name="Button" type="Button" parent="."]
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxEmpty_hc7cq")
+theme_override_styles/normal_mirrored = SubResource("StyleBoxEmpty_hc7cq")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_hc7cq")
+theme_override_styles/pressed_mirrored = SubResource("StyleBoxEmpty_hc7cq")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_hc7cq")
+theme_override_styles/hover_mirrored = SubResource("StyleBoxEmpty_hc7cq")
+theme_override_styles/hover_pressed = SubResource("StyleBoxEmpty_hc7cq")
+theme_override_styles/hover_pressed_mirrored = SubResource("StyleBoxEmpty_hc7cq")
+theme_override_styles/disabled = SubResource("StyleBoxEmpty_hc7cq")
+theme_override_styles/disabled_mirrored = SubResource("StyleBoxEmpty_hc7cq")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_hc7cq")

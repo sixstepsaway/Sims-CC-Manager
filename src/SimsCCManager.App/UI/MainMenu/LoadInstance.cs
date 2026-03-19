@@ -48,7 +48,8 @@ public partial class LoadInstance : MarginContainer
         AcceptDialogCANCEL.Pressed += () => NoDelete();
 
         loadInstance.DirSelected += (d) => InstanceFound(d);
-        loadInstance.RootSubfolder = GlobalVariables.AppFolder;
+        //loadInstance.RootSubfolder = GlobalVariables.AppFolder;
+        loadInstance.Access = FileDialog.AccessEnum.Filesystem;
 
         RefreshList();        
     }
@@ -259,7 +260,7 @@ public partial class LoadInstance : MarginContainer
             int fileCount = files.Count;
             int dFileCount = downloadfiles.Count;
             
-            int pbarmax = fileCount + 50 + 30;
+            int pbarmax = fileCount + dFileCount;
 
             
 

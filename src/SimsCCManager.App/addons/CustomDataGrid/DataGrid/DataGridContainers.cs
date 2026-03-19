@@ -12,6 +12,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Serialization;
 using Godot;
 
 namespace DataGridContainers
@@ -186,6 +187,11 @@ namespace DataGridContainers
         public Godot.Vector2 PictureCellSize {get; set;} = new(0, 0);  
         public bool NumAdjusterAllowDuplicates {get; set;} = false;
         public bool NumberAsBytes { get; set; } = false;
+        
+        [XmlIgnore]
+        public int HeaderIdx {get; set;}
+        [XmlIgnore]
+        public int ItemIndex {get; set;}
         public DataGridHeader()
         {
             Title = "";

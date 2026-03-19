@@ -380,7 +380,8 @@ public partial class DataGrid : Control
 
 		ChildEnteredTree += (i) => SetThemeColors();
 		ChildOrderChanged += () => SetThemeColors();
-		Resized += () => ScreenResized();
+		GetViewport().GetWindow().SizeChanged += () => ScreenResized();
+		
 		ScrollContainerScrollBarH = dataGridUi.ScrollContainer.GetHScrollBar();
 		ScrollContainerScrollBarV = dataGridUi.ScrollContainer.GetVScrollBar();
 
@@ -523,7 +524,7 @@ public partial class DataGrid : Control
     }
 
     private void ScreenResized(){
-		if (FirstLoaded) GetPaneSizes();
+		if (FirstLoaded) GetPaneSizes(true);
 	}
 
     private void UpdateHeaderRow(bool rowychanged = false){
@@ -624,22 +625,38 @@ public partial class DataGrid : Control
 
     private void ColumnMoved(int headerIdx, int headerNewLocation)
     {
-		List<DataGridHeader> __headers = Headers;
-		List<DataGridHeader> __visibleheaders = Headers.Where(x => x.ShowHeader).ToList();
+		List<DataGridHeader> __headers = [..Headers];
+		List<DataGridHeader> __visibleheaders = [..Headers.Where(x => x.ShowHeader)];
 		DataGridHeader header = __visibleheaders[headerIdx];
 		int totalidx = __headers.IndexOf(header);
 		__headers.Remove(header);
 		__headers.Insert(headerNewLocation, header);
 		HeadersChanged(__headers);
+		int i = 0;
+		foreach (DataGridHeader head in __headers)
+		{
+			head.HeaderIdx = i;
+			i++;
+		}
 		Headers = __headers;
-		List<DataGridRow> __rows = new();
+		if (RowData != null && RowData.Count > 0) { 
+			if (VisibleRows.Any()) ClearRows();
+			PopulateRows(); 
+			SetScrollBar();
+			PleasePassLog("Populating.");
+		} else
+		{
+			PleasePassLog("Rowdata has no data.");
+		}
+		/*List<DataGridRow> __rows = new();
 		__rows = RowData;
 		foreach (DataGridRow row in RowData){
 			DataGridCellItem item = row.Items[totalidx];
 			row.Items.Remove(item);
 			row.Items.Insert(headerNewLocation, item);
 		}
-		RowData = __rows;
+		RowData = __rows;*/
+
 	}
 
 	public void AddNewRows(List<DataGridRow> rows)
@@ -920,38 +937,41 @@ public partial class DataGrid : Control
 		row.AdjustNumberOnlyIfToggled = LinkToggleToAdjustmentNumber;
 		int adjnum = 0;
 		int hc = 0;
-		for (int i = 0; i < Headers.Count; i++)
+
+		foreach (DataGridHeader head in Headers)
 		{
-			if (Headers[i].ShowHeader)
+			int headIdx = head.HeaderIdx;
+			int cellIdx = head.ItemIndex;
+			if (head.ShowHeader)
 			{
 				Vector2 size = new(0, 0);
 				DataGridHeaderCell header = HeaderRow.HeaderCells[hc];
 				DataGridHeaderSizeAdjuster sizeadjuster = HeaderRow.HeaderSliders[hc];
 				DataGridCell cell = DataGridCellPS.Instantiate() as DataGridCell;
-				cell.CellOptions = Headers[i].CellType;
+				cell.CellOptions = head.CellType;
 				cell.thisRow = row;
 				cell.FirstLoaded = FirstLoaded;
 				cell.dataGrid = this;
 				cell.AccentColor = AccentColor;
-				cell.NumberAsBytes = Headers[i].NumberAsBytes;
+				cell.NumberAsBytes = head.NumberAsBytes;
 				if (cell.CellOptions == CellOptions.Icons)
 				{
 					cell.Icons = importedRowData.RowIcons;
-					IconsIdx = i;
+					IconsIdx = headIdx;
 				}
 				if (cell.CellOptions == CellOptions.Toggle)
 				{
 					row.ToggleCell = cell;
-					bool toggleresult = ToBool(importedRowData.Items[i].ItemContent);
+					bool toggleresult = ToBool(importedRowData.Items[cellIdx].ItemContent);
 					row.Toggled = toggleresult;
 				}
 				if (cell.CellOptions == CellOptions.Picture)
 				{
 					row.ImageCell = cell;
-					size = new(Headers[i].PictureCellSize.X - 1, RowHeight);
+					size = new(head.PictureCellSize.X - 1, RowHeight);
 					cell.StartSize = size;
 					cell.SetSize(size);
-					cell.ImageLocation = importedRowData.Items[i].ItemContent;
+					cell.ImageLocation = importedRowData.Items[cellIdx].ItemContent;
 					cell.ImageSizer.Size = new(cell.StartSize.X - 15, cell.StartSize.Y - 15);
 					cell.ImageSizer.CustomMinimumSize = new(cell.StartSize.X - 15, cell.StartSize.Y - 15);
 					cell.ImageSizer.SetAnchorsAndOffsetsPreset(LayoutPreset.Center);
@@ -974,21 +994,21 @@ public partial class DataGrid : Control
 					cell.NumberContent = importedRowData.AdjustmentNumber;
 					row.AdjustmentNumber = importedRowData.AdjustmentNumber;
 					row.NumAdjustmentCell = cell;
-					AdjustmentCellIdx = i;
+					AdjustmentCellIdx = headIdx;
 					cell.ToggleLinked = LinkToggleToAdjustmentNumber;
 				}
 				if (cell.CellOptions == CellOptions.Int)
 				{
-					cell.NumberContent = int.Parse(importedRowData.Items[i].ItemContent);
+					cell.NumberContent = int.Parse(importedRowData.Items[cellIdx].ItemContent);
 				}
-				PleasePassLog(string.Format("Cell {0} for row {1} size: {2}", i, num, size));
-				cell.TextContent = importedRowData.Items[i].ItemContent;
-				cell.Editable = Headers[i].ContentEditable;
+				PleasePassLog(string.Format("Cell {0} for row {1} size: {2}", headIdx, num, size));
+				cell.TextContent = importedRowData.Items[cellIdx].ItemContent;
+				cell.Editable = head.ContentEditable;
 				cell.ToggleFlipped += () => ToggleItem(cell.Toggled, row.RowData);
 				cell.AssociatedHeader = header;
 				cell.AssociatedHeaderSizer = sizeadjuster;
 				cell.ProduceTooltip += (t) => TooltipProduced(t);
-				cell.CellIdx = i;
+				cell.CellIdx = headIdx;
 				row.AddCell(cell);
 				hc++;
 			}
@@ -1448,17 +1468,18 @@ public partial class DataGrid : Control
 	}
 
 	private void GetPaneSizes(bool fromResize = false)
-	{
-		
+	{		
+		PleasePassLog("Pane size changed.");
 		if (PaneSize != Vector2.Zero)
 		{
-			if (fromResize) if (PaneSize.X == PrevPaneSize.X) return;
+			PleasePassLog("Pane size not zero.");
+			if (fromResize) { if (Size.Y == PaneHeight){ PleasePassLog(string.Format("Pane sizes match: {0}.", PaneSize)); return; } }
 			PrevPaneSize = Size;
-			PaneHeight = PaneSize.Y - HeaderY;
+			PaneHeight = Size.Y - HeaderY;
 			if (Headers != null)
 			{
-				if (Headers.Where(x => x.CellType == CellOptions.Picture).Any()){
-					DataGridHeader h = Headers.Where(x => x.CellType == CellOptions.Picture).First();
+				if (Headers.Any(x => x.CellType == CellOptions.Picture)){
+					DataGridHeader h = Headers.First(x => x.CellType == CellOptions.Picture);
 					RowHeight = (int)h.PictureCellSize.Y;
 					if (h.ShowHeader){
 						RowHeight = (int)h.PictureCellSize.Y;
@@ -1469,9 +1490,20 @@ public partial class DataGrid : Control
 			}		
 			ScrollBarHeight = (hScrollBar.GetParent() as HBoxContainer).Size.Y;
 			PleasePassLog(string.Format("PaneSize: {0}, PaneHeight: {1}, RowHeight: {2}", PaneSize, PaneHeight, RowHeight));
-			RowsOnScreen = PaneHeight / RowHeight;
 			
-			RowHeight = (int)((PaneHeight - HeaderY) / Math.Floor(RowsOnScreen));
+			RowsOnScreen = PaneHeight / DefaultRowHeight;
+			
+					
+
+			if (RowsOnScreen > Math.Floor(RowsOnScreen) + 0.5)
+			{
+				RowHeight = (int)((PaneHeight - HeaderY) / Math.Ceiling(RowsOnScreen));
+			} else
+			{
+				RowHeight = (int)((PaneHeight - HeaderY) / Math.Floor(RowsOnScreen));
+			}
+
+			
 			
 			
 			if (RowData != null && RowData.Count > 0) { 
@@ -1544,6 +1576,8 @@ public partial class DataGrid : Control
 	private void HeaderSorted(int index, bool SortAscending, bool Reset, bool fromHiding = false){
 		//if (!Sorted) RowsUnhidden = RowData;
 
+		index = Headers[index].ItemIndex;
+
 		if (!Sorted && !Searched && !rHidden) FullRowData = [.. RowData];
 
 
@@ -1599,7 +1633,8 @@ public partial class DataGrid : Control
 				_rows.AddRange(rowdataadj);
 				_rows.AddRange(rowdatarest);
 			} else {
-				_rows.AddRange(RowData.OrderBy(x => x.Items[index].ItemContent));
+				_rows.AddRange(RowData.Where(x => !string.IsNullOrEmpty(x.Items[index].ItemContent)).OrderBy(x => x.Items[index].ItemContent));
+				_rows.AddRange(RowData.Where(x => string.IsNullOrEmpty(x.Items[index].ItemContent)));
 			}
 		} else {
 			Sorted = true;
@@ -1618,7 +1653,8 @@ public partial class DataGrid : Control
 				_rows.AddRange(rowdatarest);
 				_rows.AddRange(rowdataadj);
 			} else {
-				_rows.AddRange(RowData.OrderByDescending(x => x.Items[index].ItemContent));				
+				_rows.AddRange(RowData.Where(x => !string.IsNullOrEmpty(x.Items[index].ItemContent)).OrderByDescending(x => x.Items[index].ItemContent));
+				_rows.AddRange(RowData.Where(x => string.IsNullOrEmpty(x.Items[index].ItemContent)));
 			}
 		}
 		UpdatePopulatedIndex(_rows);
@@ -2243,6 +2279,7 @@ public partial class DataGrid : Control
     }
 
 	private void AddHeaderMenu(){
+		PleasePassLog("Showing header menu!");
 		if (HeaderMenuShowing){
 			HeaderMenu?.QueueFree();
 		}
@@ -2397,7 +2434,7 @@ public partial class DataGrid : Control
 		KeyPressTimer = new();
 		AddChild(KeyPressTimer);
 		KeyPressTimer.OneShot = true;
-		KeyPressTimer.WaitTime = 0.005;
+		KeyPressTimer.WaitTime = 0.01;
 		KeyPressTimer.Timeout += () => ResetKeyPress();
 		KeyPressTimer.Start();
 	}
@@ -2429,7 +2466,7 @@ public partial class DataGrid : Control
 
 		return rect.HasPoint(mousepos); 
 	}
-	private bool IsMouseInHeaderBar(){
+	public bool IsMouseInHeaderBar(){
 		Vector2 mousepos = GetGlobalMousePosition(); 
 
 		Rect2 rect = new (HeaderHolder.GlobalPosition, HeaderHolder.Size); 

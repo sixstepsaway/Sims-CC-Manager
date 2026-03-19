@@ -5,6 +5,7 @@ using SimsCCManager.Debugging;
 using SimsCCManager.Globals;
 using SimsCCManager.SettingsSystem;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -12,10 +13,15 @@ using System.Linq;
 using System.Net;
 using System.Reflection.PortableExecutable;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Xml.Serialization;
 
 public partial class MainWindow : MarginContainer
 {
+    [Export]
+    public string Sims2OverrideDirectory;
+    [Export]
+    public string Sims2OverrideImagesDirectory;
     /// <summary>
     /// The main program window. 
     /// </summary>
@@ -192,7 +198,12 @@ public partial class MainWindow : MarginContainer
 
     private void RunProgressBar()
     {
-        int maxval = 100;
+        string specificfolder = string.Format("{0}{1}", Sims2OverrideDirectory, "specific/");
+        string[] secondxmls = DirAccess.Open(specificfolder).GetFiles();
+        string[] images = DirAccess.Open(Sims2OverrideImagesDirectory).GetFiles();
+        string[] xmls = DirAccess.Open(Sims2OverrideDirectory).GetFiles();
+
+        int maxval = 200 + secondxmls.Length + xmls.Length + images.Length;
         splash.SetPbarMax(maxval);
         new Thread(() =>
         {
@@ -286,7 +297,72 @@ public partial class MainWindow : MarginContainer
             
             CallDeferred(nameof(UpdateColors));
 
+            XmlSerializer serializer = new XmlSerializer(typeof(List<SimsOverrides>));
+            
+            
 
+
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Found {0} xml files for overrides.", xmls.Count()));
+
+            CallDeferred(nameof(IncrementPbar), 1);
+
+            ConcurrentBag<List<SimsOverrides>> overridestemp = new();
+            ConcurrentBag<SpecificOverrides> specificOverridestemp = new();
+            Parallel.ForEach(xmls, xml => 
+            {
+                CallDeferred(nameof(IncrementPbar), 1);
+                string path = string.Format("{0}{1}", Sims2OverrideDirectory, xml);
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Opening {0}", path));
+                //Godot.FileAccess.Open(path, Godot.FileAccess.ModeFlags.Read);
+                //Error error = Godot.FileAccess.GetOpenError();
+                //if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("File {0} error: {1}", path, error));
+                using (Godot.FileAccess file = Godot.FileAccess.Open(path, Godot.FileAccess.ModeFlags.Read))
+                {
+                    using (StringReader streamReader = new(file.GetAsText())){
+                        List<SimsOverrides> ovrd = (List<SimsOverrides>)serializer.Deserialize(streamReader);         
+                        overridestemp.Add(ovrd);               
+                        streamReader.Close();
+                    }
+                }
+                
+            });
+
+            serializer = new XmlSerializer(typeof(SpecificOverrides));
+            Parallel.ForEach(secondxmls, xml => 
+            {
+                CallDeferred(nameof(IncrementPbar), 1);
+                string path = string.Format("{0}{1}", specificfolder, xml);
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Opening {0}", path));
+                //Godot.FileAccess.Open(path, Godot.FileAccess.ModeFlags.Read);
+                //Error error = Godot.FileAccess.GetOpenError();
+                //if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("File {0} error: {1}", path, error));
+                using (Godot.FileAccess file = Godot.FileAccess.Open(path, Godot.FileAccess.ModeFlags.Read))
+                {
+                    using (StringReader streamReader = new(file.GetAsText())){
+                        SpecificOverrides ovrd = (SpecificOverrides)serializer.Deserialize(streamReader);         
+                        specificOverridestemp.Add(ovrd);               
+                        streamReader.Close();
+                    }
+                }
+                
+            });
+
+            GlobalVariables.Sims2SpecificOverrides.AddRange(specificOverridestemp);
+            GlobalVariables.Sims2Overrides.AddRange(overridestemp);
+            
+            foreach (string i in images)
+            {
+                CallDeferred(nameof(IncrementPbar), 1);
+                if (!i.Contains(".import"))
+                {
+                    string image = Path.Combine(Sims2OverrideImagesDirectory, i);
+                    GlobalVariables.Sims2OverrideImages.Add(image);
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Image: {0}", image));
+                }
+                
+            }
+
+            
 
             if (File.Exists(GlobalVariables.MovedItemsFile))
             {
@@ -300,12 +376,12 @@ public partial class MainWindow : MarginContainer
             }
 
 
-
-            for (int i = (int)splash.SplashProgressBar.Value; i < maxval; i++)
+            int mv = (int)splash.SplashProgressBar.MaxValue;
+            for (int i = (int)splash.SplashProgressBar.Value; i < mv; i++)
             {
                 CallDeferred(nameof(IncrementPbar), 1);
                 CallDeferred(nameof(ChangePbarLabel), string.Format("Organizing splines..."));
-                Thread.Sleep(10);
+                Thread.Sleep(2);
             }
         })
         { IsBackground = true }.Start();
@@ -313,15 +389,15 @@ public partial class MainWindow : MarginContainer
 
     private void IncrementPbar(int Num)
     {
-        splash.IncrementProgressBar(Num);
+        if (IsInstanceValid(splash)) splash.IncrementProgressBar(Num);
     }
     private void ChangePbarLabel(string Text)
     {
-        splash.ChangeProgressBarText(Text);
+        if (IsInstanceValid(splash)) splash.ChangeProgressBarText(Text);
     }
     private void CloseMainMenu()
     {
-        mainMenu.CloseMainMenu();
+        mainMenu?.CloseMainMenu();
     }
 
     private void CheckLatestVersion(){
@@ -346,22 +422,30 @@ public partial class MainWindow : MarginContainer
     }
 
     private void FinishedLoading()
-    {        
-        stopwatch.Stop();
-        mainMenu = MainMenuPS.Instantiate() as MainMenu;
-        splash.QueueFree();
-        Footer.Visible = true;
-        AddChild(mainMenu);
-        MoveChild(Footer, GetChildCount());
-        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Sims CC Manager loaded in {0}", stopwatch.Elapsed));
-        GetWindow().Borderless = false;
+    {   
+        if (mainMenu == null)
+        {
+            stopwatch.Stop();
+            mainMenu = MainMenuPS.Instantiate() as MainMenu;
+            splash.QueueFree();
+            Footer.Visible = true;
+            AddChild(mainMenu);
+            MoveChild(Footer, GetChildCount());
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Sims CC Manager loaded in {0}", stopwatch.Elapsed));
+            GetWindow().Borderless = false;
+        }
+        
     } 
+
+    
 
     public void LoadingPackageDisplayStart(int maxvalue = 100)
     {         
         if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Max Value for Pbar set to {0}", maxvalue));      
         loadingInstance = LoadingScreenPS.Instantiate() as LoadingInstance; 
-        loadingInstance.progressBar.MaxValue = maxvalue;
+        loadingInstance.MaxValue = maxvalue;
+        loadingInstance.Stage = 1;
+        loadingInstance.StageText = string.Format("Finding packages.");
         AddChild(loadingInstance);
         MoveChild(Footer, GetChildCount());
     }
@@ -407,23 +491,39 @@ public partial class MainWindow : MarginContainer
     private void FinishLoadingScreen()
     {        
         if (!InitialLoadComplete)  { 
-            loadingInstance.QueueFree();
+            loadingInstance?.QueueFree();
             InitialLoadComplete = true;
         }
     }
 
+    public void ChangeStage(int max, string text, int stage)
+    {
+        loadingInstance.Stage = stage;
+        if (stage == 2)
+        {
+            loadingInstance.StageText = "Finding orphaned packages";
+        }
+        loadingInstance.MaxValue = max;
+        loadingInstance.Progress = 0;
+        loadingInstance.ProgressText = text;
+    }
+
     public void IncrementLoadingScreen(int amount, string text, string Source)
     {
-        
-        CallDeferred(nameof(DeferredLoadingScreen), amount, text, Source);
+        if (!InitialLoadComplete)  {
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Loading screen incremented at {0} by {1} with message {2}, and is now at {3}/{4} ({5}%)", Source, amount, text, loadingInstance.progressBar.Value, loadingInstance.progressBar.MaxValue, ((loadingInstance.progressBar.MaxValue - loadingInstance.progressBar.Value) / loadingInstance.progressBar.MaxValue) * 100));
+            loadingInstance.Progress += amount;
+            loadingInstance.ProgressText = text;
+        }
+        //CallDeferred(nameof(DeferredLoadingScreen), amount, text, Source);
     }
 
     private void DeferredLoadingScreen(int amount, string text, string Source)
     {
         if (!InitialLoadComplete)  {
             if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Loading screen incremented at {0} by {1} with message {2}, and is now at {3}/{4} ({5}%)", Source, amount, text, loadingInstance.progressBar.Value, loadingInstance.progressBar.MaxValue, ((loadingInstance.progressBar.MaxValue - loadingInstance.progressBar.Value) / loadingInstance.progressBar.MaxValue) * 100));
-            loadingInstance.progressBar.Value += amount;
-            loadingInstance.ProgressLabel.Text = text;
+            loadingInstance.Progress += amount;
+            loadingInstance.ProgressText = text;
         }
     }
 

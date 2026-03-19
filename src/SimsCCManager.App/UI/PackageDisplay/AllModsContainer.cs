@@ -127,7 +127,9 @@ public partial class AllModsContainer : MarginContainer
                 Title = "Enabled",
                 Resizeable = false,
                 CellType = CellOptions.Toggle,
-                ShowHeader = true},
+                ShowHeader = true,
+                HeaderIdx = 0,
+                ItemIndex = 0},
 			new DataGridHeader() { 
                 ContentType = DataGridContentType.Text,
                 StartingWidth = 250,
@@ -136,7 +138,9 @@ public partial class AllModsContainer : MarginContainer
                 Resizeable = true,
                 CellType = CellOptions.Text,
                 ShowHeader = true,
-                ContentEditable = true},
+                ContentEditable = true,
+                HeaderIdx = 1,
+                ItemIndex = 1},
 			new DataGridHeader() { 
                 ContentType = DataGridContentType.Text,
                 Data = "LoadOrder",
@@ -144,7 +148,9 @@ public partial class AllModsContainer : MarginContainer
                 Resizeable = false,
                 CellType = CellOptions.AdjustableNumber,
                 ShowHeader = true,
-                Blank = true},
+                Blank = true,
+                HeaderIdx = 2,
+                ItemIndex = 2},
 			new DataGridHeader() { 
                 ContentType = DataGridContentType.Text,
                 StartingWidth = 150,
@@ -152,7 +158,9 @@ public partial class AllModsContainer : MarginContainer
                 Title = "Location",
                 Resizeable = true,
                 CellType = CellOptions.Text,
-                ShowHeader = true},
+                ShowHeader = true,
+                HeaderIdx = 3,
+                ItemIndex = 3},
 			new DataGridHeader() { 
                 ContentType = DataGridContentType.Text,
                 StartingWidth = 150,
@@ -160,7 +168,9 @@ public partial class AllModsContainer : MarginContainer
                 Title = "Type",
                 Resizeable = true,
                 CellType = CellOptions.Text,
-                ShowHeader = true},
+                ShowHeader = true,
+                HeaderIdx = 4,
+                ItemIndex = 4},
 			new DataGridHeader() { 
                 ContentType = DataGridContentType.Text,
                 StartingWidth = 150,
@@ -168,7 +178,9 @@ public partial class AllModsContainer : MarginContainer
                 Title = "Creator",
                 Resizeable = true,
                 CellType = CellOptions.Text,
-                ShowHeader = true},
+                ShowHeader = true,
+                HeaderIdx = 5,
+                ItemIndex = 5},
 			new DataGridHeader() { 
                 ContentType = DataGridContentType.Text,
                 StartingWidth = 150,
@@ -176,7 +188,9 @@ public partial class AllModsContainer : MarginContainer
                 Title = "Category",
                 Resizeable = true,
                 CellType = CellOptions.Text,
-                ShowHeader = true},
+                ShowHeader = true,
+                HeaderIdx = 6,
+                ItemIndex = 6},
 			new DataGridHeader() { 
                 ContentType = DataGridContentType.Icons,
                 Title = "Problems",
@@ -184,23 +198,18 @@ public partial class AllModsContainer : MarginContainer
                 Resizeable = false,
                 CellType = CellOptions.Icons,
                 ShowHeader = true,
-			    Blank = true},		
-			new DataGridHeader() { 
-                ContentType = DataGridContentType.Text,
-                Data = "Image",
-                Title = "Image",
-                Resizeable = true,
-                CellType = CellOptions.Picture,
-                ShowHeader = false,
-                PictureCellSize = new(100,
-                115)},
+			    Blank = true,
+                HeaderIdx = 7,
+                ItemIndex = 7},
 			new DataGridHeader() { 
                 ContentType = DataGridContentType.Text,
                 Data = "FileSize",
                 Title = "File Size",
                 Resizeable = true,
                 CellType = CellOptions.Text,
-                ShowHeader = true},
+                ShowHeader = true,
+                HeaderIdx = 8,
+                ItemIndex = 8},
 			new DataGridHeader() { 
                 ContentType = DataGridContentType.Text,
                 StartingWidth = 100,
@@ -208,7 +217,9 @@ public partial class AllModsContainer : MarginContainer
                 Title = "File Type",
                 Resizeable = true,
                 CellType = CellOptions.Text,
-                ShowHeader = true},	
+                ShowHeader = true,
+                HeaderIdx = 9,
+                ItemIndex = 9},	
 			new DataGridHeader() { 
                 ContentType = DataGridContentType.Date,
                 Data = "DateUpdated",
@@ -216,15 +227,19 @@ public partial class AllModsContainer : MarginContainer
                 Title = "Date Modified",
                 Resizeable = true,
                 CellType = CellOptions.Text,
-                ShowHeader = false},
+                ShowHeader = false,
+                HeaderIdx = 10,
+                ItemIndex = 10},
 			new DataGridHeader() { 
                 ContentType = DataGridContentType.Date,
-                Data = "DateAdded",
+                Data = "DateCreated",
                 StartingWidth = 150,
                 Title = "Date Created",
                 Resizeable = true,
                 CellType = CellOptions.Text,
-                ShowHeader = false},
+                ShowHeader = false,
+                HeaderIdx = 11,
+                ItemIndex = 11},
 			new DataGridHeader() { 
                 ContentType = DataGridContentType.Text,
                 Data = "Game",
@@ -232,7 +247,29 @@ public partial class AllModsContainer : MarginContainer
                 Title = "Game",
                 Resizeable = true,
                 CellType = CellOptions.Text,
-                ShowHeader = false}
+                ShowHeader = false,
+                HeaderIdx = 12,
+                ItemIndex = 12},            
+			new DataGridHeader() { 
+                ContentType = DataGridContentType.Text,
+                Data = "OverrideRef",
+                StartingWidth = 150,
+                Title = "Overriding",
+                Resizeable = true,
+                CellType = CellOptions.Text,
+                ShowHeader = false,
+                HeaderIdx = 13,
+                ItemIndex = 13},            
+			new DataGridHeader() { 
+                ContentType = DataGridContentType.Text,
+                Data = "MatchingMesh",
+                StartingWidth = 150,
+                Title = "Mesh",
+                Resizeable = true,
+                CellType = CellOptions.Text,
+                ShowHeader = false,
+                HeaderIdx = 14,
+                ItemIndex = 14}
             };
 	
     List<DataGridCellIcons> icons = new() {
@@ -241,7 +278,8 @@ public partial class AllModsContainer : MarginContainer
         new() { TooltipMessage = "Orphan", IconData = "Orphan", IconName = "Orphan", IconImage = GD.Load<Texture2D>("res://assets/icons/materialicons/twotone_child_care_black_48dp.png")},
         new() { TooltipMessage = "Favorite", IconData = "Favorite", IconName = "Favorite", IconImage = GD.Load<Texture2D>("res://assets/icons/materialicons/twotone_favorite_black_48dp.png")},
         new() { TooltipMessage = "Broken", IconData = "Broken", IconName = "Broken", IconImage = GD.Load<Texture2D>("res://assets/icons/materialicons/twotone_broken_image_black_48dp.png")},
-        new() { TooltipMessage = "Wrong Game", IconData = "WrongGame", IconName = "Wrong Game", IconImage = GD.Load<Texture2D>("res://assets/icons/materialicons/twotone_warning_black_48dp.png")}
+        new() { TooltipMessage = "Wrong Game", IconData = "WrongGame", IconName = "Wrong Game", IconImage = GD.Load<Texture2D>("res://assets/icons/materialicons/twotone_warning_black_48dp.png")},
+        new() { TooltipMessage = "Override", IconData = "Override", IconName = "Override", IconImage = GD.Load<Texture2D>("res://assets/icons/materialicons/twotone_exposure_black_48dp.png")}
     };
 
     List<DataGridHeaderCell> HeaderCells = new();
@@ -312,6 +350,8 @@ public partial class AllModsContainer : MarginContainer
     private void HeadersChanged(List<DataGridHeader> h)
     {
         DataGridHeaders = h;
+        packageDisplay.ThisInstance.Headers = h;
+        packageDisplay.ThisInstance.WriteXML();
     }
 
 
@@ -559,9 +599,12 @@ public partial class AllModsContainer : MarginContainer
 
         if (pack.CategoryName != "Default")
         {
-            newrow.UseCategoryColor = true;
-            newrow.BackgroundColor = pack.PackageCategory.Background;
-            newrow.TextColor = pack.PackageCategory.TextColor;
+            if (pack.PackageCategory.Background != Colors.Transparent)
+            {
+                newrow.UseCategoryColor = true;
+                newrow.BackgroundColor = pack.PackageCategory.Background;
+                newrow.TextColor = pack.PackageCategory.TextColor;
+            }            
         }
         if (!FirstLoaded) GlobalVariables.mainWindow.IncrementLoadingScreen(1, string.Format("Creating data for {0}", pack.FileName), "All Mods: Making Data");
         return newrow;
@@ -1183,7 +1226,7 @@ public partial class AllModsContainer : MarginContainer
             }
         } else
         {
-            if (DataGrid.IsMouseInGrid())
+            if (DataGrid.IsMouseInGrid() && !DataGrid.IsMouseInHeaderBar())
             {
                 if (@event is InputEventMouseButton mouse && mouse.ButtonIndex == MouseButton.Right && mouse.Pressed)
                 {
@@ -1352,6 +1395,127 @@ public partial class AllModsContainer : MarginContainer
         }
         package.WriteXML();
         UpdateItem(package);        
+    }
+
+    private void CategoryFromFolder()
+    {
+        if (ViewSwap)
+        {
+            for (int i = 0; i < SelectedPackages.Count; i++)
+            {
+                SimsPackage package = Packages.First(x => x.Identifier == SelectedPackages[i].Identifier);
+                
+                if (Directory.Exists(package.Location))
+                {
+                    DirectoryInfo dir = new(package.Location);
+                    Category cat = new(); 
+                    cat.Name = dir.Name;
+                    if (packageDisplay.ThisInstance.Categories.Any(x => x.Name == cat.Name))
+                    {
+                        cat.Name = string.Format("{0}_(1)", cat.Name);
+                    }
+                    cat.Description = string.Format("Category automatically created from folder \"{0}\".", dir.Name);
+                    cat.SetFolderLocation(packageDisplay.ThisInstance.InstanceFolders.InstancePackagesFolder);
+                    if (!Directory.Exists(cat.FolderLocation)) Directory.CreateDirectory(cat.FolderLocation);
+                    packageDisplay.ThisInstance.Categories.Add(cat);
+
+                    foreach (string file in Directory.EnumerateFiles(package.Location, "*.*", SearchOption.AllDirectories))
+                    {
+                        FileInfo f = new(file);
+                        if (f.Extension != ".info")
+                        {
+                            string filename = f.Name;
+                            string newloc = Path.Combine(cat.FolderLocation, filename);
+                            newloc = Utilities.IncrementName(newloc);
+                            File.Move(file, newloc);
+                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Moving file {0} to {1}", file, newloc));
+                            if (Packages.Any(x => x.Location == file))
+                            {
+                                SimsPackage movepackage = Packages.First(x => x.Location == file);
+                                movepackage.MovePackage(cat.FolderLocation);
+                            }
+                        } else
+                        {
+                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Deleting info file {0}", file));
+                            File.Delete(file);
+                        }                        
+                    }
+
+                    foreach (string folder in Directory.EnumerateDirectories(package.Location, "*.*", SearchOption.AllDirectories))
+                    {
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Deleting directory {0}", folder));
+                        Directory.Delete(folder);
+                    }
+
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Deleting directory {0}", package.Location));
+                    Directory.Delete(package.Location);
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Deleting file {0}", package.InfoFile));
+                    File.Delete(package.InfoFile);                        
+                } else
+                {
+                    //not a folder!
+                }               
+            }
+            packageDisplay.RefreshFiles(); 
+        } else
+        {
+            for (int i = 0; i < SelectedItems.Count; i++)
+            {
+                SimsPackage package = Packages.First(x => x.Identifier == SelectedItems[i].Identifier);
+                
+                if (Directory.Exists(package.Location))
+                {
+                    DirectoryInfo dir = new(package.Location);
+                    Category cat = new(); 
+                    cat.Name = dir.Name;
+                    if (packageDisplay.ThisInstance.Categories.Any(x => x.Name == cat.Name))
+                    {
+                        cat.Name = string.Format("{0}_(1)", cat.Name);
+                    }
+                    cat.Description = string.Format("Category automatically created from folder \"{0}\".", dir.Name);
+                    cat.SetFolderLocation(packageDisplay.ThisInstance.InstanceFolders.InstancePackagesFolder);
+                    if (!Directory.Exists(cat.FolderLocation)) Directory.CreateDirectory(cat.FolderLocation);
+                    packageDisplay.ThisInstance.Categories.Add(cat);
+
+                    foreach (string file in Directory.EnumerateFiles(package.Location, "*.*", SearchOption.AllDirectories))
+                    {
+                        FileInfo f = new(file);
+                        if (f.Extension != ".info")
+                        {
+                            string filename = f.Name;
+                            string newloc = Path.Combine(cat.FolderLocation, filename);
+                            newloc = Utilities.IncrementName(newloc);
+                            File.Move(file, newloc);
+                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Moving file {0} to {1}", file, newloc));
+                            if (Packages.Any(x => x.Location == file))
+                            {
+                                SimsPackage movepackage = Packages.First(x => x.Location == file);
+                                movepackage.MovePackage(cat.FolderLocation);                                
+                            }
+                        } else
+                        {
+                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Deleting info file {0}", file));
+                            File.Delete(file);
+                        }                        
+                    }
+
+                    foreach (string folder in Directory.EnumerateDirectories(package.Location, "*.*", SearchOption.AllDirectories))
+                    {
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Deleting directory {0}", folder));
+                        Directory.Delete(folder);
+                    }
+
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Deleting directory {0}", package.Location));
+                    Directory.Delete(package.Location);
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Deleting file {0}", package.InfoFile));
+                    File.Delete(package.InfoFile);  
+                } else
+                {
+                    //not a folder!
+                }       
+            }
+            packageDisplay.RefreshFiles(); 
+        }  
     }
 
 
@@ -1932,7 +2096,7 @@ public partial class AllModsContainer : MarginContainer
             packages = SelectedItems.Count;
         }
 
-        cpw.WindowMessage.Text = string.Format("Are you sure you want to delete {0} packages?", packages);
+        cpw.WindowMessage.Text = string.Format("Are you sure you want to delete {0} packages? (Packages will be moved to the recycle bin.)", packages);
         cpw.YesButton.Visible = true;
         cpw.NoButton.Visible = true;
         cpw.UpdateTheme();
@@ -1949,18 +2113,14 @@ public partial class AllModsContainer : MarginContainer
             for (int i = 0; i < SelectedPackages.Count; i++)
             {
                 SimsPackage package = Packages.First(x => x.Identifier == SelectedPackages[i].Identifier);
-                if (File.Exists(package.Location))
+                
+                if (File.Exists(package.InfoFile)) { 
+                    Utilities.MoveToRecycleBin(package.InfoFile);
+                }
+
+                if (File.Exists(package.Location) || Directory.Exists(package.Location))
                 {
-                    File.Delete(package.Location);
-                    if (File.Exists(package.InfoFile)) File.Delete(package.InfoFile);
-                } else if (Directory.Exists(package.Location))
-                {
-                    foreach (string file in Directory.EnumerateFiles(package.Location, "*.*", SearchOption.AllDirectories))
-                    {
-                        File.Delete(file);
-                        string infofile = string.Format("{0}.info", file);
-                        if (File.Exists(infofile)) File.Delete(infofile);
-                    }
+                    Utilities.MoveToRecycleBin(package.Location);                                        
                 }                
             }
         } else
@@ -1968,19 +2128,14 @@ public partial class AllModsContainer : MarginContainer
             for (int i = 0; i < SelectedItems.Count; i++)
             {
                 SimsPackage package = Packages.First(x => x.Identifier == SelectedItems[i].Identifier);
-                if (File.Exists(package.Location))
+                if (File.Exists(package.InfoFile)) { 
+                    Utilities.MoveToRecycleBin(package.InfoFile);
+                }
+
+                if (File.Exists(package.Location) || Directory.Exists(package.Location))
                 {
-                    File.Delete(package.Location);
-                    if (File.Exists(package.InfoFile)) File.Delete(package.InfoFile);
-                } else if (Directory.Exists(package.Location))
-                {
-                    foreach (string file in Directory.EnumerateFiles(package.Location, "*.*", SearchOption.AllDirectories))
-                    {
-                        File.Delete(file);
-                        string infofile = string.Format("{0}.info", file);
-                        if (File.Exists(infofile)) File.Delete(infofile);
-                    }
-                }                
+                    Utilities.MoveToRecycleBin(package.Location);                                        
+                }               
             }
         }
 
@@ -2137,6 +2292,10 @@ public partial class AllModsContainer : MarginContainer
             break;
             case 13:
             AddTypeBox();
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Pressed button {0}: Edit details", i));
+            break;
+            case 14:
+            CategoryFromFolder();
             if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Pressed button {0}: Edit details", i));
             break;
         }

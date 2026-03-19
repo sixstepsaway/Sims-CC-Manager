@@ -14,6 +14,7 @@ namespace SimsCCManager.SettingsSystem
     {
         public bool DebugMode { get; set; } = false;
         public bool PortableMode { get; set; } = false;
+        public bool CensorSkins {get; set;} = false;
         public bool CPURestrict { get; set; } = false;
         public bool AutoLoad { get; set; } = false;
         public bool Tali { get; set; } = true;

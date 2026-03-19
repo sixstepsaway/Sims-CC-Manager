@@ -202,9 +202,26 @@ public partial class CategoryManagement : MarginContainer
                 foreach (SimsPackage package in categorypackages)
                 {
                     package.PackageCategory = defaultCat;
+                    package.MovePackage(packageDisplay.ThisInstance.InstanceFolders.InstancePackagesFolder);
                 }
                 CategoryItems.Remove(ci);
                 ci.QueueFree();            
+                if (Directory.Exists(category.FolderLocation))
+                {
+                    List<string> fles = [..Directory.EnumerateFiles(category.FolderLocation, "*.*", SearchOption.AllDirectories)];
+                    if (fles.Count > 0)
+                    {
+                       foreach (string file in fles)
+                        {
+                            FileInfo f = new(file);
+                            string newn = Path.Combine(packageDisplay.ThisInstance.InstanceFolders.InstancePackagesFolder, f.Name);
+                            newn = Utilities.IncrementName(newn);
+                            File.Move(file, newn);
+                        } 
+                    }
+                    
+                    Directory.Delete(category.FolderLocation);
+                }
                 packageDisplay.ThisInstance.Categories.Remove(category);
                 packageDisplay.ThisInstance.WriteXML();
                 CategoriesUpdated.Invoke(false);

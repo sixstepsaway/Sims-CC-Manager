@@ -12,7 +12,7 @@
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_uk27k"]
 bg_color = Color(0.6, 0.6, 0.6, 0.529412)
 
-[node name="MainSettings" type="MarginContainer" node_paths=PackedStringArray("BackgroundNode", "Labels", "ThemeOptions", "DebugModeCheck", "PortableModeCheck", "RestrictCPUCheck", "LoadLatestCheck", "ShowTaliCheck", "CloseSettingsButton", "AddTheme", "DeleteTheme")]
+[node name="MainSettings" type="MarginContainer" node_paths=PackedStringArray("BackgroundNode", "Labels", "ThemeOptions", "DebugModeCheck", "PortableModeCheck", "RestrictCPUCheck", "LoadLatestCheck", "ShowTaliCheck", "CensorSkinsCheck", "CloseSettingsButton", "AddTheme", "DeleteTheme")]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -23,13 +23,14 @@ size_flags_vertical = 3
 theme_override_constants/margin_bottom = 65
 script = ExtResource("1_mide4")
 BackgroundNode = NodePath("MarginContainer/MarginContainer2/Background")
-Labels = [NodePath("MarginContainer/VBoxContainer/HBoxContainer2/Label"), NodePath("MarginContainer/VBoxContainer/DebugMode_Setting/DebugMode_Label"), NodePath("MarginContainer/VBoxContainer/RestrictCPU_Setting/RestrictCPU_Label"), NodePath("MarginContainer/VBoxContainer/AutomaticallyLoadLatestInstance_Setting/AutomaticallyLoadLatestInstance_Label"), NodePath("MarginContainer/VBoxContainer/ShowTali_Setting/ShowTali_Label")]
+Labels = [NodePath("MarginContainer/VBoxContainer/HBoxContainer2/Label"), NodePath("MarginContainer/VBoxContainer/HBoxContainer/DebugMode_Setting/DebugMode_Label"), NodePath("MarginContainer/VBoxContainer/HBoxContainer3/RestrictCPU_Setting/RestrictCPU_Label"), NodePath("MarginContainer/VBoxContainer/AutomaticallyLoadLatestInstance_Setting/AutomaticallyLoadLatestInstance_Label"), NodePath("MarginContainer/VBoxContainer/HBoxContainer3/ShowTali_Setting/ShowTali_Label"), NodePath("MarginContainer/VBoxContainer/CensorSkins_Setting/CensorSkins_Label")]
 ThemeOptions = NodePath("MarginContainer/VBoxContainer/HBoxContainer2/OptionButton")
-DebugModeCheck = NodePath("MarginContainer/VBoxContainer/DebugMode_Setting/DebugMode_Check")
-PortableModeCheck = NodePath("MarginContainer/VBoxContainer/PortableMode_Setting/PortableMode_Check")
-RestrictCPUCheck = NodePath("MarginContainer/VBoxContainer/RestrictCPU_Setting/RestrictCPU_Check")
+DebugModeCheck = NodePath("MarginContainer/VBoxContainer/HBoxContainer/DebugMode_Setting/DebugMode_Check")
+PortableModeCheck = NodePath("MarginContainer/VBoxContainer/HBoxContainer/PortableMode_Setting/PortableMode_Check")
+RestrictCPUCheck = NodePath("MarginContainer/VBoxContainer/HBoxContainer3/RestrictCPU_Setting/RestrictCPU_Check")
 LoadLatestCheck = NodePath("MarginContainer/VBoxContainer/AutomaticallyLoadLatestInstance_Setting/AutomaticallyLoadLatestInstance_Check")
-ShowTaliCheck = NodePath("MarginContainer/VBoxContainer/ShowTali_Setting/ShowTali_Check")
+ShowTaliCheck = NodePath("MarginContainer/VBoxContainer/HBoxContainer3/ShowTali_Setting/ShowTali_Check")
+CensorSkinsCheck = NodePath("MarginContainer/VBoxContainer/CensorSkins_Setting/CensorSkins_Check")
 CloseSettingsButton = NodePath("MarginContainer/MarginContainer/SettingsClose_Button")
 AddTheme = NodePath("MarginContainer/VBoxContainer/HBoxContainer2/Topbar_Button")
 DeleteTheme = NodePath("MarginContainer/VBoxContainer/HBoxContainer2/Topbar_Button2")
@@ -87,34 +88,52 @@ custom_minimum_size = Vector2(25, 25)
 layout_mode = 2
 Texture = ExtResource("6_h647y")
 
-[node name="DebugMode_Setting" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="DebugMode_Setting" type="HBoxContainer" parent="MarginContainer/VBoxContainer/HBoxContainer"]
 layout_mode = 2
 
-[node name="DebugMode_Label" type="Label" parent="MarginContainer/VBoxContainer/DebugMode_Setting"]
+[node name="DebugMode_Label" type="Label" parent="MarginContainer/VBoxContainer/HBoxContainer/DebugMode_Setting"]
 layout_mode = 2
 text = "Debug Mode"
 
-[node name="DebugMode_Check" parent="MarginContainer/VBoxContainer/DebugMode_Setting" instance=ExtResource("3_vatd5")]
+[node name="DebugMode_Check" parent="MarginContainer/VBoxContainer/HBoxContainer/DebugMode_Setting" instance=ExtResource("3_vatd5")]
 layout_mode = 2
 
-[node name="PortableMode_Setting" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+[node name="PortableMode_Setting" type="HBoxContainer" parent="MarginContainer/VBoxContainer/HBoxContainer"]
 layout_mode = 2
 
-[node name="PortableMode_Label" type="Label" parent="MarginContainer/VBoxContainer/PortableMode_Setting"]
+[node name="PortableMode_Label" type="Label" parent="MarginContainer/VBoxContainer/HBoxContainer/PortableMode_Setting"]
 layout_mode = 2
 text = "Portable Mode"
 
-[node name="PortableMode_Check" parent="MarginContainer/VBoxContainer/PortableMode_Setting" instance=ExtResource("3_vatd5")]
+[node name="PortableMode_Check" parent="MarginContainer/VBoxContainer/HBoxContainer/PortableMode_Setting" instance=ExtResource("3_vatd5")]
 layout_mode = 2
 
-[node name="RestrictCPU_Setting" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+[node name="HBoxContainer3" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="RestrictCPU_Setting" type="HBoxContainer" parent="MarginContainer/VBoxContainer/HBoxContainer3"]
 layout_mode = 2
 
-[node name="RestrictCPU_Label" type="Label" parent="MarginContainer/VBoxContainer/RestrictCPU_Setting"]
+[node name="RestrictCPU_Label" type="Label" parent="MarginContainer/VBoxContainer/HBoxContainer3/RestrictCPU_Setting"]
 layout_mode = 2
 text = "Restrict CPU Usage"
 
-[node name="RestrictCPU_Check" parent="MarginContainer/VBoxContainer/RestrictCPU_Setting" instance=ExtResource("3_vatd5")]
+[node name="RestrictCPU_Check" parent="MarginContainer/VBoxContainer/HBoxContainer3/RestrictCPU_Setting" instance=ExtResource("3_vatd5")]
+layout_mode = 2
+
+[node name="ShowTali_Setting" type="HBoxContainer" parent="MarginContainer/VBoxContainer/HBoxContainer3"]
+layout_mode = 2
+
+[node name="ShowTali_Label" type="Label" parent="MarginContainer/VBoxContainer/HBoxContainer3/ShowTali_Setting"]
+layout_mode = 2
+text = "Show Tali"
+
+[node name="ShowTali_Check" parent="MarginContainer/VBoxContainer/HBoxContainer3/ShowTali_Setting" instance=ExtResource("3_vatd5")]
 layout_mode = 2
 
 [node name="AutomaticallyLoadLatestInstance_Setting" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
@@ -127,14 +146,14 @@ text = "Automatically Load Latest Instance"
 [node name="AutomaticallyLoadLatestInstance_Check" parent="MarginContainer/VBoxContainer/AutomaticallyLoadLatestInstance_Setting" instance=ExtResource("3_vatd5")]
 layout_mode = 2
 
-[node name="ShowTali_Setting" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+[node name="CensorSkins_Setting" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
 layout_mode = 2
 
-[node name="ShowTali_Label" type="Label" parent="MarginContainer/VBoxContainer/ShowTali_Setting"]
+[node name="CensorSkins_Label" type="Label" parent="MarginContainer/VBoxContainer/CensorSkins_Setting"]
 layout_mode = 2
-text = "Show Tali"
+text = "Censor Skins"
 
-[node name="ShowTali_Check" parent="MarginContainer/VBoxContainer/ShowTali_Setting" instance=ExtResource("3_vatd5")]
+[node name="CensorSkins_Check" parent="MarginContainer/VBoxContainer/CensorSkins_Setting" instance=ExtResource("3_vatd5")]
 layout_mode = 2
 
 [node name="MarginContainer" type="MarginContainer" parent="MarginContainer"]

@@ -47,6 +47,8 @@ public partial class RightClickMenu : Node2D
     [Export]
     RcmItem FFromF;
     [Export]
+    RcmItem CatFromFolder;
+    [Export]
     RcmItem Categories;
     [ExportGroup("EditDetailsOptions")]
     [Export]
@@ -162,6 +164,7 @@ public partial class RightClickMenu : Node2D
         items.Add(Categories);
         items.Add(Details);
         items.Add(Type);
+        items.Add(CatFromFolder);
 
         if (Plural)
         {
@@ -186,6 +189,7 @@ public partial class RightClickMenu : Node2D
         
         Categories.label.Text = "Categories";
         Details.label.Text = "Edit Details";
+        CatFromFolder.label.Text = "Category from Folder";
 
         
         
@@ -219,6 +223,7 @@ public partial class RightClickMenu : Node2D
         Categories.button.Pressed += () => PressedButton(11);
         Details.button.Pressed += () => PressedButton(12);
         Type.button.Pressed += () => PressedButton(13);
+        CatFromFolder.button.Pressed += () => PressedButton(14);
 
 
     }

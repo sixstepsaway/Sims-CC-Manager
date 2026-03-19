@@ -1,0 +1,43 @@
+[gd_scene load_steps=3 format=3 uid="uid://3inkeuorcdqn"]
+
+[ext_resource type="Script" uid="uid://b76ds2cvf7rx2" path="res://UI/RefreshingWait.cs" id="1_nw8v7"]
+[ext_resource type="Texture2D" uid="uid://dd152a3wp0ho4" path="res://assets/icons/materialicons/twotone_rotate_left_black_48dp.png" id="2_ijyxe"]
+
+[node name="RefreshingWait" type="Control" node_paths=PackedStringArray("RotatorColor", "Rotator")]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_nw8v7")
+RotatorColor = NodePath("MarginContainer/TextureRect/ColorRect")
+Rotator = NodePath("MarginContainer")
+
+[node name="ColorRect" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.54, 0.54, 0.54, 0.3019608)
+
+[node name="MarginContainer" type="Node2D" parent="."]
+position = Vector2(484, 360)
+
+[node name="TextureRect" type="TextureRect" parent="MarginContainer"]
+clip_children = 1
+offset_left = -48.0
+offset_top = -48.0
+offset_right = 48.0
+offset_bottom = 48.0
+texture = ExtResource("2_ijyxe")
+
+[node name="ColorRect" type="ColorRect" parent="MarginContainer/TextureRect"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2

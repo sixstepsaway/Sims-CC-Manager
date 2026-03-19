@@ -1,9 +1,10 @@
-[gd_scene load_steps=21 format=3 uid="uid://c4rjghpqcjk60"]
+[gd_scene load_steps=22 format=3 uid="uid://c4rjghpqcjk60"]
 
 [ext_resource type="Script" uid="uid://da8nog1p33e81" path="res://UI/PackageDisplay.cs" id="1_i7mej"]
 [ext_resource type="PackedScene" uid="uid://uo2724xgb1uw" path="res://UI/Background.tscn" id="2_tqnmv"]
 [ext_resource type="PackedScene" uid="uid://55aunc3up5rf" path="res://UI/PackageDisplay/AllModsContainer.tscn" id="3_io27h"]
 [ext_resource type="PackedScene" uid="uid://5xhx8fvbykrg" path="res://UI/PackageDisplay/PackageViewerContainer.tscn" id="4_0266g"]
+[ext_resource type="PackedScene" uid="uid://3inkeuorcdqn" path="res://UI/RefreshingWait.tscn" id="5_4bg60"]
 [ext_resource type="PackedScene" uid="uid://dxpbhvncqax7u" path="res://UI/PackageDisplay/NewDownloadsContainer.tscn" id="5_aasf2"]
 [ext_resource type="PackedScene" uid="uid://c5syo7ja1jgbg" path="res://UI/PackageDisplay/PackageManagementButtons.tscn" id="6_j2qpk"]
 [ext_resource type="PackedScene" uid="uid://7mik2db8co2o" path="res://UI/PackageDisplay/ProfilesManagement.tscn" id="7_vmldb"]
@@ -42,6 +43,8 @@ VSplit = NodePath("MainWindowSizer/MainPanels/HSplitContainer/VSplitContainer")
 ProfilesManagementWindowPS = ExtResource("16_i7mej")
 CategoryManagementWindowPS = ExtResource("17_dynkg")
 UIAllModsPS = ExtResource("3_io27h")
+RefreshingPS = ExtResource("5_4bg60")
+ErrorListPS = ExtResource("15_r8u1u")
 AddFilesDialog = NodePath("AddFileDialog")
 AddExeDialog = NodePath("AddExeDialog")
 AddFolderDialog = NodePath("AddFolderDialog")
@@ -123,9 +126,6 @@ layout_mode = 2
 layout_mode = 2
 
 [node name="BrokenFilesBox" parent="." instance=ExtResource("14_78ron")]
-layout_mode = 2
-
-[node name="ViewErrorsDisplay" parent="." instance=ExtResource("15_r8u1u")]
 layout_mode = 2
 
 [node name="ExeChoice_PopupPanel" parent="." instance=ExtResource("18_0266g")]

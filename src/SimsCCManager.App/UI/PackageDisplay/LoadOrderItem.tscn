@@ -1,0 +1,116 @@
+[gd_scene load_steps=10 format=3 uid="uid://c50pbckao220y"]
+
+[ext_resource type="Script" uid="uid://ddaee1di4b1oe" path="res://UI/PackageDisplay/LoadOrderItem.cs" id="1_c2v7a"]
+[ext_resource type="FontFile" uid="uid://bob4v2pndpu0q" path="res://assets/fonts/Convergence/Convergence-Regular.ttf" id="1_kty7x"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_c2v7a"]
+bg_color = Color(0.5370113, 0.5370113, 0.5370112, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.87329835, 0.87329847, 0.87329817, 1)
+
+[sub_resource type="Theme" id="Theme_vsn2t"]
+Panel/styles/panel = SubResource("StyleBoxFlat_c2v7a")
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_vsn2t"]
+bg_color = Color(0.75819176, 0.7581918, 0.75819165, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.52510077, 0.5251017, 0.5251009, 1)
+
+[sub_resource type="Theme" id="Theme_00np8"]
+Panel/styles/panel = SubResource("StyleBoxFlat_vsn2t")
+
+[sub_resource type="Theme" id="Theme_7d87l"]
+Label/font_sizes/font_size = 14
+Label/fonts/font = ExtResource("1_kty7x")
+
+[sub_resource type="Theme" id="Theme_j41ce"]
+Label/font_sizes/font_size = 14
+Label/fonts/font = ExtResource("1_kty7x")
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_c2v7a"]
+
+[node name="LoadOrderItem" type="Control" node_paths=PackedStringArray("Item", "ItemContents", "ItemNameLabel", "LoadOrderLabel", "NormalPanel", "SelectedPanel", "button")]
+custom_minimum_size = Vector2(0, 25)
+layout_mode = 3
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 24.0
+grow_horizontal = 2
+size_flags_horizontal = 3
+script = ExtResource("1_c2v7a")
+Item = NodePath("Item")
+ItemContents = NodePath("Item/MarginContainer")
+ItemNameLabel = NodePath("Item/MarginContainer/HBoxContainer/Label2")
+LoadOrderLabel = NodePath("Item/MarginContainer/HBoxContainer/LoadOrder")
+NormalPanel = NodePath("Item/PanelNormal")
+SelectedPanel = NodePath("Item/PanelSelected")
+button = NodePath("Item/Button")
+
+[node name="Item" type="MarginContainer" parent="."]
+custom_minimum_size = Vector2(0, 25)
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 30.0
+grow_horizontal = 2
+
+[node name="PanelNormal" type="Panel" parent="Item"]
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
+theme = SubResource("Theme_vsn2t")
+
+[node name="PanelSelected" type="Panel" parent="Item"]
+visible = false
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
+theme = SubResource("Theme_00np8")
+
+[node name="MarginContainer" type="MarginContainer" parent="Item"]
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
+theme_override_constants/margin_left = 6
+theme_override_constants/margin_top = 3
+theme_override_constants/margin_right = 6
+theme_override_constants/margin_bottom = 3
+
+[node name="HBoxContainer" type="HBoxContainer" parent="Item/MarginContainer"]
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
+
+[node name="LoadOrder" type="Label" parent="Item/MarginContainer/HBoxContainer"]
+layout_mode = 2
+theme = SubResource("Theme_7d87l")
+text = "0"
+
+[node name="MarginContainer" type="MarginContainer" parent="Item/MarginContainer/HBoxContainer"]
+custom_minimum_size = Vector2(3, 0)
+layout_mode = 2
+
+[node name="ColorRect" type="ColorRect" parent="Item/MarginContainer/HBoxContainer/MarginContainer"]
+layout_mode = 2
+color = Color(0.8745098, 0.8745098, 0.8745098, 1)
+
+[node name="Label2" type="Label" parent="Item/MarginContainer/HBoxContainer"]
+layout_mode = 2
+theme = SubResource("Theme_j41ce")
+text = "simspackage.package"
+
+[node name="Button" type="Button" parent="Item"]
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxEmpty_c2v7a")
+theme_override_styles/normal_mirrored = SubResource("StyleBoxEmpty_c2v7a")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_c2v7a")
+theme_override_styles/pressed_mirrored = SubResource("StyleBoxEmpty_c2v7a")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_c2v7a")
+theme_override_styles/hover_mirrored = SubResource("StyleBoxEmpty_c2v7a")
+theme_override_styles/hover_pressed = SubResource("StyleBoxEmpty_c2v7a")
+theme_override_styles/hover_pressed_mirrored = SubResource("StyleBoxEmpty_c2v7a")
+theme_override_styles/disabled = SubResource("StyleBoxEmpty_c2v7a")
+theme_override_styles/disabled_mirrored = SubResource("StyleBoxEmpty_c2v7a")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_c2v7a")

@@ -7,13 +7,17 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Metadata.Ecma335;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
+using DataGridContainers;
 using Godot;
 using ICSharpCode.SharpZipLib.Zip;
+using Microsoft.VisualBasic;
+using Microsoft.VisualBasic.FileIO;
 using SimsCCManager.Debugging;
 using SimsCCManager.Globals;
 using SimsCCManager.OptionLists;
@@ -53,7 +57,8 @@ namespace SimsCCManager.Containers
         public InstanceFolders InstanceFolders {get; set;}
         public List<string> InstanceProfileLocations {get; set;} = new();
         [XmlIgnore]
-        public List<InstanceProfile> InstanceProfiles {get; set;}
+        public List<InstanceProfile> InstanceProfiles {get; set;} = new();
+        public List<DataGridHeader> Headers {get; set;}
 
         private void LoadProfiles()
         {
@@ -533,6 +538,7 @@ namespace SimsCCManager.Containers
         public void SetFolderLocation(string InstancePackagesFolder)
         {
             FolderLocation = Path.Combine(InstancePackagesFolder, string.Format("__CATEGORY_{0}", Name));
+            
         }
     }
 
@@ -666,7 +672,7 @@ namespace SimsCCManager.Containers
         public string Location {get; set;}
         public string FileSize {get;}
         public FileTypes FileType {get;}
-        public DateTime DateAdded {get; set;}
+        public DateTime DateCreated {get; set;}
         public DateTime DateUpdated {get; set;}
         [XmlIgnore]
         public bool Selected {get; set;}
@@ -712,87 +718,96 @@ namespace SimsCCManager.Containers
             }
         }
 
+        public void DeletePackage()
+        {
+            if (File.Exists(InfoFile))
+            {
+                Utilities.MoveToRecycleBin(InfoFile);
+            }
+            
+            if (File.Exists(Location) || Directory.Exists(Location))
+            {            
+                Utilities.MoveToRecycleBin(InfoFile);
+            }
+        }
+
         public void MovePackage(string newfolder)
         {
-            if (!Directory.Exists(newfolder)) Directory.CreateDirectory(newfolder);
-            FileInfo inf = new(InfoFile);
-            if (File.Exists(Location))
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                FileInfo fi = new(Location);           
-                string newpath = Path.Combine(newfolder, fi.Name);
-                if (File.Exists(newpath))
+                if (!Directory.Exists(newfolder)) Directory.CreateDirectory(newfolder);
+                FileInfo inf = new(InfoFile);
+                if (File.Exists(Location))
                 {
-                    newpath = Utilities.IncrementName(newpath);
-                }
-                File.Move(Location, newpath);
-                this.Location = newpath;
-            } else if (Directory.Exists(Location))
-            {
-                DirectoryInfo di = new(Location);
-                string newpath = Path.Combine(newfolder, di.Name);
-                if (Directory.Exists(newpath))
-                {
-                    newpath = Utilities.IncrementName(newpath, true);
-                }
-                Directory.Move(Location, newpath);
-                this.Location = newpath;
-
-                List<string> files = Directory.EnumerateFiles(Location, "*.info", SearchOption.AllDirectories).ToList();
-                foreach (string file in files)
-                {
-                    SimsPackage p = new();
-                    XmlSerializer simsPackageSerializer = new XmlSerializer(typeof(SimsPackage));
-                    using (FileStream fileStream = new(file, FileMode.Open, System.IO.FileAccess.Read)){
-                        using (StreamReader streamReader = new(fileStream)){
-                            p = (SimsPackage)simsPackageSerializer.Deserialize(streamReader);
-                            streamReader.Close();
-                        }
-                        fileStream.Close();
-                    }
-                    string plc = file.Replace(".info", "");
-                    p.Location = plc;
-                    p.WriteXML();
-                }
-                if (LinkedFiles.Any())
-                {
-                    for (int i = 0; i < LinkedFiles.Count; i++)
+                    FileInfo fi = new(Location);           
+                    string newpath = Path.Combine(newfolder, fi.Name);
+                    if (File.Exists(newpath))
                     {
-                        if (LinkedFiles[i].StartsWith(di.FullName))
-                        {
-                            FileInfo fl = new(LinkedFiles[i]);                            
-                            LinkedFiles[i] = Path.Combine(Location, fl.Name);
-                        }
+                        newpath = Utilities.IncrementName(newpath);
                     }
-                }
-                if (LinkedFolders.Any())
+                    File.Move(Location, newpath);
+                    this.Location = newpath;
+                } else if (Directory.Exists(Location))
                 {
-                    for (int i = 0; i < LinkedFolders.Count; i++)
+                    DirectoryInfo di = new(Location);
+                    string newpath = Path.Combine(newfolder, di.Name);
+                    if (Directory.Exists(newpath))
                     {
-                        if (LinkedFolders[i].StartsWith(di.FullName))
+                        newpath = Utilities.IncrementName(newpath, true);
+                    }
+                    Directory.Move(Location, newpath);
+                    this.Location = newpath;
+
+                    List<string> files = Directory.EnumerateFiles(Location, "*.info", System.IO.SearchOption.AllDirectories).ToList();
+                    foreach (string file in files)
+                    {
+                        SimsPackage p = new();
+                        XmlSerializer simsPackageSerializer = new XmlSerializer(typeof(SimsPackage));
+                        using (FileStream fileStream = new(file, FileMode.Open, System.IO.FileAccess.Read)){
+                            using (StreamReader streamReader = new(fileStream)){
+                                p = (SimsPackage)simsPackageSerializer.Deserialize(streamReader);
+                                streamReader.Close();
+                            }
+                            fileStream.Close();
+                        }
+                        string plc = file.Replace(".info", "");
+                        p.Location = plc;
+                        p.WriteXML();
+                    }
+                    if (LinkedFiles.Any())
+                    {
+                        for (int i = 0; i < LinkedFiles.Count; i++)
                         {
-                            DirectoryInfo fl = new(LinkedFolders[i]);                            
-                            LinkedFolders[i] = Path.Combine(Location, fl.Name);
+                            if (LinkedFiles[i].StartsWith(di.FullName))
+                            {
+                                FileInfo fl = new(LinkedFiles[i]);                            
+                                LinkedFiles[i] = Path.Combine(Location, fl.Name);
+                            }
+                        }
+                    }
+                    if (LinkedFolders.Any())
+                    {
+                        for (int i = 0; i < LinkedFolders.Count; i++)
+                        {
+                            if (LinkedFolders[i].StartsWith(di.FullName))
+                            {
+                                DirectoryInfo fl = new(LinkedFolders[i]);                            
+                                LinkedFolders[i] = Path.Combine(Location, fl.Name);
+                            }
                         }
                     }
                 }
-            } 
 
-               
-
-
-
-            if (File.Exists(inf.FullName))
-            {
-                string newpath = Path.Combine(newfolder, inf.Name);
-                File.Move(inf.FullName, newpath);
-            }
-
-
-                    
+                if (File.Exists(inf.FullName))
+                {
+                    string newpath = Path.Combine(newfolder, inf.Name);
+                    File.Move(inf.FullName, newpath);
+                }            
+            }                     
         }
 
         public FileTypes FileType { get; set; }
-        public DateTime DateAdded {get; set;}
+        public DateTime DateCreated {get; set;}
         public DateTime DateUpdated {get; set;}
         public string InstalledForVersion {get; set;}
         public string Source {get; set;}
@@ -812,6 +827,56 @@ namespace SimsCCManager.Containers
         public bool StandAlone {get; set;}
         public bool Broken {get; set;}
         public bool WrongGame {get; set;}
+        public bool Override {
+            get { switch (Game)
+                {
+                    case SimsGames.Sims2:
+                        return Sims2Data.Override;
+                    case SimsGames.Sims3:
+                        return Sims3Data.Override;
+                    case SimsGames.Sims4:
+                        return Sims4Data.Override;  
+                    default: return false;                  
+                }
+            }
+        }
+        public List<SimsOverrides> OverrideReference
+        {
+            get { switch (Game)
+                {
+                    case SimsGames.Sims2:
+                        return Sims2Data.OverrideReference;
+                    case SimsGames.Sims3:
+                        return Sims3Data.OverrideReference;
+                    case SimsGames.Sims4:
+                        return Sims4Data.OverrideReference;  
+                    default: return null;                  
+                }
+            }
+        }
+
+        
+        public SpecificOverrides SpecificOverride 
+        {
+            get { switch (Game)
+                {
+                    case SimsGames.Sims2:
+                        return Sims2Data.SpecificOverride;
+                    case SimsGames.Sims3:
+                        return Sims3Data.SpecificOverride;
+                    case SimsGames.Sims4:
+                        return Sims4Data.SpecificOverride;  
+                    default: return null;                  
+                }
+            }
+        }
+        [XmlIgnore]
+        public string OverrideRef { get { if (SpecificOverride != null) return string.Format("{0}: {1}", Type, SpecificOverride.Description); else return string.Empty; }}
+
+        public bool IsDuplicate {get; set;}
+        public List<string> Duplicates {get; set;} = new();
+        public List<string> Conflicts {get; set;} = new();
+
         public string MatchingMesh {get; set;}
         public List<string> MatchingRecolors {get; set;} = new();
 
@@ -1259,6 +1324,10 @@ namespace SimsCCManager.Containers
         public bool GameMod {get; set;}
 
         
+        public bool Override {get; set;}
+        public List<SimsOverrides> OverrideReference {get; set;}
+        public SpecificOverrides SpecificOverride {get; set;}
+        
 
         public ClothingInfo ClothingInfo {get; set;}
         
@@ -1300,6 +1369,11 @@ namespace SimsCCManager.Containers
             }
         }
         public string AltType {get; set;} = "";
+
+        
+        public bool Override {get; set;}
+        public List<SimsOverrides> OverrideReference {get; set;} = new();
+        public SpecificOverrides SpecificOverride {get; set;}
 
         public List<FunctionSortList> FunctionSort {get; set;} = new();
         private string _guid;
@@ -1364,6 +1438,7 @@ namespace SimsCCManager.Containers
         public List<TXMTData> TXMTDataBlock {get; set;} = new();
         public List<XHTNData> XHTNDataBlock {get; set;} = new();
         public List<XTOLData> XTOLDataBlock {get; set;} = new();
+        public List<GMNDData> GMNDDataBlock {get; set;} = new();
 
 
         public void GetPackageType()
@@ -1374,6 +1449,7 @@ namespace SimsCCManager.Containers
             {
                 IsGameMod();
                 Orphan = false;
+                AltType = "Game Mod/Hack";
             } else if (EntryCount("xhtn") > 0)
             {
                 AltType = "Hair";
@@ -1621,6 +1697,11 @@ namespace SimsCCManager.Containers
         }
         public string AltType {get; set;} = "";
 
+        
+        public bool Override {get; set;}
+        public List<SimsOverrides> OverrideReference {get; set;} = new();
+        public SpecificOverrides SpecificOverride {get; set;}
+
         public List<FunctionSortList> FunctionSort {get; set;} = new();
         private List<IndexEntry> _indexentries;
         public List<IndexEntry> IndexEntries {
@@ -1689,6 +1770,11 @@ namespace SimsCCManager.Containers
             }
         }
         public string AltType {get; set;} = "";
+
+        
+        public bool Override {get; set;}
+        public List<SimsOverrides> OverrideReference {get; set;} = new();
+        public SpecificOverrides SpecificOverride {get; set;}
 
         public List<FunctionSortList> FunctionSort {get; set;} = new();
         private List<IndexEntry> _indexentries;
@@ -1771,7 +1857,7 @@ namespace SimsCCManager.Containers
                     return ContainerExtensions.TypeFromExtension(new FileInfo(Location).Extension);
                 }
         }
-        public DateTime DateAdded {get; set;}
+        public DateTime DateCreated {get; set;}
         public DateTime DateUpdated {get; set;}
         [XmlIgnore]
         public bool Selected {get; set;}        
@@ -2168,4 +2254,193 @@ namespace SimsCCManager.Containers
         public int Count {get; set;}
     }
 
+    public class SimsOverrides
+    {
+        public string FileLocation {get; set;} //objects.package
+        public List<SimsID> Entries {get; set;} = new(); // all the entry IDs
+        public List<ItemOverride> GuidOverrides {get; set;} = new(); // 
+        public List<ItemOverride> FileNameOverrides {get; set;} = new();
+        public List<ItemOverride> TextureNameOverrides {get; set;} = new();
+        public List<ItemOverride> References {get; set;} = new();
+
+        public bool ShouldSerializeGuidOverrides()
+        {            
+            return GuidOverrides.Count > 0;
+        }
+        public bool ShouldSerializeFileNameOverrides()
+        {            
+            return FileNameOverrides.Count > 0;
+        }
+        public bool ShouldSerializeTextureNameOverrides()
+        {            
+            return TextureNameOverrides.Count > 0;
+        }
+        public bool ShouldSerializeReferences()
+        {            
+            return References.Count > 0;
+        }
+        public bool ShouldSerializeEntries()
+        {            
+            return Entries.Count > 0;
+        }
+    }
+
+    public class SimsID
+    {
+        public string TypeID {get; set;}
+        public string GroupID {get; set;}
+        public string InstanceID {get; set;}
+        private string _fullkeyproxy;
+        public string FullKey { get { return string.Format("{0}-{1}-{2}", TypeID, GroupID, InstanceID); }
+        set { _fullkeyproxy = value; } }
+
+        public void KeyFromEntry(IIndexEntry entry)
+        {
+            TypeID = entry.TypeID;
+            GroupID = entry.GroupID;
+            InstanceID = entry.InstanceID;
+        }  
+        public void KeyFromIndexEntry(IndexEntry entry)
+        {
+            TypeID = entry.TypeID;
+            GroupID = entry.GroupID;
+            InstanceID = entry.InstanceID;
+        }        
+    }
+
+    public class ItemOverride
+    {
+        public string Overridden {get; set;}
+        public SimsID ID {get; set;}
+
+        public override string ToString()
+        {
+            return string.Format("{0} - ID: {1}", Overridden, ID.FullKey);
+        }
+    }
+
+    public class OverrideMatch
+    {
+        public SimsPackage Package {get; set;}
+        public SimsOverrides OverrideReference {get; set;}
+
+        public override string ToString()
+        {
+            return string.Format("{0} replaces something in {1}: {2}", Package.FileName, OverrideReference.FileLocation, OverrideReference.ToString());
+        }
+    }
+
+    public class SpecificOverrides
+    {
+        public List<SimsID> Entries {get; set;} = new();
+        public string Type {get; set;} //hair
+        public string Description {get; set;} //afhaircorntuck
+    }
+
+    public class TempReads
+    {
+        public string file {get; set;}
+        public string description {get; set;}
+    }
+
+    public class SimsCSV
+    {
+        public Guid Identifier {get; set;} = Guid.NewGuid();   
+        public string FileName {get; set;}
+        public string Location {get; set;}
+        private string _filesize;
+        public string FileSize {
+            get { 
+                    if (Directory.Exists(Location))
+                    {
+                        return Utilities.SizeSuffix(Utilities.DirSize(new(Location))); 
+                    } else if (File.Exists(Location)) { 
+                        return Utilities.SizeSuffix(new FileInfo(Location).Length);
+                    } else
+                {
+                    return "N/a";
+                }
+            }
+            set { _filesize = value; }
+        }        
+
+        public FileTypes FileType { get; set; }
+        public DateTime DateCreated {get; set;}
+        public DateTime DateUpdated {get; set;}
+        public string InstalledForVersion {get; set;}
+        public string Source {get; set;}
+        public string Creator {get; set;}
+        public string Notes {get; set;}
+        private bool _isdirectory;
+        public bool IsDirectory {
+            get { return _isdirectory; } 
+            set { _isdirectory = value; 
+            if (value)
+                {
+                    FileType = FileTypes.Folder;
+                }
+            }}        
+        public bool Broken {get; set;}
+        public bool WrongGame {get; set;}
+        public bool Override {get; set;}                
+        public string Overriding {get; set;}
+        public string MatchingMesh {get; set;}
+        public List<string> MatchingRecolors {get; set;} = new();
+        public string Type {get; set;}
+        public string PackageGameVersion {get; set;}
+        public SimsGames Game {get; set;}
+        public bool RootMod {get; set;}
+        public bool OutOfDate {get; set;}
+        public bool GameMod { get; set; }
+        public bool Mesh { get; set; }
+        public bool Recolor { get; set; }
+        public bool Orphan { get; set; }
+        public string ObjectGUID  { get; set; }
+        public bool Favorite {get; set;}
+        public bool IsEnabled { get; set; }
+        public int LoadOrder { get; set; }
+
+        public void GetFromPackage(SimsPackage package)
+        {
+            this.Identifier = package.Identifier; 
+            this.FileName = package.FileName; 
+            this.Location = package.Location; 
+            this.FileSize = package.FileSize; 
+            this.FileType = package.FileType; 
+            this.DateCreated = package.DateCreated; 
+            this.DateUpdated = package.DateUpdated; 
+            this.InstalledForVersion = package.InstalledForVersion; 
+            this.Source = package.Source; 
+            this.Creator = package.Creator; 
+            this.Notes = package.Notes; 
+            this.IsDirectory = package.IsDirectory; 
+            this.Broken = package.Broken; 
+            this.WrongGame = package.WrongGame; 
+            this.Override = package.Override; 
+            if (package.SpecificOverride != null) this.Overriding = package.SpecificOverride.Description; 
+            this.MatchingMesh = package.MatchingMesh; 
+            this.MatchingRecolors = package.MatchingRecolors; 
+            this.Type = package.Type; 
+            this.PackageGameVersion = package.PackageGameVersion; 
+            this.Game = package.Game; 
+            this.RootMod = package.RootMod; 
+            this.OutOfDate = package.OutOfDate; 
+            this.GameMod = package.GameMod; 
+            this.Mesh = package.Mesh; 
+            this.Recolor = package.Recolor; 
+            this.Orphan = package.Orphan; 
+            if (package.ObjectGUID != null) this.ObjectGUID = package.ObjectGUID; 
+            this.Favorite = package.Favorite; 
+            this.IsEnabled = package.IsEnabled; 
+            this.LoadOrder = package.LoadOrder; 
+        }
+    }
+
+    public class PotentialDuplicateSimsPackage
+    {
+        public SimsPackage Package {get; set;}
+        public bool IsDuplicate {get; set;} = true;
+        public bool IsConflict {get; set;}
+        public List<SimsPackage> Conflicts {get; set;} = new();
+    }
 }

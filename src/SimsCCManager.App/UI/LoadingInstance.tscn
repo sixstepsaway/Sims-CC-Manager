@@ -20,7 +20,7 @@ texture = SubResource("GradientTexture2D_6eso3")
 ProgressBar/styles/background = SubResource("StyleBoxFlat_5kt08")
 ProgressBar/styles/fill = SubResource("StyleBoxTexture_gywvd")
 
-[node name="LoadingInstance" type="Control" node_paths=PackedStringArray("progressBar", "ProgressLabel", "background")]
+[node name="LoadingInstance" type="Control" node_paths=PackedStringArray("progressBar", "ProgressLabel", "StageLabel", "background")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -30,6 +30,7 @@ grow_vertical = 2
 script = ExtResource("1_d55ca")
 progressBar = NodePath("ProgressBar/VBoxContainer/HBoxContainer/MarginContainer/ProgressBar")
 ProgressLabel = NodePath("ProgressBar/VBoxContainer/Label")
+StageLabel = NodePath("ProgressBar/VBoxContainer/Label2")
 background = NodePath("Background")
 
 [node name="Background" parent="." instance=ExtResource("1_shmkj")]
@@ -61,9 +62,9 @@ theme_override_constants/margin_bottom = 50
 [node name="VBoxContainer" type="VBoxContainer" parent="ProgressBar"]
 layout_mode = 2
 
-[node name="Label" type="Label" parent="ProgressBar/VBoxContainer"]
+[node name="Label2" type="Label" parent="ProgressBar/VBoxContainer"]
 layout_mode = 2
-text = "Doing something... "
+text = "Stage 1/23"
 horizontal_alignment = 1
 text_overrun_behavior = 5
 
@@ -79,3 +80,9 @@ size_flags_horizontal = 3
 layout_mode = 2
 size_flags_horizontal = 3
 theme = SubResource("Theme_jvlka")
+
+[node name="Label" type="Label" parent="ProgressBar/VBoxContainer"]
+layout_mode = 2
+text = "Doing something... "
+horizontal_alignment = 1
+text_overrun_behavior = 5

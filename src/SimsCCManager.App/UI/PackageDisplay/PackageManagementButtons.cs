@@ -18,6 +18,8 @@ public partial class PackageManagementButtons : MarginContainer
     TopbarButton ManageCategories;
     [Export]
     TopbarButton EditExes;
+    [Export]
+    TopbarButton EditLoadOrder;
 
     public delegate void TopBarButtonEvent(int button);
     public TopBarButtonEvent TopBarButtonPressed;
@@ -35,6 +37,7 @@ public partial class PackageManagementButtons : MarginContainer
         ExportProfile.ButtonClicked += () => ButtonPressed(4);
         ManageCategories.ButtonClicked += () => ButtonPressed(5);
         EditExes.ButtonClicked += () => ButtonPressed(6);
+        EditLoadOrder.ButtonClicked += () => ButtonPressed(7);
     }
 
     private void ButtonPressed(int i)

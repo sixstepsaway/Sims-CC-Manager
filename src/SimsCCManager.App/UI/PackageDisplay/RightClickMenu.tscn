@@ -11,7 +11,7 @@ border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
 
-[node name="RightClickMenu" type="Node2D" node_paths=PackedStringArray("MainContainer", "bgcolor", "bordercolor", "CategoryOptions", "EditDetails", "Categorylist", "MakeRoot", "Fave", "WrongGame", "UpdatedOOD", "Details", "FFromF", "Categories", "Rename", "Creator", "Source", "Move", "Delete", "Notes", "Type")]
+[node name="RightClickMenu" type="Node2D" node_paths=PackedStringArray("MainContainer", "bgcolor", "bordercolor", "CategoryOptions", "EditDetails", "Categorylist", "MakeRoot", "Fave", "WrongGame", "UpdatedOOD", "Details", "FFromF", "CatFromFolder", "Categories", "Rename", "Creator", "Source", "Move", "Delete", "Notes", "Type")]
 script = ExtResource("1_71ntt")
 MainContainer = NodePath("MarginContainer")
 CategoryOption = ExtResource("2_bu7fk")
@@ -26,6 +26,7 @@ WrongGame = NodePath("MarginContainer/MarginContainer/VBoxContainer/WrongGame")
 UpdatedOOD = NodePath("MarginContainer/MarginContainer/VBoxContainer/UpdatedOOD")
 Details = NodePath("MarginContainer/MarginContainer/VBoxContainer/Details")
 FFromF = NodePath("MarginContainer/MarginContainer/VBoxContainer/FolderFromFiles")
+CatFromFolder = NodePath("MarginContainer/MarginContainer/VBoxContainer/CatFromFolder")
 Categories = NodePath("MarginContainer/MarginContainer/VBoxContainer/Categories")
 Rename = NodePath("EditDetails_Options/MarginContainer/VBoxContainer/Rename")
 Creator = NodePath("EditDetails_Options/MarginContainer/VBoxContainer/Creator")
@@ -81,6 +82,9 @@ layout_mode = 2
 layout_mode = 2
 
 [node name="FolderFromFiles" parent="MarginContainer/MarginContainer/VBoxContainer" instance=ExtResource("2_8xt3o")]
+layout_mode = 2
+
+[node name="CatFromFolder" parent="MarginContainer/MarginContainer/VBoxContainer" instance=ExtResource("2_8xt3o")]
 layout_mode = 2
 
 [node name="Categories" parent="MarginContainer/MarginContainer/VBoxContainer" instance=ExtResource("2_8xt3o")]

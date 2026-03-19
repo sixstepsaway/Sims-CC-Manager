@@ -13,10 +13,12 @@ public partial class SplashScreen : MarginContainer
 
     public void IncrementProgressBar(int ByHowMuch)
     {
-        SplashProgressBar.Value += ByHowMuch;
-        if (SplashProgressBar.Value == SplashProgressBar.MaxValue)
-        {
-            SplashScreenLoadingFinished.Invoke();
+        if (IsInstanceValid(SplashProgressBar)) {
+            SplashProgressBar.Value += ByHowMuch;
+            if (SplashProgressBar.Value == SplashProgressBar.MaxValue)
+            {
+                SplashScreenLoadingFinished.Invoke();
+            }
         }
     }
 

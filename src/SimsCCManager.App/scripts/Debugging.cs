@@ -16,7 +16,7 @@ namespace SimsCCManager.Debugging
         /// <summary>
         /// Synchronous log file implementation. 
         /// </summary>
-        
+
         private static string debuglog = Path.Combine(GlobalVariables.LogFolder, "debug.log");
         static ReaderWriterLock locker = new ReaderWriterLock();
         static bool initialized = false;
@@ -27,100 +27,139 @@ namespace SimsCCManager.Debugging
             JustWrite(statement);
         }
 
-        public static void WriteDebugLog(string statement, [CallerLineNumber] int lineNumber = 0, [CallerFilePath] string filePath = "", int alertLevel = 0){
+        public static void WriteDebugLog(string statement, [CallerLineNumber] int lineNumber = 0, [CallerFilePath] string filePath = "", int alertLevel = 0)
+        {
             if (!Directory.Exists(GlobalVariables.LogFolder)) Directory.CreateDirectory(GlobalVariables.LogFolder);
-            
-                string filepath = "";
-                if (filePath != "") {
-                    filepath = new FileInfo(filePath).Name;
-                } else {
-                    filepath = "unknown";
-                }        
-                if (File.Exists(debuglog)){
-                    if (initialized)
+
+            string filepath = "";
+            if (filePath != "")
+            {
+                filepath = new FileInfo(filePath).Name;
+            }
+            else
+            {
+                filepath = "unknown";
+            }
+            if (File.Exists(debuglog))
+            {
+                if (initialized)
+                {
+                    FileInfo log = new(debuglog);
+                    double MB = log.Length / (1024.0 * 1024.0);
+                    if (MB > 100)
+                    {
+                        try
+                        {
+                            locker.AcquireWriterLock(int.MaxValue);
+                            string lastwritetime = File.GetLastWriteTimeUtc(debuglog).ToString("yyyy-dd-MM hh_mm_ss");
+                            string olddebuglog = Path.Combine(GlobalVariables.LogFolder, string.Format("{0}_{1}.log", lastwritetime, "DebugLog"));
+                            if (File.Exists(debuglog)) File.Move(debuglog, olddebuglog);
+                        }
+                        finally
+                        {
+                            locker.ReleaseWriterLock();
+                        }
+                        CreateLog(statement, lineNumber.ToString(), filepath, true);
+                        
+                    }
+                    else
                     {
                         WriteLog(statement, lineNumber.ToString(), filepath);
-                    } else
-                    {
-                        initialized = true;
-                        string lastwritetime = File.GetLastWriteTimeUtc(debuglog).ToString("yyyy-dd-MM hh_mm_ss");
-                        string olddebuglog = Path.Combine(GlobalVariables.LogFolder, string.Format("{0}_{1}.log", lastwritetime, "DebugLog"));
-                        File.Move(debuglog, olddebuglog);
-                        CreateLog(statement, lineNumber.ToString(), filepath);
-                    }            
-                } else {    
-                    initialized = true;
-                    CreateLog(statement, lineNumber.ToString(), filepath);            
+                    }
                 }
-
-                if (alertLevel == 3)
+                else
                 {
-                    WriteExceptionReport(new StringBuilder().Append(statement));
-                }           
-            
+                    initialized = true;
+                    string lastwritetime = File.GetLastWriteTimeUtc(debuglog).ToString("yyyy-dd-MM hh_mm_ss");
+                    string olddebuglog = Path.Combine(GlobalVariables.LogFolder, string.Format("{0}_{1}.log", lastwritetime, "DebugLog"));
+                    File.Move(debuglog, olddebuglog);
+                    CreateLog(statement, lineNumber.ToString(), filepath);
+                }
+            }
+            else
+            {
+                initialized = true;
+                CreateLog(statement, lineNumber.ToString(), filepath);
+            }
+
+            if (alertLevel == 3)
+            {
+                WriteExceptionReport(new StringBuilder().Append(statement));
+            }
+
         }
 
         private static void WriteLog(string statement, string lineNumber, string filepath)
-        {   string time = DateTime.Now.ToString("h:mm:ss tt");
+        {
+            string time = DateTime.Now.ToString("h:mm:ss tt");
             statement = string.Format("[L{0} | {1} {2}]: {3}", lineNumber, filepath, time, statement);
-                    
+
             try
-                {
-                    locker.AcquireWriterLock(int.MaxValue); 
-                    StreamWriter addToInternalLog = new StreamWriter (debuglog, append: true);
-                    addToInternalLog.WriteLine(statement);
-                    addToInternalLog.Close();
-                }
-                finally
-                {
-                    locker.ReleaseWriterLock();
-                } 
-                if (GlobalVariables.DebugToConsole) GlobalVariables.mainWindow.WriteGDPrint(statement);
+            {
+                locker.AcquireWriterLock(int.MaxValue);
+                StreamWriter addToInternalLog = new StreamWriter(debuglog, append: true);
+                addToInternalLog.WriteLine(statement);
+                addToInternalLog.Close();
+            }
+            finally
+            {
+                locker.ReleaseWriterLock();
+            }
+            if (GlobalVariables.DebugToConsole) GlobalVariables.mainWindow.WriteGDPrint(statement);
         }
 
         private static void JustWrite(string statement)
-        {           
+        {
             try
-                {
-                    locker.AcquireWriterLock(int.MaxValue); 
-                    StreamWriter addToInternalLog = new StreamWriter (debuglog, append: true);
-                    addToInternalLog.WriteLine(statement);
-                    addToInternalLog.Close();
-                }
-                finally
-                {
-                    locker.ReleaseWriterLock();
-                } 
-                if (GlobalVariables.DebugToConsole) GlobalVariables.mainWindow.WriteGDPrint(statement);
+            {
+                locker.AcquireWriterLock(int.MaxValue);
+                StreamWriter addToInternalLog = new StreamWriter(debuglog, append: true);
+                addToInternalLog.WriteLine(statement);
+                addToInternalLog.Close();
+            }
+            finally
+            {
+                locker.ReleaseWriterLock();
+            }
+            if (GlobalVariables.DebugToConsole) GlobalVariables.mainWindow.WriteGDPrint(statement);
         }
 
-        private static void CreateLog(string statement, string lineNumber, string filepath)
+        private static void CreateLog(string statement, string lineNumber, string filepath, bool splitLog = false)
         {
-    
+
             string time = DateTime.Now.ToString("h:mm:ss tt");
             statement = string.Format("[L{0} | {1} {2}]: {3}", lineNumber, filepath, time, statement);
-                    
+
             try
+            {
+                new FileInfo(debuglog).Directory.Create();
+                locker.AcquireWriterLock(int.MaxValue);
+                StreamWriter addToInternalLog = new StreamWriter(debuglog, append: false);
+                if (splitLog)
                 {
-                    new FileInfo(debuglog).Directory.Create();
-                    locker.AcquireWriterLock(int.MaxValue); 
-                    StreamWriter addToInternalLog = new StreamWriter (debuglog, append: false);
+                    addToInternalLog.WriteLine(string.Format("[L{0} | {1} {2}]: Continuing debug log from previous file.", lineNumber, filepath, time));
+                }
+                else
+                {
                     addToInternalLog.WriteLine(string.Format("[L{0} | {1} {2}]: Initializing debug log file.", lineNumber, filepath, time));
-                    addToInternalLog.WriteLine(statement);
-                    addToInternalLog.Close();
                 }
-                finally
-                {
-                    locker.ReleaseWriterLock();
-                }
-                if (GlobalVariables.DebugToConsole) GlobalVariables.mainWindow.WriteGDPrint(statement);
+                addToInternalLog.WriteLine(statement);
+                addToInternalLog.Close();
+            }
+            finally
+            {
+                locker.ReleaseWriterLock();
+            }
+            if (GlobalVariables.DebugToConsole) GlobalVariables.mainWindow.WriteGDPrint(statement);
         }
-    
-        public static void WriteExceptionReport(StringBuilder statement){
+
+        public static void WriteExceptionReport(StringBuilder statement)
+        {
             string exceptionname = string.Format("LAST_EXCEPTION_{0}.log", DateTime.Now.ToString());
             string exceptionfile = Path.Combine(GlobalVariables.LogFolder, exceptionname);
 
-            using (StreamWriter streamWriter = new(exceptionfile)){                
+            using (StreamWriter streamWriter = new(exceptionfile))
+            {
                 streamWriter.Write(statement);
             }
         }

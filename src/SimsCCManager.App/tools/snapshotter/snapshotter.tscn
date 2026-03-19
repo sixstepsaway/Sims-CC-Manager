@@ -43,10 +43,6 @@ uv1_scale = Vector3(5, 1.5, 5)
 material = SubResource("StandardMaterial3D_o1okv")
 size = Vector3(0.255, 0.125, 0.385)
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_5rvtu"]
-albedo_color = Color(0.75, 0.75, 0.75, 1)
-roughness = 0.8
-
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_tjpfh"]
 albedo_color = Color(0.75, 0.75, 0.75, 1)
 roughness = 0.8
@@ -63,14 +59,25 @@ size = Vector3(0.255, 0.125, 0.385)
 albedo_color = Color(0.75, 0.75, 0.75, 1)
 roughness = 0.8
 
-[node name="Snapshotter" type="Node3D" node_paths=PackedStringArray("Box", "AabBox", "Af", "Am", "Pu", "Cu")]
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_v0l6e"]
+
+[node name="Snapshotter" type="Node3D" node_paths=PackedStringArray("Box", "AabBox", "S2Af", "S2Am", "S2Pu", "S2Cu", "CameraOuter", "CameraInner", "Camera", "Forward", "Backward", "Left", "Right", "Up", "Down")]
 script = ExtResource("1_pa3fr")
 Box = NodePath("Node3D/Box")
 AabBox = NodePath("Node3D/AabSize")
-Af = NodePath("Sims2/Af")
-Am = NodePath("Sims2/Am")
-Pu = NodePath("Sims2/cu")
-Cu = NodePath("Sims2/pu")
+S2Af = NodePath("Sims2/Af")
+S2Am = NodePath("Sims2/Am")
+S2Pu = NodePath("Sims2/pu")
+S2Cu = NodePath("Sims2/cu")
+CameraOuter = NodePath("Node3D/Outer")
+CameraInner = NodePath("Node3D/Outer/Inner")
+Camera = NodePath("Node3D/Outer/Inner/Camera3D")
+Forward = NodePath("Forward")
+Backward = NodePath("Backward")
+Left = NodePath("Left")
+Right = NodePath("Right")
+Up = NodePath("Up")
+Down = NodePath("Down")
 
 [node name="Node3D" type="Node3D" parent="."]
 
@@ -86,8 +93,19 @@ visible = false
 mesh = SubResource("BoxMesh_1k2ak")
 skeleton = NodePath("../..")
 
-[node name="Camera3D" type="Camera3D" parent="Node3D"]
+[node name="Outer" type="Node3D" parent="Node3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.671, 0)
+
+[node name="Inner" type="Node3D" parent="Node3D/Outer"]
+transform = Transform3D(1, 0, 0, 0, 0.94000876, 0.34115067, 0, -0.34115067, 0.94000876, 0, 0, 0)
+
+[node name="Camera3D" type="Camera3D" parent="Node3D/Outer/Inner"]
+transform = Transform3D(1, 0, 0, 0, 0.9999999, 2.9802322e-08, 0, -2.9802322e-08, 0.9999999, 0, -0.65427536, 5.891983)
+fov = 40.0
+
+[node name="Camera3D2" type="Camera3D" parent="Node3D"]
 transform = Transform3D(1, 0, 0, 0, 0.938294, 0.34583867, 0, -0.34583867, 0.938294, 0, 3.48105, 4.3591604)
+visible = false
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="Node3D"]
 environment = SubResource("Environment_mi4d4")
@@ -114,24 +132,6 @@ skeleton = NodePath("../..")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.942165, 0)
 mesh = SubResource("BoxMesh_ud3sc")
 skeleton = NodePath("../..")
-
-[node name="tf" type="MeshInstance3D" parent="Sims2"]
-mesh = ExtResource("2_0ckba")
-skeleton = NodePath("../..")
-surface_material_override/0 = SubResource("StandardMaterial3D_0ckba")
-surface_material_override/1 = SubResource("StandardMaterial3D_5rvtu")
-
-[node name="Censor2" type="Node3D" parent="Sims2/tf"]
-
-[node name="MeshInstance3D" type="MeshInstance3D" parent="Sims2/tf/Censor2"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.3650873, 0)
-mesh = SubResource("BoxMesh_ud3sc")
-skeleton = NodePath("../../../Af")
-
-[node name="MeshInstance3D2" type="MeshInstance3D" parent="Sims2/tf/Censor2"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.942165, 0)
-mesh = SubResource("BoxMesh_ud3sc")
-skeleton = NodePath("../../../Af")
 
 [node name="Am" type="MeshInstance3D" parent="Sims2"]
 mesh = ExtResource("3_v0l6e")
@@ -181,3 +181,50 @@ skeleton = NodePath("../../../Af")
 transform = Transform3D(0.5221923, 0, 0, 0, 1, 0, 0, 0, 0.4400254, 0.014562383, 0.32978278, 0)
 mesh = SubResource("BoxMesh_brbbg")
 skeleton = NodePath("../../../Af")
+
+[node name="Forward" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 2.9802322e-08, 0, -2.9802322e-08, 1, 0, 0, -4.6340456)
+
+[node name="Up" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 2.9802322e-08, 0, -2.9802322e-08, 1, 0, 4.645714, 0)
+
+[node name="Down" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 2.9802322e-08, 0, -2.9802322e-08, 1, 0, -5.110947, 0)
+
+[node name="Backward" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 2.9802322e-08, 0, -2.9802322e-08, 1, 0, 0, 4.931706)
+
+[node name="Left" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 2.9802322e-08, 0, -2.9802322e-08, 1, -6.5542383, 0, -5.9604645e-08)
+
+[node name="Right" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 2.9802322e-08, 0, -2.9802322e-08, 1, 4.573397, 0, -5.9604645e-08)
+
+[node name="Control" type="Control" parent="."]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Button" type="Button" parent="Control"]
+z_index = 15
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/normal = SubResource("StyleBoxEmpty_v0l6e")
+theme_override_styles/normal_mirrored = SubResource("StyleBoxEmpty_v0l6e")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_v0l6e")
+theme_override_styles/pressed_mirrored = SubResource("StyleBoxEmpty_v0l6e")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_v0l6e")
+theme_override_styles/hover_mirrored = SubResource("StyleBoxEmpty_v0l6e")
+theme_override_styles/hover_pressed = SubResource("StyleBoxEmpty_v0l6e")
+theme_override_styles/hover_pressed_mirrored = SubResource("StyleBoxEmpty_v0l6e")
+theme_override_styles/disabled = SubResource("StyleBoxEmpty_v0l6e")
+theme_override_styles/disabled_mirrored = SubResource("StyleBoxEmpty_v0l6e")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_v0l6e")

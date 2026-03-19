@@ -28,6 +28,8 @@ public partial class MainSettings : MarginContainer
     [Export]
     CustomCheckButton ShowTaliCheck;
     [Export]
+    CustomCheckButton CensorSkinsCheck;
+    [Export]
     Button CloseSettingsButton;
     [Export]
     TopbarButton AddTheme;
@@ -48,6 +50,7 @@ public partial class MainSettings : MarginContainer
         LoadLatestCheck.CheckToggled += (l) => LoadLatestToggled(l);
         ShowTaliCheck.CheckToggled += (t) => TaliToggled(t);
         PortableModeCheck.CheckToggled += (p) => PortableChecked(p);
+        CensorSkinsCheck.CheckToggled += (h) => CensorChecked(h);
         ThemeOptions.AddItem(GlobalVariables.LoadedSettings.LoadedTheme);
         foreach (string th in GlobalVariables.LoadedSettings.ThemeOptions)
         {
@@ -65,6 +68,13 @@ public partial class MainSettings : MarginContainer
 
         UpdateTheme();
     }
+
+    private void CensorChecked(bool h)
+    {        
+        GlobalVariables.LoadedSettings.CensorSkins = h;
+        GlobalVariables.LoadedSettings.SaveSettings();
+    }
+
 
     private void PortableChecked(bool p)
     {

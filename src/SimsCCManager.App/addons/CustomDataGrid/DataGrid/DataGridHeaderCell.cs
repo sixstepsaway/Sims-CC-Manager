@@ -108,16 +108,16 @@ ClickHoldButton.ButtonDown += () => HeaderClickInteraction(true);
 
     public void SetStartingSize(){
 		if (StartingWidth == 0){
-if (!string.IsNullOrWhiteSpace(LabelText) && !Blank){
+			if (!string.IsNullOrWhiteSpace(LabelText) && !Blank){
 				int x = (LabelText.Length * FontSize) + 5;
-CellSize = new(x, Size.Y);
+				CellSize = new(x, Size.Y);
 				SetSize(CellSize);
 			} else {
-CellSize = new(30, Size.Y);
+				CellSize = new(30, Size.Y);
 				SetSize(CellSize);
 			}
 		} else {
-CellSize = new(StartingWidth, Size.Y);
+			CellSize = new(StartingWidth, Size.Y);
 			SetSize(CellSize);
 		}
 		

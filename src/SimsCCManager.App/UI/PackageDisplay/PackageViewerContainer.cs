@@ -8,6 +8,7 @@ using SimsCCManager.SettingsSystem;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -28,7 +29,13 @@ public partial class PackageViewerContainer : MarginContainer
     [Export]
     SubViewport Subviewport;
     [Export]
+    SubViewportContainer SubviewportContainer;
+    [Export]
     MarginContainer EnclosingBox;
+    [Export]
+    MarginContainer OverrideBox;
+    [Export]
+    TextureRect OverrideImage;
     [Export]
     HBoxContainer ImageControls;
     [Export]
@@ -67,6 +74,22 @@ public partial class PackageViewerContainer : MarginContainer
         get { return _bkhovered; }
         set { _bkhovered = value; 
         if (value) ButtonBackColor.Color = ButtonHoverColor;  else ButtonBackColor.Color = ButtonColor; }
+    }
+
+    private bool _showoverridethumb;
+    public bool ShowOverrideThumb
+    {
+        get { return _showoverridethumb; }
+        set { _showoverridethumb = value; 
+        OverrideBox.Visible = value; }
+    }
+
+    private Texture2D _overridetexture;
+    public Texture2D OverrideTexture
+    {
+        get { return _overridetexture; }
+        set { _overridetexture = value; 
+        OverrideImage.Texture = value; }
     }
 
 
@@ -185,7 +208,11 @@ public partial class PackageViewerContainer : MarginContainer
             pvi.QueueFree();
         }
         PVIs.Clear();
-        if (SnapshotterActive)currSnapshotter?.QueueFree();
+        if (SnapshotterActive) {
+            //currSnapshotter?.DisconnectContainer();
+            Subviewport.RemoveChild(currSnapshotter);
+            currSnapshotter?.QueueFree();
+        }
         SnapshotterActive = false;
         Images.Clear();
     }
@@ -195,12 +222,110 @@ public partial class PackageViewerContainer : MarginContainer
 
     private void DisplayPackage()
     {
+        ShowOverrideThumb = true;
         ClearContents();
         ImageContainer.CustomMinimumSize = new((Size.X / 2) - 10, 0);
         AddPVI("File Name:", package.FileName);
         AddPVI("File Size:", package.FileSize);
         AddPVI("Directory:", package.IsDirectory.ToString());
         AddPVI("Type:", package.Type.ToString());
+        if (package.Override) AddPVI("Override:", "True");
+        if (package.Override && package.OverrideReference.Count > 0) {
+            if (package.SpecificOverride != null)
+            {
+                AddPVI("Overriding:", package.SpecificOverride.Description);
+
+                string filename = package.SpecificOverride.Description;
+                if (filename.Contains("CASIE"))
+                {
+                    filename = filename.Split("_")[1];
+                    filename = filename.Split("_")[0];                    
+                } else
+                {
+                    filename = filename.Split("_")[0];                    
+                }
+                if (filename.StartsWith("tm") ||filename.StartsWith("tf") || filename.StartsWith("af") || filename.StartsWith("am") || filename.StartsWith("ef") || filename.StartsWith("em")) filename = filename[1..];
+
+                filename = filename[2..];
+
+                //filename = Path.Combine(GlobalVariables.mainWindow.Sims2OverrideImagesDirectory, filename);
+
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Checking for images containing {0}", filename));
+                                
+                if (GlobalVariables.Sims2OverrideImages.Any(x => x.Contains(filename)))
+                {
+                    ShowOverrideThumb = true;
+                    string image = "";
+                    image = GlobalVariables.Sims2OverrideImages.First(x => x.Contains(filename));
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Found image containing {0}: {1}", filename, image));
+                    
+                    //Image newimage = Image.LoadFromFile(image);
+                    OverrideTexture = (Texture2D)GD.Load(image);
+                } else
+                {                                      
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Failed to find image containing {0}", filename));
+                }
+                
+            } else
+            {
+                StringBuilder sb = new(); 
+                foreach (SimsOverrides ord in package.OverrideReference)
+                {
+                    if (ord.FileNameOverrides.Count > 0)
+                    {
+                        foreach (ItemOverride io in ord.FileNameOverrides)
+                        {
+                            sb.AppendLine(string.Format("FileName Override: {0}", io.ToString()));
+                        }
+                    }
+                    if (ord.TextureNameOverrides.Count > 0)
+                    {
+                        foreach (ItemOverride io in ord.TextureNameOverrides)
+                        {
+                            sb.AppendLine(string.Format("TextureName Override: {0}", io.ToString()));
+                        }
+                    }
+                    if (ord.GuidOverrides.Count > 0)
+                    {
+                        foreach (ItemOverride io in ord.GuidOverrides)
+                        {
+                            sb.AppendLine(string.Format("Guid Override: {0}", io.ToString()));
+                        }
+                    }
+                    if (ord.References.Count > 0)
+                    {
+                        foreach (ItemOverride io in ord.References)
+                        {
+                            sb.AppendLine(string.Format("Reference Override: {0}", io.ToString()));
+                        }
+                    }
+                    if (ord.Entries.Count > 0)
+                    {
+                        foreach (SimsID id in ord.Entries)
+                        {
+                            sb.AppendLine(string.Format("Entry Override: {0}", id.FullKey));
+                        }
+                    }                    
+                }
+                AddPVI("Overriding:", sb.ToString().Replace("/n/n", "/n"), true);
+            }
+            
+        }
+        
+        switch (package.Game)
+        {
+            case SimsGames.Sims2: 
+                if (package.Sims2Data != null)
+                {
+                    if (package.Sims2Data.Title != null) AddPVI("Title:", package.Sims2Data.Title);
+                    if (package.Sims2Data.Description != null) AddPVI("Description:", package.Sims2Data.Description, true);
+                }
+            break;
+        }
+        
+        
+        
+        
         if (package.Creator != null) AddPVI("Creator:", package.Creator.ToString());
         if (package.Source != null) AddPVI("Source:", package.Source.ToString());
         
@@ -209,7 +334,7 @@ public partial class PackageViewerContainer : MarginContainer
         
         AddPVI("Category:", package.CategoryName.ToString());
         AddPVI("Root Mod:", package.RootMod.ToString());
-        AddPVI("Added:", package.DateAdded.ToShortDateString());
+        AddPVI("Created:", package.DateCreated.ToShortDateString());
         AddPVI("Modified:", package.DateUpdated.ToShortDateString());
         AddPVI("For Game:", package.Game.ToString()); 
         AddPVI("Mesh:", package.Mesh.ToString());     
@@ -261,6 +386,7 @@ public partial class PackageViewerContainer : MarginContainer
                 SubviewportTexture.Visible = true;
                 currSnapshotter = SnapshotterPS.Instantiate() as Snapshotter;
                 currSnapshotter.Packages = packageDisplay.ThisInstance.Files.OfType<SimsPackage>().ToList();
+                currSnapshotter.MyContainer = SubviewportContainer;
                 SnapshotterActive = true; 
                 Subviewport.AddChild(currSnapshotter);
                 currSnapshotter.DisplaySkin(package);                
@@ -271,16 +397,29 @@ public partial class PackageViewerContainer : MarginContainer
                 SubviewportTexture.Visible = true;
                 currSnapshotter = SnapshotterPS.Instantiate() as Snapshotter;
                 currSnapshotter.Packages = packageDisplay.ThisInstance.Files.OfType<SimsPackage>().ToList();
+                currSnapshotter.MyContainer = SubviewportContainer;
                 SnapshotterActive = true; 
                 Subviewport.AddChild(currSnapshotter);
                 currSnapshotter.DisplayEyes(package);  
-            } else if ((package.Mesh && package.MatchingRecolors.Count > 0)|| !string.IsNullOrEmpty(package.MatchingMesh))
+            } else if (package.Type.Contains("Makeup"))
+            {
+                ImageContainer.Visible = true;
+                ImageTextureRect.Visible = false;
+                SubviewportTexture.Visible = true;
+                currSnapshotter = SnapshotterPS.Instantiate() as Snapshotter;
+                currSnapshotter.Packages = packageDisplay.ThisInstance.Files.OfType<SimsPackage>().ToList();
+                currSnapshotter.MyContainer = SubviewportContainer;
+                SnapshotterActive = true; 
+                Subviewport.AddChild(currSnapshotter);
+                currSnapshotter.DisplayOverlay(package);  
+            } else if ((package.Mesh && (package.MatchingRecolors.Count > 0 || package.Recolor))|| !string.IsNullOrEmpty(package.MatchingMesh))
             {   
                 ImageContainer.Visible = true;
                 ImageTextureRect.Visible = false;
                 SubviewportTexture.Visible = true;
                 currSnapshotter = SnapshotterPS.Instantiate() as Snapshotter;
                 currSnapshotter.Packages = packageDisplay.ThisInstance.Files.OfType<SimsPackage>().ToList();
+                currSnapshotter.MyContainer = SubviewportContainer;
                 SnapshotterActive = true; 
                 Subviewport.AddChild(currSnapshotter);
                 bool done = currSnapshotter.BuildSims2Mesh(package);

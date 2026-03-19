@@ -4,6 +4,7 @@ using System;
 
 public partial class SettingsAndHelpControls : MarginContainer
 {
+    public PackageDisplay packageDisplay;
     [Export]
     TopbarButton Settings;
     [Export]
@@ -22,7 +23,7 @@ public partial class SettingsAndHelpControls : MarginContainer
         get {return _errorsdetected;}
         set {_errorsdetected = value;
         ErrorsDetectedCircle.Visible = value;
-        if (value) ViewErrors.TooltipText = string.Format("{0} errors detected", ErrorCount); else ViewErrors.TooltipText = "No errors found."; }
+        if (value) ViewErrors.ToolTipText = string.Format("{0} errors detected", ErrorCount); else ViewErrors.ToolTipText = "No errors found."; }
     }
 
 
@@ -46,13 +47,19 @@ public partial class SettingsAndHelpControls : MarginContainer
                 ReturnToMainMenu();
             break;
             case 2: 
-                //open errors screen
+                ShowErrorsScreen();
             break;
             case 3: 
                 //open help screen
             break;
         }
     }
+
+    private void ShowErrorsScreen()
+    {
+        packageDisplay.ShowErrorsScreen();
+    }
+
 
     private void ReturnToMainMenu()
     {

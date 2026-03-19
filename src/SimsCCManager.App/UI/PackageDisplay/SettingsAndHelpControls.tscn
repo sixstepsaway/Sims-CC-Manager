@@ -54,7 +54,6 @@ layout_mode = 2
 custom_minimum_size = Vector2(45, 45)
 layout_mode = 2
 Texture = ExtResource("5_5r2bt")
-ToolTipText = "View Errors"
 
 [node name="ErrorsDetected" type="MarginContainer" parent="HBoxContainer/MarginContainer"]
 layout_mode = 2

@@ -14,6 +14,7 @@ using System.Runtime.ExceptionServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using System.Xml;
 using System.Xml.Linq;
@@ -664,6 +665,7 @@ namespace SimsCCManager.PackageReaders
     }
     public class SimsPackageReader : IDisposable
     {
+        public static bool DebugPackageReader = true;
         public ISimsData SimsData
         {
             set
@@ -769,18 +771,20 @@ namespace SimsCCManager.PackageReaders
         uint IndexMajorVersion;
         uint IndexMinorVersion;
 
+        public bool ReadingSingle = true;
+
         public void ReadPackage(string file)
         {
             fileinfo = new(file);
             msPackage = ByteReaders.ReadBytesToFile(file);
             packagereader = new BinaryReader(msPackage);
             DBPF = Encoding.ASCII.GetString(packagereader.ReadBytes(4));
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Package {0} test string: {1}", fileinfo.Name, DBPF));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Package {0} test string: {1}", fileinfo.Name, DBPF));
             if (IsBroken) return;
 
             MajorVersion = packagereader.ReadUInt32();
             MinorVersion = packagereader.ReadUInt32();
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("File {0} is for game {1}", fileinfo.Name, PackageGame.ToString()));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("File {0} is for game {1}", fileinfo.Name, PackageGame.ToString()));
 
             switch (PackageGame)
             {
@@ -826,6 +830,7 @@ namespace SimsCCManager.PackageReaders
         List<IndexEntry> IndexData = new();
 
 
+
         public void ReadSims2Package()
         {
             if (MinorVersion == 2) IndexMajorLocation = 24;
@@ -855,7 +860,7 @@ namespace SimsCCManager.PackageReaders
             if (IndexCount == 0)
             {
                 IsBroken = true;
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("File {0} has 0 index entries. Broken. Returning.", fileinfo.Name));
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("File {0} has 0 index entries. Broken. Returning.", fileinfo.Name));
                 return;
             }
 
@@ -892,7 +897,7 @@ namespace SimsCCManager.PackageReaders
 
                 IndexData.Add(holderEntry);
 
-                //if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0}", holderEntry.ToString()));
+                //if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("{0}", holderEntry.ToString()));
 
             }
 
@@ -941,7 +946,7 @@ namespace SimsCCManager.PackageReaders
 
             ListEntries(IndexData);
 
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Adding index entries to SimsData for {0}", fileinfo.Name));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Adding index entries to SimsData for {0}", fileinfo.Name));
 
             SimsData.IndexEntries = IndexData;
             SimsData.DictionaryEntries();
@@ -949,7 +954,7 @@ namespace SimsCCManager.PackageReaders
             Sims2Data.GetPackageType();
         
 
-            if (!string.IsNullOrEmpty(SimsData.AltType)) if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Package {0} has entries: {1}. Its alt type is: {2}", fileinfo.Name, Sims2Data.WriteEntryList(), SimsData.AltType));
+            if (!string.IsNullOrEmpty(SimsData.AltType)) if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Package {0} has entries: {1}. Its alt type is: {2}", fileinfo.Name, Sims2Data.WriteEntryList(), SimsData.AltType));
 
             
 
@@ -958,13 +963,13 @@ namespace SimsCCManager.PackageReaders
                 int c = 0;
                 foreach (IndexEntry entry in IndexData.Where(x => x.EntryType == "CTSS"))
                 {
-                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Reading {0} CTSS #{1}", fileinfo.Name, c));
+                    if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Reading {0} CTSS #{1}", fileinfo.Name, c));
                     try
                     {
                         S2ReadCTSS(entry);
                     } catch (Exception e)
                     {
-                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Unable to read CTSS #{0} for {1}: {2}", c, fileinfo.Name, e.StackTrace));                    
+                        if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Unable to read CTSS #{0} for {1}: {2}", c, fileinfo.Name, e.StackTrace));                    
                     }                    
                     c++;
                 }
@@ -974,13 +979,13 @@ namespace SimsCCManager.PackageReaders
                 int c = 0;
                 foreach (IndexEntry entry in IndexData.Where(x => x.EntryType == "XOBJ"))
                 {
-                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Reading {0} XOBJ #{1}", fileinfo.Name, c));
+                    if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Reading {0} XOBJ #{1}", fileinfo.Name, c));
                     try
                     {
                         S2ReadXOBJ(entry);
                     } catch (Exception e)
                     {
-                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Unable to read XOBJ #{0} for {1}: {2}", c, fileinfo.Name, e.StackTrace));                    
+                        if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Unable to read XOBJ #{0} for {1}: {2}", c, fileinfo.Name, e.StackTrace));                    
                     }
                     
                     c++;
@@ -992,30 +997,30 @@ namespace SimsCCManager.PackageReaders
                 int c = 0;
                 foreach (IndexEntry entry in IndexData.Where(x => x.EntryType == "OBJD"))
                 {
-                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Reading {0} OBJD #{1}", fileinfo.Name, c));
+                    if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Reading {0} OBJD #{1}", fileinfo.Name, c));
                     try
                     {
                         S2ReadOBJD(entry);
                     } catch (Exception e)
                     {
-                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Unable to read OBJD #{0} for {1}: {2}", c, fileinfo.Name, e.StackTrace));                    
+                        if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Unable to read OBJD #{0} for {1}: {2}", c, fileinfo.Name, e.StackTrace));                    
                     }
                     
                     c++;
                 }
             }
-            if (IndexData.Exists(x => x.EntryType == "GMDC"))
+            if (IndexData.Exists(x => x.EntryType == "GMDC") && ReadingSingle)
             {
                 int c = 0;
                 foreach (IndexEntry entry in IndexData.Where(x => x.EntryType == "GMDC"))
                 {
-                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Reading {0} GMDC #{1}", fileinfo.Name, c));
+                    if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Reading {0} GMDC #{1}", fileinfo.Name, c));
                     try
                     {
                         S2ReadGMDC(entry);
                     } catch (Exception e)
                     {
-                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Unable to read GMDC #{0} for {1}: {2}", c, fileinfo.Name, e.StackTrace));                    
+                        if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Unable to read GMDC #{0} for {1}: {2}", c, fileinfo.Name, e.StackTrace));                    
                     }
                     
                     c++;
@@ -1032,12 +1037,12 @@ namespace SimsCCManager.PackageReaders
                         S2ReadMMAT(entry);
                     } catch (Exception e)
                     {
-                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Unable to read MMAT #{0} for {1}: {2}", c, fileinfo.Name, e.StackTrace));                                     
+                        if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Unable to read MMAT #{0} for {1}: {2}", c, fileinfo.Name, e.StackTrace));                                     
                     }
                     c++;
                 }
             }
-            if (IndexData.Exists(x => x.EntryType == "XFLR"))
+            if (IndexData.Exists(x => x.EntryType == "XFLR") && ReadingSingle)
             {
                 int c = 0;
                 foreach (IndexEntry entry in IndexData.Where(x => x.EntryType == "XFLR"))
@@ -1047,13 +1052,13 @@ namespace SimsCCManager.PackageReaders
                         S2ReadXFLR(entry);
                     } catch (Exception e)
                     {
-                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Unable to read XFLR #{0} for {1}: {2}", c, fileinfo.Name, e.StackTrace));                                  
+                        if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Unable to read XFLR #{0} for {1}: {2}", c, fileinfo.Name, e.StackTrace));                                  
                     }
                     
                     c++;
                 }
             }
-            if (IndexData.Exists(x => x.EntryType == "XNGB"))
+            if (IndexData.Exists(x => x.EntryType == "XNGB") && ReadingSingle)
             {
                 int c = 0;
                 foreach (IndexEntry entry in IndexData.Where(x => x.EntryType == "XNGB"))
@@ -1063,13 +1068,13 @@ namespace SimsCCManager.PackageReaders
                         S2ReadXNGB(entry);
                     } catch (Exception e)
                     {
-                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Unable to read XNGB #{0} for {1}: {2}", c, fileinfo.Name, e.StackTrace));                 
+                        if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Unable to read XNGB #{0} for {1}: {2}", c, fileinfo.Name, e.StackTrace));                 
                     }
                     
                     c++;
                 }
             }
-            if (IndexData.Exists(x => x.EntryType == "GZPS"))
+            if (IndexData.Exists(x => x.EntryType == "GZPS") && ReadingSingle)
             {
                 int c = 0;
                 foreach (IndexEntry entry in IndexData.Where(x => x.EntryType == "GZPS"))
@@ -1079,7 +1084,7 @@ namespace SimsCCManager.PackageReaders
                         S2ReadGZPS(entry); 
                     } catch (Exception e)
                     {
-                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Unable to read GZPS #{0} for {1}: {2}", c, fileinfo.Name, e.StackTrace));                      
+                       if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Unable to read GZPS #{0} for {1}: {2}", c, fileinfo.Name, e.StackTrace));                      
                     }
                      
                     c++;                  
@@ -1092,16 +1097,17 @@ namespace SimsCCManager.PackageReaders
                 foreach (IndexEntry entry in IndexData.Where(x => x.EntryType == "TXTR"))
                 {
                     try { 
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Reading TXTR #{0}", c));
                         S2ReadTXTR(entry, c);
                     } catch (Exception e)
                     {
-                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Unable to read TXTR #{0} for {1}: {2}", c, fileinfo.Name, e.StackTrace));                       
+                        if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Unable to read TXTR #{0} for {1}: {2}", c, fileinfo.Name, e.StackTrace));                       
                     }
                     c++;
                 }
             }
 
-            if (IndexData.Exists(x => x.EntryType == "3IDR"))
+            if (IndexData.Exists(x => x.EntryType == "3IDR") && ReadingSingle)
             {
                 int c = 0;
                 foreach (IndexEntry entry in IndexData.Where(x => x.EntryType == "3IDR"))
@@ -1110,14 +1116,14 @@ namespace SimsCCManager.PackageReaders
                     S2Read3DIR(entry, c);
                     } catch (Exception e)
                     {
-                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Unable to read 3IDR #{0} for {1}: {2}", c, fileinfo.Name, e.StackTrace));                       
+                        if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Unable to read 3IDR #{0} for {1}: {2}", c, fileinfo.Name, e.StackTrace));                       
                     }
                     c++;
                 }
             }
             if (IndexData.Exists(x => x.EntryType == "SHPE"))
             {
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Found {0} SHPE entries in {1}", IndexData.Count(x => x.EntryType == "SHPE"), fileinfo.Name));
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Found {0} SHPE entries in {1}", IndexData.Count(x => x.EntryType == "SHPE"), fileinfo.Name));
                 int c = 0;
                 foreach (IndexEntry entry in IndexData.Where(x => x.EntryType == "SHPE"))
                 {
@@ -1126,7 +1132,7 @@ namespace SimsCCManager.PackageReaders
                         S2ReadSHPE(entry, c);
                     } catch (Exception e)
                     {
-                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Unable to read SHPE #{0} for {1}: {2}", c, fileinfo.Name, e.StackTrace));                        
+                        if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Unable to read SHPE #{0} for {1}: {2}", c, fileinfo.Name, e.StackTrace));                        
                     }
                     
                     c++;
@@ -1134,7 +1140,7 @@ namespace SimsCCManager.PackageReaders
             }
             if (IndexData.Exists(x => x.EntryType == "TXMT"))
             {
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Found {0} TXMT entries in {1}", IndexData.Count(x => x.EntryType == "TXMT"), fileinfo.Name));
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Found {0} TXMT entries in {1}", IndexData.Count(x => x.EntryType == "TXMT"), fileinfo.Name));
                 int c = 0;
                 foreach (IndexEntry entry in IndexData.Where(x => x.EntryType == "TXMT"))
                 {
@@ -1143,15 +1149,15 @@ namespace SimsCCManager.PackageReaders
                         S2ReadTXMT(entry, c);
                     } catch (Exception e)
                     {
-                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Unable to read TXMT #{0} for {1}: {2}", c, fileinfo.Name, e.StackTrace));                          
+                        if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Unable to read TXMT #{0} for {1}: {2}", c, fileinfo.Name, e.StackTrace));                          
                     }
                     
                     c++;
                 }
             }
-            if (IndexData.Exists(x => x.EntryType == "XHTN"))
+            if (IndexData.Exists(x => x.EntryType == "XHTN") && ReadingSingle)
             {
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Found {0} XHTN entries in {1}", IndexData.Count(x => x.EntryType == "XHTN"), fileinfo.Name));
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Found {0} XHTN entries in {1}", IndexData.Count(x => x.EntryType == "XHTN"), fileinfo.Name));
                 int c = 0;
                 foreach (IndexEntry entry in IndexData.Where(x => x.EntryType == "XHTN"))
                 {
@@ -1160,14 +1166,14 @@ namespace SimsCCManager.PackageReaders
                         S2ReadXHTN(entry, c);
                     } catch (Exception e)
                     {
-                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Unable to read XHTN #{0} for {1}: {2}", c, fileinfo.Name, e.StackTrace));                        
+                        if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Unable to read XHTN #{0} for {1}: {2}", c, fileinfo.Name, e.StackTrace));                        
                     }
                     c++;
                 }
             }
-            if (IndexData.Exists(x => x.EntryType == "XTOL"))
+            if (IndexData.Exists(x => x.EntryType == "XTOL") && ReadingSingle)
             {
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Found {0} XTOL entries in {1}", IndexData.Count(x => x.EntryType == "XTOL"), fileinfo.Name));
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Found {0} XTOL entries in {1}", IndexData.Count(x => x.EntryType == "XTOL"), fileinfo.Name));
                 int c = 0;
                 foreach (IndexEntry entry in IndexData.Where(x => x.EntryType == "XTOL"))
                 {
@@ -1176,11 +1182,43 @@ namespace SimsCCManager.PackageReaders
                         S2ReadXTOL(entry, c);
                     } catch (Exception e)
                     {
-                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Unable to read XTOL #{0} for {1}: {2}", c, fileinfo.Name, e.StackTrace));                      
+                        if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Unable to read XTOL #{0} for {1}: {2}", c, fileinfo.Name, e.StackTrace));                      
                     }
                    
                     c++;
                 }
+                string st = Sims2Data.XTOLDataBlock[0].Subtype;
+                switch (st)
+                {
+                    case "0":
+                    Sims2Data.AltType = "Facial Hair";
+                    break;
+                    case "1":
+                    Sims2Data.AltType = "Makeup: Eyebrows";
+                    break;
+                    case "2":
+                    Sims2Data.AltType = "Makeup: Lipstick";
+                    break;
+                    case "3":
+                    Sims2Data.AltType = "Eyecolor";
+                    break;
+                    case "4":
+                    Sims2Data.AltType = "Makeup: Face Paint";
+                    break;
+                    case "5":
+                    Sims2Data.AltType = "Accessory (Base)";
+                    break;
+                    case "6":
+                    Sims2Data.AltType = "Makeup: Blush";
+                    break;
+                    case "7":
+                    Sims2Data.AltType = "Makeup: Eyeshadow/Liner";
+                    break;
+                    case "8":
+                    Sims2Data.AltType = "Accessory (Bon Voyage)";
+                    break;
+                }
+                Sims2Data.Orphan = false;
             }
 
 
@@ -1188,11 +1226,230 @@ namespace SimsCCManager.PackageReaders
             {
                 //if (string.IsNullOrEmpty(Sims2Data.GUID)) Sims2Data.GUID = Sims2Data.MMATDataBlock[0].ObjectGUID;
                 if (!string.IsNullOrEmpty(Sims2Data.MMATDataBlock[0]?.ObjectGUID) && (string.IsNullOrEmpty(Sims2Data.GUID) || Sims2Data.GUID == "N/a")) Sims2Data.GUID = Sims2Data.MMATDataBlock[0].ObjectGUID;
+            }       
+
+
+
+            
+            if (IndexData.Exists(x => x.EntryType == "GMND") && ReadingSingle)
+            {
+                /*if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Found {0} GMND entries in {1}", IndexData.Count(x => x.EntryType == "GMND"), fileinfo.Name));
+                int c = 0;
+                foreach (IndexEntry entry in IndexData.Where(x => x.EntryType == "GMND"))
+                {
+                    try
+                    {                        
+                        S2ReadGMND(entry, c);
+                    } catch (Exception e)
+                    {
+                        if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Unable to read GMND #{0} for {1}: {2}", c, fileinfo.Name, e.StackTrace));                        
+                    }
+                    c++;
+                }*/
             }
 
+
+
+            if (fileinfo.Name.ToLower().Contains("posebox")) Sims2Data.AltType = "Posebox";
             
         }
 
+        public void CheckOverrides(SimsPackage package)
+        {
+            List<string> notOver = new()
+            {
+                "534C4F54-FFFFFFFF-00000080",
+                "43545353-FFFFFFFF-000007D0",
+                "42484156-FFFFFFFF-00001002",
+                "42484156-FFFFFFFF-00001000",
+                "474C4F42-FFFFFFFF-00000001",
+                "53545223-FFFFFFFF-00000102",
+                "53545223-FFFFFFFF-00000100",
+                "53545223-FFFFFFFF-00000081",
+                "53545223-FFFFFFFF-00000087",
+                "53545223-FFFFFFFF-00000088",
+                "53545223-FFFFFFFF-00000085",
+                "53545223-FFFFFFFF-00000082",
+                "856DDBAC-FFFFFFFF-00000001",
+                "53545223-FFFFFFFF-00000001"
+            };
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Checking overrides for {0}", fileinfo.Name));
+            ConcurrentBag<SimsOverrides> Matches = new();
+            foreach (var or in GlobalVariables.Sims2Overrides) //Parallel.ForEach(GlobalVariables.Sims2Overrides, GlobalVariables.ParallelSettings, or =>
+            {
+                foreach (var o in or) //Parallel.ForEach(or, GlobalVariables.ParallelSettings, o =>
+                {   
+                    foreach (SimsID id in o.Entries)
+                    {                            
+                        try {
+                            if (!notOver.Contains(id.FullKey)) if (package.Sims2Data.IndexEntries.Any(i => i.CompleteID == id.FullKey && !string.IsNullOrEmpty(i.CompleteID) && !string.IsNullOrEmpty(id.FullKey))){
+                                if (!Matches.Any(x => x.Entries.Any(e => e.FullKey == id.FullKey))) Matches.Add(o);
+                            }
+                        } catch (Exception e)
+                        {
+                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Caught exception checking overrides: {0}", e.StackTrace));
+                        }
+                    }                    
+                }//);
+                foreach (var o in or) //Parallel.ForEach(or, GlobalVariables.ParallelSettings, o =>
+                {        
+                    foreach (ItemOverride io in o.GuidOverrides)
+                    {                            
+                        try { 
+                            if (package.Sims2Data.GUID == io.Overridden && !string.IsNullOrEmpty(package.Sims2Data.GUID) && !string.IsNullOrEmpty(io.Overridden))
+                                {
+                                    if (!Matches.Any(x => x.Entries.Any(e => e.FullKey == io.ID.FullKey))) Matches.Add(o);
+                                }     
+                        } catch (Exception e)
+                        {
+                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Caught exception checking overrides: {0}", e.StackTrace));
+                        }                   
+                    }                    
+                }//);
+                foreach (var o in or) //Parallel.ForEach(or, GlobalVariables.ParallelSettings, o =>
+                {
+                    foreach (ItemOverride io in o.TextureNameOverrides)
+                    {                            
+                        try {
+                            if (package.Sims2Data.TXTRDataBlock.Any(t => t.FullTXTRName == io.Overridden && !string.IsNullOrEmpty(t.FullTXTRName) && !string.IsNullOrEmpty(io.Overridden))){
+                                if (!Matches.Any(x => x.Entries.Any(e => e.FullKey == io.ID.FullKey))) Matches.Add(o);
+                            }
+                        } catch (Exception e)
+                        {
+                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Caught exception checking overrides: {0}", e.StackTrace));
+                        }
+                    }
+                }//);
+                foreach (var o in or)//Parallel.ForEach(or, GlobalVariables.ParallelSettings, o =>
+                {
+                    foreach (ItemOverride io in o.FileNameOverrides)
+                    {                            
+                        try {
+                            if (package.Sims2Data.SHPEDataBlock.Any(s => s.FileName == io.Overridden && !string.IsNullOrEmpty(s.FileName) && !string.IsNullOrEmpty(io.Overridden)))
+                                {
+                                    if (!Matches.Any(x => x.Entries.Any(e => e.FullKey == io.ID.FullKey))) Matches.Add(o);
+                                }
+                        } catch (Exception e)
+                        {
+                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Caught exception checking overrides: {0}", e.StackTrace));
+                        }
+                    }
+                }//);
+                foreach (var o in or) //Parallel.ForEach(or, GlobalVariables.ParallelSettings, o =>
+                {
+                    foreach (ItemOverride io in o.References)
+                    {                            
+                        try {
+                            if (package.Sims2Data.TXMTDataBlock.Any(t => t.MaterialDescription == io.Overridden && !string.IsNullOrEmpty(t.MaterialDescription) && !string.IsNullOrEmpty(io.Overridden)))
+                                {
+                                    if (!Matches.Any(x => x.Entries.Any(e => e.FullKey == io.ID.FullKey))) Matches.Add(o);
+                                }
+                        } catch (Exception e)
+                        {
+                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Caught exception checking overrides: {0}", e.StackTrace));
+                        }
+                    }
+                }//);
+            }//);
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("{0} has {1} override matches!", fileinfo.Name, Matches.Count));
+            if (!Matches.IsEmpty)
+            {
+                package.Sims2Data.Override = true;
+                package.Sims2Data.OverrideReference.AddRange(Matches);
+                if (GlobalVariables.Sims2SpecificOverrides.Any(s => s.Entries.Any(e => package.Sims2Data.OverrideReference.Any(or => or.Entries.Any(oe => oe.InstanceID == e.InstanceID && oe.GroupID == e.GroupID)))))
+                {
+                    try { 
+                        SpecificOverrides so = GlobalVariables.Sims2SpecificOverrides.First(s => s.Entries.Any(e => package.Sims2Data.OverrideReference.Any(or => or.Entries.Any(oe => oe.InstanceID == e.InstanceID && oe.GroupID == e.GroupID))));
+                        package.Sims2Data.SpecificOverride = so;
+                        package.Sims2Data.FunctionSort.Clear();
+                        package.Sims2Data.AltType = string.Format("{0} Override", so.Type);
+                    } catch (Exception e)
+                    {
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Caught exception checking overrides: {0}", e.StackTrace));
+                    }
+                }
+            }
+
+            if (package.Sims2Data.Override)
+            {
+                if (package.Sims2Data.AltType == "Skin") package.Sims2Data.AltType = "Skin Override";
+                if (package.Sims2Data.AltType == "Eyecolor") package.Sims2Data.AltType = "Eyecolor Override";
+            }
+
+            package.WriteXML();
+        }
+
+
+        public void CheckDuplicates(SimsPackage package, List<SimsPackage> packages)
+        {
+            List<PotentialDuplicateSimsPackage> Potentials = new();
+            if (package.Game == SimsGames.Sims2)
+            {
+                if (packages.Any(x => x.Sims2Data.IndexEntries.Any(i => package.Sims2Data.IndexEntries.Any(e => e.GroupID == i.GroupID && e.InstanceID == i.InstanceID && x.Identifier != package.Identifier))))
+                {
+                    List<SimsPackage> matches = packages.Where(x => x.Sims2Data.IndexEntries.Any(i => package.Sims2Data.IndexEntries.Any(e => e.GroupID == i.GroupID && e.InstanceID == i.InstanceID && x.Identifier != package.Identifier))).ToList();
+                    foreach (SimsPackage pack in matches)
+                    {
+                        PotentialDuplicateSimsPackage pdsp = new();
+                        pdsp.Package = pack;
+                        Potentials.Add(pdsp);
+                    }
+                }
+
+
+
+                foreach (PotentialDuplicateSimsPackage potential in Potentials)
+                {
+                    foreach (IndexEntry entry in package.Sims2Data.IndexEntries)
+                    {
+                        if (!potential.Package.Sims2Data.IndexEntries.Any(i => i.GroupID == entry.GroupID && i.InstanceID == entry.InstanceID && i.TypeID == entry.TypeID))
+                        {
+                            potential.IsDuplicate = false;
+                        }
+                    }                    
+                }
+            }
+
+            if (Potentials.Any(x => x.IsDuplicate))
+            {
+                package.IsDuplicate = true;
+                package.Duplicates.AddRange(Potentials.Where(x => x.IsDuplicate).Select(x => x.Package.FileName));
+                package.Conflicts.AddRange(Potentials.Where(x => !x.IsDuplicate).Select(x => x.Package.FileName));                
+                package.WriteXML();
+
+                foreach (PotentialDuplicateSimsPackage pdsp in Potentials.Where(x => x.IsDuplicate))
+                {
+                    pdsp.Package.Duplicates.Add(package.FileName);
+                    pdsp.Package.WriteXML();
+                }
+            }
+        }
+
+        public void S2ReadGMND(IndexEntry entry, int txtrc)
+        {
+            S2ReadGMNDChunk gmnd;
+
+            packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
+            int cFileSize = packagereader.ReadInt32();
+            string cTypeID = packagereader.ReadUInt16().ToString("X4");
+            if (cTypeID == "FB10")
+            {
+                byte[] tempBytes = packagereader.ReadBytes(3);
+                uint cFullSize = Sims2EntryReaders.QFSLengthToInt(tempBytes);
+                DecryptByteStream decompressed = new DecryptByteStream(Sims2EntryReaders.Uncompress(packagereader.ReadBytes(cFileSize), cFullSize, 0));
+                gmnd = new(decompressed, fileinfo, txtrc);
+
+            }
+            else
+            {
+                packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
+                gmnd = new(packagereader, fileinfo, txtrc);
+            }
+            gmnd.GMNDData.CopyEntryInfo(entry);
+            (SimsData as Sims2Data).GMNDDataBlock.Add(gmnd.GMNDData);
+            
+
+        }
 
         public void S2ReadXTOL(IndexEntry entry, int num)
         {
@@ -1228,6 +1485,23 @@ namespace SimsCCManager.PackageReaders
                         xtol = new(decompressed, true);
                     }
                 }
+            } else
+            {
+                packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
+                string cpfTypeID = packagereader.ReadUInt32().ToString("X8");
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("CPFTypeID: {0}", cpfTypeID));
+                if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
+                {                    
+                    xtol = new(packagereader);
+                }
+
+                if (cpfTypeID == "6D783F3C")
+                {
+                    packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
+                    //string xmldata = Encoding.UTF8.GetString(packagereader.ReadBytes((int)entry.FileSize));
+                    xtol = new(packagereader, entry.FileSize, true);
+                }
+                
             }
             if (xtol.XTOLData != null)
             {
@@ -1273,6 +1547,23 @@ namespace SimsCCManager.PackageReaders
                         xhtn = new(decompressed, true);
                     }
                 }
+            } else
+            {
+                packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
+                string cpfTypeID = packagereader.ReadUInt32().ToString("X8");
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("CPFTypeID: {0}", cpfTypeID));
+                if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
+                {                    
+                    xhtn = new(packagereader);
+                }
+
+                if (cpfTypeID == "6D783F3C")
+                {
+                    packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
+                    //string xmldata = Encoding.UTF8.GetString(packagereader.ReadBytes((int)entry.FileSize));
+                    xhtn = new(packagereader, entry.FileSize, true);
+                }
+                
             }
             xhtn.XHTNData.CopyEntryInfo(entry);
             (SimsData as Sims2Data).XHTNDataBlock.Add(xhtn.XHTNData);
@@ -1307,6 +1598,10 @@ namespace SimsCCManager.PackageReaders
             {
                 Sims2Data.AltType = "Skin";
             }
+            if (txmt.TXMTData.MaterialProperties.Any(x => x.PropertyName == "stdMatBaseTextureName"))
+            {
+                txmt.TXMTData.stdMatBaseTextureName = txmt.TXMTData.MaterialProperties.First(x => x.PropertyName == "stdMatBaseTextureName").PropertyValue;
+            }
             (SimsData as Sims2Data).TXMTDataBlock.Add(txmt.TXMTData);
             
 
@@ -1316,6 +1611,8 @@ namespace SimsCCManager.PackageReaders
         {
             S2ReadSHPEChunk shpe;
 
+            //shpe.ReadingSingle = ReadingSingle;
+
             packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
             int cFileSize = packagereader.ReadInt32();
             string cTypeID = packagereader.ReadUInt16().ToString("X4");
@@ -1324,13 +1621,13 @@ namespace SimsCCManager.PackageReaders
                 byte[] tempBytes = packagereader.ReadBytes(3);
                 uint cFullSize = Sims2EntryReaders.QFSLengthToInt(tempBytes);
                 DecryptByteStream decompressed = new DecryptByteStream(Sims2EntryReaders.Uncompress(packagereader.ReadBytes(cFileSize), cFullSize, 0));
-                shpe = new(decompressed, fileinfo, txtrc);
+                shpe = new(decompressed, fileinfo, txtrc, ReadingSingle);
 
             }
             else
             {
                 packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
-                shpe = new(packagereader, fileinfo, txtrc);
+                shpe = new(packagereader, fileinfo, txtrc, ReadingSingle);
             }
             shpe.SHPEData.CopyEntryInfo(entry);
             
@@ -1372,6 +1669,7 @@ namespace SimsCCManager.PackageReaders
             packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
             int cFileSize = packagereader.ReadInt32();
             string cTypeID = packagereader.ReadUInt16().ToString("X4");
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("GZPS cType: {0}", cTypeID));
             if (cTypeID == "FB10")
             {
                 byte[] tempBytes = packagereader.ReadBytes(3);
@@ -1399,9 +1697,27 @@ namespace SimsCCManager.PackageReaders
                         gzps = new(decompressed, true);
                     }
                 }
+            } else
+            {
+                packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
+                string cpfTypeID = packagereader.ReadUInt32().ToString("X8");
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("CPFTypeID: {0}", cpfTypeID));
+                if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
+                {                    
+                    gzps = new(packagereader);
+                }
+
+                if (cpfTypeID == "6D783F3C")
+                {
+                    packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
+                    string xmldata = Encoding.UTF8.GetString(packagereader.ReadBytes((int)entry.FileSize));
+                    gzps = new(packagereader, entry.FileSize, true);
+                }
+                
             }
             gzps.GZPSData.CopyEntryInfo(entry);
             
+            (SimsData as Sims2Data).GZPSDataBlock.Add(gzps.GZPSData);
             string category = "";
             string subcategory = "";
 
@@ -1432,91 +1748,119 @@ namespace SimsCCManager.PackageReaders
                 Sims2Data.FunctionSort.Add(new () { Category = category, Subcategory = subcategory});
                         
 
+                string cate = "";
                 switch (gzps.GZPSData.Category)
                 {
                     case "4991":
-                        Sims2Data.ClothingInfo.Category.Add("All");
+                        cate = "All";
+                        if (!Sims2Data.ClothingInfo.Category.Contains(cate))Sims2Data.ClothingInfo.Category.Add(cate);
                     break;
                     case "1":
-                        Sims2Data.ClothingInfo.Category.Add("Casual1");
+                        cate = "Casual1";
+                        if (!Sims2Data.ClothingInfo.Category.Contains(cate))Sims2Data.ClothingInfo.Category.Add(cate);
                     break;
                     case "2":
-                        Sims2Data.ClothingInfo.Category.Add("Casual2");
+                        cate = "Casual2";
+                        if (!Sims2Data.ClothingInfo.Category.Contains(cate))Sims2Data.ClothingInfo.Category.Add(cate);
                     break;
                     case "4":
-                        Sims2Data.ClothingInfo.Category.Add("Casual3");
+                        cate = "Casual3";
+                        if (!Sims2Data.ClothingInfo.Category.Contains(cate))Sims2Data.ClothingInfo.Category.Add(cate);
                     break;
                     case "7":
-                        Sims2Data.ClothingInfo.Category.Add("Everyday");
+                        cate = "Everyday";
+                        if (!Sims2Data.ClothingInfo.Category.Contains(cate))Sims2Data.ClothingInfo.Category.Add(cate);
                     break;
                     case "8":
-                        Sims2Data.ClothingInfo.Category.Add("Swimwear");
+                        cate = "Swimwear";
+                        if (!Sims2Data.ClothingInfo.Category.Contains(cate))Sims2Data.ClothingInfo.Category.Add(cate);
                     break;
                     case "10":
-                        Sims2Data.ClothingInfo.Category.Add("Swimwear");
+                        cate = "Swimwear";
+                        if (!Sims2Data.ClothingInfo.Category.Contains(cate))Sims2Data.ClothingInfo.Category.Add(cate);
                     break;
                     case "20":
-                        Sims2Data.ClothingInfo.Category.Add("Formal");
+                        cate = "Formal";
+                        if (!Sims2Data.ClothingInfo.Category.Contains(cate))Sims2Data.ClothingInfo.Category.Add(cate);
                     break;
                     case "40":
-                        Sims2Data.ClothingInfo.Category.Add("Underwear");
+                        cate = "Underwear";
+                        if (!Sims2Data.ClothingInfo.Category.Contains(cate))Sims2Data.ClothingInfo.Category.Add(cate);
                     break;
                     case "80":
                         Sims2Data.FunctionSort = [new() { Category = "Skintone"}];
                         //Sims2Data.ClothingInfo.Category.Add("Skintone");
                     break;
                     case "100":
-                        Sims2Data.ClothingInfo.Category.Add("Maternity");
+                        cate = "Maternity";
+                        if (!Sims2Data.ClothingInfo.Category.Contains(cate))Sims2Data.ClothingInfo.Category.Add(cate);
                     break;
                     case "200":
-                        Sims2Data.ClothingInfo.Category.Add("Activewear");
+                        cate = "Activewear";
+                        if (!Sims2Data.ClothingInfo.Category.Contains(cate))Sims2Data.ClothingInfo.Category.Add(cate);
                     break;
                     case "400":
-                        Sims2Data.ClothingInfo.Category.Add("TryOn");
+                        cate = "TryOn";
+                        if (!Sims2Data.ClothingInfo.Category.Contains(cate))Sims2Data.ClothingInfo.Category.Add(cate);
                     break;
                     case "800":
-                        Sims2Data.ClothingInfo.Category.Add("NakedOverlay");
+                        cate = "NakedOverlay";
+                        if (!Sims2Data.ClothingInfo.Category.Contains(cate))Sims2Data.ClothingInfo.Category.Add(cate);
                     break;
                     case "1000":
-                        Sims2Data.ClothingInfo.Category.Add("Outerwear");
+                        cate = "Outerwear";
+                        if (!Sims2Data.ClothingInfo.Category.Contains(cate))Sims2Data.ClothingInfo.Category.Add(cate);
                     break;
                     
                 }
 
+                string ca = "";
                 switch (gzps.GZPSData.Age)
                 {
                     case "48":
-                    Sims2Data.ClothingInfo.Age.Add("Adult");
+                        ca = "Adult";
+                        if (!Sims2Data.ClothingInfo.Age.Contains(ca))Sims2Data.ClothingInfo.Age.Add(ca);
                     break;
                     case "2":
-                    Sims2Data.ClothingInfo.Age.Add("Child");
+                        ca = "Child";
+                        if (!Sims2Data.ClothingInfo.Age.Contains(ca))Sims2Data.ClothingInfo.Age.Add(ca);
                     break;
                     case "10":
-                    Sims2Data.ClothingInfo.Age.Add("Elder");
+                        ca = "Elder";
+                        if (!Sims2Data.ClothingInfo.Age.Contains(ca))Sims2Data.ClothingInfo.Age.Add(ca);
                     break;
                     case "4":
-                    Sims2Data.ClothingInfo.Age.Add("Teen");
+                        ca = "Teen";
+                        if (!Sims2Data.ClothingInfo.Age.Contains(ca))Sims2Data.ClothingInfo.Age.Add(ca);
                     break;
                     case "1":
-                    Sims2Data.ClothingInfo.Age.Add("Toddler");
+                        ca = "Toddler";
+                        if (!Sims2Data.ClothingInfo.Age.Contains(ca))Sims2Data.ClothingInfo.Age.Add(ca);
                     break;
                     case "20":
-                    Sims2Data.ClothingInfo.Age.Add("Baby");
+                        ca = "Baby";
+                        if (!Sims2Data.ClothingInfo.Age.Contains(ca))Sims2Data.ClothingInfo.Age.Add(ca);
                     break;
                     case "40":
-                    Sims2Data.ClothingInfo.Age.Add("Young Adult");
+                        ca = "Young Adult";
+                        if (!Sims2Data.ClothingInfo.Age.Contains(ca))Sims2Data.ClothingInfo.Age.Add(ca);
                     break;
                 }
+                string gen = "";
                 switch (gzps.GZPSData.Gender)
                 {
+                    
                     case "1":
-                    Sims2Data.ClothingInfo.Age.Add("Female");
+                        gen = "Female";
+                        if (!Sims2Data.ClothingInfo.Age.Contains(gen))Sims2Data.ClothingInfo.Age.Add(gen);
                     break;
                     case "2":
-                    Sims2Data.ClothingInfo.Age.Add("Male");
+                        gen = "Male";
+                        if (!Sims2Data.ClothingInfo.Age.Contains(gen))Sims2Data.ClothingInfo.Age.Add(gen);
                     break;
                     case "3":
-                    Sims2Data.ClothingInfo.Age.Add("Unisex");
+                        gen = "Unisex";
+                        if (!Sims2Data.ClothingInfo.Age.Contains(gen))Sims2Data.ClothingInfo.Age.Add(gen);
                     break;
                 }
 
@@ -1543,7 +1887,6 @@ namespace SimsCCManager.PackageReaders
                 }
             }
         
-            (SimsData as Sims2Data).GZPSDataBlock.Add(gzps.GZPSData);
         }
 
         public void S2ReadXNGB(IndexEntry entry)
@@ -1712,7 +2055,7 @@ namespace SimsCCManager.PackageReaders
             packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
             if (entry.IsCompressed)
             {
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0} GMDC is compressed!", fileinfo.Name));
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("{0} GMDC is compressed!", fileinfo.Name));
 
                 List<byte> bytes = new();
                 while (packagereader.BaseStream.Length > packagereader.BaseStream.Position)
@@ -1723,7 +2066,7 @@ namespace SimsCCManager.PackageReaders
 
                 byte[] decompressedByte = Sims2Tools.DBPF.Utils.Decompressor.Decompress([.. bytes], entry.UncompressedSize * 5);
 
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Normal byte length: {0}, decompressed byte length: {1}", bytes.ToArray().Length, decompressedByte.Length));
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Normal byte length: {0}, decompressed byte length: {1}", bytes.ToArray().Length, decompressedByte.Length));
 
 
                 BinaryReader binaryReader = new(new MemoryStream(decompressedByte));
@@ -1756,7 +2099,7 @@ namespace SimsCCManager.PackageReaders
                 cts = new(packagereader);
             }
             
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("File {0}. CTSS: {1}", fileinfo.Name, cts.ToString()));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("File {0}. CTSS: {1}", fileinfo.Name, cts.ToString()));
             cts.CTSSData.CopyEntryInfo(entry);
             Sims2Data.CTSSDataBlock.Add(cts.CTSSData);
             SimsData.Title = cts.CTSSData.Title;
@@ -1782,7 +2125,7 @@ namespace SimsCCManager.PackageReaders
                 packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
                 objd = new(packagereader);
             }
-            //if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("File {0}. OBJD: {1}", fileinfo.Name, objd.ToString()));
+            //if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("File {0}. OBJD: {1}", fileinfo.Name, objd.ToString()));
             objd.OBJDData.CopyEntryInfo(entry);
             Sims2Data.OBJDDataBlock.Add(objd.OBJDData);
             SimsData.FunctionSort.AddRange(objd.OBJDData.FunctionSort);
@@ -1857,7 +2200,7 @@ namespace SimsCCManager.PackageReaders
 
 
 
-            //if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("File: {0}, {1}", fileinfo.Name, xobj.ToString()));            
+            //if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("File: {0}, {1}", fileinfo.Name, xobj.ToString()));            
         }
 
 
@@ -1893,7 +2236,7 @@ namespace SimsCCManager.PackageReaders
                 sb.AppendLine(string.Format("{0} - {1}", i, enrty.ToString()));
                 i++;
             }
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0} Entries: {1}", fileinfo.Name, sb.ToString()));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("{0} Entries: {1}", fileinfo.Name, sb.ToString()));
 
         }
 
@@ -1911,6 +2254,327 @@ namespace SimsCCManager.PackageReaders
             Sims4Data = new();
             SimsData = Sims2Data;
 
+        }
+    }
+
+    public struct S2ReadGMNDChunk
+    {
+        public GMNDData GMNDData = new();
+        public FileInfo file;
+        public S2ReadGMNDChunk(BinaryReader readFile, FileInfo fileInfo, int entryc)
+        {            
+            file = fileInfo;
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Reading GMND chunk {0} for file {1}", entryc, file.Name));
+            
+            byte nameLength = readFile.ReadByte();
+            while (nameLength != 13)
+            {
+                nameLength = readFile.ReadByte();
+            }            
+            string fieldName = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("FieldName: {0}", fieldName));
+
+            string typeid = readFile.ReadUInt32().ToString("X8");
+            uint version = readFile.ReadUInt32();
+
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("TID: {0}, Version: {1}", typeid, version));
+           
+            nameLength = readFile.ReadByte();
+            while (nameLength != 16)
+            {
+                nameLength = readFile.ReadByte();
+            } 
+            string objgraphnode = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
+            uint classid = readFile.ReadUInt32();
+            uint ver = readFile.ReadUInt32();
+            uint numExt = readFile.ReadUInt32();
+
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("OBJGN: {0}, ClassID: {1}, Version: {2}, NumExtensions: {3}", objgraphnode, classid, ver, numExt));
+            for (int i = 0; i < numExt; i++)
+            {
+                GMNDExtension extension = new();
+                byte enabled = readFile.ReadByte();
+                if (enabled == 1) extension.Enabled = true; else extension.Enabled = false;
+                byte depends = readFile.ReadByte();
+                if (depends == 1) extension.Depends = true; else extension.Depends = false;
+                extension.Idx = readFile.ReadUInt32();
+                GMNDData.Extensions.Add(extension);
+            }
+
+            if (ver == 4)
+            {
+                nameLength = readFile.ReadByte();
+                string repeatFileName = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
+            }
+
+            nameLength = readFile.ReadByte();
+            string CSGRResource = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("CSGRResource: {0}", CSGRResource));
+
+            uint blockid = readFile.ReadUInt32();
+            uint vers = readFile.ReadUInt32();
+            nameLength = readFile.ReadByte();
+            GMNDData.FileName = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Blockid: {0}, Vers: {1}, FName: {2}", blockid, vers, GMNDData.FileName));
+
+            if (version == 1)
+            {
+                uint relocation = readFile.ReadUInt16();
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Relocation: {0}", relocation));
+            }
+            
+            if (version == 1 || version == 12)
+            {
+                uint assistedGeom = readFile.ReadUInt16();
+                byte unknown = readFile.ReadByte();
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Assisted Geom: {0}, Unknown: {1}", assistedGeom, unknown));
+            }
+
+            uint itemcount = readFile.ReadUInt32();
+
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("ItemCount: {0}", itemcount));
+            for (int i = 0; i < itemcount; i++)
+            {
+                GMNDReference refrence = new();
+                refrence.BlockID = readFile.ReadUInt32();
+                refrence.TypeID = readFile.ReadUInt32().ToString("X8");
+                refrence.GroupID = readFile.ReadUInt32().ToString("X8");
+                refrence.InstanceID = readFile.ReadUInt32().ToString("X8");
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Ref: {0} - {1}", refrence.BlockID, refrence.FullKey));
+                GMNDData.References.Add(refrence);
+            }
+
+            
+
+            foreach (GMNDExtension re in GMNDData.Extensions)
+            {
+                nameLength = readFile.ReadByte();
+                string resourceID = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
+
+                string blockID = readFile.ReadUInt32().ToString("X4");
+
+                re.Version = readFile.ReadUInt32();
+
+                nameLength = readFile.ReadByte();
+                string extID = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
+                
+                uint classID = readFile.ReadUInt32();
+                re.Version = readFile.ReadUInt32();
+
+                re.Typecode = readFile.ReadByte();
+                
+                nameLength = readFile.ReadByte();
+                re.Name = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
+
+                
+
+                                
+
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("ResourceID: {0}, BlockID: {1}, ExtID: {3}, Version: {3}, TypeCode: {4}", resourceID, blockID, extID, re.Version, re.Typecode));
+
+                
+                re.Items.AddRange(BuildArray(readFile));                
+                
+
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Extension: {0}", re.ToString()));
+
+            }
+        }
+        public S2ReadGMNDChunk(DecryptByteStream readFile, FileInfo fileInfo, int entryc)
+        {
+            file = fileInfo;
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Reading GMND chunk {0} for file {1}", entryc, file.Name));
+            
+            byte nameLength = readFile.ReadByte();
+            while (nameLength != 13)
+            {
+                nameLength = readFile.ReadByte();
+            }            
+            string fieldName = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("FieldName: {0}", fieldName));
+
+            string typeid = readFile.ReadUInt32().ToString("X8");
+            uint version = readFile.ReadUInt32();
+
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("TID: {0}, Version: {1}", typeid, version));
+           
+            nameLength = readFile.ReadByte();
+            while (nameLength != 16)
+            {
+                nameLength = readFile.ReadByte();
+            } 
+            string objgraphnode = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
+            uint classid = readFile.ReadUInt32();
+            uint ver = readFile.ReadUInt32();
+            uint numExt = readFile.ReadUInt32();
+
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("OBJGN: {0}, ClassID: {1}, Version: {2}, NumExtensions: {3}", objgraphnode, classid, ver, numExt));
+            for (int i = 0; i < numExt; i++)
+            {
+                GMNDExtension extension = new();
+                byte enabled = readFile.ReadByte();
+                if (enabled == 1) extension.Enabled = true; else extension.Enabled = false;
+                byte depends = readFile.ReadByte();
+                if (depends == 1) extension.Depends = true; else extension.Depends = false;
+                extension.Idx = readFile.ReadUInt32();
+                GMNDData.Extensions.Add(extension);
+            }
+
+            if (ver == 4)
+            {
+                nameLength = readFile.ReadByte();
+                string repeatFileName = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
+            }
+
+            nameLength = readFile.ReadByte();
+            string CSGRResource = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("CSGRResource: {0}", CSGRResource));
+
+            uint blockid = readFile.ReadUInt32();
+            uint vers = readFile.ReadUInt32();
+            nameLength = readFile.ReadByte();
+            GMNDData.FileName = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Blockid: {0}, Vers: {1}, FName: {2}", blockid, vers, GMNDData.FileName));
+
+            if (version == 1)
+            {
+                uint relocation = readFile.ReadUInt16();
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Relocation: {0}", relocation));
+            }
+            
+            if (version == 1 || version == 12)
+            {
+                uint assistedGeom = readFile.ReadUInt16();
+                byte unknown = readFile.ReadByte();
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Assisted Geom: {0}, Unknown: {1}", assistedGeom, unknown));
+            }
+
+            uint itemcount = readFile.ReadUInt32();
+
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("ItemCount: {0}", itemcount));
+            for (int i = 0; i < itemcount; i++)
+            {
+                GMNDReference refrence = new();
+                refrence.BlockID = readFile.ReadUInt32();
+                refrence.TypeID = readFile.ReadUInt32().ToString("X8");
+                refrence.GroupID = readFile.ReadUInt32().ToString("X8");
+                refrence.InstanceID = readFile.ReadUInt32().ToString("X8");
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Ref: {0} - {1}", refrence.BlockID, refrence.FullKey));
+                GMNDData.References.Add(refrence);
+            }
+
+            
+
+            foreach (GMNDExtension re in GMNDData.Extensions)
+            {
+                nameLength = readFile.ReadByte();
+                string resourceID = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
+
+                string blockID = readFile.ReadUInt32().ToString("X4");
+
+                re.Version = readFile.ReadUInt32();
+
+                nameLength = readFile.ReadByte();
+                string extID = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
+                
+                uint classID = readFile.ReadUInt32();
+                re.Version = readFile.ReadUInt32();
+
+                re.Typecode = readFile.ReadByte();
+                
+                nameLength = readFile.ReadByte();
+                re.Name = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
+
+                
+
+                                
+
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("ResourceID: {0}, BlockID: {1}, ExtID: {3}, Version: {3}, TypeCode: {4}", resourceID, blockID, extID, re.Version, re.Typecode));
+
+                
+                re.Items.AddRange(BuildArray(readFile));                
+                
+
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Extension: {0}", re.ToString()));
+
+            }
+        }     
+
+        public List<GMNDExtensionItem> BuildArray(DecryptByteStream readFile)
+        {
+            uint items = readFile.ReadUInt32();
+            List<GMNDExtensionItem> it = new();
+            for (int i = 0; i < items; i++)
+            {
+                GMNDExtensionItem item = new();
+                byte ExtensionType = readFile.ReadByte();                    
+                byte nameLength = readFile.ReadByte();
+                item.ItemName = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
+                switch (ExtensionType) {
+                    case 2: 
+                        item.ItemContent = readFile.ReadUInt32().ToString();
+                    break;
+                    case 3: 
+                        item.ItemContent = readFile.ReadUInt32().ToString();
+                    break;
+                    case 5: 
+                        item.ItemContent = readFile.ReadBytes(12).ToString();
+                    break;
+                    case 6:                   
+                        nameLength = readFile.ReadByte();
+                        item.ItemContent = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));                            
+                    break;
+                    case 7: 
+                        it.AddRange(BuildArray(readFile));
+                    break;
+                    case 8: 
+                        item.ItemContent = readFile.ReadBytes(16).ToString();
+                    break;
+                    case 9: 
+                        uint datalength = readFile.ReadUInt32();
+                        item.ItemContent = readFile.ReadBytes(datalength).ToString();
+                    break;
+                }
+            }
+            return it;
+        }
+        public List<GMNDExtensionItem> BuildArray(BinaryReader readFile)
+        {
+            uint items = readFile.ReadUInt32();
+            List<GMNDExtensionItem> it = new();
+            for (int i = 0; i < items; i++)
+            {
+                GMNDExtensionItem item = new();
+                byte ExtensionType = readFile.ReadByte();                    
+                byte nameLength = readFile.ReadByte();
+                item.ItemName = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
+                switch (ExtensionType) {
+                    case 2: 
+                        item.ItemContent = readFile.ReadUInt32().ToString();
+                    break;
+                    case 3: 
+                        item.ItemContent = readFile.ReadUInt32().ToString();
+                    break;
+                    case 5: 
+                        item.ItemContent = readFile.ReadBytes(12).ToString();
+                    break;
+                    case 6:                   
+                        nameLength = readFile.ReadByte();
+                        item.ItemContent = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));                            
+                    break;
+                    case 7: 
+                        it.AddRange(BuildArray(readFile));
+                    break;
+                    case 8: 
+                        item.ItemContent = readFile.ReadBytes(16).ToString();
+                    break;
+                    case 9: 
+                        uint datalength = readFile.ReadUInt32();
+                        item.ItemContent = readFile.ReadBytes((int)datalength).ToString();
+                    break;
+                }
+            }
+            return it;
         }
     }
 
@@ -1939,11 +2603,12 @@ namespace SimsCCManager.PackageReaders
             sb.AppendLine(string.Format("Species: {0}", XTOLData.Species));
             sb.AppendLine(string.Format("Subtype: {0}", XTOLData.Subtype));
             sb.AppendLine(string.Format("Type: {0}", XTOLData.Type));
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("XTOL: {0}", sb.ToString()));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("XTOL: {0}", sb.ToString()));
         }
 
         public S2ReadXTOLChunk(BinaryReader readFile)
         {
+            uint version = readFile.ReadUInt16();
             uint NumItems = readFile.ReadUInt32();
             // Read the items
             for (int i = 0; i < NumItems; i++)
@@ -2253,6 +2918,118 @@ namespace SimsCCManager.PackageReaders
             }
             WriteXTOLData();
         }
+    
+        public S2ReadXTOLChunk(BinaryReader readFile, uint size, bool xml)
+        {
+            XmlTextReader xmlDoc = new XmlTextReader(new StringReader(Encoding.UTF8.GetString(readFile.ReadBytes((int)size))));
+            bool inDesc = false;
+            string inAttrDesc = "";
+            while (xmlDoc.Read())
+            {
+                if (xmlDoc.NodeType == XmlNodeType.Element)
+                {
+                    if (xmlDoc.Name == "AnyString") inDesc = true;
+                    if (xmlDoc.Name == "AnyUint32") inDesc = true;
+                }
+                if (xmlDoc.NodeType == XmlNodeType.EndElement)
+                {
+                    inDesc = false;
+                    inAttrDesc = "";
+                }
+                if (inDesc == true)
+                {
+                    if (xmlDoc.AttributeCount > 0)
+                    {
+                        while (xmlDoc.MoveToNextAttribute())
+                        {
+                            switch (xmlDoc.Value.ToLower())
+                            {
+                                case "version":
+                                case "product":
+                                case "age":
+                                case "gender":
+                                case "species":
+                                case "parts":
+                                case "outfit":
+                                case "flags":
+                                case "name":
+                                case "creator":
+                                case "family":
+                                case "genetic":
+                                case "priority":
+                                case "type":
+                                case "preview":
+                                case "proxy":
+                                    inAttrDesc = xmlDoc.Value;
+                                    break;
+                            }
+                        }
+                    }
+                }
+                if (xmlDoc.NodeType == XmlNodeType.Text)
+                {
+                    if (inAttrDesc != "")
+                    {
+                        switch (inAttrDesc.ToLower())
+                        {
+                            case "age":
+                            XTOLData.Age = xmlDoc.Value;
+                            break;
+                            case "bin":
+                            XTOLData.Bin = xmlDoc.Value;
+                            break;
+                            case "category":
+                            XTOLData.Category = xmlDoc.Value;
+                            break;
+                            case "creator":
+                            XTOLData.Creator = xmlDoc.Value;
+                            break;
+                            case "family":
+                            XTOLData.Family = xmlDoc.Value;
+                            break;
+                            case "flags":
+                            XTOLData.Flags = xmlDoc.Value;
+                            break;
+                            case "gender":
+                            XTOLData.Gender = xmlDoc.Value;
+                            break;
+                            case "genetic":
+                            XTOLData.Genetic = xmlDoc.Value;
+                            break;
+                            case "hairtone":
+                            XTOLData.Hairtone = xmlDoc.Value;
+                            break;
+                            case "layer":
+                            XTOLData.Layer = xmlDoc.Value;
+                            break;
+                            case "materialkeyidx":
+                            XTOLData.MaterialKeyIdx = xmlDoc.Value;
+                            break;
+                            case "name":
+                            XTOLData.Name = xmlDoc.Value;
+                            break;
+                            case "outfit":
+                            XTOLData.Outfit = xmlDoc.Value;
+                            break;
+                            case "skintone":
+                            XTOLData.Skintone = xmlDoc.Value;
+                            break;
+                            case "species":
+                            XTOLData.Species = xmlDoc.Value;
+                            break;
+                            case "subtype":
+                            XTOLData.Subtype = xmlDoc.Value;
+                            break;
+                            case "type":
+                            XTOLData.Type = xmlDoc.Value;
+                            break;
+                        }
+                    }
+                }
+            }
+            WriteXTOLData();
+        }
+    
     }
 
     public struct S2ReadTXMTChunk
@@ -2262,7 +3039,7 @@ namespace SimsCCManager.PackageReaders
         public S2ReadTXMTChunk(BinaryReader readFile, FileInfo fileInfo, int entryc)
         {            
             file = fileInfo;
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Reading TXMT chunk {0} for file {1}", entryc, file.Name));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Reading TXMT chunk {0} for file {1}", entryc, file.Name));
             
             byte nameLength = readFile.ReadByte();
             while (nameLength != 19)
@@ -2270,66 +3047,125 @@ namespace SimsCCManager.PackageReaders
                 nameLength = readFile.ReadByte();
             }            
             string fieldName = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("FieldName: {0}", fieldName));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("FieldName: {0}", fieldName));
 
             string BlockID = readFile.ReadUInt32().ToString("X8");
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("BlockID: {0}", BlockID));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("BlockID: {0}", BlockID));
             uint Version = readFile.ReadUInt32();
             nameLength = readFile.ReadByte();
             string cSGResource = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Version: {0}, cSGResource: {1}", Version, cSGResource));
-            
-        }
-        public S2ReadTXMTChunk(DecryptByteStream readFile, FileInfo fileInfo, int entryc)
-        {
-            file = fileInfo;
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Reading TXMT chunk {0} for file {1}", entryc, file.Name));
-            
-            byte nameLength = readFile.ReadByte();
-            while (nameLength != 19)
-            {
-                nameLength = readFile.ReadByte();
-            }            
-            string fieldName = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("FieldName: {0}", fieldName));
-
-            string BlockID = readFile.ReadUInt32().ToString("X8");
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("BlockID: {0}", BlockID));
-            uint Version = readFile.ReadUInt32();
-            nameLength = readFile.ReadByte();
-            string cSGResource = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Version: {0}, cSGResource: {1}", Version, cSGResource));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Version: {0}, cSGResource: {1}", Version, cSGResource));
             
             
             nameLength = readFile.ReadByte();
             while (nameLength < 6) nameLength = readFile.ReadByte();
             TXMTData.FileName = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Filename: {0}", TXMTData.FileName));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Filename: {0}", TXMTData.FileName));
             nameLength = readFile.ReadByte();
             TXMTData.MaterialDescription = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Materialdescription: {0}", TXMTData.MaterialDescription));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Materialdescription: {0}", TXMTData.MaterialDescription));
             
             nameLength = readFile.ReadByte();
             TXMTData.MaterialType = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("MaterialType: {0}", TXMTData.MaterialType));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("MaterialType: {0}", TXMTData.MaterialType));
 
             TXMTData.PropertyCount = readFile.ReadUInt32();
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("PropertyCount: {0}", TXMTData.PropertyCount));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("PropertyCount: {0}", TXMTData.PropertyCount));
             for (int i = 0; i < TXMTData.PropertyCount; i++)
             {
                 TXMTMaterial mat = new();
                 nameLength = readFile.ReadByte();
                 mat.PropertyName = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
                 nameLength = readFile.ReadByte();
+                long pos = readFile.BaseStream.Position;
                 mat.PropertyValue = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
+                
+                            
+                if (mat.PropertyName == "stdMatBaseTextureName" && mat.PropertyValue.Split("##").Length > 2)
+                {
+                    readFile.BaseStream.Position = pos;
+                    nameLength++;
+                    mat.PropertyValue = Utilities.RemoveInvalidXmlChars(Encoding.UTF8.GetString(readFile.ReadBytes(nameLength)));
+                }
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Mat #{0}: PropertyName: {1}, PropertyValue: {2}", i, mat.PropertyName, mat.PropertyValue));
                 TXMTData.MaterialProperties.Add(mat);
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Mat #{0}: PropertyName: {1}, PropertyValue: {2}", i, mat.PropertyName, mat.PropertyValue));
+                if (mat.PropertyName == "stdMatUntexturedDiffAlpha") break;                 
+                
             }
 
             if (Version > 8)
             {
                 TXMTData.TextureNameCount = readFile.ReadUInt32();
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Texture Name Count: {0}", TXMTData.TextureNameCount));
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Texture Name Count: {0}", TXMTData.TextureNameCount));
+                for (int i = 0; i < TXMTData.TextureNameCount; i++)
+                {
+                    nameLength = readFile.ReadByte();
+                    TXMTData.TextureNames.Add(Encoding.UTF8.GetString(readFile.ReadBytes(nameLength)));                   
+                }
+            }
+            
+        }
+        public S2ReadTXMTChunk(DecryptByteStream readFile, FileInfo fileInfo, int entryc)
+        {
+            file = fileInfo;
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Reading TXMT chunk {0} for file {1}", entryc, file.Name));
+            
+            byte nameLength = readFile.ReadByte();
+            while (nameLength != 19)
+            {
+                nameLength = readFile.ReadByte();
+            }            
+            string fieldName = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("FieldName: {0}", fieldName));
+
+            string BlockID = readFile.ReadUInt32().ToString("X8");
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("BlockID: {0}", BlockID));
+            uint Version = readFile.ReadUInt32();
+            nameLength = readFile.ReadByte();
+            string cSGResource = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Version: {0}, cSGResource: {1}", Version, cSGResource));
+            
+            
+            nameLength = readFile.ReadByte();
+            while (nameLength < 6) nameLength = readFile.ReadByte();
+            TXMTData.FileName = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Filename: {0}", TXMTData.FileName));
+            nameLength = readFile.ReadByte();
+            TXMTData.MaterialDescription = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Materialdescription: {0}", TXMTData.MaterialDescription));
+            
+            nameLength = readFile.ReadByte();
+            TXMTData.MaterialType = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("MaterialType: {0}", TXMTData.MaterialType));
+
+            TXMTData.PropertyCount = readFile.ReadUInt32();
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("PropertyCount: {0}", TXMTData.PropertyCount));
+            for (int i = 0; i < TXMTData.PropertyCount; i++)
+            {
+                TXMTMaterial mat = new();
+                nameLength = readFile.ReadByte();
+                mat.PropertyName = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
+                nameLength = readFile.ReadByte();
+                int pos = readFile.Offset;
+                mat.PropertyValue = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
+                
+                            
+                if (mat.PropertyName == "stdMatBaseTextureName" && mat.PropertyValue.Split("##").Length > 2)
+                {
+                    readFile.Offset = pos;
+                    nameLength++;
+                    mat.PropertyValue = Utilities.RemoveInvalidXmlChars(Encoding.UTF8.GetString(readFile.ReadBytes(nameLength)));
+                }
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Mat #{0}: PropertyName: {1}, PropertyValue: {2}", i, mat.PropertyName, mat.PropertyValue));
+                TXMTData.MaterialProperties.Add(mat);
+                if (mat.PropertyName == "stdMatUntexturedDiffAlpha") break;                 
+                
+            }
+
+            if (Version > 8)
+            {
+                TXMTData.TextureNameCount = readFile.ReadUInt32();
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Texture Name Count: {0}", TXMTData.TextureNameCount));
                 for (int i = 0; i < TXMTData.TextureNameCount; i++)
                 {
                     nameLength = readFile.ReadByte();
@@ -2342,12 +3178,14 @@ namespace SimsCCManager.PackageReaders
 
     public struct S2ReadSHPEChunk
     {
+        public bool ReadingSingle = true;
         public SHPEData SHPEData = new();
         public FileInfo file;
-        public S2ReadSHPEChunk(BinaryReader readFile, FileInfo fileInfo, int entryc)
-        {            
+        public S2ReadSHPEChunk(BinaryReader readFile, FileInfo fileInfo, int entryc, bool rs)
+        {        
+            ReadingSingle = rs;    
             file = fileInfo;
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Reading SHPE chunk {0} for file {1}", entryc, file.Name));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Reading SHPE chunk {0} for file {1}", entryc, file.Name));
             //readFile.ReadBytes(6);
             byte nameLength = readFile.ReadByte();
             while (nameLength != 6)
@@ -2355,34 +3193,34 @@ namespace SimsCCManager.PackageReaders
                 nameLength = readFile.ReadByte();
             }            
             string fieldName = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("FieldName: {0}", fieldName));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("FieldName: {0}", fieldName));
             string BlockID = readFile.ReadUInt32().ToString("X8");
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("BlockID: {0}", BlockID));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("BlockID: {0}", BlockID));
             uint Version = readFile.ReadUInt32();
             nameLength = readFile.ReadByte();
             string cSGResource = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Version: {0}, cSGResource: {1}", Version, cSGResource));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Version: {0}, cSGResource: {1}", Version, cSGResource));
             while (nameLength != 13)
             {
                 nameLength = readFile.ReadByte();
             }
             string cReferentNode = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("cReferentNode: {0}", cReferentNode));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("cReferentNode: {0}", cReferentNode));
             while (nameLength != 16)
             {
                 nameLength = readFile.ReadByte();
             }
             string cObjectGraphNode = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("cObjectGraphNode: {0}", cObjectGraphNode));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("cObjectGraphNode: {0}", cObjectGraphNode));
 
             //object graph
 
             uint ClassID = readFile.ReadUInt32();
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("ClassID: {0}", ClassID));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("ClassID: {0}", ClassID));
             uint cOBNVersion = readFile.ReadUInt32();
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("COGN Version: {0}", cOBNVersion));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("COGN Version: {0}", cOBNVersion));
             uint NumExtensions = readFile.ReadUInt32();
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Number of Extensions: {0}", NumExtensions));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Number of Extensions: {0}", NumExtensions));
             
             for (int i = 0; i < NumExtensions; i++)
             {
@@ -2405,18 +3243,18 @@ namespace SimsCCManager.PackageReaders
                 }
                 ex.IndexOfExtension = readFile.ReadUInt32();
                 SHPEData.Extensions.Add(ex);
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Extension {0}: {1}", i, ex.ToString()));
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Extension {0}: {1}", i, ex.ToString()));
             }
 
             if (cOBNVersion == 4)
             {      
                 nameLength = readFile.ReadByte(); 
                 while (nameLength <= 1) {
-                    //if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("NameLength: {0}", nameLength));
+                    //if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("NameLength: {0}", nameLength));
                     nameLength = readFile.ReadByte();                      
                 }                
                 SHPEData.FileName = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Length: {1}, RepeatFileName: {0}", SHPEData.FileName, nameLength));
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Length: {1}, RepeatFileName: {0}", SHPEData.FileName, nameLength));
             }
 
 
@@ -2446,7 +3284,7 @@ namespace SimsCCManager.PackageReaders
                 if (Version == 7 || Version == 6)
                 {   
                     //SHPEData.LODCount = readFile.ReadUInt32();
-                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("LOD Count: {0}", SHPEData.LODCount));
+                    if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("LOD Count: {0}", SHPEData.LODCount));
                     for (int i = 0; i < SHPEData.LODCount; i++)
                     {    
                         SHPELod lod = new();    
@@ -2471,7 +3309,7 @@ namespace SimsCCManager.PackageReaders
                 } else if (Version == 8)
                 {
                     //SHPEData.LODCount = readFile.ReadUInt32();    
-                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("LOD Count: {0}", SHPEData.LODCount));                    
+                    if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("LOD Count: {0}", SHPEData.LODCount));                    
                     for (int i = 0; i < SHPEData.LODCount; i++)
                     {
                         SHPELod lod = new();
@@ -2489,7 +3327,7 @@ namespace SimsCCManager.PackageReaders
                 } else if (Version > 6)
                 {
                     //SHPEData.LODCount = readFile.ReadUInt32(); 
-                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("LOD Count: {0}", SHPEData.LODCount));                       
+                    if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("LOD Count: {0}", SHPEData.LODCount));                       
                     for (int i = 0; i < SHPEData.LODCount; i++)
                     {
                         SHPELod lod = new();
@@ -2508,61 +3346,67 @@ namespace SimsCCManager.PackageReaders
             //materials
 
             //SHPEData.MaterialCount = readFile.ReadByte();
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Material Count: {0}", SHPEData.MaterialCount));
-            for (int i = 0; i < SHPEData.MaterialCount; i++)
+            if (ReadingSingle)
             {
-                SHPEMaterial mat = new();
-                mat.Group = Encoding.UTF8.GetString(readFile.ReadBytes(readFile.ReadByte()));
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Group: {0}", mat.Group));
-                mat.MaterialDefinition = Encoding.UTF8.GetString(readFile.ReadBytes(readFile.ReadByte()));
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("MatDef: {0}", mat.MaterialDefinition));
-                mat.LODType = readFile.ReadUInt32();
-                mat.Enabled = readFile.ReadByte();
-                mat.Index = readFile.ReadUInt32();
-                SHPEData.Materials.Add(mat);
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Material {0}: {1}", i, mat.ToString()));
-            }       
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Material Count: {0}", SHPEData.MaterialCount));
+                for (int i = 0; i < SHPEData.MaterialCount; i++)
+                {
+                    SHPEMaterial mat = new();
+                    mat.Group = Encoding.UTF8.GetString(readFile.ReadBytes(readFile.ReadByte()));
+                    if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Group: {0}", mat.Group));
+                    mat.MaterialDefinition = Encoding.UTF8.GetString(readFile.ReadBytes(readFile.ReadByte()));
+                    if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("MatDef: {0}", mat.MaterialDefinition));
+                    mat.LODType = readFile.ReadUInt32();
+                    mat.Enabled = readFile.ReadByte();
+                    mat.Index = readFile.ReadUInt32();
+                    SHPEData.Materials.Add(mat);
+                    if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Material {0}: {1}", i, mat.ToString()));
+                }   
+            }
+            
+                
         }
-        public S2ReadSHPEChunk(DecryptByteStream readFile, FileInfo fileInfo, int entryc)
+        public S2ReadSHPEChunk(DecryptByteStream readFile, FileInfo fileInfo, int entryc, bool rs)
         {
+            ReadingSingle = rs;
             file = fileInfo;
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Reading SHPE chunk {0} for file {1}", entryc, file.Name));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Reading SHPE chunk {0} for file {1}", entryc, file.Name));
             
             byte nameLength = readFile.ReadByte();
             while (nameLength != 6)
             {
-                //if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("NameLength: {0}", nameLength));
+                //if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("NameLength: {0}", nameLength));
                 nameLength = readFile.ReadByte();
             }            
             string fieldName = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("FieldName: {0}", fieldName));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("FieldName: {0}", fieldName));
             string BlockID = readFile.ReadUInt32().ToString("X8");
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("BlockID: {0}", BlockID));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("BlockID: {0}", BlockID));
             uint Version = readFile.ReadUInt32();
             nameLength = readFile.ReadByte();
             string cSGResource = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Version: {0}, cSGResource: {1}", Version, cSGResource));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Version: {0}, cSGResource: {1}", Version, cSGResource));
             while (nameLength != 13)
             {
                 nameLength = readFile.ReadByte();
             }
             string cReferentNode = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("cReferentNode: {0}", cReferentNode));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("cReferentNode: {0}", cReferentNode));
             while (nameLength != 16)
             {
                 nameLength = readFile.ReadByte();
             }
             string cObjectGraphNode = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("cObjectGraphNode: {0}", cObjectGraphNode));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("cObjectGraphNode: {0}", cObjectGraphNode));
 
             //object graph
 
             uint ClassID = readFile.ReadUInt32();
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("ClassID: {0}", ClassID));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("ClassID: {0}", ClassID));
             uint cOBNVersion = readFile.ReadUInt32();
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("COGN Version: {0}", cOBNVersion));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("COGN Version: {0}", cOBNVersion));
             uint NumExtensions = readFile.ReadUInt32();
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Number of Extensions: {0}", NumExtensions));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Number of Extensions: {0}", NumExtensions));
             
             for (int i = 0; i < NumExtensions; i++)
             {
@@ -2585,18 +3429,18 @@ namespace SimsCCManager.PackageReaders
                 }
                 ex.IndexOfExtension = readFile.ReadUInt32();
                 SHPEData.Extensions.Add(ex);
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Extension {0}: {1}", i, ex.ToString()));
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Extension {0}: {1}", i, ex.ToString()));
             }
 
             if (cOBNVersion == 4)
             {      
                 nameLength = readFile.ReadByte(); 
                 while (nameLength <= 1) {
-                    //if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("NameLength: {0}", nameLength));
+                    //if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("NameLength: {0}", nameLength));
                     nameLength = readFile.ReadByte();                      
                 }                
                 SHPEData.FileName = Encoding.UTF8.GetString(readFile.ReadBytes(nameLength));
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Length: {1}, RepeatFileName: {0}", SHPEData.FileName, nameLength));
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Length: {1}, RepeatFileName: {0}", SHPEData.FileName, nameLength));
             }
 
 
@@ -2626,7 +3470,7 @@ namespace SimsCCManager.PackageReaders
                 if (Version == 7 || Version == 6)
                 {   
                     //SHPEData.LODCount = readFile.ReadUInt32();
-                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("LOD Count: {0}", SHPEData.LODCount));
+                    if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("LOD Count: {0}", SHPEData.LODCount));
                     for (int i = 0; i < SHPEData.LODCount; i++)
                     {    
                         SHPELod lod = new();    
@@ -2651,7 +3495,7 @@ namespace SimsCCManager.PackageReaders
                 } else if (Version == 8)
                 {
                     //SHPEData.LODCount = readFile.ReadUInt32();    
-                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("LOD Count: {0}", SHPEData.LODCount));                    
+                    if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("LOD Count: {0}", SHPEData.LODCount));                    
                     for (int i = 0; i < SHPEData.LODCount; i++)
                     {
                         SHPELod lod = new();
@@ -2669,7 +3513,7 @@ namespace SimsCCManager.PackageReaders
                 } else if (Version > 6)
                 {
                     //SHPEData.LODCount = readFile.ReadUInt32(); 
-                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("LOD Count: {0}", SHPEData.LODCount));                       
+                    if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("LOD Count: {0}", SHPEData.LODCount));                       
                     for (int i = 0; i < SHPEData.LODCount; i++)
                     {
                         SHPELod lod = new();
@@ -2686,19 +3530,21 @@ namespace SimsCCManager.PackageReaders
             //materials
 
             //SHPEData.MaterialCount = readFile.ReadByte();
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Material Count: {0}", SHPEData.MaterialCount));
-            for (int i = 0; i < SHPEData.MaterialCount; i++)
-            {
-                SHPEMaterial mat = new();
-                mat.Group = Encoding.UTF8.GetString(readFile.ReadBytes(readFile.ReadByte()));
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Group: {0}", mat.Group));
-                mat.MaterialDefinition = Encoding.UTF8.GetString(readFile.ReadBytes(readFile.ReadByte()));
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("MatDef: {0}", mat.MaterialDefinition));
-                mat.LODType = readFile.ReadUInt32();
-                mat.Enabled = readFile.ReadByte();
-                mat.Index = readFile.ReadUInt32();
-                SHPEData.Materials.Add(mat);
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Material {0}: {1}", i, mat.ToString()));
+            if (ReadingSingle)
+                {if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Material Count: {0}", SHPEData.MaterialCount));
+                for (int i = 0; i < SHPEData.MaterialCount; i++)
+                {
+                    SHPEMaterial mat = new();
+                    mat.Group = Encoding.UTF8.GetString(readFile.ReadBytes(readFile.ReadByte()));
+                    if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Group: {0}", mat.Group));
+                    mat.MaterialDefinition = Encoding.UTF8.GetString(readFile.ReadBytes(readFile.ReadByte()));
+                    if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("MatDef: {0}", mat.MaterialDefinition));
+                    mat.LODType = readFile.ReadUInt32();
+                    mat.Enabled = readFile.ReadByte();
+                    mat.Index = readFile.ReadUInt32();
+                    SHPEData.Materials.Add(mat);
+                    if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Material {0}: {1}", i, mat.ToString()));
+                }
             }
         }     
     }
@@ -3049,6 +3895,113 @@ namespace SimsCCManager.PackageReaders
                 }
             }
         }
+    
+        public S2ReadXHTNChunk(BinaryReader readFile, uint size, bool xml)
+        {
+            XmlTextReader xmlDoc = new XmlTextReader(new StringReader(Encoding.UTF8.GetString(readFile.ReadBytes((int)size))));
+            bool inDesc = false;
+            string inAttrDesc = "";
+            while (xmlDoc.Read())
+            {
+                if (xmlDoc.NodeType == XmlNodeType.Element)
+                {
+                    if (xmlDoc.Name == "AnyString") inDesc = true;
+                    if (xmlDoc.Name == "AnyUint32") inDesc = true;
+                }
+                if (xmlDoc.NodeType == XmlNodeType.EndElement)
+                {
+                    inDesc = false;
+                    inAttrDesc = "";
+                }
+                if (inDesc == true)
+                {
+                    if (xmlDoc.AttributeCount > 0)
+                    {
+                        while (xmlDoc.MoveToNextAttribute())
+                        {
+                            switch (xmlDoc.Value.ToLower())
+                            {
+                                case "version":
+                                case "product":
+                                case "age":
+                                case "gender":
+                                case "species":
+                                case "parts":
+                                case "outfit":
+                                case "flags":
+                                case "name":
+                                case "creator":
+                                case "family":
+                                case "genetic":
+                                case "priority":
+                                case "type":
+                                case "preview":
+                                case "proxy":
+                                    inAttrDesc = xmlDoc.Value;
+                                    break;
+                            }
+                        }
+                    }
+                }
+                if (xmlDoc.NodeType == XmlNodeType.Text)
+                {
+                    if (inAttrDesc != "")
+                    {
+                        switch (inAttrDesc.ToLower())
+                        {
+                            case "version":
+                            XHTNData.Version = xmlDoc.Value;
+                            break;
+                            case "product":
+                            XHTNData.Product = xmlDoc.Value;
+                            break;
+                            case "age":
+                            XHTNData.Age = xmlDoc.Value;
+                            break;
+                            case "gender":
+                            XHTNData.Gender = xmlDoc.Value;
+                            break;
+                            case "species":
+                            XHTNData.Species = xmlDoc.Value;
+                            break;
+                            case "parts":
+                            XHTNData.Parts = xmlDoc.Value;
+                            break;
+                            case "outfit":
+                            XHTNData.Outfit = xmlDoc.Value;
+                            break;
+                            case "flags":
+                            XHTNData.Flags = xmlDoc.Value;
+                            break;
+                            case "name":
+                            XHTNData.Name = xmlDoc.Value;
+                            break;
+                            case "creator":
+                            XHTNData.Creator = xmlDoc.Value;
+                            break;
+                            case "family":
+                            XHTNData.Family = xmlDoc.Value;
+                            break;
+                            case "genetic":
+                            XHTNData.Genetic = xmlDoc.Value;
+                            break;
+                            case "priority":
+                            XHTNData.Priority = xmlDoc.Value;
+                            break;
+                            case "type":
+                            XHTNData.Type = xmlDoc.Value;
+                            break;
+                            case "preview":
+                            XHTNData.Preview = xmlDoc.Value;
+                            break;
+                            case "proxy":
+                            XHTNData.Proxy = xmlDoc.Value;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
     }
 
     public struct S2ReadGZPSChunk
@@ -3056,8 +4009,15 @@ namespace SimsCCManager.PackageReaders
         public GZPSData GZPSData = new();
 
         public S2ReadGZPSChunk(BinaryReader readFile)
-        {
+        {     
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Reading GZPS chunk"));                   
+            uint version = readFile.ReadUInt16();
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("version: {0}", version));
+
             uint NumItems = readFile.ReadUInt32();
+
+
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Num items: {0}", NumItems));
             // Read the items
             for (int i = 0; i < NumItems; i++)
             {
@@ -3070,6 +4030,8 @@ namespace SimsCCManager.PackageReaders
                 uint fieldValueFloat = 0;
                 string fieldValueString = "";
                 bool fieldValueBool = false;
+                
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Item {0}: Datatype: {1}", i, dataType));
 
                 switch (dataType)
                 {
@@ -3198,6 +4160,7 @@ namespace SimsCCManager.PackageReaders
 
         public S2ReadGZPSChunk(DecryptByteStream readFile)
         {
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Reading GZPS chunk"));
             readFile.ReadUInt16();
             uint NumItems = readFile.ReadUInt32();
             // Read the items
@@ -3340,6 +4303,7 @@ namespace SimsCCManager.PackageReaders
 
         public S2ReadGZPSChunk(DecryptByteStream readFile, bool xml)
         {
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Reading GZPS chunk"));
             XmlTextReader xmlDoc = new XmlTextReader(new StringReader(Encoding.UTF8.GetString(readFile.GetEntireStream())));
             bool inDesc = false;
             string inAttrDesc = "";
@@ -3504,6 +4468,176 @@ namespace SimsCCManager.PackageReaders
                 }
             }
         }
+    
+        public S2ReadGZPSChunk(BinaryReader readFile, uint size, bool xml)
+        {
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Reading GZPS chunk"));
+            XmlTextReader xmlDoc = new XmlTextReader(new StringReader(Encoding.UTF8.GetString(readFile.ReadBytes((int)size))));
+            bool inDesc = false;
+            string inAttrDesc = "";
+            while (xmlDoc.Read())
+            {
+                if (xmlDoc.NodeType == XmlNodeType.Element)
+                {
+                    if (xmlDoc.Name == "AnyString") inDesc = true;
+                    if (xmlDoc.Name == "AnyUint32") inDesc = true;
+                }
+                if (xmlDoc.NodeType == XmlNodeType.EndElement)
+                {
+                    inDesc = false;
+                    inAttrDesc = "";
+                }
+                if (inDesc == true)
+                {
+                    if (xmlDoc.AttributeCount > 0)
+                    {
+                        while (xmlDoc.MoveToNextAttribute())
+                        {
+                            switch (xmlDoc.Value.ToLower())
+                            {
+                                case "version":
+                                case "product":
+                                case "age":
+                                case "gender":
+                                case "species":
+                                case "parts":
+                                case "outfit":
+                                case "flags":
+                                case "name":
+                                case "creator":
+                                case "family":
+                                case "genetic":
+                                case "priority":
+                                case "type":
+                                case "skin":
+                                case "hairtone":
+                                case "category":
+                                case "shoe":
+                                case "fitness":
+                                case "resourcekeyidx":
+                                case "shapekeyidx":
+                                case "numoverrides":
+                                case "override0shape":
+                                case "override0subset":
+                                case "override0resourcekeyidx":
+                                case "override1shape":
+                                case "override1subset":
+                                case "override1resourcekeyidx":
+                                case "override2shape":
+                                case "override2subset":
+                                case "override2resourcekeyidx":
+                                    inAttrDesc = xmlDoc.Value;
+                                    break;
+                            }
+                        }
+                    }
+                }
+                if (xmlDoc.NodeType == XmlNodeType.Text)
+                {
+                    if (inAttrDesc != "")
+                    {
+                        switch (inAttrDesc.ToLower())
+                        {
+                            case "version":
+                            GZPSData.Version = xmlDoc.Value;
+                            break;
+                            case "product":
+                            GZPSData.Product = xmlDoc.Value;
+                            break;
+                            case "age":
+                            GZPSData.Age = xmlDoc.Value;
+                            break;
+                            case "gender":
+                            GZPSData.Gender = xmlDoc.Value;
+                            break;
+                            case "species":
+                            GZPSData.Species = xmlDoc.Value;
+                            break;
+                            case "parts":
+                            GZPSData.Parts = xmlDoc.Value;
+                            break;
+                            case "outfit":
+                            GZPSData.Outfit = xmlDoc.Value;
+                            break;
+                            case "flags":
+                            GZPSData.Flags = xmlDoc.Value;
+                            break;
+                            case "name":
+                            GZPSData.Name = xmlDoc.Value;
+                            break;
+                            case "creator":
+                            GZPSData.Creator = xmlDoc.Value;
+                            break;
+                            case "family":
+                            GZPSData.Family = xmlDoc.Value;
+                            break;
+                            case "genetic":
+                            GZPSData.Genetic = xmlDoc.Value;
+                            break;
+                            case "priority":
+                            GZPSData.Priority = xmlDoc.Value;
+                            break;
+                            case "type":
+                            GZPSData.Type = xmlDoc.Value;
+                            break;
+                            case "skin":
+                            GZPSData.Skin = xmlDoc.Value;
+                            break;
+                            case "hairtone":
+                            GZPSData.Hairtone = xmlDoc.Value;
+                            break;
+                            case "category":
+                            GZPSData.Category = xmlDoc.Value;
+                            break;
+                            case "shoe":
+                            GZPSData.Shoe = xmlDoc.Value;
+                            break;
+                            case "fitness":
+                            GZPSData.Fitness = xmlDoc.Value;
+                            break;
+                            case "resourcekeyidx":
+                            GZPSData.Resourcekeyidx = xmlDoc.Value;
+                            break;
+                            case "shapekeyidx":
+                            GZPSData.Shapekeyidx = xmlDoc.Value;
+                            break;
+                            case "numoverrides":
+                            GZPSData.Numoverrides = xmlDoc.Value;
+                            break;
+                            case "override0shape":
+                            GZPSData.Override0shape = xmlDoc.Value;
+                            break;
+                            case "override0subset":
+                            GZPSData.Override0subset = xmlDoc.Value;
+                            break;
+                            case "override0resourcekeyidx":
+                            GZPSData.Override0resourcekeyidx = xmlDoc.Value;
+                            break;
+                            case "override1shape":
+                            GZPSData.Override1shape = xmlDoc.Value;
+                            break;
+                            case "override1subset":
+                            GZPSData.Override1subset = xmlDoc.Value;
+                            break;
+                            case "override1resourcekeyidx":
+                            GZPSData.Override1resourcekeyidx = xmlDoc.Value;
+                            break;
+                            case "override2shape":
+                            GZPSData.Override2shape = xmlDoc.Value;
+                            break;
+                            case "override2subset":
+                            GZPSData.Override2subset = xmlDoc.Value;
+                            break;
+                            case "override2resourcekeyidx":
+                            GZPSData.Override2resourcekeyidx = xmlDoc.Value;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    
+    
     }
 
 
@@ -3901,47 +5035,59 @@ namespace SimsCCManager.PackageReaders
         private List<uint> Mips = new();
         public S2ReadTXTRChunk(BinaryReader readFile, FileInfo fileInfo, int txtrc)
         {
+            
             file = fileInfo;
             uint CreatorID;
             uint FormatFlag;
-            //readFile.ReadBytes(16);
             byte namelength = readFile.ReadByte();
             while (namelength != 10)
             {
                 namelength = readFile.ReadByte();
             }
             string blockName = CleanInput(Encoding.UTF8.GetString(readFile.ReadBytes(namelength)));
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("BlockName: {0}", blockName));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("BlockName: {0}", blockName));
             string BlockID = readFile.ReadUInt32().ToString("X8");
             uint BlockVersion = readFile.ReadUInt32(); // 7, 8, or 9
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("TXTR BlockName: {0}, Block ID: {1}, Block Version: {2}", blockName, BlockID, BlockVersion));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("TXTR BlockName: {0}, Block ID: {1}, Block Version: {2}", blockName, BlockID, BlockVersion));
             byte resourceIDlength = readFile.ReadByte();
             string resourceID = CleanInput(Encoding.UTF8.GetString(readFile.ReadBytes(resourceIDlength)));
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("ResourceID: {0}", resourceID));
-            readFile.ReadBytes(8);
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("ResourceID: {0}", resourceID));
             byte filenamelength = readFile.ReadByte();
+            while (filenamelength < 5)
+            {
+                filenamelength = readFile.ReadByte();
+            }
+            long pos = readFile.BaseStream.Position;
             TXTRData.FullTXTRName = Encoding.UTF8.GetString(readFile.ReadBytes(filenamelength));
-            if (!string.IsNullOrEmpty(TXTRData.TextureName)) if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Full Filename: {0}, Guid: {1}, Texture Name: {2}", TXTRData.FullTXTRName, TXTRData.GUID, TXTRData.TextureName));
+            if (TXTRData.FullTXTRName.EndsWith("_txt")) 
+            {
+                readFile.BaseStream.Position = pos;
+                filenamelength++;
+                TXTRData.FullTXTRName = Utilities.RemoveInvalidXmlChars(Encoding.UTF8.GetString(readFile.ReadBytes(filenamelength)));
+            }
+            if (!string.IsNullOrEmpty(TXTRData.TextureName)) if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Full Filename: {0}, Guid: {1}, Texture Name: {2}", TXTRData.FullTXTRName, TXTRData.GUID, TXTRData.TextureName));
+            
+            if (!string.IsNullOrEmpty(TXTRData.TextureName)) if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Full Filename: {0}, Guid: {1}, Texture Name: {2}", TXTRData.FullTXTRName, TXTRData.GUID, TXTRData.TextureName));
             TXTRData.TextureWidth = readFile.ReadUInt32();
             TXTRData.TextureHeight = readFile.ReadUInt32();
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Height: {0}, Width: {1}", TXTRData.TextureHeight, TXTRData.TextureWidth));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Height: {0}, Width: {1}", TXTRData.TextureHeight, TXTRData.TextureWidth));
             TXTRData.FormatCode = readFile.ReadUInt32();
             TXTRData.MipMapLevels = readFile.ReadUInt32();
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Image stored as Format {0}, Mipmaps: {1}", TXTRData.FormatCode, TXTRData.MipMapLevels));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Image stored as Format {0}, Mipmaps: {1}", TXTRData.FormatCode, TXTRData.MipMapLevels));
             uint Purpose = readFile.ReadUInt16();
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Purpose: {0}", Purpose));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Purpose: {0}", Purpose));
             uint unknown2 = readFile.ReadUInt16();
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Unknown2 that should be 3f80,4040,4000: {0}", unknown2.ToString("X4")));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Unknown2 that should be 3f80,4040,4000: {0}", unknown2.ToString("X4")));
             uint OuterLoopCount = readFile.ReadUInt32();
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Outer loops: {0}", OuterLoopCount));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Outer loops: {0}", OuterLoopCount));
             uint unknown3 = readFile.ReadUInt32();
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("This should be 0: {0}", unknown3));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("This should be 0: {0}", unknown3));
             uint InnerLoopCount = 0;
             if (BlockVersion == 9)
             {
                 byte repfilename = readFile.ReadByte();
                 string repeatFileName = Encoding.UTF8.GetString(readFile.ReadBytes(repfilename));
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Repeat File Name: {0}", repeatFileName));
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Repeat File Name: {0}", repeatFileName));
             }
             for (int o = 0; o < OuterLoopCount; o++)
             {
@@ -3953,11 +5099,11 @@ namespace SimsCCManager.PackageReaders
                 {
                     InnerLoopCount = readFile.ReadUInt32();
                 }
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Inner Loops: {0}", InnerLoopCount));
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Inner Loops: {0}", InnerLoopCount));
                 for (int i = 0; i < InnerLoopCount; i++)
                 {
                     byte DataType = readFile.ReadByte();
-                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("DataType: {0}", DataType));
+                    if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("DataType: {0}", DataType));
                     uint ImageDataSize = 0;
                     if (DataType == 1)
                     {
@@ -3970,44 +5116,44 @@ namespace SimsCCManager.PackageReaders
                         //if (TXTRData.MipMapLevels > 1) mipmaps = true;
                         ImageDataSize = readFile.ReadUInt32();
                         InterpretMipSize(TXTRData.MipMapLevels);
-                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Image Data Size: {0}", ImageDataSize));
+                        if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Image Data Size: {0}", ImageDataSize));
                         if (ImageDataSize >= Mips[0])
                         {
                             if (TXTRData.FormatCode == 1)
                             {
                                 TXTRData.Texture = Godot.Image.CreateFromData((int)TXTRData.TextureWidth, (int)TXTRData.TextureHeight, mipmaps, Godot.Image.Format.Rgba8, readFile.ReadBytes((int)ImageDataSize));
-                                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Saved Image (Type: {0}, Name: {1}) to TXTRData. Size: {2}", TXTRData.FormatCode, TXTRData.FullTXTRName, TXTRData.Texture.GetDataSize()));
+                                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Saved Image (Type: {0}, Name: {1}) to TXTRData. Size: {2}", TXTRData.FormatCode, TXTRData.FullTXTRName, TXTRData.Texture.GetDataSize()));
                                 //texture.SavePng(string.Format("{0}_{1}.dds", fileInfo.FullName, txtrc));                                
                             }
                             else if (TXTRData.FormatCode == 2)
                             {
                                 TXTRData.Texture = Godot.Image.CreateFromData((int)TXTRData.TextureWidth, (int)TXTRData.TextureHeight, mipmaps, Godot.Image.Format.Rgb8, readFile.ReadBytes((int)ImageDataSize));
-                                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Saved Image (Type: {0}, Name: {1}) to TXTRData. Size: {2}", TXTRData.FormatCode, TXTRData.FullTXTRName, TXTRData.Texture.GetDataSize()));
+                                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Saved Image (Type: {0}, Name: {1}) to TXTRData. Size: {2}", TXTRData.FormatCode, TXTRData.FullTXTRName, TXTRData.Texture.GetDataSize()));
                                 //texture.SavePng(string.Format("{0}_{1}.png", fileInfo.FullName, txtrc));
                             }
                             else if (TXTRData.FormatCode == 4)
                             {
                                 TXTRData.Texture = Godot.Image.CreateFromData((int)TXTRData.TextureWidth, (int)TXTRData.TextureHeight, mipmaps, Godot.Image.Format.Dxt1, readFile.ReadBytes((int)ImageDataSize));
-                                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Saved Image (Type: {0}, Name: {1}) to TXTRData. Size: {2}", TXTRData.FormatCode, TXTRData.FullTXTRName, TXTRData.Texture.GetDataSize()));
+                                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Saved Image (Type: {0}, Name: {1}) to TXTRData. Size: {2}", TXTRData.FormatCode, TXTRData.FullTXTRName, TXTRData.Texture.GetDataSize()));
                                 //texture.SavePng(string.Format("{0}_{1}.png", fileInfo.FullName, txtrc));
                             }
                             else if (TXTRData.FormatCode == 5)
                             {
                                 TXTRData.Texture = Godot.Image.CreateFromData((int)TXTRData.TextureWidth, (int)TXTRData.TextureHeight, mipmaps, Godot.Image.Format.Dxt3, readFile.ReadBytes((int)ImageDataSize));
-                                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Saved Image (Type: {0}, Name: {1}) to TXTRData. Size: {2}", TXTRData.FormatCode, TXTRData.FullTXTRName, TXTRData.Texture.GetDataSize()));
+                                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Saved Image (Type: {0}, Name: {1}) to TXTRData. Size: {2}", TXTRData.FormatCode, TXTRData.FullTXTRName, TXTRData.Texture.GetDataSize()));
                                 //texture.SavePng(string.Format("{0}_{1}.png", fileInfo.FullName, txtrc));
                             }
                             else if (TXTRData.FormatCode == 6)
                             {
                                 TXTRData.Texture = Godot.Image.CreateFromData((int)TXTRData.TextureWidth, (int)TXTRData.TextureHeight, mipmaps, Godot.Image.Format.L8, readFile.ReadBytes((int)ImageDataSize));
                                 //TXTRData.Texture.Convert(Godot.Image.Format.L8);
-                                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Saved Image (Type: {0}, Name: {1}) to TXTRData. Size: {2}", TXTRData.FormatCode, TXTRData.FullTXTRName, TXTRData.Texture.GetDataSize()));
+                                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Saved Image (Type: {0}, Name: {1}) to TXTRData. Size: {2}", TXTRData.FormatCode, TXTRData.FullTXTRName, TXTRData.Texture.GetDataSize()));
                                 //texture.SavePng(string.Format("{0}_{1}.png", fileInfo.FullName, txtrc));
                             }
                             else if (TXTRData.FormatCode == 8)
                             {
                                 TXTRData.Texture = Godot.Image.CreateFromData((int)TXTRData.TextureWidth, (int)TXTRData.TextureHeight, mipmaps, Godot.Image.Format.Dxt5, readFile.ReadBytes((int)ImageDataSize));
-                                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Saved Image (Type: {0}, Name: {1}) to TXTRData. Size: {2}", TXTRData.FormatCode, TXTRData.FullTXTRName, TXTRData.Texture.GetDataSize()));
+                                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Saved Image (Type: {0}, Name: {1}) to TXTRData. Size: {2}", TXTRData.FormatCode, TXTRData.FullTXTRName, TXTRData.Texture.GetDataSize()));
                                 //texture.SavePng(string.Format("{0}_{1}.png", fileInfo.FullName, txtrc));
                             }
                         }
@@ -4039,37 +5185,50 @@ namespace SimsCCManager.PackageReaders
                 namelength = readFile.ReadByte();
             }
             string blockName = CleanInput(Encoding.UTF8.GetString(readFile.ReadBytes(namelength)));
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("BlockName: {0}", blockName));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("BlockName: {0}", blockName));
             string BlockID = readFile.ReadUInt32().ToString("X8");
             uint BlockVersion = readFile.ReadUInt32(); // 7, 8, or 9
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("TXTR BlockName: {0}, Block ID: {1}, Block Version: {2}", blockName, BlockID, BlockVersion));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("TXTR BlockName: {0}, Block ID: {1}, Block Version: {2}", blockName, BlockID, BlockVersion));
             byte resourceIDlength = readFile.ReadByte();
             string resourceID = CleanInput(Encoding.UTF8.GetString(readFile.ReadBytes(resourceIDlength)));
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("ResourceID: {0}", resourceID));
-            readFile.ReadBytes(8);
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("ResourceID: {0}", resourceID));
             byte filenamelength = readFile.ReadByte();
+            while (filenamelength < 5)
+            {
+                filenamelength = readFile.ReadByte();
+            }
+            int pos = readFile.Offset;
             TXTRData.FullTXTRName = Encoding.UTF8.GetString(readFile.ReadBytes(filenamelength));
-            if (!string.IsNullOrEmpty(TXTRData.TextureName)) if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Full Filename: {0}, Guid: {1}, Texture Name: {2}", TXTRData.FullTXTRName, TXTRData.GUID, TXTRData.TextureName));
+            if (TXTRData.FullTXTRName.EndsWith("_txt")) 
+            {
+                readFile.Offset = pos;
+                filenamelength++;
+                TXTRData.FullTXTRName = Utilities.RemoveInvalidXmlChars(Encoding.UTF8.GetString(readFile.ReadBytes(filenamelength)));
+            }
+            if (!string.IsNullOrEmpty(TXTRData.TextureName)) if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Full Filename: {0}, Guid: {1}, Texture Name: {2}", TXTRData.FullTXTRName, TXTRData.GUID, TXTRData.TextureName));
+            
+            
+            
             TXTRData.TextureWidth = readFile.ReadUInt32();
             TXTRData.TextureHeight = readFile.ReadUInt32();
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Height: {0}, Width: {1}", TXTRData.TextureHeight, TXTRData.TextureWidth));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Height: {0}, Width: {1}", TXTRData.TextureHeight, TXTRData.TextureWidth));
             TXTRData.FormatCode = readFile.ReadUInt32();
             TXTRData.MipMapLevels = readFile.ReadUInt32();
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Image stored as Format {0}, Mipmaps: {1}", TXTRData.FormatCode, TXTRData.MipMapLevels));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Image stored as Format {0}, Mipmaps: {1}", TXTRData.FormatCode, TXTRData.MipMapLevels));
             uint Purpose = readFile.ReadUInt16();
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Purpose: {0}", Purpose));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Purpose: {0}", Purpose));
             uint unknown2 = readFile.ReadUInt16();
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Unknown2 that should be 3f80,4040,4000: {0}", unknown2.ToString("X4")));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Unknown2 that should be 3f80,4040,4000: {0}", unknown2.ToString("X4")));
             uint OuterLoopCount = readFile.ReadUInt32();
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Outer loops: {0}", OuterLoopCount));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Outer loops: {0}", OuterLoopCount));
             uint unknown3 = readFile.ReadUInt32();
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("This should be 0: {0}", unknown3));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("This should be 0: {0}", unknown3));
             uint InnerLoopCount = 0;
             if (BlockVersion == 9)
             {
                 byte repfilename = readFile.ReadByte();
                 string repeatFileName = Encoding.UTF8.GetString(readFile.ReadBytes(repfilename));
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Repeat File Name: {0}", repeatFileName));
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Repeat File Name: {0}", repeatFileName));
             }
             for (int o = 0; o < OuterLoopCount; o++)
             {
@@ -4081,11 +5240,11 @@ namespace SimsCCManager.PackageReaders
                 {
                     InnerLoopCount = readFile.ReadUInt32();
                 }
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Inner Loops: {0}", InnerLoopCount));
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Inner Loops: {0}", InnerLoopCount));
                 for (int i = 0; i < InnerLoopCount; i++)
                 {
                     byte DataType = readFile.ReadByte();
-                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("DataType: {0}", DataType));
+                    if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("DataType: {0}", DataType));
                     uint ImageDataSize = 0;
                     if (DataType == 1)
                     {
@@ -4098,43 +5257,43 @@ namespace SimsCCManager.PackageReaders
                         //if (TXTRData.MipMapLevels > 1) mipmaps = true;
                         ImageDataSize = readFile.ReadUInt32();
                         InterpretMipSize(TXTRData.MipMapLevels);
-                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Image Data Size: {0}", ImageDataSize));
+                        if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Image Data Size: {0}", ImageDataSize));
                         if (ImageDataSize >= Mips[0])
                         {
                             if (TXTRData.FormatCode == 1)
                             {
                                 TXTRData.Texture = Godot.Image.CreateFromData((int)TXTRData.TextureWidth, (int)TXTRData.TextureHeight, mipmaps, Godot.Image.Format.Rgba8, readFile.ReadBytes((uint)ImageDataSize));
-                                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Saved Image (Type: {0}, Name: {1}) to TXTRData. Size: {2}", TXTRData.FormatCode, TXTRData.FullTXTRName, TXTRData.Texture.GetDataSize()));
+                                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Saved Image (Type: {0}, Name: {1}) to TXTRData. Size: {2}", TXTRData.FormatCode, TXTRData.FullTXTRName, TXTRData.Texture.GetDataSize()));
                                 //texture.SavePng(string.Format("{0}_{1}.dds", fileInfo.FullName, txtrc));                                
                             }
                             else if (TXTRData.FormatCode == 2)
                             {
                                 TXTRData.Texture = Godot.Image.CreateFromData((int)TXTRData.TextureWidth, (int)TXTRData.TextureHeight, mipmaps, Godot.Image.Format.Rgb8, readFile.ReadBytes((uint)ImageDataSize));
-                                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Saved Image (Type: {0}, Name: {1}) to TXTRData. Size: {2}", TXTRData.FormatCode, TXTRData.FullTXTRName, TXTRData.Texture.GetDataSize()));
+                                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Saved Image (Type: {0}, Name: {1}) to TXTRData. Size: {2}", TXTRData.FormatCode, TXTRData.FullTXTRName, TXTRData.Texture.GetDataSize()));
                                 //texture.SavePng(string.Format("{0}_{1}.png", fileInfo.FullName, txtrc));
                             }
                             else if (TXTRData.FormatCode == 4)
                             {
                                 TXTRData.Texture = Godot.Image.CreateFromData((int)TXTRData.TextureWidth, (int)TXTRData.TextureHeight, mipmaps, Godot.Image.Format.Dxt1, readFile.ReadBytes((uint)ImageDataSize));
-                                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Saved Image (Type: {0}, Name: {1}) to TXTRData. Size: {2}", TXTRData.FormatCode, TXTRData.FullTXTRName, TXTRData.Texture.GetDataSize()));
+                                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Saved Image (Type: {0}, Name: {1}) to TXTRData. Size: {2}", TXTRData.FormatCode, TXTRData.FullTXTRName, TXTRData.Texture.GetDataSize()));
                                 //texture.SavePng(string.Format("{0}_{1}.png", fileInfo.FullName, txtrc));
                             }
                             else if (TXTRData.FormatCode == 5)
                             {
                                 TXTRData.Texture = Godot.Image.CreateFromData((int)TXTRData.TextureWidth, (int)TXTRData.TextureHeight, mipmaps, Godot.Image.Format.Dxt3, readFile.ReadBytes((uint)ImageDataSize));
-                                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Saved Image (Type: {0}, Name: {1}) to TXTRData. Size: {2}", TXTRData.FormatCode, TXTRData.FullTXTRName, TXTRData.Texture.GetDataSize()));
+                                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Saved Image (Type: {0}, Name: {1}) to TXTRData. Size: {2}", TXTRData.FormatCode, TXTRData.FullTXTRName, TXTRData.Texture.GetDataSize()));
                                 //texture.SavePng(string.Format("{0}_{1}.png", fileInfo.FullName, txtrc));
                             }
                             else if (TXTRData.FormatCode == 6)
                             {
                                 TXTRData.Texture = Godot.Image.CreateFromData((int)TXTRData.TextureWidth, (int)TXTRData.TextureHeight, mipmaps, Godot.Image.Format.L8, readFile.ReadBytes((uint)ImageDataSize));
-                                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Saved Image (Type: {0}, Name: {1}) to TXTRData. Size: {2}", TXTRData.FormatCode, TXTRData.FullTXTRName, TXTRData.Texture.GetDataSize()));
+                                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Saved Image (Type: {0}, Name: {1}) to TXTRData. Size: {2}", TXTRData.FormatCode, TXTRData.FullTXTRName, TXTRData.Texture.GetDataSize()));
                                 //texture.SavePng(string.Format("{0}_{1}.png", fileInfo.FullName, txtrc));
                             }
                             else if (TXTRData.FormatCode == 8)
                             {
                                 TXTRData.Texture = Godot.Image.CreateFromData((int)TXTRData.TextureWidth, (int)TXTRData.TextureHeight, mipmaps, Godot.Image.Format.Dxt5, readFile.ReadBytes((uint)ImageDataSize));
-                                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Saved Image (Type: {0}, Name: {1}) to TXTRData. Size: {2}", TXTRData.FormatCode, TXTRData.FullTXTRName, TXTRData.Texture.GetDataSize()));
+                                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Saved Image (Type: {0}, Name: {1}) to TXTRData. Size: {2}", TXTRData.FormatCode, TXTRData.FullTXTRName, TXTRData.Texture.GetDataSize()));
                                 //texture.SavePng(string.Format("{0}_{1}.png", fileInfo.FullName, txtrc));
                             }
                         }
@@ -4263,7 +5422,7 @@ namespace SimsCCManager.PackageReaders
 
         private void DebugFinish()
         {
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Type: {0}, Sound: {1}", XFLRData.Type, XFLRData.SoundSuffix));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Type: {0}, Sound: {1}", XFLRData.Type, XFLRData.SoundSuffix));
         }
 
         public S2ReadXFLRChunk(BinaryReader readFile)
@@ -4933,13 +6092,13 @@ namespace SimsCCManager.PackageReaders
 
 
 
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Version: {0}. FileName: {1}, ResourceName: {1}", Version, GMDCData.FileName, GMDCData.ResourceName));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Version: {0}. FileName: {1}, ResourceName: {1}", Version, GMDCData.FileName, GMDCData.ResourceName));
             // all above works
             //most meshses use version 4, apparently
 
 
             uint NumRecs = readFile.ReadUInt32();
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("NumRecs:{0}", NumRecs));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("NumRecs:{0}", NumRecs));
 
             for (int i = 0; i < NumRecs; i++)
             {
@@ -4967,12 +6126,12 @@ namespace SimsCCManager.PackageReaders
                 {
                     var e = ReadElement(element);
                     IElements.Add(e);
-                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(e.ToString());
+                    if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(e.ToString());
                 }
                 else
                 {
                     element.ItemCount = readFile.ReadUInt32();
-                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(element.ToString());
+                    if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(element.ToString());
                     IElements.Add(element);
                 }
 
@@ -4981,7 +6140,7 @@ namespace SimsCCManager.PackageReaders
 
                 //
 
-                //if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Identity: {0}, Block Format: {1}, Set Format: {2}, BlockSize: {3}, ItemCount: {4}", element.Identity, element.BlockFormat, element.SetFormat, element.BlockSize, element.ItemCount));
+                //if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Identity: {0}, Block Format: {1}, Set Format: {2}, BlockSize: {3}, ItemCount: {4}", element.Identity, element.BlockFormat, element.SetFormat, element.BlockSize, element.ItemCount));
 
 
             }
@@ -5050,7 +6209,7 @@ namespace SimsCCManager.PackageReaders
                     }
                 }
                 Linkages.Add(linkage);
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0}", linkage.ToString()));
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("{0}", linkage.ToString()));
 
             }
 
@@ -5241,7 +6400,7 @@ namespace SimsCCManager.PackageReaders
 
         private IGMDCElement ReadElement(GMDCElement element)
         {
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Identity: {0}, Block Format: {1}, Set Format: {2}, BlockSize: {3}, ItemCount: {4}, List Length: {5}, Length: {6}", element.Identity, element.BlockFormat, element.SetFormat, element.BlockSize, element.ItemCount, element.ListLength, element.Length));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Identity: {0}, Block Format: {1}, Set Format: {2}, BlockSize: {3}, ItemCount: {4}, List Length: {5}, Length: {6}", element.Identity, element.BlockFormat, element.SetFormat, element.BlockSize, element.ItemCount, element.ListLength, element.Length));
             if (element.BlockSize != 0)
             {
                 switch (element.Identity)
@@ -5363,9 +6522,9 @@ namespace SimsCCManager.PackageReaders
                         switch (j)
                         {
                             case 0:
-                                //if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Pos before reading Single: {0}", readFile.BaseStream.Position));
+                                //if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Pos before reading Single: {0}", readFile.BaseStream.Position));
                                 vector3.X = float.Parse(readFile.ReadSingle().ToString("0.######"));
-                                //if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Pos after reading Single: {0}", readFile.BaseStream.Position));
+                                //if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Pos after reading Single: {0}", readFile.BaseStream.Position));
 
                                 break;
                             case 1:
@@ -5451,7 +6610,7 @@ namespace SimsCCManager.PackageReaders
 
         public void DebugFinish()
         {
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Type: {0}, Category: {1}, Subtype: {2}, Subsort: {3}", XOBJData.Type, XOBJData.Category, XOBJData.Subtype, XOBJData.Subsort));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Type: {0}, Category: {1}, Subtype: {2}, Subsort: {3}", XOBJData.Type, XOBJData.Category, XOBJData.Subtype, XOBJData.Subsort));
         }
         public S2ReadXOBJChunk(BinaryReader readFile)
         {
@@ -5718,7 +6877,7 @@ namespace SimsCCManager.PackageReaders
                 OBJDData.UseDefaultPlacementFlags = readFile.ReadUInt16();
                 OBJDData.LookAtScore = readFile.ReadUInt16();
                 OBJDData.ObjectGUID = readFile.ReadUInt32().ToString("X8");
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("OBJD Guid: {0}", OBJDData.ObjectGUID));
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("OBJD Guid: {0}", OBJDData.ObjectGUID));
                 // Skip stuff we don't need
                 readFile.ReadBytes(46);
                 OBJDData.RoomSortFlag = readFile.ReadUInt16();
@@ -5731,7 +6890,7 @@ namespace SimsCCManager.PackageReaders
                 {
                     fsfn++;
                 }
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Function sort flag: {0}", fsfn));
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Function sort flag: {0}", fsfn));
 
 
                 // No function sort, check Build Mode Sort
@@ -5753,7 +6912,7 @@ namespace SimsCCManager.PackageReaders
                     }
                     else
                     {
-                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("NOT RECOGNIZED: BUILD MODE - Type: {0}, Subsort: {1}", BuildModeType, BuildModeSubsort));
+                        if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("NOT RECOGNIZED: BUILD MODE - Type: {0}, Subsort: {1}", BuildModeType, BuildModeSubsort));
                     }
 
                 }
@@ -5781,7 +6940,7 @@ namespace SimsCCManager.PackageReaders
                             }
                             else
                             {
-                                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("NOT RECOGNIZED: BUY MODE - Flag Num: {0}, Subsort: {1}", f, FunctionSubsort));
+                                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("NOT RECOGNIZED: BUY MODE - Flag Num: {0}, Subsort: {1}", f, FunctionSubsort));
                             }
                         }
                     }
@@ -5821,7 +6980,7 @@ namespace SimsCCManager.PackageReaders
                 {
                     fsfn++;
                 }
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Function sort flag: {0}", fsfn));
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Function sort flag: {0}", fsfn));
 
 
                 // No function sort, check Build Mode Sort
@@ -5843,7 +7002,7 @@ namespace SimsCCManager.PackageReaders
                     }
                     else
                     {
-                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("NOT RECOGNIZED: BUILD MODE - Type: {0}, Subsort: {1}", BuildModeType, BuildModeSubsort));
+                        if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("NOT RECOGNIZED: BUILD MODE - Type: {0}, Subsort: {1}", BuildModeType, BuildModeSubsort));
                     }
 
                 }
@@ -5870,7 +7029,7 @@ namespace SimsCCManager.PackageReaders
                             }
                             else
                             {
-                                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("NOT RECOGNIZED: BUY MODE - Flag Num: {0}, Subsort: {1}", f, FunctionSubsort));
+                                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("NOT RECOGNIZED: BUY MODE - Flag Num: {0}, Subsort: {1}", f, FunctionSubsort));
                             }
                         }
                     }
@@ -6045,7 +7204,7 @@ namespace SimsCCManager.PackageReaders
                 power = power * 256;
                 currOffset++;
             }
-            //if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("UInt32 Result: {0}", result));
+            //if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("UInt32 Result: {0}", result));
             return result;
         }
 
@@ -6287,13 +7446,12 @@ namespace SimsCCManager.PackageReaders
         {
             get
             {
-                try
+                if (Sims2PackageStatics.Sims2EntryTypes.Any(x => x.TypeID == TypeID))
                 {
                     return Sims2PackageStatics.Sims2EntryTypes.First(x => x.TypeID == TypeID).Tag;
-                }
-                catch
+                } else
                 {
-                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("TypeID doesn't have a matching entry: {0}", TypeID));
+                    //if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("TypeID doesn't have a matching entry: {0}", TypeID));
                     return "UNKNOWN";
                 }
             }
@@ -6503,6 +7661,7 @@ namespace SimsCCManager.PackageReaders
             GroupID = entry.GroupID; 
             InstanceID = entry.InstanceID; 
         }
+        public string stdMatBaseTextureName {get; set;}
         public string FileName {get; set;}
         public string MaterialDescription {get; set;}
         public string MaterialType {get; set;}
@@ -6930,6 +8089,68 @@ namespace SimsCCManager.PackageReaders
         public string Type {get; set;}
 
     }
+
+    public class GMNDData : IIndexEntry
+    {
+        public string TypeID {get; set;}
+        public string GroupID {get; set;}
+        public string InstanceID {get; set;}
+        private string _fullkeyproxy;
+        public string FullKey { get { return string.Format("{0}-{1}-{2}", TypeID, GroupID, InstanceID); }
+        set { _fullkeyproxy = value; } }
+        public void CopyEntryInfo(IndexEntry entry)
+        {
+            TypeID = entry.TypeID; 
+            GroupID = entry.GroupID; 
+            InstanceID = entry.InstanceID; 
+        }
+
+        public string FileName {get; set;}
+
+        public List<GMNDExtension> Extensions {get; set;} = new();
+        public List<GMNDReference> References {get; set;} = new();
+    }
+
+    public class GMNDReference
+    {
+        public uint BlockID {get; set;}
+        public string TypeID {get; set;}
+        public string GroupID {get; set;}
+        public string InstanceID {get; set;}
+        private string _fullkeyproxy;
+        public string FullKey { get { return string.Format("{0}-{1}-{2}", TypeID, GroupID, InstanceID); }
+        set { _fullkeyproxy = value; } }
+
+
+    }
+
+    public class GMNDExtension
+    {
+        public bool Enabled {get; set;}
+        public bool Depends {get; set;}
+        public uint Idx {get; set;}
+        public uint Version {get; set;}
+        public byte Typecode {get; set;}
+        public string Name {get; set;}
+        public List<GMNDExtensionItem> Items {get; set;} = new();
+
+        public override string ToString()
+        {
+            StringBuilder sb = new();
+            foreach (GMNDExtensionItem item in Items)
+            {
+                sb.Append(string.Format("{0}, ", item.ItemName));
+            }            
+            return string.Format("Enabled: {0}, Depends: {1}, Idx: {2}, Version: {3}, Name: {4}, Items: {5}", Enabled, Depends, Idx, Version, Name, sb.ToString().TrimEnd().TrimEnd(','));
+        }
+    }
+
+    public class GMNDExtensionItem
+    {
+        public string ItemName {get; set;}
+        public string ItemContent {get; set;}
+    }
+
 
 
     public interface IGMDCElement

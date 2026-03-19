@@ -1,12 +1,30 @@
-[gd_scene load_steps=6 format=3 uid="uid://by57lerhdaesp"]
+[gd_scene load_steps=10 format=3 uid="uid://by57lerhdaesp"]
 
+[ext_resource type="Script" uid="uid://b8u8eet33e3bx" path="res://UI/PackageDisplay/ViewErrorsDisplay.cs" id="1_eoc80"]
 [ext_resource type="Theme" uid="uid://b4fe82i5mblf5" path="res://themes/packagedisplay_headers.tres" id="1_huf2i"]
 [ext_resource type="Theme" uid="uid://elq77dslte5a" path="res://themes/ManageCategories_buttons.tres" id="2_eoc80"]
+[ext_resource type="PackedScene" uid="uid://pv3tpvqdfgi2" path="res://UI/PackageDisplay/VED_HeaderLabel.tscn" id="3_1qtqr"]
+[ext_resource type="PackedScene" uid="uid://bj1ppfpvsdymk" path="res://UI/PackageDisplay/VED_Item.tscn" id="3_jiq8o"]
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_r2byt"]
-bg_color = Color(0.6, 0.6, 0.6, 0)
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_1qtqr"]
+bg_color = Color(0.85, 0.85, 0.85, 0.2901961)
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_l055a"]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_jiq8o"]
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.38549247, 0.38549256, 0.38549227, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+expand_margin_left = 10.0
+expand_margin_top = 10.0
+expand_margin_right = 10.0
+expand_margin_bottom = 10.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_062ry"]
 bg_color = Color(0.6, 0.6, 0.6, 0)
 border_width_left = 3
 border_width_top = 4
@@ -18,87 +36,130 @@ corner_radius_top_right = 3
 corner_radius_bottom_right = 3
 corner_radius_bottom_left = 3
 
-[sub_resource type="Theme" id="Theme_eke67"]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_gvp7y"]
+bg_color = Color(0.6, 0.6, 0.6, 0)
 
-[node name="ViewErrorsDisplay" type="MarginContainer"]
-visible = false
+[node name="ViewErrorsDisplay" type="MarginContainer" node_paths=PackedStringArray("ErrorItemsBox", "RemoveWrongButton", "MoveWrongButton", "RemoveBrokenButton", "RemoveOrphansButton", "CloseButton", "FixErrorsHeader", "Subheading", "SecondBackground", "InternalBackground")]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_eoc80")
+VEDHeaderPS = ExtResource("3_1qtqr")
+VEDItemPS = ExtResource("3_jiq8o")
+ErrorItemsBox = NodePath("MarginContainer2/VBoxContainer/HBoxContainer2/MarginContainer/MarginContainer/ScrollContainer/VBoxContainer")
+RemoveWrongButton = NodePath("MarginContainer2/VBoxContainer/HBoxContainer2/VBoxContainer/RemoveWrong_Button")
+MoveWrongButton = NodePath("MarginContainer2/VBoxContainer/HBoxContainer2/VBoxContainer/MoveWrong_Button")
+RemoveBrokenButton = NodePath("MarginContainer2/VBoxContainer/HBoxContainer2/VBoxContainer/RemoveBroken_Button")
+RemoveOrphansButton = NodePath("MarginContainer2/VBoxContainer/HBoxContainer2/VBoxContainer/RemoveOrphans")
+CloseButton = NodePath("MarginContainer2/VBoxContainer/HBoxContainer/Cancel_Button")
+FixErrorsHeader = NodePath("MarginContainer2/VBoxContainer/RenameFiles")
+Subheading = NodePath("MarginContainer2/VBoxContainer/RenameFiles2")
+SecondBackground = NodePath("MarginContainer2/Panel")
+InternalBackground = NodePath("MarginContainer2/VBoxContainer/HBoxContainer2/MarginContainer/Panel")
 
-[node name="ColorRect" type="ColorRect" parent="."]
-modulate = Color(1, 1, 1, 0.505882)
+[node name="Panel" type="Panel" parent="."]
 layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_1qtqr")
 
-[node name="MarginContainer" type="MarginContainer" parent="."]
+[node name="MarginContainer2" type="MarginContainer" parent="."]
 layout_mode = 2
 theme_override_constants/margin_left = 50
 theme_override_constants/margin_top = 50
 theme_override_constants/margin_right = 50
 theme_override_constants/margin_bottom = 125
 
-[node name="ColorRect" type="ColorRect" parent="MarginContainer"]
+[node name="Panel" type="Panel" parent="MarginContainer2"]
 layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_jiq8o")
 
-[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer2"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 alignment = 1
 
-[node name="BrokenFiles_Label" type="Label" parent="MarginContainer/VBoxContainer"]
+[node name="RenameFiles" type="Label" parent="MarginContainer2/VBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 4
 theme = ExtResource("1_huf2i")
-text = "There are broken files in Packages folder."
+theme_override_font_sizes/font_size = 26
+text = "Fix Errors"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="WrongGame_Label" type="Label" parent="MarginContainer/VBoxContainer"]
+[node name="RenameFiles2" type="Label" parent="MarginContainer2/VBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 4
 theme = ExtResource("1_huf2i")
-text = "There are files for the wrong game in Packages folder."
+text = "Fix manually or automatically fix all."
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="ScrollContainer" type="ScrollContainer" parent="MarginContainer/VBoxContainer"]
+[node name="HBoxContainer2" type="HBoxContainer" parent="MarginContainer2/VBoxContainer"]
+layout_mode = 2
+alignment = 1
+
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer2/VBoxContainer/HBoxContainer2"]
+custom_minimum_size = Vector2(450, 0)
+layout_mode = 2
+
+[node name="Panel" type="Panel" parent="MarginContainer2/VBoxContainer/HBoxContainer2/MarginContainer"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_062ry")
+
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer2/VBoxContainer/HBoxContainer2/MarginContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/margin_left = 3
+theme_override_constants/margin_top = 4
+theme_override_constants/margin_right = 5
+theme_override_constants/margin_bottom = 4
+
+[node name="ScrollContainer" type="ScrollContainer" parent="MarginContainer2/VBoxContainer/HBoxContainer2/MarginContainer/MarginContainer"]
 custom_minimum_size = Vector2(0, 350)
 layout_mode = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_r2byt")
+theme_override_styles/panel = SubResource("StyleBoxFlat_gvp7y")
 horizontal_scroll_mode = 0
 
-[node name="MarginContainer" type="MarginContainer" parent="MarginContainer/VBoxContainer/ScrollContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer2/VBoxContainer/HBoxContainer2/MarginContainer/MarginContainer/ScrollContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
-theme_override_constants/margin_left = 150
-theme_override_constants/margin_right = 150
+theme_override_constants/separation = 0
 
-[node name="Panel" type="Panel" parent="MarginContainer/VBoxContainer/ScrollContainer/MarginContainer"]
-layout_mode = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_l055a")
-
-[node name="Errors_Label" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/MarginContainer"]
-custom_minimum_size = Vector2(500, 250)
-layout_mode = 2
-size_flags_vertical = 1
-theme = SubResource("Theme_eke67")
-text = "There are files for the wrong game in Packages folder."
-autowrap_mode = 2
-
-[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer2/VBoxContainer/HBoxContainer2"]
 layout_mode = 2
 alignment = 1
 
-[node name="FixBroken_Button" type="Button" parent="MarginContainer/VBoxContainer/HBoxContainer"]
+[node name="RemoveWrong_Button" type="Button" parent="MarginContainer2/VBoxContainer/HBoxContainer2/VBoxContainer"]
 layout_mode = 2
 theme = ExtResource("2_eoc80")
-text = "Fix Broken"
+text = "Remove Wrong Game"
 
-[node name="FixIncorrect_Button" type="Button" parent="MarginContainer/VBoxContainer/HBoxContainer"]
+[node name="MoveWrong_Button" type="Button" parent="MarginContainer2/VBoxContainer/HBoxContainer2/VBoxContainer"]
 layout_mode = 2
 theme = ExtResource("2_eoc80")
-text = "Fix Incorrect"
+text = "Move Wrong Game 
+to Correct Instance"
 
-[node name="Cancel_Button" type="Button" parent="MarginContainer/VBoxContainer/HBoxContainer"]
+[node name="RemoveBroken_Button" type="Button" parent="MarginContainer2/VBoxContainer/HBoxContainer2/VBoxContainer"]
 layout_mode = 2
 theme = ExtResource("2_eoc80")
-text = "Cancel"
+text = "Remove Broken"
+
+[node name="RemoveOrphans" type="Button" parent="MarginContainer2/VBoxContainer/HBoxContainer2/VBoxContainer"]
+layout_mode = 2
+theme = ExtResource("2_eoc80")
+text = "Remove Orphans"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer2/VBoxContainer"]
+layout_mode = 2
+alignment = 1
+
+[node name="Cancel_Button" type="Button" parent="MarginContainer2/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+theme = ExtResource("2_eoc80")
+text = "Close"

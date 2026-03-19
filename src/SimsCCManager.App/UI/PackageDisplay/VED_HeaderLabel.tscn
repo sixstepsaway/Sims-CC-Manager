@@ -1,0 +1,52 @@
+[gd_scene load_steps=8 format=3 uid="uid://pv3tpvqdfgi2"]
+
+[ext_resource type="Script" uid="uid://b51l1al066jbj" path="res://UI/PackageDisplay/VED_HeaderLabel.cs" id="1_uk3nb"]
+[ext_resource type="FontFile" uid="uid://bnota7sosp8bj" path="res://assets/fonts/Anybody/static/Anybody-Bold.ttf" id="2_8tcvm"]
+
+[sub_resource type="Gradient" id="Gradient_d564c"]
+colors = PackedColorArray(0.288518, 0.28851798, 0.28851798, 1, 0.5132329, 0.5132329, 0.5132329, 1)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_vun0p"]
+gradient = SubResource("Gradient_d564c")
+fill_from = Vector2(0.525641, 1)
+fill_to = Vector2(0.4957265, 0)
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_fswjb"]
+texture = SubResource("GradientTexture2D_vun0p")
+modulate_color = Color(1, 1, 1, 0.31764707)
+
+[sub_resource type="Theme" id="Theme_3t8dx"]
+Panel/styles/panel = SubResource("StyleBoxTexture_fswjb")
+
+[sub_resource type="Theme" id="Theme_16po0"]
+Label/fonts/font = ExtResource("2_8tcvm")
+
+[node name="VED_HeaderLabel" type="MarginContainer" node_paths=PackedStringArray("TypeLabel", "CountLabel")]
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 17.0
+grow_horizontal = 2
+script = ExtResource("1_uk3nb")
+TypeLabel = NodePath("VBoxContainer/TypeLabel")
+CountLabel = NodePath("VBoxContainer/CountLabel")
+
+[node name="Panel" type="Panel" parent="."]
+layout_mode = 2
+theme = SubResource("Theme_3t8dx")
+
+[node name="VBoxContainer" type="HBoxContainer" parent="."]
+layout_mode = 2
+alignment = 1
+
+[node name="TypeLabel" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+theme = SubResource("Theme_16po0")
+text = "WRONG GAME"
+
+[node name="VSeparator" type="VSeparator" parent="VBoxContainer"]
+layout_mode = 2
+
+[node name="CountLabel" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+theme = SubResource("Theme_16po0")
+text = "0"
