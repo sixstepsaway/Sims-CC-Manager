@@ -389,7 +389,8 @@ public partial class NewInstance : MarginContainer
 
             }
 
-            currentInstance = InstanceControllers.LoadInstanceFiles(currentInstance);            
+            //currentInstance = InstanceControllers.LoadInstanceFiles(currentInstance);            
+            currentInstance = InstanceControllers.InitialLoad(currentInstance);
         }
     }
 

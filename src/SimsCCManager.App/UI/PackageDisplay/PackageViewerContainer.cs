@@ -222,7 +222,7 @@ public partial class PackageViewerContainer : MarginContainer
 
     private void DisplayPackage()
     {
-        ShowOverrideThumb = true;
+        ShowOverrideThumb = false;
         ClearContents();
         ImageContainer.CustomMinimumSize = new((Size.X / 2) - 10, 0);
         AddPVI("File Name:", package.FileName);
@@ -378,8 +378,19 @@ public partial class PackageViewerContainer : MarginContainer
         }
 
         if (package.PackageData != null)
-        {       
-            if (package.Type.Contains("Skin"))
+        {     
+            if (package.Type.Contains("Face Template"))
+            {
+                ImageContainer.Visible = true;
+                ImageTextureRect.Visible = false;
+                SubviewportTexture.Visible = true;
+                currSnapshotter = SnapshotterPS.Instantiate() as Snapshotter;
+                currSnapshotter.Packages = packageDisplay.ThisInstance.Files.OfType<SimsPackage>().ToList();
+                currSnapshotter.MyContainer = SubviewportContainer;
+                SnapshotterActive = true; 
+                Subviewport.AddChild(currSnapshotter);
+                bool done = currSnapshotter.BuildSims2Mesh(package);
+            } else if (package.Type.Contains("Skin"))
             {
                 ImageContainer.Visible = true;
                 ImageTextureRect.Visible = false;

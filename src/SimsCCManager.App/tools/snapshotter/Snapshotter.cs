@@ -361,7 +361,7 @@ public partial class Snapshotter : Node3D
                     }*/
                     
                     if (body.Alpha)
-                        material.Transparency = BaseMaterial3D.TransparencyEnum.Alpha;
+                        material.Transparency = BaseMaterial3D.TransparencyEnum.AlphaDepthPrePass;
                     if (flipepdInd)
                     {
                         material.CullMode = BaseMaterial3D.CullModeEnum.Back;
@@ -501,7 +501,8 @@ public partial class Snapshotter : Node3D
                 Texture2D mattxt = new();
                 mattxt = ImageTexture.CreateFromImage(txtr.Texture);
                 material.AlbedoTexture = mattxt;
-                material.Transparency = BaseMaterial3D.TransparencyEnum.Alpha;
+                material.Transparency = BaseMaterial3D.TransparencyEnum.AlphaDepthPrePass;
+                material.SpecularMode = BaseMaterial3D.SpecularModeEnum.Disabled;
                 material.CullMode = BaseMaterial3D.CullModeEnum.Disabled;
                 hair.Mesh.Mesh.SurfaceSetMaterial(0, material);
             }                                    
@@ -559,7 +560,10 @@ public partial class Snapshotter : Node3D
 
         
 
-        SelectedBodyOption = BodyOptions.IndexOf(BodyOptions.First(x => x.Node.Visible));
+        //if (BodyOptions.Any(x => x.Node.Visible))  
+            SelectedBodyOption = BodyOptions.IndexOf(BodyOptions.First(x => x.Node.Visible));
+       // else if (BodyOptions.Count > 0)
+        //    BodyOptions[0].Node.Visible = true;
         
         if (BodyOptions.Count > 1) MultipleOptions = true;
     }
@@ -615,7 +619,7 @@ public partial class Snapshotter : Node3D
         StandardMaterial3D mat = eyes.GetSurfaceOverrideMaterial(1).Duplicate() as StandardMaterial3D;
         StandardMaterial3D nextpass = new();        
         nextpass.AlbedoTexture = ImageTexture.CreateFromImage(d.Sims2Data.TXTRDataBlock[0].Texture);
-        nextpass.Transparency = BaseMaterial3D.TransparencyEnum.Alpha;
+        nextpass.Transparency = BaseMaterial3D.TransparencyEnum.AlphaDepthPrePass;
         mat.NextPass = nextpass;
         eyes.SetSurfaceOverrideMaterial(1, mat);
         if (!GlobalVariables.CensorSkins) (eyes.GetChild(0) as Node3D).Visible = false;
@@ -634,7 +638,7 @@ public partial class Snapshotter : Node3D
         StandardMaterial3D mat = face.GetSurfaceOverrideMaterial(1).Duplicate() as StandardMaterial3D;
         StandardMaterial3D nextpass = new();        
         nextpass.AlbedoTexture = ImageTexture.CreateFromImage(d.Sims2Data.TXTRDataBlock[0].Texture);
-        nextpass.Transparency = BaseMaterial3D.TransparencyEnum.Alpha;
+        nextpass.Transparency = BaseMaterial3D.TransparencyEnum.AlphaDepthPrePass;
         mat.NextPass = nextpass;
         face.SetSurfaceOverrideMaterial(1, mat);
         if (!GlobalVariables.CensorSkins) (face.GetChild(0) as Node3D).Visible = false;
@@ -656,6 +660,10 @@ public partial class Snapshotter : Node3D
         else if (type.Contains("Clothing"))
         {
             meshType = 2;
+        } 
+        else if (type.Contains("Face Template"))
+        {
+            meshType = 3;
         } else if (type.Contains("Slider") || type.Contains("Preset") || type.Contains("Neighbourhood"))
         {
             return false;
@@ -681,6 +689,9 @@ public partial class Snapshotter : Node3D
             thisPackage = d;
             texturePackage = d;
             foundTextures = true;
+        } else if (d.Type.Contains("Face Template"))
+        {
+            thisPackage = d;
         } else if (d.Mesh && !d.Recolor)
         {
             thisPackage = d;            
@@ -898,6 +909,7 @@ public partial class Snapshotter : Node3D
 
                     newmesh.RotationDegrees = rotation;
                     newmesh.Name = MeshName;
+
 
                     //if (meshType != 1) AddChild(newmesh);
                     Meshes.Add(newmesh);
@@ -1168,7 +1180,7 @@ public partial class Snapshotter : Node3D
                     Texture2D mattxt = new();
                     mattxt = ImageTexture.CreateFromImage(txtr.Texture);
                     material.AlbedoTexture = mattxt;
-                    material.Transparency = BaseMaterial3D.TransparencyEnum.Alpha;
+                    material.Transparency = BaseMaterial3D.TransparencyEnum.AlphaDepthPrePass;
                     Meshes.First(x => x.Name == meshname).Mesh.SurfaceSetMaterial(0, material);
                 }
 
@@ -1188,7 +1200,7 @@ public partial class Snapshotter : Node3D
                 Texture2D mattxt = new();
                 mattxt = ImageTexture.CreateFromImage(txtr.Texture);
                 material.AlbedoTexture = mattxt;
-                material.Transparency = BaseMaterial3D.TransparencyEnum.Alpha;
+                material.Transparency = BaseMaterial3D.TransparencyEnum.AlphaDepthPrePass;
                 if (Meshes.Any(x => x.Name == meshname))
                 {
                     Meshes.First(x => x.Name == meshname).Mesh.SurfaceSetMaterial(0, material);
@@ -1796,6 +1808,7 @@ public partial class Snapshotter : Node3D
 
     private void SetMeshScale()
     {
+        
         Node3D ContainerNode = new();
         Aabb boxAab = AabBox.GetAabb();
 
@@ -1825,6 +1838,14 @@ public partial class Snapshotter : Node3D
         if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("BoxAab: {0}, CombinedAab: {1}", boxAab.Size, combinedabb.Size));
 
         AddChild(ContainerNode);
+
+        if (meshType == 3)
+        {
+            ContainerNode.Scale = new(12f, 12f, 12f);
+            ContainerNode.Position = new(-0.099f, -17.738f, 6.684f);
+            ContainerNode.RotationDegrees = new(-17.3f, 0, 0);
+            return;
+        }
 
         //Abbs = Abbs.OrderBy(x => x.Size).ToList();
         Vector3 scale = new(0, 0, 0);

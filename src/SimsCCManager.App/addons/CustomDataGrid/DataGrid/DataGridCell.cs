@@ -26,6 +26,8 @@ public partial class DataGridCell : Control
 	public NumberAdjustedEvent NumAdjusted;
 	public delegate void ProduceTooltipEvent(string Tooltip);
 	public ProduceTooltipEvent ProduceTooltip;
+	public delegate void KillTooltipEvent();
+	public KillTooltipEvent KillTooltip;
 
 	PackedScene DataGridIcon = GD.Load<PackedScene>("res://addons/CustomDataGrid/DataGrid/DataGridIconOption.tscn");
 	PackedScene HoverThumbnail = GD.Load<PackedScene>("res://addons/CustomDataGrid/DataGrid/DataGridFloatingThumbnail.tscn");
@@ -107,21 +109,26 @@ public partial class DataGridCell : Control
 	{
 		get { return _toggleselectedc; }
 		set { _toggleselectedc = value; 
-		ToggleSelectedColor.Color = value; }
+		CallDeferred(nameof(ChangeColor), ToggleSelectedColor, value); }
 	}
 	private Color _togglec;
 	public Color ToggleC
 	{
 		get { return _togglec; }
 		set { _togglec = value; 
-		ToggleUnselectedColor.Color = value; }
+		CallDeferred(nameof(ChangeColor), ToggleUnselectedColor, value); }
 	}
 	private Color _togglehoverc;
 	public Color ToggleHoverC
 	{
 		get { return _togglehoverc; }
 		set { _togglehoverc = value; 
-		ToggleHoverColor.Color = value; }
+		CallDeferred(nameof(ChangeColor), ToggleHoverColor, value); }
+	}
+
+	private void ChangeColor(ColorRect rect, Color color)
+	{
+		rect.Color = color;
 	}
 
 
@@ -138,12 +145,17 @@ public partial class DataGridCell : Control
 	{
 		get {return _textcontent; }
 		set { _textcontent = value; 
-		TextHolder.Text = value;
+		CallDeferred(nameof(SetTextContent), value);
 			if (CellOptions == CellOptions.Text)
 			{
 				PotentialTooltip = value;
 			}
 		}
+	}
+
+	private void SetTextContent(string text)
+	{
+		TextHolder.Text = text;
 	}
 	private int _numbercontent;
 	public int NumberContent
@@ -152,39 +164,71 @@ public partial class DataGridCell : Control
 		set
 		{
 			_numbercontent = value;
-			NumberHolder.Text = value.ToString();
+			CallDeferred(nameof(ChangeNumHolderText), value.ToString());
 			if (CellOptions == CellOptions.AdjustableNumber)
 			{		
 				if (value == -1)
 				{
-					NumberHolder.Text = string.Empty;
+					CallDeferred(nameof(ChangeNumHolderText), string.Empty);
 				}
 				else
 				{
-					NumberHolder.Text = value.ToString();
+					CallDeferred(nameof(ChangeNumHolderText), value.ToString());
 				}		
 				//GD.Print(string.Format("Row {0} adj number: {1}", thisRow.OverallIndex, value));
 			}
 			if (CellOptions == CellOptions.Int || CellOptions == CellOptions.AdjustableNumber)
 			{
-				PotentialTooltip = NumberContent.ToString();
+				PotentialTooltip = value.ToString();
 			}
 		}
 	}
+
+	private void ChangeNumHolderText(string text)
+	{
+		NumberHolder.Text = text;
+	}
+
 	private bool _toggled;
 	public bool Toggled {
 		get { return _toggled; }
 		set { _toggled = value; 
-			ToggleSelectedImage.Visible = value;
-			ToggleUnselectedImage.Visible = !value;
+			CallDeferred(nameof(ToggleSelectedImages), value); 			
 			ToggleFlipped?.Invoke();
 		}
+	}
+
+	private void ToggleSelectedImages(bool val)
+	{
+		ToggleSelectedImage.Visible = val;
+		ToggleUnselectedImage.Visible = !val;
 	}
 	public bool Resizeable = false;
 	private bool FirstSet = false;
 	public Vector2 StartSize = new();
 	public Vector2 CellSize = new();
-	public List<DataGridCellIcons> Icons = new();
+	private List<DataGridCellIcons> _icons;
+	public List<DataGridCellIcons> Icons
+	{
+		get { return _icons; }
+		set { _icons = value; 
+			CallDeferred(nameof(SetCellIcons)); 
+		}
+	}
+
+	private void SetCellIcons()
+	{
+		string tt = "";
+		for (int i = 0; i < IconList.Count; i++)
+		{
+			IconList[i].IconVisible = Icons[i].IconVisible;
+			if (IconList[i].IconVisible) tt += string.Format("{0}, ", IconList[i].IconName);
+		}
+		PotentialTooltip = tt.TrimEnd().TrimEnd(',');
+	}
+
+
+
 	public CellOptions CellOptions = CellOptions.Text;
 	public dynamic CustomContainerItem;
 	private Color _fontcolor;
@@ -192,7 +236,7 @@ public partial class DataGridCell : Control
 	{
 		get { return _fontcolor; }
 		set { _fontcolor = value; 
-		SetTextOptions(); }
+		CallDeferred(nameof(SetTextOptions)); }
 	}
 	private Color _accentcolor;
 	public Color AccentColor
@@ -259,6 +303,7 @@ public partial class DataGridCell : Control
 		if (CellOptions == CellOptions.Icons)
 		{
 			IconsContainer.Visible = true;
+			string tt = "";		
 			foreach (DataGridCellIcons icon in Icons)
 			{
 				DataGridIconOption dgicon = DataGridIcon.Instantiate() as DataGridIconOption;
@@ -271,8 +316,9 @@ public partial class DataGridCell : Control
 				dgicon.IconTooltip = icon.TooltipMessage;
 				dgicon.ProduceTooltip += (t) => TooltipFromIcon(t);
 				IconsRow.AddChild(dgicon);
+				if (icon.IconVisible) tt += string.Format("{0}, ", icon.IconName);
 			}
-
+			PotentialTooltip = tt.TrimEnd().TrimEnd(',');
 			if (!FirstLoaded)
 			{
 				AssociatedHeader.SetSize(new(Icons.Count * (Icons[0].IconSize + 5), 0));
@@ -515,11 +561,20 @@ public partial class DataGridCell : Control
 					}
 					Hovering = false;
 				}
-			}
-			if (IsMouseInCell() && CellOptions != CellOptions.Icons)
+			} 
+
+			if (IsMouseInCell() && !string.IsNullOrEmpty(PotentialTooltip))
 			{
+				TooltipVisible = true;
 				ProduceTooltip?.Invoke(PotentialTooltip);
-			}
+			}				
+			
+		}
+
+		if (!IsMouseInCell() && TooltipVisible)
+		{
+			KillTooltip?.Invoke();
+			TooltipVisible = false;
 		}
 
 		if (!IsMouseInCell() && CellOptions == CellOptions.Picture && thumbnailvisible)
@@ -527,6 +582,8 @@ public partial class DataGridCell : Control
 			KillThumbnail();
 		}
 	}
+
+	bool TooltipVisible = false;
 
 	private void SpawnThumbnail()
 	{

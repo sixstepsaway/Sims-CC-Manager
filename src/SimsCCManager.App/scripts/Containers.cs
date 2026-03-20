@@ -831,11 +831,11 @@ namespace SimsCCManager.Containers
             get { switch (Game)
                 {
                     case SimsGames.Sims2:
-                        return Sims2Data.Override;
+                        if (Sims2Data != null) return Sims2Data.Override; else return false;
                     case SimsGames.Sims3:
-                        return Sims3Data.Override;
+                        if (Sims3Data != null) return Sims3Data.Override; else return false;
                     case SimsGames.Sims4:
-                        return Sims4Data.Override;  
+                        if (Sims4Data != null) return Sims4Data.Override; else return false;
                     default: return false;                  
                 }
             }
@@ -845,11 +845,11 @@ namespace SimsCCManager.Containers
             get { switch (Game)
                 {
                     case SimsGames.Sims2:
-                        return Sims2Data.OverrideReference;
+                        if (Sims2Data != null) return Sims2Data.OverrideReference; else return null;
                     case SimsGames.Sims3:
-                        return Sims3Data.OverrideReference;
+                        if (Sims3Data != null) return Sims3Data.OverrideReference; else return null;
                     case SimsGames.Sims4:
-                        return Sims4Data.OverrideReference;  
+                        if (Sims4Data != null) return Sims4Data.OverrideReference;   else return null;
                     default: return null;                  
                 }
             }
@@ -861,11 +861,11 @@ namespace SimsCCManager.Containers
             get { switch (Game)
                 {
                     case SimsGames.Sims2:
-                        return Sims2Data.SpecificOverride;
+                        if (Sims2Data != null) return Sims2Data.SpecificOverride; return null;
                     case SimsGames.Sims3:
-                        return Sims3Data.SpecificOverride;
+                        if (Sims3Data != null) return Sims3Data.SpecificOverride; return null;
                     case SimsGames.Sims4:
-                        return Sims4Data.SpecificOverride;  
+                        if (Sims4Data != null) return Sims4Data.SpecificOverride; return null;
                     default: return null;                  
                 }
             }
@@ -885,58 +885,65 @@ namespace SimsCCManager.Containers
             {
                 switch(Game){
                     case SimsGames.Sims2:
-                    if (Sims2Data.FunctionSort.Any())
-                    {
-                        if (Sims2Data.FunctionSort[0] != null)
+                    if (Sims2Data != null) { 
+                        if (Sims2Data.FunctionSort.Any())
                         {
-                            if (!string.IsNullOrEmpty(Sims2Data.FunctionSort[0].Subcategory))
+                            if (Sims2Data.FunctionSort[0] != null)
                             {
-                                return string.Format("{0}/{1}", Sims2Data.FunctionSort[0].Category, Sims2Data.FunctionSort[0].Subcategory); 
-                            } else
-                            {
-                                return Sims2Data.FunctionSort[0].Category;
+                                if (!string.IsNullOrEmpty(Sims2Data.FunctionSort[0].Subcategory))
+                                {
+                                    return string.Format("{0}/{1}", Sims2Data.FunctionSort[0].Category, Sims2Data.FunctionSort[0].Subcategory); 
+                                } else
+                                {
+                                    return Sims2Data.FunctionSort[0].Category;
+                                }
                             }
                         }
-                    }
-                    
-                    if (!string.IsNullOrEmpty(Sims2Data.AltType))
-                    {
-                        return Sims2Data.AltType;
-                    }
+                        
+                        if (!string.IsNullOrEmpty(Sims2Data.AltType))
+                        {
+                            return Sims2Data.AltType;
+                        }
+                    } else return string.Empty;
                     break;
                     case SimsGames.Sims3:
-                    if (Sims3Data.FunctionSort.Any())
-                    {
-                        if (!string.IsNullOrEmpty(Sims3Data.FunctionSort[0].Subcategory))
+                    if (Sims3Data != null) { 
+                        if (Sims3Data.FunctionSort.Any())
                         {
-                            return string.Format("{0}/{1}", Sims3Data.FunctionSort[0].Category, Sims3Data.FunctionSort[0].Subcategory); 
-                        } else
-                        {
-                            return Sims3Data.FunctionSort[0].Category;
+                            if (!string.IsNullOrEmpty(Sims3Data.FunctionSort[0].Subcategory))
+                            {
+                                return string.Format("{0}/{1}", Sims3Data.FunctionSort[0].Category, Sims3Data.FunctionSort[0].Subcategory); 
+                            } else
+                            {
+                                return Sims3Data.FunctionSort[0].Category;
+                            }
                         }
-                    }
-                    
-                    if (!string.IsNullOrEmpty(Sims3Data.AltType))
-                    {
-                        return Sims3Data.AltType;
-                    }
+                        
+                        if (!string.IsNullOrEmpty(Sims3Data.AltType))
+                        {
+                            return Sims3Data.AltType;
+                        }
+                    } else return string.Empty;
                     break;
                     case SimsGames.Sims4:
-                    if (Sims4Data.FunctionSort.Any())
-                    {
-                        if (!string.IsNullOrEmpty(Sims4Data.FunctionSort[0].Subcategory))
+                    if (Sims4Data != null){                    
+                        if (Sims4Data.FunctionSort.Any())
                         {
-                            return string.Format("{0}/{1}", Sims4Data.FunctionSort[0].Category, Sims4Data.FunctionSort[0].Subcategory); 
-                        } else
+                            if (!string.IsNullOrEmpty(Sims4Data.FunctionSort[0].Subcategory))
+                            {
+                                return string.Format("{0}/{1}", Sims4Data.FunctionSort[0].Category, Sims4Data.FunctionSort[0].Subcategory); 
+                            } else
+                            {
+                                return Sims4Data.FunctionSort[0].Category;
+                            }
+                        }
+                        
+                        if (!string.IsNullOrEmpty(Sims4Data.AltType))
                         {
-                            return Sims4Data.FunctionSort[0].Category;
+                            return Sims4Data.AltType;
                         }
                     }
-                    
-                    if (!string.IsNullOrEmpty(Sims4Data.AltType))
-                    {
-                        return Sims4Data.AltType;
-                    }
+                    else return string.Empty;
                     break;
                 }  
                 return "Unknown";            
@@ -1200,6 +1207,9 @@ namespace SimsCCManager.Containers
         public Sims3Data Sims3Data { get { return PackageData as Sims3Data; } set { PackageData = value; }}
         public Sims4Data Sims4Data { get { return PackageData as Sims4Data; } set { PackageData = value; }}
         
+        [XmlIgnore]
+        public bool HasBeenRead {get; set;} = false;
+
         public bool ShouldSerializeSims2Data()
         {            
             return Game == SimsGames.Sims2;
@@ -1213,6 +1223,36 @@ namespace SimsCCManager.Containers
             return Game == SimsGames.Sims4;
         }
         static ReaderWriterLock locker = new ReaderWriterLock();
+
+        public void UpdateFromData(SimsPackage package)
+        {
+            Broken = package.Broken;
+            Game = package.Game;
+            Source = package.Source;
+            Creator = package.Creator;
+            Notes = package.Notes;
+            WrongGame = package.WrongGame;
+            IsDuplicate = package.IsDuplicate;
+            IsDirectory = package.IsDirectory;
+            Duplicates = package.Duplicates;
+            Conflicts = package.Conflicts;
+            MatchingMesh = package.MatchingMesh;
+            MatchingRecolors = package.MatchingRecolors;
+            PackageGameVersion = package.PackageGameVersion;
+            LinkedFiles = package.LinkedFiles;
+            LinkedFolders = package.LinkedFolders;
+            LinkedPackages = package.LinkedPackages;
+            LinkedPackageFolders = package.LinkedPackageFolders;
+            PackageCategory = package.PackageCategory;
+            RootMod = package.RootMod;
+            OutOfDate = package.OutOfDate;
+            Favorite = package.Favorite;
+            IsEnabled = package.IsEnabled;
+            LoadOrder = package.LoadOrder;
+            HasBeenRead = package.HasBeenRead;            
+        }
+
+
         public void WriteXML()
         {
             XmlSerializer InfoSerializer = new XmlSerializer(this.GetType());
@@ -1359,12 +1399,16 @@ namespace SimsCCManager.Containers
         public string Title {get; set;}
         public string Description {get; set;}
         public string Type {
-            get { if (!string.IsNullOrEmpty(FunctionSort[0].Subcategory))
+            get { 
+                if (!string.IsNullOrEmpty(FunctionSort[0].Subcategory))
                 {
                     return string.Format("{0}/{1}", FunctionSort[0].Category, FunctionSort[0].Subcategory);
-                } else
+                } else if (!string.IsNullOrEmpty(FunctionSort[0].Category))
                 {
                     return FunctionSort[0].Category; 
+                } else
+                {
+                    return AltType;
                 }
             }
         }
@@ -1374,7 +1418,7 @@ namespace SimsCCManager.Containers
         public bool Override {get; set;}
         public List<SimsOverrides> OverrideReference {get; set;} = new();
         public SpecificOverrides SpecificOverride {get; set;}
-
+        
         public List<FunctionSortList> FunctionSort {get; set;} = new();
         private string _guid;
         public string GUID {get
@@ -1413,11 +1457,11 @@ namespace SimsCCManager.Containers
         public void DictionaryEntries()
         {
             ConcurrentBag<EntryCount> entryCounts = new();
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Checking {0} indexentries against {1} types", IndexEntries.Count, Sims2PackageStatics.Sims2EntryTypes.Count));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Checking {0} indexentries against {1} types", IndexEntries.Count, Sims2PackageStatics.Sims2EntryTypes.Count));
             Parallel.ForEach(Sims2PackageStatics.Sims2EntryTypes, entryType => 
             {                   
                 int count = IndexEntries.Count(x => x.TypeID == entryType.TypeID);
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("File has {0} of entry {1}", count, entryType.Tag));
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("File has {0} of entry {1}", count, entryType.Tag));
                 if (count != 0) entryCounts.Add(new() { EntryTag = entryType.Tag.ToUpper(), Count = count});
             });
             IndexEntryCounts = entryCounts.ToList();
@@ -1439,6 +1483,7 @@ namespace SimsCCManager.Containers
         public List<XHTNData> XHTNDataBlock {get; set;} = new();
         public List<XTOLData> XTOLDataBlock {get; set;} = new();
         public List<GMNDData> GMNDDataBlock {get; set;} = new();
+        public List<XMOLData> XMOLDataBlock {get; set;} = new();
 
 
         public void GetPackageType()
@@ -1450,24 +1495,32 @@ namespace SimsCCManager.Containers
                 IsGameMod();
                 Orphan = false;
                 AltType = "Game Mod/Hack";
+            } else if (EntryCount("xmol") > 0)
+            {
+                AltType = "Accessory";
+                FunctionSort.Clear();
             } else if (EntryCount("xhtn") > 0)
             {
                 AltType = "Hair";
+                FunctionSort.Clear();
             } else if (EntryCount("xstn") > 0 || TXMTDataBlock.Any(x => x.MaterialDescription.Contains("naked_nude_")))
             {
                 AltType = "Skin";
+                FunctionSort.Clear();
                 Mesh = false;
                 Recolor = false;
                 Orphan = false;
             } else if (EntryCount("coll") > 0)
             {
                 AltType = "Collection";
+                FunctionSort.Clear();
                 Mesh = false;
                 Recolor = false;
                 Orphan = false;
             } else if (EntryCount("xngb") > 0)
             {
                 AltType = "Hood Deco";
+                FunctionSort.Clear();
             } else if (EntryCount("lxnr") > 0
             && EntryCount("AGED") > 0
             && EntryCount("3IDR") > 0
@@ -1477,7 +1530,8 @@ namespace SimsCCManager.Containers
             && EntryCount("txmt") > 0)
             {
                 AltType = "Face Template";
-                Mesh = false;
+                FunctionSort.Clear();
+                Mesh = true;
                 Recolor = false;
                 Orphan = false;
             } else if (EntryCount("lxnr") > 0
@@ -1490,12 +1544,14 @@ namespace SimsCCManager.Containers
             && EntryCount("bhav") > 0)
             {
                 AltType = "NPC"; 
+                FunctionSort.Clear();
             }if (EntryCount("gmdc") > 0
             &&EntryCount("gmnd") > 0
             && EntryCount("xfmd") > 0
             && EntryCount("coll") == 0)
             {
                 AltType = "Slider"; 
+                FunctionSort.Clear();
                 Mesh = false;
                 Recolor = false;
                 Orphan = false;

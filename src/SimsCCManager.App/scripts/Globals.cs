@@ -2,9 +2,11 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Runtime;
 using System.Runtime.InteropServices;
 using System.Security.Principal;
@@ -160,7 +162,7 @@ namespace SimsCCManager.Globals
             ".package",
             ".sims3pack",
             ".sims2pack",
-            "ts4script"
+            ".ts4script"
         };
 
         public static List<string> Sims2Exes = new(){
@@ -188,7 +190,7 @@ namespace SimsCCManager.Globals
         }
 
     }
-    
+
     public class Utilities
     {
         public const string SignatureGzip = "1F-8B-08";
@@ -216,6 +218,8 @@ namespace SimsCCManager.Globals
                 return false;
             }
         }
+
+        
 
 
         public static void MoveExisting(string destination, bool folder = false)
@@ -870,7 +874,171 @@ namespace SimsCCManager.Globals
 
         public static ConcurrentBag<Task> runningTasks = new();
 
-        public static GameInstance LoadInstanceFiles(GameInstance gameInstance)
+        public static GameInstance InitialLoad(GameInstance gameInstance)
+        {
+            XmlSerializer simsPackageSerializer = new XmlSerializer(typeof(SimsPackage));
+            List<string> files = Directory.GetFiles(gameInstance.InstanceFolders.InstancePackagesFolder).ToList();
+            List<string> folders = Directory.GetDirectories(gameInstance.InstanceFolders.InstancePackagesFolder).ToList();
+            
+            List<string> catFolders = folders.Where(x => x.Contains("__CATEGORY_")).ToList();
+            foreach (string dir in catFolders)
+            {
+                files.AddRange(Directory.GetFiles(dir));
+                folders.AddRange(Directory.GetDirectories(dir));
+            }
+
+            foreach (string file in files)
+            {
+                FileInfo fi = new(file);
+                if (GlobalVariables.SimsFileExtensions.Contains(fi.Extension))
+                {
+                    SimsPackage simsPackage = new();
+                    simsPackage.Location = file; 
+                    if (File.Exists(simsPackage.InfoFile))
+                    {
+                        if (GlobalVariables.DebugMode)
+                        {                    
+                            using (FileStream fileStream = new(simsPackage.InfoFile, FileMode.Open, System.IO.FileAccess.Read)){
+                                using (StreamReader streamReader = new(fileStream)){
+                                    simsPackage = (SimsPackage)simsPackageSerializer.Deserialize(streamReader);
+                                    streamReader.Close();
+                                }
+                                fileStream.Close();
+                            }
+                        } else
+                        {
+                            using (FileStream fs = File.OpenRead(simsPackage.InfoFile))
+                            using (ZipFile zipFile = new ZipFile(fs))
+                            {
+                                if (!Utilities.CheckSignature(simsPackage.InfoFile, 4, Utilities.SignatureZip)){
+                                    using (FileStream fileStream = new(simsPackage.InfoFile, FileMode.Open, System.IO.FileAccess.Read)){
+                                        using (StreamReader streamReader = new(fileStream)){
+                                            simsPackage = (SimsPackage)simsPackageSerializer.Deserialize(streamReader);
+                                            streamReader.Close();
+                                        }
+                                        fileStream.Close();
+                                    }
+                                } else
+                                {
+                                    foreach (ZipEntry entry in zipFile)
+                                    {
+                                        if (!entry.IsFile) continue; // Skip directories
+                                        
+                                        using (Stream zipStream = zipFile.GetInputStream(entry))
+                                        using (MemoryStream outputStream = new())
+                                        {
+                                            zipStream.CopyTo(outputStream);
+                                            simsPackage = (SimsPackage)simsPackageSerializer.Deserialize(outputStream);
+                                        }
+                                    }
+                                }                        
+                            }
+                        }
+                        simsPackage.HasBeenRead = true;
+                    } else
+                    {
+                        simsPackage.FileName = fi.Name;
+                        simsPackage.StandAlone = true;
+                        simsPackage.Game = gameInstance.GameChoice;
+                        simsPackage.PackageCategory = gameInstance.Categories.First(x => x.Name == "Default"); 
+                        //simsPackage.WriteXML();                        
+                    }
+                    gameInstance._packages.Add(simsPackage);
+                    int incBy = 1;
+                    GlobalVariables.mainWindow.IncrementLoadingScreen(incBy, fi.Name.Replace(".info", ""), "Globals: ReadPackages 1");
+                } else
+                {
+                    GlobalVariables.mainWindow.IncrementLoadingScreen(1, fi.Name.Replace(".info", ""), "Globals: ReadPackages 2");
+                }
+            }
+
+            foreach (string folder in folders)
+            {
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Found: {0}", folder));
+                DirectoryInfo fi = new(folder);
+                if (!fi.Name.StartsWith("__CATEGORY_"))
+                {
+                    SimsPackage simsPackage = new() { Location = folder, IsDirectory = true };
+                    if (File.Exists(simsPackage.InfoFile))
+                    {
+                        if (GlobalVariables.DebugMode)
+                        {                    
+                            using (FileStream fileStream = new(simsPackage.InfoFile, FileMode.Open, System.IO.FileAccess.Read)){
+                                using (StreamReader streamReader = new(fileStream)){
+                                    simsPackage = (SimsPackage)simsPackageSerializer.Deserialize(streamReader);
+                                    streamReader.Close();
+                                }
+                                fileStream.Close();
+                            }
+                        } else
+                        {
+                            using (FileStream fs = File.OpenRead(simsPackage.InfoFile))
+                            using (ZipFile zipFile = new ZipFile(fs))
+                            {
+                                if (!Utilities.CheckSignature(simsPackage.InfoFile, 4, Utilities.SignatureZip)){
+                                    using (FileStream fileStream = new(simsPackage.InfoFile, FileMode.Open, System.IO.FileAccess.Read)){
+                                        using (StreamReader streamReader = new(fileStream)){
+                                            simsPackage = (SimsPackage)simsPackageSerializer.Deserialize(streamReader);
+                                            streamReader.Close();
+                                        }
+                                        fileStream.Close();
+                                    }
+                                } else
+                                {
+                                    foreach (ZipEntry entry in zipFile)
+                                    {
+                                        if (!entry.IsFile) continue; // Skip directories
+                                        
+                                        using (Stream zipStream = zipFile.GetInputStream(entry))
+                                        using (MemoryStream outputStream = new())
+                                        {
+                                            zipStream.CopyTo(outputStream);
+                                            simsPackage = (SimsPackage)simsPackageSerializer.Deserialize(outputStream);
+                                        }
+                                    }
+                                }                        
+                            }
+                        } 
+                        simsPackage.HasBeenRead = true;
+                    } else
+                    {
+                        simsPackage.IsDirectory = true;
+                        simsPackage.FileName = fi.Name;
+                        simsPackage.StandAlone = true;
+                        simsPackage.PackageCategory = gameInstance.Categories.First(x => x.Name == "Default");
+                        simsPackage.Game = gameInstance.GameChoice;   
+                        simsPackage.LinkedFiles.AddRange(Directory.EnumerateFiles(simsPackage.Location, "*.*", SearchOption.AllDirectories));
+                        simsPackage.LinkedFolders.AddRange(Directory.EnumerateDirectories(simsPackage.Location, "*.*", SearchOption.AllDirectories));
+                        //simsPackage.WriteXML();                     
+                    }
+                    gameInstance._packages.Add(simsPackage);
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Added: {0}", folder));
+                    
+                    int incBy = 1;
+                    if (simsPackage.IsDirectory)
+                    {
+                        if (simsPackage.LinkedFiles.Count > 0) incBy += simsPackage.LinkedFiles.Count;
+                        if (simsPackage.LinkedFolders.Count > 0) incBy += simsPackage.LinkedFolders.Count;
+                    }
+                    GlobalVariables.mainWindow.IncrementLoadingScreen(incBy, fi.Name.Replace(".info", ""), "Globals: ReadPackages 3");
+                }
+            }
+
+            
+
+
+            foreach (SimsPackage package in gameInstance._packages.OrderBy(x=>x.FileName))
+            {
+                gameInstance.Files.Add(package);
+            }
+            foreach (SimsDownload dl in gameInstance._downloads.OrderBy(x=>x.FileName))
+            {
+                gameInstance.Files.Add(dl);
+            }
+            return gameInstance;
+        }
+
+        /*public static GameInstance LoadInstanceFiles(GameInstance gameInstance)
         {
             runningTasks = new();
             List<string> files = Directory.GetFiles(gameInstance.InstanceFolders.InstancePackagesFolder).ToList();
@@ -963,7 +1131,7 @@ namespace SimsCCManager.Globals
                gameInstance = FindDupes(gameInstance);
             });
             runningTasks.Add(t);*/
-            Parallel.ForEach(runningTasks, GlobalVariables.ParallelSettings, t =>
+            /*Parallel.ForEach(runningTasks, GlobalVariables.ParallelSettings, t =>
             {
                 t.Start();
             });
@@ -987,7 +1155,7 @@ namespace SimsCCManager.Globals
             }
             if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Packages: {0}, Downloads: {1}, Files: {2}", gameInstance._packages.Count, gameInstance._downloads.Count, gameInstance.Files.Count));
             return gameInstance;      
-        }
+        }*/
 
         public static GameInstance FindDupes(GameInstance gameInstance)
         {
@@ -1650,7 +1818,124 @@ namespace SimsCCManager.Globals
 
 
 
-        private static GameInstance GetLinked(GameInstance gameInstance, SimsPackage package)
+        private static SimsPackage GetLinked(GameInstance gameInstance, SimsPackage package)
+        {
+            if (package.LinkedFiles.Count != 0)
+            {
+                foreach (string file in package.LinkedFiles)
+                {
+                    if (!gameInstance.Files.OfType<SimsPackage>().Any(x => x.Location == file))
+                    {
+                        FileInfo fi = new(file);
+                        SimsPackage subpackage = new();
+                        string infoFile = string.Format("{0}.info", file);
+                        if (File.Exists(infoFile))
+                        {
+                            XmlSerializer simsPackageSerializer = new XmlSerializer(typeof(SimsPackage));
+                            using (FileStream fileStream = new(infoFile, FileMode.Open, System.IO.FileAccess.Read)){
+                                using (StreamReader streamReader = new(fileStream)){
+                                    subpackage = (SimsPackage)simsPackageSerializer.Deserialize(streamReader);
+                                    streamReader.Close();
+                                }
+                                fileStream.Close();
+                            }
+                        } else
+                        {
+                            subpackage.IsDirectory = false;
+                            subpackage.StandAlone = false; 
+                            subpackage.FileName = fi.Name;
+                            subpackage.Game = gameInstance.GameChoice;
+                            switch (subpackage.Game)
+                            {
+                                case SimsGames.Sims2:
+                                subpackage.Sims2Data = new();
+                                break;
+                                case SimsGames.Sims3:
+                                subpackage.Sims3Data = new();
+                                break;
+                                case SimsGames.Sims4:
+                                subpackage.Sims4Data = new();
+                                break;
+                            }
+                            subpackage.Location = file;
+                            if (File.Exists(subpackage.Location))
+                            {
+                                SimsPackageReader simsPackageReader = new();
+                                try { simsPackageReader.ReadPackage(subpackage.Location); } catch (Exception e)
+                                {
+                                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Couldn't read package {0}: {1} ({2})", subpackage.FileName, e.Message, e.StackTrace));
+                                }
+                                subpackage.PackageData = simsPackageReader.SimsData;
+                            }
+                            subpackage.DateCreated = File.GetCreationTime(file);
+                            subpackage.DateUpdated = DateTime.Now;
+                            subpackage.PackageCategory = gameInstance.Categories.First(x => x.Name == "Default");
+                            subpackage.WriteXML();
+                        }
+                        if (!package.LinkedPackages.Contains(subpackage) && !subpackage.StandAlone) package.LinkedPackages.Add(subpackage);                        
+                    } else
+                    {
+                        SimsPackage subpackage = gameInstance._packages.First(x => x.Location == file);
+                        if (!package.LinkedPackages.Contains(subpackage) && !subpackage.StandAlone) package.LinkedPackages.Add(subpackage);
+                    }                   
+                }  
+            }
+            if (package.LinkedFolders.Count != 0)
+            {
+                foreach (string file in package.LinkedFolders)
+                {
+                    if (!gameInstance._packages.Any(x => x.Location == file))
+                    {
+                        DirectoryInfo fi = new(file);
+                        SimsPackage subpackage = new();
+                        string infoFile = string.Format("{0}.info", file);
+                        if (File.Exists(infoFile))
+                        {
+                            XmlSerializer simsPackageSerializer = new XmlSerializer(typeof(SimsPackage));
+                            using (FileStream fileStream = new(infoFile, FileMode.Open, System.IO.FileAccess.Read)){
+                                using (StreamReader streamReader = new(fileStream)){
+                                    subpackage = (SimsPackage)simsPackageSerializer.Deserialize(streamReader);
+                                    streamReader.Close();
+                                }
+                                fileStream.Close();
+                            }
+                        } else
+                        {
+                            subpackage.IsDirectory = true;
+                            subpackage.StandAlone = false; 
+                            subpackage.FileName = fi.Name;
+                            subpackage.Game = gameInstance.GameChoice;
+                            switch (subpackage.Game)
+                            {
+                                case SimsGames.Sims2:
+                                subpackage.Sims2Data = new();
+                                break;
+                                case SimsGames.Sims3:
+                                subpackage.Sims3Data = new();
+                                break;
+                                case SimsGames.Sims4:
+                                subpackage.Sims4Data = new();
+                                break;
+                            }
+                            subpackage.Location = file;
+                            subpackage.DateCreated = File.GetCreationTime(file);
+                            subpackage.DateUpdated = DateTime.Now;
+                            subpackage.PackageCategory = gameInstance.Categories.First(x => x.Name == "Default");
+                            subpackage.WriteXML();
+                        }
+                        if (!package.LinkedPackageFolders.Contains(subpackage) && !subpackage.StandAlone) package.LinkedPackageFolders.Add(subpackage);
+                    } else
+                    {
+                        SimsPackage subpackage = gameInstance._packages.First(x => x.Location == file);
+                        if (!package.LinkedPackageFolders.Contains(subpackage) && !subpackage.StandAlone) package.LinkedPackageFolders.Add(subpackage);
+                    }                   
+                }  
+            }
+
+            return package;
+        }
+
+        /*private static GameInstance GetLinked(GameInstance gameInstance, SimsPackage package)
         {
             if (package.LinkedFiles.Count != 0)
             {
@@ -1767,7 +2052,7 @@ namespace SimsCCManager.Globals
             return gameInstance;
         }
 
-        public static GameInstance GetSubDirectories(GameInstance gameInstance, string directory, SimsPackage folderPackage)
+        /*public static GameInstance GetSubDirectories(GameInstance gameInstance, string directory, SimsPackage folderPackage)
         {
             foreach (string file in Directory.GetFiles(directory))
             {
@@ -1875,12 +2160,109 @@ namespace SimsCCManager.Globals
                 if (!simsPackage.RootMod && simsPackage.StandAlone) gameInstance = GetSubDirectories(gameInstance, file, simsPackage);
             }
             return folderPackage;
+        }*/
+
+        public static SimsPackage GetSubDirectories(GameInstance gameInstance, string directory, SimsPackage folderPackage)
+        {
+            
+            foreach (string file in Directory.GetFiles(directory))
+            {
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Found: {0}", file));
+                FileInfo fi = new(file);
+                if (GlobalVariables.SimsFileExtensions.Contains(fi.Extension))
+                {
+                    SimsPackage simsPackage = new();
+                    simsPackage = ReadPackage(simsPackage, file, gameInstance, fi, true);                     
+                    //gameInstance._packages.Add(simsPackage); 
+                    
+                    if (simsPackage.LinkedFiles.Count != 0 || simsPackage.LinkedFolders.Count != 0)
+                    {
+                        simsPackage = GetLinked(gameInstance, simsPackage);
+                    }
+                    if (!simsPackage.StandAlone)
+                    {
+                        if (!folderPackage.LinkedFiles.Contains(simsPackage.Location)) folderPackage.LinkedFiles.Add(simsPackage.Location);
+                        folderPackage.LinkedPackages.Add(simsPackage);
+                    }
+
+                    //output.Add(simsPackage);                    
+                }                
+            }
+            foreach (string file in Directory.GetDirectories(directory))
+            {
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Found: {0}", file));
+                DirectoryInfo fi = new(file);
+                SimsPackage simsPackage = new();
+                simsPackage = ReadPackage(simsPackage, file, gameInstance, fi, true);                
+                if (simsPackage.LinkedFiles.Count != 0 || simsPackage.LinkedFolders.Count != 0)
+                {
+                    simsPackage = GetLinked(gameInstance, simsPackage);
+                }
+                if (!simsPackage.StandAlone)
+                {
+                    if (!folderPackage.LinkedFolders.Contains(simsPackage.Location)) folderPackage.LinkedFolders.Add(simsPackage.Location);
+                    folderPackage.LinkedPackageFolders.Add(simsPackage);
+                }
+                
+                
+                if (!simsPackage.RootMod && simsPackage.StandAlone) simsPackage = GetSubDirectories(gameInstance, file, simsPackage);
+                //output.Add(simsPackage);
+            }
+            return folderPackage;
+        }
+
+        public static SimsPackage GetSubDirectoriesPackage(GameInstance gameInstance, string directory, SimsPackage folderPackage)
+        {
+            foreach (string file in Directory.GetFiles(directory))
+            {
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Found: {0}", file));
+                FileInfo fi = new(file);
+                if (GlobalVariables.SimsFileExtensions.Contains(fi.Extension))
+                {
+                    SimsPackage simsPackage = new();
+                    simsPackage = ReadPackage(simsPackage, file, gameInstance, fi, true);                     
+                    //gameInstance._packages.Add(simsPackage); 
+                    if (simsPackage.LinkedFiles.Count != 0 || simsPackage.LinkedFolders.Count != 0)
+                    {
+                        simsPackage = GetLinked(gameInstance, simsPackage);
+                    }
+                    if (!simsPackage.StandAlone)
+                    {
+                        if (!folderPackage.LinkedFiles.Contains(simsPackage.Location)) folderPackage.LinkedFiles.Add(simsPackage.Location);
+                        folderPackage.LinkedPackages.Add(simsPackage);
+                    }
+                    
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Added: {0}", file));
+                }
+                //GlobalVariables.mainWindow.IncrementLoadingScreen(1, fi.Name);
+            }
+            foreach (string file in Directory.GetDirectories(directory))
+            {
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Found: {0}", file));
+                DirectoryInfo fi = new(file);
+                SimsPackage simsPackage = new(); 
+                simsPackage = ReadPackage(simsPackage, file, gameInstance, fi, true);                
+                if (simsPackage.LinkedFiles.Count != 0 || simsPackage.LinkedFolders.Count != 0)
+                {
+                    simsPackage = GetLinked(gameInstance, simsPackage);
+                }
+                if (!simsPackage.StandAlone)
+                {
+                    if (!folderPackage.LinkedFolders.Contains(simsPackage.Location)) folderPackage.LinkedFolders.Add(simsPackage.Location);
+                    folderPackage.LinkedPackageFolders.Add(simsPackage);
+                }
+                
+                gameInstance._packages.Add(simsPackage);
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Added: {0}", file));            
+                //GlobalVariables.mainWindow.IncrementLoadingScreen(1, fi.Name);
+                if (!simsPackage.RootMod && simsPackage.StandAlone) simsPackage = GetSubDirectories(gameInstance, file, simsPackage);
+            }
+            return folderPackage;
         }
 
 
-        public static SimsPackage ReadPackage(string file, GameInstance loadedinstance, DirectoryInfo fi, bool subfolder = false)
+        public static SimsPackage ReadPackage(SimsPackage simsPackage, string file, GameInstance loadedinstance, DirectoryInfo fi, bool subfolder = false)
         {
-            SimsPackage simsPackage = new();
             string infoFile = string.Format("{0}.info", file);
             XmlSerializer simsPackageSerializer = new XmlSerializer(typeof(SimsPackage));
             if (File.Exists(infoFile))
@@ -1950,14 +2332,14 @@ namespace SimsCCManager.Globals
                 simsPackage.DateCreated = Directory.GetCreationTime(file);
                 simsPackage.DateUpdated = DateTime.Now;
                 simsPackage.PackageCategory = loadedinstance.Categories.First(x => x.Name == "Default");
+                simsPackage.HasBeenRead = true;
                 simsPackage.WriteXML();                
             }
             return simsPackage;
         }
 
-        public static SimsPackage ReadPackage(string file, GameInstance loadedinstance, FileInfo fi, bool subfolder = false)
+        public static SimsPackage ReadPackage(SimsPackage simsPackage, string file, GameInstance loadedinstance, FileInfo fi, bool subfolder = false)
         {
-            SimsPackage simsPackage = new();
             string infoFile = string.Format("{0}.info", file);
             XmlSerializer simsPackageSerializer = new XmlSerializer(typeof(SimsPackage));
             if (File.Exists(infoFile))
@@ -2048,10 +2430,11 @@ namespace SimsCCManager.Globals
                 simsPackageReader.Dispose();
                 simsPackage.DateCreated = File.GetCreationTime(file);
                 simsPackage.DateUpdated = DateTime.Now;
+                simsPackage.HasBeenRead = true;
+                simsPackage = simsPackageReader.CheckOverrides(simsPackage);                
                 simsPackage.WriteXML();
                 new Thread(() => {
-                    simsPackageReader.CheckOverrides(simsPackage);
-                    simsPackageReader.CheckDuplicates(simsPackage, loadedinstance._packages.ToList());
+                    //simsPackageReader.CheckDuplicates(simsPackage, loadedinstance._packages.ToList());
                 }){IsBackground = true}.Start(); 
             }
 

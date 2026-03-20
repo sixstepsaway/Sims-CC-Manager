@@ -274,7 +274,8 @@ public partial class LoadInstance : MarginContainer
                 pbarval += 10;
                 GlobalVariables.mainWindow.IncrementLoadingScreen(10, "Loading packages...", "LoadInstance: Second");    
                 pbarval += 10;
-                gameInstance = InstanceControllers.LoadInstanceFiles(gameInstance);
+                //gameInstance = InstanceControllers.LoadInstanceFiles(gameInstance);
+                gameInstance = InstanceControllers.InitialLoad(gameInstance);
                 CallDeferred(nameof(FinishLoading));
             }){IsBackground = true}.Start();
         }

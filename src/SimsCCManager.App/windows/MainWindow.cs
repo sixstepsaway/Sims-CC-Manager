@@ -501,7 +501,7 @@ public partial class MainWindow : MarginContainer
         loadingInstance.Stage = stage;
         if (stage == 2)
         {
-            loadingInstance.StageText = "Finding orphaned packages";
+            loadingInstance.StageText = "Creating datagrid";
         }
         loadingInstance.MaxValue = max;
         loadingInstance.Progress = 0;
@@ -593,4 +593,13 @@ public partial class MainWindow : MarginContainer
         MoveChild(Footer, GetChildCount());
         InitialLoadComplete = false;
     }
+
+    public override void _Input(InputEvent @event)
+    {
+        /*if (@event is InputEventMouseMotion && tooltipVisible)
+        {
+            CancelTooltip();
+        }*/
+    }
+
 }

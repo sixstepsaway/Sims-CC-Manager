@@ -1,4 +1,4 @@
-[gd_scene load_steps=21 format=3 uid="uid://55aunc3up5rf"]
+[gd_scene load_steps=27 format=3 uid="uid://55aunc3up5rf"]
 
 [ext_resource type="Script" uid="uid://biglkyj7fjd1m" path="res://UI/PackageDisplay/AllModsContainer.cs" id="1_07ull"]
 [ext_resource type="Theme" uid="uid://b4fe82i5mblf5" path="res://themes/packagedisplay_headers.tres" id="1_gmjrk"]
@@ -11,6 +11,50 @@
 [ext_resource type="PackedScene" uid="uid://biyhvjfpffmqj" path="res://UI/PackageDisplay/AddDetail.tscn" id="6_ylio6"]
 [ext_resource type="PackedScene" uid="uid://bvm2atrydtgg6" path="res://windows/CustomPopupWindow.tscn" id="7_1bilu"]
 [ext_resource type="PackedScene" uid="uid://cqwmdnxfu6311" path="res://UI/PackageDisplay/ThumbnailGrid/ThumbnailGrid.tscn" id="7_wdnan"]
+[ext_resource type="FontFile" uid="uid://c54x4yqyjayt3" path="res://assets/fonts/Livvic/Livvic-Bold.ttf" id="9_xe552"]
+[ext_resource type="FontFile" uid="uid://biq6mub1golgk" path="res://assets/fonts/Dongle/Dongle-Regular.ttf" id="10_7lf2g"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_8ejxn"]
+content_margin_left = 5.0
+content_margin_right = 5.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_1ydx4"]
+content_margin_left = 5.0
+content_margin_top = 0.0
+content_margin_right = 5.0
+content_margin_bottom = 0.0
+bg_color = Color(0.835294, 0.835294, 0.835294, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.870588, 0.827451, 0.894118, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_g4rbl"]
+content_margin_left = 5.0
+content_margin_top = 0.0
+content_margin_right = 5.0
+content_margin_bottom = 0.0
+bg_color = Color(0.835294, 0.835294, 0.835294, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.996078, 0.996078, 0.996078, 1)
+
+[sub_resource type="Theme" id="Theme_or5p8"]
+Label/colors/font_color = Color(0.8, 0.670588, 0.847059, 1)
+Label/font_sizes/font_size = 12
+Label/fonts/font = ExtResource("9_xe552")
+LineEdit/colors/font_placeholder_color = Color(0.88, 0.88, 0.88, 1)
+LineEdit/styles/normal = SubResource("StyleBoxFlat_8ejxn")
+TextEdit/colors/font_color = Color(0.196078, 0.196078, 0.196078, 1)
+TextEdit/colors/font_placeholder_color = Color(0.498039, 0.498039, 0.498039, 1)
+TextEdit/constants/line_spacing = -6
+TextEdit/font_sizes/font_size = 26
+TextEdit/fonts/font = ExtResource("10_7lf2g")
+TextEdit/styles/focus = SubResource("StyleBoxFlat_1ydx4")
+TextEdit/styles/normal = SubResource("StyleBoxFlat_g4rbl")
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_1bilu"]
 content_margin_left = 5.0
@@ -102,7 +146,7 @@ size_flags_horizontal = 3
 size_flags_vertical = 3
 script = ExtResource("1_07ull")
 AllModsHeader = NodePath("ContainerHeader/LabelPositioner/HBoxContainer/AllMods_Label")
-AllModsModNumber = NodePath("ContainerHeader/LabelPositioner/HBoxContainer/AllModsInfo_Label")
+AllModsModNumber = NodePath("ContainerHeader/LabelPositioner/HBoxContainer/Control/AllModsInfo_Label")
 SearchBox = NodePath("ContainerHeader/SearchPositioner/AllMods_SearchBox")
 SearchOptions = NodePath("ContainerHeader/SearchPositioner/OptionButton")
 DataGrid = NodePath("AllMods_Container/GridContainer/DataGrid")
@@ -136,12 +180,21 @@ size_flags_vertical = 8
 theme = ExtResource("1_gmjrk")
 text = "All Mods"
 
-[node name="AllModsInfo_Label" type="Label" parent="ContainerHeader/LabelPositioner/HBoxContainer"]
+[node name="Control" type="Control" parent="ContainerHeader/LabelPositioner/HBoxContainer"]
+clip_contents = true
 layout_mode = 2
 size_flags_horizontal = 3
+
+[node name="AllModsInfo_Label" type="Label" parent="ContainerHeader/LabelPositioner/HBoxContainer/Control"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
 size_flags_vertical = 1
-theme = ExtResource("1_gmjrk")
-theme_override_font_sizes/font_size = 12
+theme = SubResource("Theme_or5p8")
 horizontal_alignment = 1
 vertical_alignment = 1
 

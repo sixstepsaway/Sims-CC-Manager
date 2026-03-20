@@ -75,6 +75,7 @@ public partial class GameStartControls : MarginContainer
 
     public override void _Ready()
     {
+        UpdateTheme();
         GameGoing = false;
         PlayButton.ButtonClicked += () => Play();
         LauncherTimer.WaitTime = 90;

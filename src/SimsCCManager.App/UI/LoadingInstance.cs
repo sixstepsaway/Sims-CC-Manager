@@ -72,7 +72,7 @@ public partial class LoadingInstance : Control
     }
     public void UpdateProgressLabel(string text)
     {
-        if (IsInstanceValid(ProgressLabel)) ProgressLabel.Text = text;
+        if (IsInstanceValid(ProgressLabel)) ProgressLabel.Text = string.Format("{0}/{1} - {2}", progressBar.Value, progressBar.MaxValue, text);
     }
 
     public override void _Ready()

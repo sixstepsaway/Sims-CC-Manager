@@ -13,6 +13,8 @@ using System.Threading.Tasks;
 using System.Text;
 using System.Data;
 using MoreLinq;
+using SimsCCManager.OptionLists;
+using SimsCCManager.Globals;
 
 
 public partial class DataGrid : Control
@@ -34,9 +36,12 @@ public partial class DataGrid : Control
 	public delegate void NumberChangedEvent(string identifer, int val);
 	public NumberChangedEvent NumberChanged;
 	public delegate void HeaderSortedEvent(int idx, SortingOptions sortingrule);
-	public event HeaderSortedEvent HeaderSortedSignal;
+	public HeaderSortedEvent HeaderSortedSignal;
 	public delegate void DataChangedEvent(DataGridRow rowIdx, string dataChanged, int Item);
-	public event DataChangedEvent DataChanged;
+	public DataChangedEvent DataChanged;
+
+	public delegate void KillTooltipEvent();
+	public KillTooltipEvent KillTooltip;
 
 	public delegate void ItemToggledAdjEvent(DataGridRow row);
 	public ItemToggledAdjEvent ItemToggledAdj;
@@ -693,6 +698,7 @@ public partial class DataGrid : Control
 
 	public void UpdateRow(DataGridRow importedRowData, bool newSubrow = false)
 	{		
+		DontAnnounceEdit = true;
 		PleasePassLog(string.Format("Checking VisibleRows for row {0}", importedRowData.OverallIdx));
 		if (VisibleRows.Any(x => x.RowData.Identifier == importedRowData.Identifier))
 		{			
@@ -725,6 +731,115 @@ public partial class DataGrid : Control
 			RowData[RowData.IndexOf(ogdata)] = importedRowData;	
 			PleasePassLog(string.Format("Row {0} isn't a visible row, so we don't need to update it.", importedRowData.OverallIdx));
 		}
+		DontAnnounceEdit = false;
+	}
+
+	ConcurrentBag<DataGridRow> initialUpdateRows = new();
+
+	public void InitialUpdateRow(DataGridRow importedRowData, bool newSubrow = false)
+	{		
+		DontAnnounceEdit = true;
+		PleasePassLog(string.Format("Checking VisibleRows for row {0}", importedRowData.OverallIdx));
+		if (VisibleRows.Any(x => x.RowData.Identifier == importedRowData.Identifier))
+		{			
+			PleasePassLog(string.Format("Found row {0} (P {1}) in visible rows!", importedRowData.OverallIdx, importedRowData.PopulatedIdx));
+			DataGridRow ogdata = RowData.First(x => x.Identifier == importedRowData.Identifier);
+			importedRowData.Selected = ogdata.Selected;
+			importedRowData.OverallIdx = ogdata.OverallIdx;
+			importedRowData.PopulatedIdx = ogdata.PopulatedIdx;
+			RowData[RowData.IndexOf(ogdata)] = importedRowData;	
+			
+			int vidx = VisibleRows.IndexOf(VisibleRows.First(x => x.RowData.Identifier == importedRowData.Identifier));
+
+			//initialUpdateRows.Add(importedRowData);
+
+			EditRow(importedRowData, vidx);
+			//CallDeferred(nameof(DeferredRowUpdate), importedRowData.PopulatedIdx, vidx, importedRowData.OverallIdx, importedRowData.Identifier.ToString());
+
+		} else
+		{
+			DataGridRow ogdata = RowData.First(x => x.Identifier == importedRowData.Identifier);
+			importedRowData.Selected = ogdata.Selected;
+			importedRowData.OverallIdx = ogdata.OverallIdx;
+			importedRowData.PopulatedIdx = ogdata.PopulatedIdx;
+			RowData[RowData.IndexOf(ogdata)] = importedRowData;	
+			PleasePassLog(string.Format("Row {0} isn't a visible row, so we don't need to update it.", importedRowData.OverallIdx));
+		}
+		DontAnnounceEdit = false;
+	}
+
+	private void EditRow(DataGridRow data, int vidx)
+	{
+		
+		VisibleRows[vidx].RowData = data;
+		if (data.UseCategoryColor)
+		{
+			VisibleRows[vidx].BackgroundColor = data.BackgroundColor;
+			VisibleRows[vidx].TextColor = data.TextColor; 
+		} else if (UniversalMethods.IsEven(data.PopulatedIdx))
+		{				
+			VisibleRows[vidx].BackgroundColor = AlternateRowColor;
+			VisibleRows[vidx].TextColor = AlternateRowTextColor; 
+		} else
+		{			
+			VisibleRows[vidx].BackgroundColor = MainRowColor;
+			VisibleRows[vidx].TextColor = MainRowTextColor; 
+		}
+		if (Headers.Any(x => x.CellType == CellOptions.Toggle))
+		{
+			VisibleRows[vidx].ToggleData = Headers.First(x => x.CellType == CellOptions.Toggle).Data;
+		}
+		int hc = 0;
+		foreach (DataGridHeader head in Headers)
+		{
+			int headIdx = head.HeaderIdx;
+			int cellIdx = head.ItemIndex;
+			if (head.ShowHeader)
+			{
+				Vector2 size = new(0, 0);
+				DataGridHeaderCell header = HeaderRow.HeaderCells[hc];
+				DataGridHeaderSizeAdjuster sizeadjuster = HeaderRow.HeaderSliders[hc];
+				DataGridCell cell = VisibleRows[vidx].RowHeaders[hc].Cell;
+				cell.CellOptions = head.CellType;
+				cell.FirstLoaded = FirstLoaded;
+				cell.dataGrid = this;
+				cell.AccentColor = AccentColor;
+				cell.NumberAsBytes = head.NumberAsBytes;
+				if (cell.CellOptions == CellOptions.Icons)
+				{
+					cell.Icons = data.RowIcons;
+				}
+				if (cell.CellOptions == CellOptions.Toggle)
+				{
+					bool toggleresult = ToBool(data.Items[cellIdx].ItemContent);
+					VisibleRows[vidx].Toggled = toggleresult;
+				}
+				if (cell.CellOptions == CellOptions.Picture)
+				{
+					cell.ImageLocation = data.Items[cellIdx].ItemContent;
+				}
+				if (cell.CellOptions == CellOptions.AdjustableNumber)
+				{
+					cell.NumberContent = data.AdjustmentNumber;
+					VisibleRows[vidx].AdjustmentNumber = data.AdjustmentNumber;
+					cell.ToggleLinked = LinkToggleToAdjustmentNumber;
+				}
+				if (cell.CellOptions == CellOptions.Int)
+				{
+					cell.NumberContent = int.Parse(data.Items[cellIdx].ItemContent);
+				}
+				cell.TextContent = data.Items[cellIdx].ItemContent;
+				hc++;
+			}
+		}
+	}
+
+	private void DeferredRowUpdate(int popidx, int vidx, int overallidx, string identifier)
+	{
+		
+		RemoveRow(popidx, vidx);
+		CreateRow(initialUpdateRows.First(x => x.Identifier == Guid.Parse(identifier)), overallidx);
+		AddRow(popidx, vidx);
 	}
 
     public void PopulateRows(int from = -1){
@@ -899,6 +1014,7 @@ public partial class DataGrid : Control
 			row.RowsHolder.SizeFlagsVertical = SizeFlags.ExpandFill;
 			row.SizeFlagsVertical = SizeFlags.ExpandFill;
 		}
+		
 
 		row.RowData = importedRowData;
 		row.Datagrid = this;
@@ -940,6 +1056,8 @@ public partial class DataGrid : Control
 
 		foreach (DataGridHeader head in Headers)
 		{
+			DataGridRowHeaders rowhead = new();
+			rowhead.Header = head;
 			int headIdx = head.HeaderIdx;
 			int cellIdx = head.ItemIndex;
 			if (head.ShowHeader)
@@ -948,6 +1066,7 @@ public partial class DataGrid : Control
 				DataGridHeaderCell header = HeaderRow.HeaderCells[hc];
 				DataGridHeaderSizeAdjuster sizeadjuster = HeaderRow.HeaderSliders[hc];
 				DataGridCell cell = DataGridCellPS.Instantiate() as DataGridCell;
+				rowhead.Cell = cell;
 				cell.CellOptions = head.CellType;
 				cell.thisRow = row;
 				cell.FirstLoaded = FirstLoaded;
@@ -1008,10 +1127,12 @@ public partial class DataGrid : Control
 				cell.AssociatedHeader = header;
 				cell.AssociatedHeaderSizer = sizeadjuster;
 				cell.ProduceTooltip += (t) => TooltipProduced(t);
+				cell.KillTooltip += () => { KillTooltip?.Invoke(); };
 				cell.CellIdx = headIdx;
 				row.AddCell(cell);
 				hc++;
 			}
+			row.RowHeaders.Add(rowhead);
 		}
 
 		if (importedRowData.SubRow)
@@ -1354,8 +1475,11 @@ public partial class DataGrid : Control
 	}
 
 	private void RowDataEdited(DataGridRow row, string i, int r, int c, int idx){
-		int itemidx = row.Items.IndexOf(row.Items.First(x => x.ColumnNum == c));		
-		InvokeDataChanged(row, Headers[itemidx].Data, itemidx);
+		if (!DontAnnounceEdit)
+		{
+			int itemidx = row.Items.IndexOf(row.Items.First(x => x.ColumnNum == c));		
+			InvokeDataChanged(row, Headers[itemidx].Data, itemidx);
+		}
 	}
 
     private void RowSelected(int SelectedItem, bool Selected)
@@ -2025,8 +2149,9 @@ public partial class DataGrid : Control
 			return dt.ToString("MM/dd/yyyy H:mm");
 		} else if (prop.GetType() == typeof(Guid) || prop.GetType() == typeof(int)){ 
 			return prop.ToString();
-		} else if (prop.GetType() == typeof(Enum)){
-			return nameof(prop);
+		} else if (prop.GetType() == typeof(SimsGames)){
+			return Extensions.GetDescription(prop);
+			
 		} else if (prop.GetType() == typeof(bool)) { 
 			return prop;
 		} else {

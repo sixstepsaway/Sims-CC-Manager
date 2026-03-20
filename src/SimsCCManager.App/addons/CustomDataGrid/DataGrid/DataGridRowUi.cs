@@ -10,6 +10,9 @@ public partial class DataGridRowUi : MarginContainer
 	/// <summary>
 	/// The data grid row as displayed in the data grid.
 	/// </summary>
+	/// 
+	
+	public List<DataGridRowHeaders> RowHeaders = new();
 	
 	public delegate void RowSelectedEvent(bool selected);
 	public RowSelectedEvent RowSelected;
@@ -87,7 +90,7 @@ public partial class DataGridRowUi : MarginContainer
 	{
 		get { return _adjustingnum; }
 		set { _adjustingnum = value; 
-		RowSelectionButton.Visible = !value;
+			RowSelectionButton.Visible = !value;
 		}
 	}
 	private DataGridCell _numadjustmentcell;
@@ -312,9 +315,14 @@ public partial class DataGridRowUi : MarginContainer
 				}
 				AdjustmentNumberCell.ShowNumberAdjusterControls = false;
 				NumAdjusting(false);
-			}
-			
+			}			
 		}
     }
 
+}
+
+public class DataGridRowHeaders
+{
+	public DataGridHeader Header {get; set;}
+	public DataGridCell Cell {get; set;}
 }

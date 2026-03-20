@@ -1,5 +1,6 @@
 using DataGridContainers;
 using Godot;
+using ICSharpCode.SharpZipLib.Zip;
 using SimsCCManager.Containers;
 using SimsCCManager.Debugging;
 using SimsCCManager.Globals;
@@ -18,6 +19,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Xml.Serialization;
 
 public partial class AllModsContainer : MarginContainer
 {
@@ -90,7 +92,14 @@ public partial class AllModsContainer : MarginContainer
     public InstanceProfile CurrentProfile {get {return packageDisplay.ThisInstance.LoadedProfile; }}
 
     public List<SimsPackage> Packages { 
-        get { return packageDisplay.ThisInstance.Files.OfType<SimsPackage>().ToList(); }
+        get { 
+            return packageDisplay.ThisInstance.Files.OfType<SimsPackage>().ToList(); 
+        }
+    }
+
+    private void SetModNumber()
+    {
+        AllModsModNumber.Text = string.Format("{0}/{1} packages read", Packages.Count(x => x.HasBeenRead), Packages.Count);
     }
 
     
@@ -132,7 +141,7 @@ public partial class AllModsContainer : MarginContainer
                 ItemIndex = 0},
 			new DataGridHeader() { 
                 ContentType = DataGridContentType.Text,
-                StartingWidth = 250,
+                StartingWidth = 350,
                 Data = "FileName",
                 Title = "Title",
                 Resizeable = true,
@@ -163,7 +172,7 @@ public partial class AllModsContainer : MarginContainer
                 ItemIndex = 3},
 			new DataGridHeader() { 
                 ContentType = DataGridContentType.Text,
-                StartingWidth = 150,
+                StartingWidth = 200,
                 Data = "Type",
                 Title = "Type",
                 Resizeable = true,
@@ -174,8 +183,8 @@ public partial class AllModsContainer : MarginContainer
 			new DataGridHeader() { 
                 ContentType = DataGridContentType.Text,
                 StartingWidth = 150,
-                Data = "Creator",
-                Title = "Creator",
+                Data = "CategoryName",
+                Title = "Category",
                 Resizeable = true,
                 CellType = CellOptions.Text,
                 ShowHeader = true,
@@ -184,11 +193,11 @@ public partial class AllModsContainer : MarginContainer
 			new DataGridHeader() { 
                 ContentType = DataGridContentType.Text,
                 StartingWidth = 150,
-                Data = "CategoryName",
-                Title = "Category",
+                Data = "Creator",
+                Title = "Creator",
                 Resizeable = true,
                 CellType = CellOptions.Text,
-                ShowHeader = true,
+                ShowHeader = false,
                 HeaderIdx = 6,
                 ItemIndex = 6},
 			new DataGridHeader() { 
@@ -279,7 +288,7 @@ public partial class AllModsContainer : MarginContainer
         new() { TooltipMessage = "Favorite", IconData = "Favorite", IconName = "Favorite", IconImage = GD.Load<Texture2D>("res://assets/icons/materialicons/twotone_favorite_black_48dp.png")},
         new() { TooltipMessage = "Broken", IconData = "Broken", IconName = "Broken", IconImage = GD.Load<Texture2D>("res://assets/icons/materialicons/twotone_broken_image_black_48dp.png")},
         new() { TooltipMessage = "Wrong Game", IconData = "WrongGame", IconName = "Wrong Game", IconImage = GD.Load<Texture2D>("res://assets/icons/materialicons/twotone_warning_black_48dp.png")},
-        new() { TooltipMessage = "Override", IconData = "Override", IconName = "Override", IconImage = GD.Load<Texture2D>("res://assets/icons/materialicons/twotone_exposure_black_48dp.png")}
+        new() { TooltipMessage = "Override", IconData = "Override", IconName = "Override", IconImage = GD.Load<Texture2D>("res://assets/icons/materialicons/twotone_add_to_photos_black_48dp.png")}
     };
 
     List<DataGridHeaderCell> HeaderCells = new();
@@ -308,7 +317,6 @@ public partial class AllModsContainer : MarginContainer
 
         SwapDisplaysCheck.CheckToggled += (v) => ViewFlipped(v);
 
-        
         
         
 
@@ -361,6 +369,9 @@ public partial class AllModsContainer : MarginContainer
         DataGrid.DataChanged -= DataChanged; 
         DataGrid.DataChanged += DataChanged;
         DataGrid.FirstLoaded = true;
+        SetModNumber();
+        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Data grid finished loading!"));
+        packageDisplay.ReadPackageDetails();
     }
 
     private void ViewFlipped(bool v)
@@ -436,7 +447,7 @@ public partial class AllModsContainer : MarginContainer
                 package.WriteXML();            
             } else
             {
-                package = InstanceControllers.ReadPackage(item, packageDisplay.ThisInstance, file);
+                package = InstanceControllers.ReadPackage(package, item, packageDisplay.ThisInstance, file);
             }
             Packages[rowpackage].LinkedPackages.Add(package);
             Packages[rowpackage].LinkedFiles.Add(item);
@@ -502,6 +513,7 @@ public partial class AllModsContainer : MarginContainer
 
     public DataGridRow CreateSubRow(DataGridRow newrow, SimsPackage pack)
     {
+        XmlSerializer simsPackageSerializer = new XmlSerializer(typeof(SimsPackage));
         List<SimsPackage> subpacks = new();
         newrow.SubRow = true;
         newrow.Identifier = pack.Identifier;
@@ -513,10 +525,68 @@ public partial class AllModsContainer : MarginContainer
                 if (!subpacks.Any(x => x.Location == linkedfile))
                 {
                     FileInfo fi = new(linkedfile);
-                    SimsPackage simsPackage = InstanceControllers.ReadPackage(linkedfile, packageDisplay.ThisInstance, fi);                    
+                    /*SimsPackage simsPackage = new();
+
+                    simsPackage = InstanceControllers.ReadPackage(simsPackage, linkedfile, packageDisplay.ThisInstance, fi);                    
                     pack.LinkedPackages.Add(simsPackage);
-                    subpacks.Add(simsPackage); 
-                }                
+                    subpacks.Add(simsPackage);*/
+                    if (GlobalVariables.SimsFileExtensions.Contains(fi.Extension))
+                    {
+                        SimsPackage simsPackage = new();
+                        simsPackage.Location = linkedfile; 
+                        if (File.Exists(simsPackage.InfoFile))
+                        {
+                            if (GlobalVariables.DebugMode)
+                            {                    
+                                using (FileStream fileStream = new(simsPackage.InfoFile, FileMode.Open, System.IO.FileAccess.Read)){
+                                    using (StreamReader streamReader = new(fileStream)){
+                                        simsPackage = (SimsPackage)simsPackageSerializer.Deserialize(streamReader);
+                                        streamReader.Close();
+                                    }
+                                    fileStream.Close();
+                                }
+                            } else
+                            {
+                                using (FileStream fs = File.OpenRead(simsPackage.InfoFile))
+                                using (ZipFile zipFile = new ZipFile(fs))
+                                {
+                                    if (!Utilities.CheckSignature(simsPackage.InfoFile, 4, Utilities.SignatureZip)){
+                                        using (FileStream fileStream = new(simsPackage.InfoFile, FileMode.Open, System.IO.FileAccess.Read)){
+                                            using (StreamReader streamReader = new(fileStream)){
+                                                simsPackage = (SimsPackage)simsPackageSerializer.Deserialize(streamReader);
+                                                streamReader.Close();
+                                            }
+                                            fileStream.Close();
+                                        }
+                                    } else
+                                    {
+                                        foreach (ZipEntry entry in zipFile)
+                                        {
+                                            if (!entry.IsFile) continue; // Skip directories
+                                            
+                                            using (Stream zipStream = zipFile.GetInputStream(entry))
+                                            using (MemoryStream outputStream = new())
+                                            {
+                                                zipStream.CopyTo(outputStream);
+                                                simsPackage = (SimsPackage)simsPackageSerializer.Deserialize(outputStream);
+                                            }
+                                        }
+                                    }                        
+                                }
+                            }
+                            simsPackage.HasBeenRead = true;
+                        } else
+                        {
+                            simsPackage.FileName = fi.Name;
+                            simsPackage.StandAlone = false;
+                            simsPackage.Game = packageDisplay.ThisInstance.GameChoice;
+                            simsPackage.PackageCategory = packageDisplay.ThisInstance.Categories.First(x => x.Name == "Default"); 
+                            //simsPackage.WriteXML();                        
+                        }
+                        pack.LinkedPackages.Add(simsPackage);
+                        subpacks.Add(simsPackage);
+                    } 
+                }
             }
         }
         if (pack.LinkedFolders.Count != 0)
@@ -525,10 +595,79 @@ public partial class AllModsContainer : MarginContainer
             {
                 if (!subpacks.Any(x => x.Location == linkedfile))
                 {
+                    SimsPackage simsPackage = new() { Location = linkedfile };
                     DirectoryInfo fi = new(linkedfile);
-                    SimsPackage simsPackage = InstanceControllers.ReadPackage(linkedfile, packageDisplay.ThisInstance, fi);                    
+                    if (File.Exists(simsPackage.InfoFile))
+                    {
+                        if (GlobalVariables.DebugMode)
+                        {                    
+                            using (FileStream fileStream = new(simsPackage.InfoFile, FileMode.Open, System.IO.FileAccess.Read)){
+                                using (StreamReader streamReader = new(fileStream)){
+                                    simsPackage = (SimsPackage)simsPackageSerializer.Deserialize(streamReader);
+                                    streamReader.Close();
+                                }
+                                fileStream.Close();
+                            }
+                        } else
+                        {
+                            using (FileStream fs = File.OpenRead(simsPackage.InfoFile))
+                            using (ZipFile zipFile = new ZipFile(fs))
+                            {
+                                if (!Utilities.CheckSignature(simsPackage.InfoFile, 4, Utilities.SignatureZip)){
+                                    using (FileStream fileStream = new(simsPackage.InfoFile, FileMode.Open, System.IO.FileAccess.Read)){
+                                        using (StreamReader streamReader = new(fileStream)){
+                                            simsPackage = (SimsPackage)simsPackageSerializer.Deserialize(streamReader);
+                                            streamReader.Close();
+                                        }
+                                        fileStream.Close();
+                                    }
+                                } else
+                                {
+                                    foreach (ZipEntry entry in zipFile)
+                                    {
+                                        if (!entry.IsFile) continue; // Skip directories
+                                        
+                                        using (Stream zipStream = zipFile.GetInputStream(entry))
+                                        using (MemoryStream outputStream = new())
+                                        {
+                                            zipStream.CopyTo(outputStream);
+                                            simsPackage = (SimsPackage)simsPackageSerializer.Deserialize(outputStream);
+                                        }
+                                    }
+                                }                        
+                            }
+                        }                
+                    } else
+                    {
+                        simsPackage.IsDirectory = true;
+                        simsPackage.StandAlone = false;
+                        simsPackage.FileName = fi.Name;
+                        simsPackage.Game = packageDisplay.ThisInstance.GameChoice;
+                        switch (simsPackage.Game)
+                        {
+                            case SimsGames.Sims2:
+                            simsPackage.Sims2Data = new();
+                            break;
+                            case SimsGames.Sims3:
+                            simsPackage.Sims3Data = new();
+                            break;
+                            case SimsGames.Sims4:
+                            simsPackage.Sims4Data = new();
+                            break;
+                        }
+                        simsPackage.Location = linkedfile;
+                        simsPackage.DateCreated = Directory.GetCreationTime(linkedfile);
+                        simsPackage.DateUpdated = DateTime.Now;
+                        simsPackage.PackageCategory = packageDisplay.ThisInstance.Categories.First(x => x.Name == "Default");
+                        simsPackage.HasBeenRead = true;
+                        //simsPackage.WriteXML();                
+                    }
                     pack.LinkedPackages.Add(simsPackage);
-                    subpacks.Add(simsPackage); 
+                    subpacks.Add(simsPackage);
+                    /*SimsPackage simsPackage = new();
+                    simsPackage = InstanceControllers.ReadPackage(simsPackage, linkedfile, packageDisplay.ThisInstance, fi);                    
+                    pack.LinkedPackages.Add(simsPackage);
+                    subpacks.Add(simsPackage); */
                 }                
             }
         }        
@@ -545,6 +684,7 @@ public partial class AllModsContainer : MarginContainer
     public DataGridRow CreateRow(SimsPackage pack, int i)
     {
         if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Adding {0} to DataGrid", pack.FileName));
+        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0} ID is {1}", pack.FileName, pack.Identifier));
         DataGridRow newrow = new();      
         newrow.RowRef = pack.FileName;
         newrow.SubrowTextFirst = pack.FileName;
@@ -570,7 +710,14 @@ public partial class AllModsContainer : MarginContainer
         newrow.RowIcons = DataGrid.GetIcons(icons);			
         int c = 0;
         for (int o = 0; o < newrow.RowIcons.Count; o++) {						
-            newrow.RowIcons[o].IconVisible = DataGrid.GetProperty(pack, newrow.RowIcons[o].IconData);
+            var prop = DataGrid.GetProperty(pack, newrow.RowIcons[o].IconData);
+            if (prop is bool)
+            {
+                newrow.RowIcons[o].IconVisible = prop;
+            } else
+            {
+                newrow.RowIcons[o].IconVisible = false;
+            }            
         }
         foreach (DataGridHeader header in DataGridHeaders){				
             DataGridCellItem item = new() {RowNum = i, ColumnNum = c};
@@ -606,7 +753,7 @@ public partial class AllModsContainer : MarginContainer
                 newrow.TextColor = pack.PackageCategory.TextColor;
             }            
         }
-        if (!FirstLoaded) GlobalVariables.mainWindow.IncrementLoadingScreen(1, string.Format("Creating data for {0}", pack.FileName), "All Mods: Making Data");
+        
         return newrow;
     }
 
@@ -668,6 +815,8 @@ public partial class AllModsContainer : MarginContainer
     
     public void CreateRows()
     {
+        if (!FirstLoaded) GlobalVariables.mainWindow.ChangeStage(Packages.Count(x => x.StandAlone), "Creating Datagrid", 2);
+        
         ConcurrentBag<Task> runningTasks = new();
         int completedTasks = 0;
         ConcurrentBag<DataGridRow> rows = new();
@@ -676,21 +825,19 @@ public partial class AllModsContainer : MarginContainer
             
             int i = 0;
             if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Packages: {0}", Packages.Count));
-            foreach (SimsPackage pack in Packages.OrderBy(x => x.IsDirectory).ThenBy(x => x.FileName)){
-                if (pack.StandAlone)
-                {                    
-                    Task t = new Task( () => {
-                        DataGridRow newrow = CreateRow(pack, i);
+            foreach (SimsPackage pack in Packages.Where(x => x.StandAlone).OrderBy(x => x.IsDirectory).ThenBy(x => x.FileName)){
+                Task t = new Task( () => {                        
+                    try { 
+                        DataGridRow newrow = CreateRow(pack, i); 
                         if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Row {0}: {1}", i, pack.FileName));
                         if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("-- Is Subrow: {0}\n -- Has Subitems: {1}", newrow.SubRow, newrow.SubRowItems.Count));
-                        rows.Add(newrow);                        
-                    });
-                    i++;
-                    runningTasks.Add(t);                                         
-                }   else
-                {
-                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Row {0}: {1} wasn't standalone.", i, pack.FileName));
-                }         
+                        rows.Add(newrow);   
+                        if (!FirstLoaded) GlobalVariables.mainWindow.IncrementLoadingScreen(1, string.Format("Creating data for {0}", pack.FileName), "All Mods: Making Data");                     
+                    } catch (Exception e) { if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Caught exception creating row for {0}: {1} - {2}", pack.FileName, e.Message, e.StackTrace)); }
+                });
+                //if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Task {0} is {1}", t.Id, pack.FileName));
+                i++;
+                runningTasks.Add(t);                        
             }
 
             Parallel.ForEach(runningTasks, GlobalVariables.ParallelSettings, t =>
@@ -702,6 +849,12 @@ public partial class AllModsContainer : MarginContainer
                 if (completedTasks != runningTasks.Count(x => x.IsCompleted)) {
                     completedTasks = runningTasks.Count(x => x.IsCompleted);
                     if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0} tasks in runningTasks, {1} completed", runningTasks.Count, completedTasks));
+                    if (runningTasks.Any(x => x.IsFaulted)) {
+                        foreach (Task t in runningTasks.Where(x => x.IsFaulted))
+                        {
+                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Task {0} Fault: {1} - {2}", t.Id, t.Exception.Message, t.Exception.StackTrace));
+                        }
+                    }
                 }
             }
 
@@ -818,6 +971,7 @@ public partial class AllModsContainer : MarginContainer
 		DataGrid.ItemToggledAdj += (row) => ItemToggledOrAdjusted(row);
         DataGrid.SelectionChanged += (SelectedRows, SelectedRowsIdxs) => SelectionChanged(SelectedRows, SelectedRowsIdxs);
 		DataGrid.MakeTooltip += (tooltip) => ShowTooltip(tooltip);
+        DataGrid.KillTooltip += () => { GlobalVariables.mainWindow.CancelTooltip(); };
 		DataGrid.MakeRCMenu += (headerMenu) => CreateHeaderClickMenu(headerMenu);
 		DataGrid.LinkToggleToAdjustmentNumber = true;
         DataGrid.PassLog += (log) => LogPassed(log);
@@ -940,7 +1094,7 @@ public partial class AllModsContainer : MarginContainer
 
     private void ShowTooltip(string t)
     {
-        //throw new NotImplementedException();
+        GlobalVariables.mainWindow.InstantiateTooltip(t);
     }
 
 
@@ -2308,7 +2462,7 @@ public partial class AllModsContainer : MarginContainer
 
 
 
-
+    
     public void UpdateItem(SimsPackage package)
     {
         DataGridRow rowdata = DataGrid.RowData.First(x => x.Identifier == package.Identifier);
@@ -2317,6 +2471,19 @@ public partial class AllModsContainer : MarginContainer
 
         if (ThumbGrid != null) ThumbGrid.ReplaceTGI(package);
     }
+
+    public void InitialReadUpdate(SimsPackage package)
+    {
+        SetModNumber();
+        DoingInitialUpdate = true;
+        DataGridRow rowdata = DataGrid.RowData.First(x => x.Identifier == package.Identifier);
+        rowdata = CreateRow(package, rowdata.OverallIdx);
+        DataGrid.InitialUpdateRow(rowdata);
+        if (ThumbGrid != null) ThumbGrid.ReplaceTGI(package);
+        DoingInitialUpdate = false;
+    }
+
+    public bool DoingInitialUpdate = false;
 
 
 
