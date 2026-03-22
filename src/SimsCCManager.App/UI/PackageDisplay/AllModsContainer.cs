@@ -29,6 +29,8 @@ public partial class AllModsContainer : MarginContainer
     [Export]
     Label AllModsModNumber;
     [Export]
+    Label AllModsModsDotdotDot;
+    [Export]
     LineEdit SearchBox;
     [Export]
     OptionButton SearchOptions;
@@ -97,10 +99,31 @@ public partial class AllModsContainer : MarginContainer
         }
     }
 
+    public void DeferredSetModNumber()
+    {
+        CallDeferred(nameof(SetModNumber));
+    }
+
     private void SetModNumber()
     {
-        AllModsModNumber.Text = string.Format("{0}/{1} packages read", Packages.Count(x => x.HasBeenRead), Packages.Count);
+        if (AllModsModsDotdotDot.Text == "") { AllModsModsDotdotDot.Text = "..."; DotTheDots(); }
+        if (Packages.Count(x => x.HasBeenRead) < Packages.Count)
+        {
+            StillProcessingPackages = true;
+            AllModsModNumber.Text = string.Format("Scanning packages: {0}/{1}", Packages.Count(x => x.HasBeenRead), Packages.Count);
+        } else if (packageDisplay.runningTasks.Any(x => !x.IsCompleted) && !packageDisplay.runningTasks.IsEmpty)
+        {
+            StillProcessingPackages = true;
+            AllModsModNumber.Text = string.Format("{0}/{1} packages read - Doing final checks", Packages.Count(x => x.HasBeenRead), Packages.Count);
+        } else 
+        {
+            StillProcessingPackages = false;
+            AllModsModsDotdotDot.Text = "";
+            AllModsModNumber.Text = string.Format("{0} packages loaded", Packages.Count);
+        }
     }
+
+    bool StillProcessingPackages = false;
 
     
 	private List<DataGridRow> _hiddenrows;
@@ -136,9 +159,7 @@ public partial class AllModsContainer : MarginContainer
                 Title = "Enabled",
                 Resizeable = false,
                 CellType = CellOptions.Toggle,
-                ShowHeader = true,
-                HeaderIdx = 0,
-                ItemIndex = 0},
+                ShowHeader = true},
 			new DataGridHeader() { 
                 ContentType = DataGridContentType.Text,
                 StartingWidth = 350,
@@ -147,9 +168,7 @@ public partial class AllModsContainer : MarginContainer
                 Resizeable = true,
                 CellType = CellOptions.Text,
                 ShowHeader = true,
-                ContentEditable = true,
-                HeaderIdx = 1,
-                ItemIndex = 1},
+                ContentEditable = true},
 			new DataGridHeader() { 
                 ContentType = DataGridContentType.Text,
                 Data = "LoadOrder",
@@ -157,19 +176,7 @@ public partial class AllModsContainer : MarginContainer
                 Resizeable = false,
                 CellType = CellOptions.AdjustableNumber,
                 ShowHeader = true,
-                Blank = true,
-                HeaderIdx = 2,
-                ItemIndex = 2},
-			new DataGridHeader() { 
-                ContentType = DataGridContentType.Text,
-                StartingWidth = 150,
-                Data = "Location",
-                Title = "Location",
-                Resizeable = true,
-                CellType = CellOptions.Text,
-                ShowHeader = true,
-                HeaderIdx = 3,
-                ItemIndex = 3},
+                Blank = true},
 			new DataGridHeader() { 
                 ContentType = DataGridContentType.Text,
                 StartingWidth = 200,
@@ -177,29 +184,7 @@ public partial class AllModsContainer : MarginContainer
                 Title = "Type",
                 Resizeable = true,
                 CellType = CellOptions.Text,
-                ShowHeader = true,
-                HeaderIdx = 4,
-                ItemIndex = 4},
-			new DataGridHeader() { 
-                ContentType = DataGridContentType.Text,
-                StartingWidth = 150,
-                Data = "CategoryName",
-                Title = "Category",
-                Resizeable = true,
-                CellType = CellOptions.Text,
-                ShowHeader = true,
-                HeaderIdx = 5,
-                ItemIndex = 5},
-			new DataGridHeader() { 
-                ContentType = DataGridContentType.Text,
-                StartingWidth = 150,
-                Data = "Creator",
-                Title = "Creator",
-                Resizeable = true,
-                CellType = CellOptions.Text,
-                ShowHeader = false,
-                HeaderIdx = 6,
-                ItemIndex = 6},
+                ShowHeader = true},
 			new DataGridHeader() { 
                 ContentType = DataGridContentType.Icons,
                 Title = "Problems",
@@ -207,38 +192,7 @@ public partial class AllModsContainer : MarginContainer
                 Resizeable = false,
                 CellType = CellOptions.Icons,
                 ShowHeader = true,
-			    Blank = true,
-                HeaderIdx = 7,
-                ItemIndex = 7},
-			new DataGridHeader() { 
-                ContentType = DataGridContentType.Text,
-                Data = "FileSize",
-                Title = "File Size",
-                Resizeable = true,
-                CellType = CellOptions.Text,
-                ShowHeader = true,
-                HeaderIdx = 8,
-                ItemIndex = 8},
-			new DataGridHeader() { 
-                ContentType = DataGridContentType.Text,
-                StartingWidth = 100,
-                Data = "FileType",
-                Title = "File Type",
-                Resizeable = true,
-                CellType = CellOptions.Text,
-                ShowHeader = true,
-                HeaderIdx = 9,
-                ItemIndex = 9},	
-			new DataGridHeader() { 
-                ContentType = DataGridContentType.Date,
-                Data = "DateUpdated",
-                StartingWidth = 150,
-                Title = "Date Modified",
-                Resizeable = true,
-                CellType = CellOptions.Text,
-                ShowHeader = false,
-                HeaderIdx = 10,
-                ItemIndex = 10},
+			    Blank = true},
 			new DataGridHeader() { 
                 ContentType = DataGridContentType.Date,
                 Data = "DateCreated",
@@ -246,9 +200,54 @@ public partial class AllModsContainer : MarginContainer
                 Title = "Date Created",
                 Resizeable = true,
                 CellType = CellOptions.Text,
-                ShowHeader = false,
-                HeaderIdx = 11,
-                ItemIndex = 11},
+                ShowHeader = false},
+			new DataGridHeader() { 
+                ContentType = DataGridContentType.Text,
+                StartingWidth = 150,
+                Data = "CategoryName",
+                Title = "Category",
+                Resizeable = true,
+                CellType = CellOptions.Text,
+                ShowHeader = true},
+			new DataGridHeader() { 
+                ContentType = DataGridContentType.Text,
+                StartingWidth = 150,
+                Data = "Creator",
+                Title = "Creator",
+                Resizeable = true,
+                CellType = CellOptions.Text,
+                ShowHeader = false},
+			new DataGridHeader() { 
+                ContentType = DataGridContentType.Text,
+                StartingWidth = 150,
+                Data = "Location",
+                Title = "Location",
+                Resizeable = true,
+                CellType = CellOptions.Text,
+                ShowHeader = true},
+			new DataGridHeader() { 
+                ContentType = DataGridContentType.Text,
+                Data = "FileSize",
+                Title = "File Size",
+                Resizeable = true,
+                CellType = CellOptions.Text,
+                ShowHeader = true},
+			new DataGridHeader() { 
+                ContentType = DataGridContentType.Text,
+                StartingWidth = 100,
+                Data = "FileType",
+                Title = "File Type",
+                Resizeable = true,
+                CellType = CellOptions.Text,
+                ShowHeader = true},	
+			new DataGridHeader() { 
+                ContentType = DataGridContentType.Date,
+                Data = "DateUpdated",
+                StartingWidth = 150,
+                Title = "Date Modified",
+                Resizeable = true,
+                CellType = CellOptions.Text,
+                ShowHeader = false},
 			new DataGridHeader() { 
                 ContentType = DataGridContentType.Text,
                 Data = "Game",
@@ -256,9 +255,7 @@ public partial class AllModsContainer : MarginContainer
                 Title = "Game",
                 Resizeable = true,
                 CellType = CellOptions.Text,
-                ShowHeader = false,
-                HeaderIdx = 12,
-                ItemIndex = 12},            
+                ShowHeader = false},            
 			new DataGridHeader() { 
                 ContentType = DataGridContentType.Text,
                 Data = "OverrideRef",
@@ -266,9 +263,7 @@ public partial class AllModsContainer : MarginContainer
                 Title = "Overriding",
                 Resizeable = true,
                 CellType = CellOptions.Text,
-                ShowHeader = false,
-                HeaderIdx = 13,
-                ItemIndex = 13},            
+                ShowHeader = false},            
 			new DataGridHeader() { 
                 ContentType = DataGridContentType.Text,
                 Data = "MatchingMesh",
@@ -276,9 +271,7 @@ public partial class AllModsContainer : MarginContainer
                 Title = "Mesh",
                 Resizeable = true,
                 CellType = CellOptions.Text,
-                ShowHeader = false,
-                HeaderIdx = 14,
-                ItemIndex = 14}
+                ShowHeader = false}
             };
 	
     List<DataGridCellIcons> icons = new() {
@@ -321,6 +314,16 @@ public partial class AllModsContainer : MarginContainer
         
 
     }
+
+    public void DotTheDots()
+    {
+        AllModsModsDotdotDot.VisibleCharacters = 0;
+        Tween tween = GetTree().CreateTween();
+        tween.TweenProperty(AllModsModsDotdotDot, "visible_characters", 3, 1f);
+        tween.Finished += () => { if (StillProcessingPackages) DotTheDots(); };
+        tween.Play();        
+    }
+
 
     private void LoadThumbGrid()
     {
@@ -369,7 +372,7 @@ public partial class AllModsContainer : MarginContainer
         DataGrid.DataChanged -= DataChanged; 
         DataGrid.DataChanged += DataChanged;
         DataGrid.FirstLoaded = true;
-        SetModNumber();
+        CallDeferred(nameof(SetModNumber));
         if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Data grid finished loading!"));
         packageDisplay.ReadPackageDetails();
     }
@@ -2474,7 +2477,7 @@ public partial class AllModsContainer : MarginContainer
 
     public void InitialReadUpdate(SimsPackage package)
     {
-        SetModNumber();
+        CallDeferred(nameof(SetModNumber));
         DoingInitialUpdate = true;
         DataGridRow rowdata = DataGrid.RowData.First(x => x.Identifier == package.Identifier);
         rowdata = CreateRow(package, rowdata.OverallIdx);

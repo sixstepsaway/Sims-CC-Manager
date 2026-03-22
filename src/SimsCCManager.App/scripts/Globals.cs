@@ -1490,20 +1490,218 @@ namespace SimsCCManager.Globals
             return gameInstance;
         }
 
-        
-
-        public static GameInstance FindOrphans(GameInstance gameInstance)
+        public static List<SimsPackage> FindOrphans(GameInstance gameInstance)
         {
+            List<SimsPackage> altered = new();
             if (gameInstance._packages.Any(x => x.Game == SimsGames.Sims2))
             {
-                gameInstance = FindS2Orphans(gameInstance);
+                altered.AddRange(FindS2Orphans(gameInstance));
             }
             
-            return gameInstance;
+            return altered;
         }
 
-        public static GameInstance FindS2Orphans(GameInstance gameInstance)
-        {            
+        public static List<SimsPackage> CheckOrphanSingle(SimsPackage orphan, List<SimsPackage> allPackages)
+        {
+            if (orphan.Game == SimsGames.Sims2)
+            {
+                return CheckS2OrphanSingle(orphan, allPackages);
+            } else return new();
+        }
+
+        public static List<SimsPackage> CheckS2OrphanSingle(SimsPackage orphan, List<SimsPackage> allPackages)
+        {
+            List<SimsPackage> altered = new();
+            if (orphan.Sims2Data != null)
+            {
+                orphan.Orphan = true;
+
+                if (orphan.Type.Contains("Slider") || orphan.Type.Contains("Face Template") || orphan.Type.Contains("Collection") || orphan.Type.Contains("Hider") || orphan.GameMod )
+                {
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Orphan is a slider, face template or mod, so not an orphan."));
+                    orphan.Orphan = false;                        
+                    altered.Add(orphan);
+                }
+                if (orphan.Sims2Data.EntryCount("txtr") > 0 && (orphan.Sims2Data.EntryCount("gmdc") > 0 || orphan.Sims2Data.EntryCount("shpe") > 0 && orphan.Recolor))
+                {
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Orphan has mesh and texture! Not an orphan."));
+                    orphan.Orphan = false;
+                    altered.Add(orphan);
+                }
+
+                if (!string.IsNullOrEmpty(orphan.ObjectGUID) && allPackages.Any(x => x.ObjectGUID == orphan.ObjectGUID))
+                {                 
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Found matching GUIDs"));       
+                    if (orphan.Mesh)
+                    {
+                        List<SimsPackage> rec = [..allPackages.Where(x => x.ObjectGUID == orphan.ObjectGUID && !x.Mesh)];
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Found {0} recolors of mesh {1}", rec.Count, orphan.FileName));
+                        foreach (SimsPackage package in rec)
+                        {                            
+                            package.MatchingMesh = orphan.FileName;
+                            package.Orphan = false;
+                            orphan.MatchingRecolors.Add(package.FileName);
+                            altered.Add(package);
+                        }  
+                        altered.Add(orphan);               
+                    } else if (orphan.Recolor)
+                    {
+                        if (allPackages.Any(x => x.ObjectGUID == orphan.ObjectGUID && x.Mesh))
+                        {
+                            SimsPackage mesh = allPackages.First(x => x.ObjectGUID == orphan.ObjectGUID && x.Mesh);
+                            List<SimsPackage> rec = [..allPackages.Where(x => x.ObjectGUID == orphan.ObjectGUID && !x.Mesh)];
+                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Found mesh {0} for orphan {1} and {2} recolors", mesh.FileName, orphan.FileName, rec.Count));
+                            foreach (SimsPackage package in rec)
+                            {
+                                if (package.Identifier != orphan.Identifier)
+                                {
+                                    package.MatchingMesh = mesh.FileName;
+                                    package.Orphan = false;
+                                    mesh.MatchingRecolors.Add(package.FileName);
+                                    altered.Add(package);
+                                }
+                            }
+                            orphan.MatchingMesh = mesh.FileName;
+                            orphan.Orphan = false;
+                            altered.Add(mesh);
+                            altered.Add(orphan);
+                        }                            
+                    }           
+                }
+                
+                if (orphan.Sims2Data.MMATDataBlock.Count > 0 && orphan.Mesh)
+                {                        
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0}: Checking for MMAT matches", orphan.FileName));
+                    string TextureName = orphan.Sims2Data.MMATDataBlock[0].Name;
+                    if (TextureName.Contains('!')) TextureName = TextureName.Split('!')[^1];
+                    if (TextureName.Contains('_')) TextureName = TextureName.Split('_')[0];
+                    if (TextureName.Contains('-')) TextureName = TextureName.Split('-')[0];
+                    if (TextureName != "")
+                    {
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0}: Searching for texture: {1}", orphan.FileName, TextureName));                        orphan.Orphan = false;                            
+                        List<SimsPackage> matchingrecolors = [..allPackages.Where(x => x.Sims2Data.TXTRDataBlock.Any(t => t.FullTXTRName.Contains(TextureName, StringComparison.CurrentCultureIgnoreCase) && !x.Mesh))];
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Found {0} recolors of mesh {1}", matchingrecolors.Count, orphan.FileName));
+                        orphan.MatchingRecolors.AddRange(matchingrecolors.Select(x => x.FileName));
+                        foreach (SimsPackage package in matchingrecolors)
+                        {
+                            package.MatchingMesh = orphan.FileName;
+                            package.Orphan = false;
+                            altered.Add(package);
+                        }
+                        altered.Add(orphan);
+                        
+                    } else
+                    {
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0}: Texture name was blank: {1}", orphan.FileName, orphan.Sims2Data.MMATDataBlock[0].Name));
+                    }
+                                            
+                } 
+                
+                if (orphan.Sims2Data.XNGBDataBlock.Count > 0) // is a texture
+                {                        
+                    if (orphan.Sims2Data.XNGBDataBlock.Count > 0){
+                        string TextureName = orphan.Sims2Data.XNGBDataBlock[0].ModelName;
+                        if (TextureName.Contains('!')) TextureName = TextureName.Split('!')[^1];
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Mesh package has no textures. Searching for {0}", TextureName));
+
+                        if(allPackages.Any(x => x.Sims2Data.TXTRDataBlock.Any(t => t.FullTXTRName.Contains(TextureName, StringComparison.CurrentCultureIgnoreCase)))){
+                            orphan.Orphan = false;
+                            orphan.MatchingRecolors.Add(allPackages.First(x => x.Sims2Data.TXTRDataBlock.Any(t => t.FullTXTRName.Contains(TextureName, StringComparison.CurrentCultureIgnoreCase))).FileName);
+                            SimsPackage package = allPackages.First(x => x.Sims2Data.TXTRDataBlock.Any(t => t.FullTXTRName.Contains(TextureName, StringComparison.CurrentCultureIgnoreCase)));
+                            package.MatchingMesh = orphan.FileName;
+                            altered.Add(package);
+                        }
+                        altered.Add(orphan);
+                    }                        
+                } 
+                 
+                
+                if (orphan.Sims2Data.SHPEDataBlock.Count > 0) // is a mesh
+                {
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("File {0} has a SHPE", orphan.FileName));
+                    
+                    if (allPackages.Any(x => x.Sims2Data.EIDRDataBlock.Any(e => e.ResourceKeys.Any(r => orphan.Sims2Data.SHPEDataBlock.Any(s => s.FullKey == r.FullKey)))))
+                    {
+                        List<SimsPackage> texturePackages = [..allPackages.Where(x => x.Sims2Data.EIDRDataBlock.Any(e => e.ResourceKeys.Any(r => orphan.Sims2Data.SHPEDataBlock.Any(s => s.FullKey == r.FullKey))))];
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Found {0} recolors of mesh {1}", texturePackages.Count, orphan.FileName));
+                        foreach (SimsPackage package in texturePackages)
+                        {
+                            package.MatchingMesh = orphan.FileName;
+                            package.Orphan = false;
+                            altered.Add(package);
+                        }
+                        orphan.Orphan = false;
+                        orphan.MatchingRecolors.AddRange(texturePackages.Select(x => x.FileName));
+                        altered.Add(orphan);
+                    }
+                }
+
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Checking recolor GUID {0} for a match.", orphan.ObjectGUID));
+                if (orphan.Sims2Data.EIDRDataBlock.Count > 0)
+                {
+                    if (allPackages.Any(x => x.Sims2Data.IndexEntries.Any(i => orphan.Sims2Data.EIDRDataBlock.Any(e => e.ResourceKeys.Any(r => r.FullKey == i.CompleteID && x.Mesh)))))
+                    {
+                        if (allPackages.Any(x => x.Sims2Data.IndexEntries.Any(i => orphan.Sims2Data.EIDRDataBlock.Any(e => e.ResourceKeys.Any(r => r.FullKey == i.CompleteID && x.Mesh)))))
+                        {
+                            SimsPackage mesh = allPackages.First(x => x.Sims2Data.IndexEntries.Any(i => orphan.Sims2Data.EIDRDataBlock.Any(e => e.ResourceKeys.Any(r => r.FullKey == i.CompleteID && x.Mesh))));
+                            if (mesh.Sims2Data.SHPEDataBlock.Count > 0)
+                            {
+                                List<SimsPackage> matches = allPackages.Where(x => x.Sims2Data.EIDRDataBlock.Any(e => e.ResourceKeys.Any(r => mesh.Sims2Data.IndexEntries.Any(i => i.CompleteID == r.FullKey)))).ToList();
+                                foreach (SimsPackage package in matches)
+                                {
+                                    package.MatchingMesh = mesh.FileName;
+                                    package.Orphan = false;
+                                    altered.Add(package);
+                                }
+                                mesh.Orphan = false;
+                                mesh.MatchingRecolors.AddRange(matches.Select(x => x.FileName));
+                                altered.Add(mesh);
+                            }
+                        }
+                        
+                    }
+                }            
+
+                if (orphan.Sims2Data.SHPEDataBlock.Count > 0) //is a mesh
+                {
+                    if (allPackages.Any(x => x.Sims2Data.EIDRDataBlock.Any(e => e.ResourceKeys.Any(r => orphan.Sims2Data.IndexEntries.Any(i => i.CompleteID == r.FullKey))))){
+                        List<SimsPackage> matches = allPackages.Where(x => x.Sims2Data.EIDRDataBlock.Any(e => e.ResourceKeys.Any(r => orphan.Sims2Data.IndexEntries.Any(i => i.CompleteID == r.FullKey)))).ToList();
+                        foreach (SimsPackage package in matches)
+                        {
+                            package.MatchingMesh = orphan.FileName;
+                            package.Orphan = false; 
+                            altered.Add(package);
+                        }                    
+                        orphan.Orphan = false;
+                        orphan.MatchingRecolors.AddRange(matches.Select(x => x.FileName));
+                        altered.Add(orphan);
+                    }
+                }
+            }
+            if (!orphan.Orphan) {
+                SimsPackage a = altered.First(x => !x.Type.Contains("Unknown"));
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0} type is {1}", a.FileName, a.Type));
+                for (int i = 0; i < altered.Count; i++)
+                {
+                    if (altered[i].Identifier != a.Identifier)
+                    {
+                        altered[i].Sims2Data.AltType = a.Sims2Data.AltType;
+                        altered[i].Sims2Data.FunctionSort = a.Sims2Data.FunctionSort;
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Setting {0} type to {1}'s type.", altered[i].FileName, a.FileName));
+                    }
+                }
+                return altered;
+            } else
+            {
+                return new();
+            }
+        }
+
+        public static List<SimsPackage> FindS2Orphans(GameInstance gameInstance)
+        {       
+            List<SimsPackage> altered = new();
+
+
             List<SimsPackage> meshes = [..gameInstance._packages.Where(x => x.Mesh && !x.Recolor && x.Game == SimsGames.Sims2 && !x.GameMod && !x.Type.Contains("Collection") && !x.Type.Contains("Slider") && !x.Type.Contains("Face Template") && x.Type != "Skin" && !x.Type.Contains("Eyecolor"))];
             List<SimsPackage> recolors = [..gameInstance._packages.Where(x => x.Recolor && !x.Mesh && x.Game == SimsGames.Sims2 && !x.GameMod && !x.Type.Contains("Collection") && !x.Type.Contains("Slider") && !x.Type.Contains("Face Template") && x.Type != "Skin" && !x.Type.Contains("Eyecolor"))];
             List<SimsPackage> both = [..gameInstance._packages.Where(x => x.Recolor && x.Mesh && x.Game == SimsGames.Sims2 && !x.GameMod && !x.Type.Contains("Collection") && !x.Type.Contains("Slider") && !x.Type.Contains("Face Template") && x.Type != "Skin" && !x.Type.Contains("Eyecolor"))];
@@ -1526,11 +1724,11 @@ namespace SimsCCManager.Globals
 
             int msv = orphans.Count + recolors.Count + meshes.Count;
 
-            GlobalVariables.mainWindow.ChangeStage(gameInstance._packages.Count, "Finding orphans", 2);
+            //GlobalVariables.mainWindow.ChangeStage(gameInstance._packages.Count, "Finding orphans", 2);
 
             foreach (SimsPackage orphan in orphans)
             {   
-                GlobalVariables.mainWindow.IncrementLoadingScreen(1, orphan.FileName.Replace(".package", ""), "Globals: Orphans: orphan");       
+                //GlobalVariables.mainWindow.IncrementLoadingScreen(1, orphan.FileName.Replace(".package", ""), "Globals: Orphans: orphan");       
                 if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Checking orphan file {0}", orphan.FileName));
                 if (orphan.Sims2Data != null)
                 {
@@ -1538,12 +1736,15 @@ namespace SimsCCManager.Globals
                     if (orphan.Type != "Slider" || orphan.Type != "Face Template" || !orphan.GameMod)
                     {
                         if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0} is Slider, FaceTemplate or Mod, and is not orphan", orphan.FileName));
-                        gameInstance._packages.First(x => x.Identifier == orphan.Identifier).Orphan = true;
+                        orphan.Orphan = true;
+                        if (!altered.Any(x => x.Identifier == orphan.Identifier)) altered.Add(orphan);
+                        break;
                     }
 
                     if (orphan.Type.Contains("Slider") || orphan.Type.Contains("Face Template") || orphan.Type.Contains("Collection") || orphan.Type.Contains("Hider") || orphan.GameMod )
                     {
-                        gameInstance._packages.First(x => x.Identifier == orphan.Identifier).Orphan = false;
+                        orphan.Orphan = false;                        
+                        if (!altered.Any(x => x.Identifier == orphan.Identifier)) altered.Add(orphan);
                         break;
                     }
 
@@ -1557,46 +1758,48 @@ namespace SimsCCManager.Globals
                                 List<SimsPackage> rec = gameInstance._packages.Where(x => x.ObjectGUID == orphan.ObjectGUID && !x.Mesh).ToList();
                                 foreach (SimsPackage package in rec)
                                 {
-                                    if (gameInstance._packages.First(p => p.Identifier == orphan.Identifier).Type == "Unknown")
+                                    if (orphan.Type == "Unknown")
                                     {
-                                        gameInstance._packages.First(p => p.Identifier == orphan.Identifier).Sims2Data.AltType = package.Sims2Data.AltType;
-                                        gameInstance._packages.First(p => p.Identifier == orphan.Identifier).Sims2Data.FunctionSort = package.Sims2Data.FunctionSort;
-                                    } else if (gameInstance._packages.First(p => p.Identifier == orphan.Identifier).Type != "Unknown")
+                                        orphan.Sims2Data.AltType = package.Sims2Data.AltType;
+                                        orphan.Sims2Data.FunctionSort = package.Sims2Data.FunctionSort;
+                                    } else if (orphan.Type != "Unknown")
                                     {
-                                        gameInstance._packages.First(p => p.Identifier == package.Identifier).Sims2Data.AltType = orphan.Sims2Data.AltType;
-                                        gameInstance._packages.First(p => p.Identifier == package.Identifier).Sims2Data.FunctionSort = orphan.Sims2Data.FunctionSort;
+                                        package.Sims2Data.AltType = orphan.Sims2Data.AltType;
+                                        package.Sims2Data.FunctionSort = orphan.Sims2Data.FunctionSort;
                                     }
-                                    gameInstance._packages.First(x => x.Identifier == package.Identifier).MatchingMesh = mesh.FileName;
-                                    gameInstance._packages.First(x => x.Identifier == package.Identifier).Orphan = false;
-                                    gameInstance._packages.First(x => x.Identifier == mesh.Identifier).MatchingRecolors.Add(package.FileName);
+                                    package.MatchingMesh = mesh.FileName;
+                                    package.Orphan = false;
+                                    mesh.MatchingRecolors.Add(package.FileName);
+                                    if (!altered.Any(x => x.Identifier == package.Identifier)) altered.Add(package);
                                 }
+                                if (!altered.Any(x => x.Identifier == mesh.Identifier)) altered.Add(mesh);
+                                if (!altered.Any(x => x.Identifier == orphan.Identifier)) altered.Add(orphan);
                             }                            
                         } else if (orphan.Mesh)
                         {
                             List<SimsPackage> rec = gameInstance._packages.Where(x => x.ObjectGUID == orphan.ObjectGUID && !x.Mesh).ToList();
                             foreach (SimsPackage package in rec)
                             {
-                                if (gameInstance._packages.First(p => p.Identifier == orphan.Identifier).Type == "Unknown")
+                                if (orphan.Type == "Unknown")
                                 {
-                                    gameInstance._packages.First(p => p.Identifier == orphan.Identifier).Sims2Data.AltType = package.Sims2Data.AltType;
-                                    gameInstance._packages.First(p => p.Identifier == orphan.Identifier).Sims2Data.FunctionSort = package.Sims2Data.FunctionSort;
-                                } else if (gameInstance._packages.First(p => p.Identifier == orphan.Identifier).Type != "Unknown")
+                                    orphan.Sims2Data.AltType = package.Sims2Data.AltType;
+                                    orphan.Sims2Data.FunctionSort = package.Sims2Data.FunctionSort;
+                                } else if (orphan.Type != "Unknown")
                                 {
-                                    gameInstance._packages.First(p => p.Identifier == package.Identifier).Sims2Data.AltType = orphan.Sims2Data.AltType;
-                                    gameInstance._packages.First(p => p.Identifier == package.Identifier).Sims2Data.FunctionSort = orphan.Sims2Data.FunctionSort;
+                                    package.Sims2Data.AltType = orphan.Sims2Data.AltType;
+                                    package.Sims2Data.FunctionSort = orphan.Sims2Data.FunctionSort;
                                 }
-                                gameInstance._packages.First(x => x.Identifier == package.Identifier).MatchingMesh = orphan.FileName;
-                                gameInstance._packages.First(x => x.Identifier == package.Identifier).Orphan = false;
-                                gameInstance._packages.First(x => x.Identifier == orphan.Identifier).MatchingRecolors.Add(package.FileName);
-                            }                           
-                        }
-                            
-                        
-            
+                                package.MatchingMesh = orphan.FileName;
+                                package.Orphan = false;
+                                orphan.MatchingRecolors.Add(package.FileName);                              
+                                if (!altered.Any(x => x.Identifier == package.Identifier)) altered.Add(package);
+                            }                                           
+                            if (!altered.Any(x => x.Identifier == orphan.Identifier)) altered.Add(orphan);                  
+                        }            
                     }
                     
                     if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0}: Checking for MMAT", orphan.FileName));
-                    if ((orphan.PackageData as Sims2Data).MMATDataBlock.Count != 0 && orphan.Orphan)
+                    if ((orphan.PackageData as Sims2Data).MMATDataBlock.Count != 0)
                     {                        
                         if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0}: has {1} MMAT!", orphan.FileName, orphan.Sims2Data.MMATDataBlock.Count));
                         string TextureName = orphan.Sims2Data.MMATDataBlock[0].Name;
@@ -1608,25 +1811,27 @@ namespace SimsCCManager.Globals
                             if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0}: Searching for texture: {1}", orphan.FileName, TextureName));
                         
                             if(gameInstance._packages.Any(x => x.Sims2Data.TXTRDataBlock.Any(t => t.FullTXTRName.Contains(TextureName, StringComparison.CurrentCultureIgnoreCase)))){
-                                gameInstance._packages.First(x => x.Identifier == orphan.Identifier).Orphan = false;
-                                gameInstance._packages.First(x => x.Identifier == orphan.Identifier).MatchingRecolors.Add(gameInstance._packages.First(x => x.Sims2Data.TXTRDataBlock.Any(t => t.FullTXTRName.Contains(TextureName, StringComparison.CurrentCultureIgnoreCase))).FileName);
+                                orphan.Orphan = false;
+                                orphan.MatchingRecolors.Add(gameInstance._packages.First(x => x.Sims2Data.TXTRDataBlock.Any(t => t.FullTXTRName.Contains(TextureName, StringComparison.CurrentCultureIgnoreCase))).FileName);
                                 
                                 
                                 List<SimsPackage> matchingrecolors = gameInstance._packages.Where(x => x.Sims2Data.TXTRDataBlock.Any(t => t.FullTXTRName.Contains(TextureName, StringComparison.CurrentCultureIgnoreCase))).ToList();
                                 foreach (SimsPackage package in matchingrecolors)
                                 {
-                                    if (gameInstance._packages.First(p => p.Identifier == orphan.Identifier).Type == "Unknown")
+                                    if (orphan.Type == "Unknown")
                                     {
-                                        gameInstance._packages.First(p => p.Identifier == orphan.Identifier).Sims2Data.AltType = package.Sims2Data.AltType;
-                                        gameInstance._packages.First(p => p.Identifier == orphan.Identifier).Sims2Data.FunctionSort = package.Sims2Data.FunctionSort;
-                                    } else if (gameInstance._packages.First(p => p.Identifier == orphan.Identifier).Type != "Unknown")
+                                        orphan.Sims2Data.AltType = package.Sims2Data.AltType;
+                                        orphan.Sims2Data.FunctionSort = package.Sims2Data.FunctionSort;
+                                    } else if (orphan.Type != "Unknown")
                                     {
-                                        gameInstance._packages.First(p => p.Identifier == package.Identifier).Sims2Data.AltType = orphan.Sims2Data.AltType;
-                                        gameInstance._packages.First(p => p.Identifier == package.Identifier).Sims2Data.FunctionSort = orphan.Sims2Data.FunctionSort;
+                                        package.Sims2Data.AltType = orphan.Sims2Data.AltType;
+                                        package.Sims2Data.FunctionSort = orphan.Sims2Data.FunctionSort;
                                     }
-                                    gameInstance._packages.First(p => p.Identifier == package.Identifier).MatchingMesh = orphan.FileName;
-                                    gameInstance._packages.First(p => p.Identifier == package.Identifier).Orphan = false;
+                                    package.MatchingMesh = orphan.FileName;
+                                    package.Orphan = false;
+                                    if (!altered.Any(x => x.Identifier == package.Identifier)) altered.Add(package);
                                 }
+                                if (!altered.Any(x => x.Identifier == orphan.Identifier)) altered.Add(orphan);
                             }
                         } else
                         {
@@ -1635,7 +1840,7 @@ namespace SimsCCManager.Globals
                                                 
                     } 
                     
-                    if ((orphan.PackageData as Sims2Data).XNGBDataBlock != null && orphan.Orphan)
+                    if ((orphan.PackageData as Sims2Data).XNGBDataBlock != null)
                     {                        
                         if (orphan.Sims2Data.XNGBDataBlock.Count > 0){
                             string TextureName = orphan.Sims2Data.XNGBDataBlock[0].ModelName;
@@ -1643,19 +1848,23 @@ namespace SimsCCManager.Globals
                             if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Mesh package has no textures. Searching for {0}", TextureName));
 
                             if(gameInstance._packages.Any(x => x.Sims2Data.TXTRDataBlock.Any(t => t.FullTXTRName.Contains(TextureName, StringComparison.CurrentCultureIgnoreCase)))){
-                                gameInstance._packages.First(x => x.Identifier == orphan.Identifier).Orphan = false;
-                                gameInstance._packages.First(x => x.Identifier == orphan.Identifier).MatchingRecolors.Add(gameInstance._packages.First(x => x.Sims2Data.TXTRDataBlock.Any(t => t.FullTXTRName.Contains(TextureName, StringComparison.CurrentCultureIgnoreCase))).FileName);
-                                gameInstance._packages.First(x => x.Sims2Data.TXTRDataBlock.Any(t => t.FullTXTRName.Contains(TextureName, StringComparison.CurrentCultureIgnoreCase))).MatchingMesh = orphan.FileName;
+                                orphan.Orphan = false;
+                                orphan.MatchingRecolors.Add(gameInstance._packages.First(x => x.Sims2Data.TXTRDataBlock.Any(t => t.FullTXTRName.Contains(TextureName, StringComparison.CurrentCultureIgnoreCase))).FileName);
+                                SimsPackage package = gameInstance._packages.First(x => x.Sims2Data.TXTRDataBlock.Any(t => t.FullTXTRName.Contains(TextureName, StringComparison.CurrentCultureIgnoreCase)));
+                                package.MatchingMesh = orphan.FileName;
+                                if (!altered.Any(x => x.Identifier == package.Identifier)) altered.Add(package);
                             }
+                            if (!altered.Any(x => x.Identifier == orphan.Identifier)) altered.Add(orphan);
                         }                        
                     } 
                     
                     if (orphan.Sims2Data.EntryCount("txtr") > 0 && (orphan.Sims2Data.EntryCount("gmdc") > 0 || orphan.Sims2Data.EntryCount("shpe") > 0 ))
                     {
-                        gameInstance._packages.First(x => x.Identifier == orphan.Identifier).Orphan = false;
+                        orphan.Orphan = false;
+                        if (!altered.Any(x => x.Identifier == orphan.Identifier)) altered.Add(orphan);
                     } 
                     
-                    if (orphan.Sims2Data.SHPEDataBlock.Count != 0 && orphan.Orphan)
+                    if (orphan.Sims2Data.SHPEDataBlock.Count != 0)
                     {
                         if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("File {0} has a SHPE", orphan.FileName));
                         
@@ -1664,20 +1873,22 @@ namespace SimsCCManager.Globals
                             List<SimsPackage> texturePackages = [..gameInstance._packages.Where(x => x.Sims2Data.EIDRDataBlock.Any(e => e.ResourceKeys.Any(r => orphan.Sims2Data.SHPEDataBlock.Any(s => s.FullKey == r.FullKey))))];
                             foreach (SimsPackage package in texturePackages)
                             {
-                                if (gameInstance._packages.First(p => p.Identifier == orphan.Identifier).Type == "Unknown")
+                                if (orphan.Type == "Unknown")
                                 {
-                                    gameInstance._packages.First(p => p.Identifier == orphan.Identifier).Sims2Data.AltType = package.Sims2Data.AltType;
-                                    gameInstance._packages.First(p => p.Identifier == orphan.Identifier).Sims2Data.FunctionSort = package.Sims2Data.FunctionSort;
+                                    orphan.Sims2Data.AltType = package.Sims2Data.AltType;
+                                    orphan.Sims2Data.FunctionSort = package.Sims2Data.FunctionSort;
                                 } else if (gameInstance._packages.First(p => p.Identifier == orphan.Identifier).Type != "Unknown")
                                 {
-                                    gameInstance._packages.First(p => p.Identifier == package.Identifier).Sims2Data.AltType = orphan.Sims2Data.AltType;
-                                    gameInstance._packages.First(p => p.Identifier == package.Identifier).Sims2Data.FunctionSort = orphan.Sims2Data.FunctionSort;
+                                    package.Sims2Data.AltType = orphan.Sims2Data.AltType;
+                                    package.Sims2Data.FunctionSort = orphan.Sims2Data.FunctionSort;
                                 }
-                                gameInstance._packages.First(p => p.Identifier == package.Identifier).MatchingMesh = orphan.FileName;
-                                gameInstance._packages.First(p => p.Identifier == package.Identifier).Orphan = false;
+                                package.MatchingMesh = orphan.FileName;
+                                package.Orphan = false;
+                                if (!altered.Any(x => x.Identifier == package.Identifier)) altered.Add(package);
                             }
-                            gameInstance._packages.First(x => x.Identifier == orphan.Identifier).Orphan = false;
-                            gameInstance._packages.First(x => x.Identifier == orphan.Identifier).MatchingRecolors.AddRange(texturePackages.Select(x => x.FileName));
+                            orphan.Orphan = false;
+                            orphan.MatchingRecolors.AddRange(texturePackages.Select(x => x.FileName));
+                            if (!altered.Any(x => x.Identifier == orphan.Identifier)) altered.Add(orphan);
                         }
                     }
                 }                                
@@ -1685,7 +1896,7 @@ namespace SimsCCManager.Globals
 
             foreach (SimsPackage recolor in recolors)
             {      
-                GlobalVariables.mainWindow.IncrementLoadingScreen(1, recolor.FileName.Replace(".package", ""), "Globals: Orphans: recolor");       
+                //GlobalVariables.mainWindow.IncrementLoadingScreen(1, recolor.FileName.Replace(".package", ""), "Globals: Orphans: recolor");       
                 if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Checking recolor file {0}", recolor.FileName));
                 if (recolor.Sims2Data != null)
                 {
@@ -1701,19 +1912,21 @@ namespace SimsCCManager.Globals
                             List<SimsPackage> rec = gameInstance._packages.Where(x => x.ObjectGUID == recolor.ObjectGUID && !x.Mesh).ToList();
                             foreach (SimsPackage package in rec)
                             {
-                                if (gameInstance._packages.First(p => p.Identifier == mesh.Identifier).Type == "Unknown")
+                                if (mesh.Type == "Unknown")
                                 {
-                                    gameInstance._packages.First(p => p.Identifier == mesh.Identifier).Sims2Data.AltType = package.Sims2Data.AltType;
-                                    gameInstance._packages.First(p => p.Identifier == mesh.Identifier).Sims2Data.FunctionSort = package.Sims2Data.FunctionSort;
-                                } else if (gameInstance._packages.First(p => p.Identifier == mesh.Identifier).Type != "Unknown")
+                                    mesh.Sims2Data.AltType = package.Sims2Data.AltType;
+                                    mesh.Sims2Data.FunctionSort = package.Sims2Data.FunctionSort;
+                                } else if (mesh.Type != "Unknown")
                                 {
-                                    gameInstance._packages.First(p => p.Identifier == package.Identifier).Sims2Data.AltType = mesh.Sims2Data.AltType;
-                                    gameInstance._packages.First(p => p.Identifier == package.Identifier).Sims2Data.FunctionSort = mesh.Sims2Data.FunctionSort;
+                                    package.Sims2Data.AltType = mesh.Sims2Data.AltType;
+                                    package.Sims2Data.FunctionSort = mesh.Sims2Data.FunctionSort;
                                 }
-                                gameInstance._packages.First(x => x.Identifier == package.Identifier).MatchingMesh = mesh.FileName;
-                                gameInstance._packages.First(x => x.Identifier == package.Identifier).Orphan = false;
-                                gameInstance._packages.First(x => x.Identifier == mesh.Identifier).MatchingRecolors.Add(package.FileName);
+                                package.MatchingMesh = mesh.FileName;
+                                package.Orphan = false;
+                                mesh.MatchingRecolors.Add(package.FileName);
+                                if (!altered.Any(x => x.Identifier == package.Identifier)) altered.Add(package);
                             }
+                            if (!altered.Any(x => x.Identifier == mesh.Identifier)) altered.Add(mesh);
                         }
                             
                             
@@ -1726,19 +1939,21 @@ namespace SimsCCManager.Globals
                             List<SimsPackage> rec = gameInstance._packages.Where(x => x.ObjectGUID == recolor.ObjectGUID && !x.Mesh).ToList();
                             foreach (SimsPackage package in rec)
                             {
-                                if (gameInstance._packages.First(p => p.Identifier == mesh.Identifier).Type == "Unknown")
+                                if (mesh.Type == "Unknown")
                                 {
-                                    gameInstance._packages.First(p => p.Identifier == mesh.Identifier).Sims2Data.AltType = package.Sims2Data.AltType;
-                                    gameInstance._packages.First(p => p.Identifier == mesh.Identifier).Sims2Data.FunctionSort = package.Sims2Data.FunctionSort;
-                                } else if (gameInstance._packages.First(p => p.Identifier == mesh.Identifier).Type != "Unknown")
+                                    mesh.Sims2Data.AltType = package.Sims2Data.AltType;
+                                    mesh.Sims2Data.FunctionSort = package.Sims2Data.FunctionSort;
+                                } else if (mesh.Type != "Unknown")
                                 {
-                                    gameInstance._packages.First(p => p.Identifier == package.Identifier).Sims2Data.AltType = mesh.Sims2Data.AltType;
-                                    gameInstance._packages.First(p => p.Identifier == package.Identifier).Sims2Data.FunctionSort = mesh.Sims2Data.FunctionSort;
+                                    package.Sims2Data.AltType = mesh.Sims2Data.AltType;
+                                    package.Sims2Data.FunctionSort = mesh.Sims2Data.FunctionSort;
                                 }
-                                gameInstance._packages.First(x => x.Identifier == package.Identifier).MatchingMesh = mesh.FileName;
-                                gameInstance._packages.First(x => x.Identifier == package.Identifier).Orphan = false;
-                                gameInstance._packages.First(x => x.Identifier == mesh.Identifier).MatchingRecolors.Add(package.FileName);
+                                package.MatchingMesh = mesh.FileName;
+                                package.Orphan = false;
+                                mesh.MatchingRecolors.Add(package.FileName);
+                                if (!altered.Any(x => x.Identifier == package.Identifier)) altered.Add(package);
                             }
+                            if (!altered.Any(x => x.Identifier == mesh.Identifier)) altered.Add(mesh);
                         }   
                     } else if (recolor.Sims2Data.EIDRDataBlock.Count > 0)
                     {
@@ -1752,20 +1967,22 @@ namespace SimsCCManager.Globals
                                     List<SimsPackage> matches = gameInstance._packages.Where(x => x.Sims2Data.EIDRDataBlock.Any(e => e.ResourceKeys.Any(r => mesh.Sims2Data.IndexEntries.Any(i => i.CompleteID == r.FullKey)))).ToList();
                                     foreach (SimsPackage package in matches)
                                     {
-                                        if (gameInstance._packages.First(p => p.Identifier == mesh.Identifier).Type == "Unknown")
+                                        if (mesh.Type == "Unknown")
                                         {
-                                            gameInstance._packages.First(p => p.Identifier == mesh.Identifier).Sims2Data.AltType = package.Sims2Data.AltType;
-                                            gameInstance._packages.First(p => p.Identifier == mesh.Identifier).Sims2Data.FunctionSort = package.Sims2Data.FunctionSort;
-                                        } else if (gameInstance._packages.First(p => p.Identifier == mesh.Identifier).Type != "Unknown")
+                                            mesh.Sims2Data.AltType = package.Sims2Data.AltType;
+                                            mesh.Sims2Data.FunctionSort = package.Sims2Data.FunctionSort;
+                                        } else if (mesh.Type != "Unknown")
                                         {
-                                            gameInstance._packages.First(p => p.Identifier == package.Identifier).Sims2Data.AltType = mesh.Sims2Data.AltType;
-                                            gameInstance._packages.First(p => p.Identifier == package.Identifier).Sims2Data.FunctionSort = mesh.Sims2Data.FunctionSort;
+                                            package.Sims2Data.AltType = mesh.Sims2Data.AltType;
+                                            package.Sims2Data.FunctionSort = mesh.Sims2Data.FunctionSort;
                                         }
-                                        gameInstance._packages.First(p => p.Identifier == package.Identifier).MatchingMesh = mesh.FileName;
-                                        gameInstance._packages.First(p => p.Identifier == package.Identifier).Orphan = false;
+                                        package.MatchingMesh = mesh.FileName;
+                                        package.Orphan = false;
+                                        if (!altered.Any(x => x.Identifier == package.Identifier)) altered.Add(package);
                                     }
-                                    gameInstance._packages.First(x => x.Identifier == mesh.Identifier).Orphan = false;
-                                    gameInstance._packages.First(x => x.Identifier == mesh.Identifier).MatchingRecolors.AddRange(matches.Select(x => x.FileName));
+                                    mesh.Orphan = false;
+                                    mesh.MatchingRecolors.AddRange(matches.Select(x => x.FileName));
+                                    if (!altered.Any(x => x.Identifier == mesh.Identifier)) altered.Add(mesh);
                                 }
                             }
                             
@@ -1776,7 +1993,7 @@ namespace SimsCCManager.Globals
 
             foreach (SimsPackage mesh in meshes)
             {  
-                GlobalVariables.mainWindow.IncrementLoadingScreen(1, mesh.FileName.Replace(".package", ""), "Globals: Orphans: meshes");       
+                //GlobalVariables.mainWindow.IncrementLoadingScreen(1, mesh.FileName.Replace(".package", ""), "Globals: Orphans: meshes");       
                 if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Checking mesh file {0}", mesh.FileName));
                 if (mesh.Sims2Data != null)
                 {
@@ -1786,31 +2003,33 @@ namespace SimsCCManager.Globals
                             List<SimsPackage> matches = gameInstance._packages.Where(x => x.Sims2Data.EIDRDataBlock.Any(e => e.ResourceKeys.Any(r => mesh.Sims2Data.IndexEntries.Any(i => i.CompleteID == r.FullKey)))).ToList();
                             foreach (SimsPackage package in matches)
                             {
-                                if (gameInstance._packages.First(p => p.Identifier == mesh.Identifier).Type == "Unknown")
+                                if (mesh.Type == "Unknown")
                                 {
-                                    gameInstance._packages.First(p => p.Identifier == mesh.Identifier).Sims2Data.AltType = package.Sims2Data.AltType;
-                                    gameInstance._packages.First(p => p.Identifier == mesh.Identifier).Sims2Data.FunctionSort = package.Sims2Data.FunctionSort;
-                                } else if (gameInstance._packages.First(p => p.Identifier == mesh.Identifier).Type != "Unknown")
+                                    mesh.Sims2Data.AltType = package.Sims2Data.AltType;
+                                    mesh.Sims2Data.FunctionSort = package.Sims2Data.FunctionSort;
+                                } else if (mesh.Type != "Unknown")
                                 {
-                                    gameInstance._packages.First(p => p.Identifier == package.Identifier).Sims2Data.AltType = mesh.Sims2Data.AltType;
-                                    gameInstance._packages.First(p => p.Identifier == package.Identifier).Sims2Data.FunctionSort = mesh.Sims2Data.FunctionSort;
+                                    package.Sims2Data.AltType = mesh.Sims2Data.AltType;
+                                    package.Sims2Data.FunctionSort = mesh.Sims2Data.FunctionSort;
                                 }
-                                gameInstance._packages.First(p => p.Identifier == package.Identifier).MatchingMesh = mesh.FileName;
-                                gameInstance._packages.First(p => p.Identifier == package.Identifier).Orphan = false; 
+                                package.MatchingMesh = mesh.FileName;
+                                package.Orphan = false; 
+                                if (!altered.Any(x => x.Identifier == package.Identifier)) altered.Add(package);
                             }
                             
-                            gameInstance._packages.First(x => x.Identifier == mesh.Identifier).Orphan = false;
-                            gameInstance._packages.First(x => x.Identifier == mesh.Identifier).MatchingRecolors.AddRange(matches.Select(x => x.FileName));
+                            mesh.Orphan = false;
+                            mesh.MatchingRecolors.AddRange(matches.Select(x => x.FileName));
+                            if (!altered.Any(x => x.Identifier == mesh.Identifier)) altered.Add(mesh);
                         }
                     }
                 }                            
             }
 
-            foreach (SimsPackage package in gameInstance._packages){
-                gameInstance._packages.First(x=>x.Identifier == package.Identifier).MatchingRecolors = gameInstance._packages.First(x=>x.Identifier == package.Identifier).MatchingRecolors.Distinct().ToList();
-                gameInstance._packages.First(x=>x.Identifier == package.Identifier).WriteXML();
+            foreach (SimsPackage package in altered){
+                package.MatchingRecolors = gameInstance._packages.First(x=>x.Identifier == package.Identifier).MatchingRecolors.Distinct().ToList();
+                //gameInstance._packages.First(x=>x.Identifier == package.Identifier).WriteXML();
             }
-            return gameInstance;
+            return altered;
         }
 
 

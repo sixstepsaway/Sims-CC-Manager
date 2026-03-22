@@ -27,7 +27,7 @@ namespace SimsCCManager.Debugging
             JustWrite(statement);
         }
 
-        public static void WriteDebugLog(string statement, [CallerLineNumber] int lineNumber = 0, [CallerFilePath] string filePath = "", int alertLevel = 0)
+        public static void WriteDebugLog(string statement, [CallerLineNumber] int lineNumber = 0, [CallerFilePath] string filePath = "", [CallerMemberName] string MemberName = "", int alertLevel = 0)
         {
             if (!Directory.Exists(GlobalVariables.LogFolder)) Directory.CreateDirectory(GlobalVariables.LogFolder);
 
@@ -59,12 +59,12 @@ namespace SimsCCManager.Debugging
                         {
                             locker.ReleaseWriterLock();
                         }
-                        CreateLog(statement, lineNumber.ToString(), filepath, true);
+                        CreateLog(statement, lineNumber.ToString(), filepath, MemberName, true);
                         
                     }
                     else
                     {
-                        WriteLog(statement, lineNumber.ToString(), filepath);
+                        WriteLog(statement, lineNumber.ToString(), filepath, MemberName);
                     }
                 }
                 else
@@ -73,13 +73,13 @@ namespace SimsCCManager.Debugging
                     string lastwritetime = File.GetLastWriteTimeUtc(debuglog).ToString("yyyy-dd-MM hh_mm_ss");
                     string olddebuglog = Path.Combine(GlobalVariables.LogFolder, string.Format("{0}_{1}.log", lastwritetime, "DebugLog"));
                     File.Move(debuglog, olddebuglog);
-                    CreateLog(statement, lineNumber.ToString(), filepath);
+                    CreateLog(statement, lineNumber.ToString(), filepath, MemberName);
                 }
             }
             else
             {
                 initialized = true;
-                CreateLog(statement, lineNumber.ToString(), filepath);
+                CreateLog(statement, lineNumber.ToString(), filepath, MemberName);
             }
 
             if (alertLevel == 3)
@@ -89,10 +89,10 @@ namespace SimsCCManager.Debugging
 
         }
 
-        private static void WriteLog(string statement, string lineNumber, string filepath)
+        private static void WriteLog(string statement, string lineNumber, string filepath, string membername)
         {
             string time = DateTime.Now.ToString("h:mm:ss tt");
-            statement = string.Format("[L{0} | {1} {2}]: {3}", lineNumber, filepath, time, statement);
+            statement = string.Format("[L{0} | {4} - {1} {2}]: {3}", lineNumber, filepath, time, statement, membername);
 
             try
             {
@@ -124,11 +124,11 @@ namespace SimsCCManager.Debugging
             if (GlobalVariables.DebugToConsole) GlobalVariables.mainWindow.WriteGDPrint(statement);
         }
 
-        private static void CreateLog(string statement, string lineNumber, string filepath, bool splitLog = false)
+        private static void CreateLog(string statement, string lineNumber, string filepath, string membername, bool splitLog = false)
         {
 
             string time = DateTime.Now.ToString("h:mm:ss tt");
-            statement = string.Format("[L{0} | {1} {2}]: {3}", lineNumber, filepath, time, statement);
+            statement = string.Format("[L{0} | {4} - {1} {2}]: {3}", lineNumber, filepath, time, statement, membername);
 
             try
             {

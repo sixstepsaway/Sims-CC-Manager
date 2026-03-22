@@ -6577,7 +6577,7 @@ namespace SimsCCManager.PackageReaders
                         MMATData.Name = fieldValueString;
                         break;
                     case "objectguid":
-                        MMATData.ObjectGUID = fieldValueInt.ToString();
+                        MMATData.ObjectGUID = fieldValueInt.ToString("X8");
                         break;
                     case "objectstateindex":
                         MMATData.ObjectStateIndex = fieldValueInt.ToString();
@@ -6659,7 +6659,7 @@ namespace SimsCCManager.PackageReaders
                         MMATData.Name = fieldValueString;
                         break;
                     case "objectguid":
-                        MMATData.ObjectGUID = fieldValueInt.ToString();
+                        MMATData.ObjectGUID = fieldValueInt.ToString("X8");
                         break;
                     case "objectstateindex":
                         MMATData.ObjectStateIndex = fieldValueInt.ToString();
@@ -7426,7 +7426,7 @@ namespace SimsCCManager.PackageReaders
                         XOBJData.ModelName = fieldValueString;
                         break;
                     case "objectGUID":
-                        XOBJData.ObjectGUID = fieldValueInt.ToString();
+                        XOBJData.ObjectGUID = fieldValueInt.ToString("X8");
                         break;
                     case "creator":
                         XOBJData.Creator = fieldValueString;
@@ -7508,7 +7508,7 @@ namespace SimsCCManager.PackageReaders
                         XOBJData.ModelName = fieldValueString;
                         break;
                     case "objectGUID":
-                        XOBJData.ObjectGUID = fieldValueInt.ToString();
+                        XOBJData.ObjectGUID = fieldValueInt.ToString("X8");
                         break;
                     case "creator":
                         XOBJData.Creator = fieldValueString;

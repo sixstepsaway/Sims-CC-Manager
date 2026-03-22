@@ -910,11 +910,25 @@ public partial class DataGrid : Control
 				});
 				runningTasks.Add(t);
 			}
-
-			Parallel.ForEach(runningTasks, ParallelSettings, t =>
-            {
-                t.Start();
-            });
+			//ThreadPool.GetMaxThreads(out int workerThreads, out int completionThreads);
+			//ThreadPool.GetAvailableThreads(out int availableWorkers, out int availableCompletions);
+			PleasePassLog(string.Format("ThreadCount: {0}, Pending Items: {1}", ThreadPool.ThreadCount, ThreadPool.PendingWorkItemCount));
+			
+			
+			
+			if (ThreadPool.PendingWorkItemCount > 0)
+			{
+				foreach (Task t in runningTasks){
+						t.Start();
+				}
+			} else
+			{
+				Parallel.ForEach(runningTasks, ParallelSettings, t =>
+				{
+					t.Start();
+				});
+			}
+		
 
 
 			while (runningTasks.Any(x => !x.IsCompleted)){

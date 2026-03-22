@@ -560,6 +560,150 @@ public partial class Snapshotter : Node3D
 
         
 
+        if (BodyOptions.Any(x => x.Node.Visible))  
+            SelectedBodyOption = BodyOptions.IndexOf(BodyOptions.First(x => x.Node.Visible));
+        else if (BodyOptions.Count > 0)
+            BodyOptions[0].Node.Visible = true;
+        
+        if (BodyOptions.Count > 1) MultipleOptions = true;
+    }
+
+    private void S2AccessoryMesh()
+    {
+        foreach (string type in S2HairAges)
+        {
+            Node3D node3D = new();
+
+            List<Meshes> meshes = hairTypes.Where(x => x.ItemType.Contains(type)).ToList();
+
+            foreach (Meshes hair in meshes)
+            {
+                node3D.AddChild(hair.Mesh);
+                hair.ParentNode = node3D;
+            }
+
+            if (type.Contains("af", StringComparison.CurrentCultureIgnoreCase) || type.Contains("ef", StringComparison.CurrentCultureIgnoreCase) || type.Contains("yf", StringComparison.CurrentCultureIgnoreCase))
+            {
+                node3D.AddChild(S2Af.Duplicate());
+                node3D.Position = new(0, -15f, 0);
+            } else if (type.Contains("am", StringComparison.CurrentCultureIgnoreCase) || type.Contains("em", StringComparison.CurrentCultureIgnoreCase) || type.Contains("ym", StringComparison.CurrentCultureIgnoreCase))
+            {
+                node3D.AddChild(S2Am.Duplicate());
+                node3D.Position = new(0, -15f, 0);
+            } else if (type.Contains("tf", StringComparison.CurrentCultureIgnoreCase))
+            {
+                MeshInstance3D tf = S2Af.Duplicate() as MeshInstance3D;
+                tf.Scale = new(0.94f, 0.94f, 0.94f);
+                node3D.Position = new(0, -13.7f, 0);
+                node3D.AddChild(tf);
+            } else if (type.Contains("tm", StringComparison.CurrentCultureIgnoreCase) || type.Contains("tu", StringComparison.CurrentCultureIgnoreCase))
+            {
+                MeshInstance3D tm = S2Am.Duplicate() as MeshInstance3D;
+                tm.Scale = new(9.4f, 9.4f, 9.4f);
+                node3D.Position = new(0, -13.7f, 0);
+                node3D.AddChild(tm);
+            } else if (type.Contains("cf", StringComparison.CurrentCultureIgnoreCase) || type.Contains("cm", StringComparison.CurrentCultureIgnoreCase) || type.Contains("cu", StringComparison.CurrentCultureIgnoreCase))
+            {
+                node3D.AddChild(S2Cu.Duplicate());
+                node3D.Position = new(0, -9.6f, 0);
+            } else if (type.Contains("pu", StringComparison.CurrentCultureIgnoreCase) || type.Contains("pf", StringComparison.CurrentCultureIgnoreCase) || type.Contains("pm", StringComparison.CurrentCultureIgnoreCase))
+            {
+                node3D.AddChild(S2Pu.Duplicate());
+                node3D.Position = new(0, -5f, 0);
+            }            
+            
+            node3D.RotationDegrees = new(0, -75f, 0);
+            node3D.Scale = new(10, 10, 10);
+            node3D.Visible = false;
+            node3D.Name = type;
+
+            if (node3D.GetChildCount() > 1)
+            {
+                BodyOptions.Add(new() { Node = node3D, Identifier = type});
+                AddChild(node3D); 
+            } 
+        }
+
+        
+
+        if (foundTextures)
+        {
+            foreach (Meshes hair in hairTypes)
+            {
+                TXTRData txtr = new();
+                if (!string.IsNullOrEmpty(hair.TextureName))
+                {
+                    txtr = texturePackage.Sims2Data.TXTRDataBlock.First(x => x.FullTXTRName.StartsWith(hair.TextureName));
+
+                }
+                else
+                {
+                    txtr = texturePackage.Sims2Data.TXTRDataBlock.First(x => x.FullTXTRName.StartsWith(hair.TextureFileName.Split('!')[0]));
+                }
+
+                StandardMaterial3D material = new();
+                Texture2D mattxt = new();
+                mattxt = ImageTexture.CreateFromImage(txtr.Texture);
+                material.AlbedoTexture = mattxt;
+                material.Transparency = BaseMaterial3D.TransparencyEnum.AlphaDepthPrePass;
+                material.SpecularMode = BaseMaterial3D.SpecularModeEnum.Disabled;
+                material.CullMode = BaseMaterial3D.CullModeEnum.Disabled;
+                hair.Mesh.Mesh.SurfaceSetMaterial(0, material);
+            }                                    
+        }
+
+        if (BodyOptions.Any(x => x.Identifier == "af"))
+        {
+            BodyOptions.First(x => x.Identifier == "af").Node.Visible = true;
+        } else if (BodyOptions.Any(x => x.Identifier == "yf"))
+        {
+            BodyOptions.First(x => x.Identifier == "yf").Node.Visible = true;
+        } else if (BodyOptions.Any(x => x.Identifier == "ef"))
+        {
+            BodyOptions.First(x => x.Identifier == "ef").Node.Visible = true;
+        } else if (BodyOptions.Any(x => x.Identifier == "tf"))
+        {
+            BodyOptions.First(x => x.Identifier == "tf").Node.Visible = true;
+        } else if (BodyOptions.Any(x => x.Identifier == "cf"))
+        {
+            BodyOptions.First(x => x.Identifier == "cf").Node.Visible = true;
+        } else if (BodyOptions.Any(x => x.Identifier == "am"))
+        {
+            BodyOptions.First(x => x.Identifier == "am").Node.Visible = true;
+        } else if (BodyOptions.Any(x => x.Identifier == "ym"))
+        {
+            BodyOptions.First(x => x.Identifier == "ym").Node.Visible = true;
+        } else if (BodyOptions.Any(x => x.Identifier == "em"))
+        {
+            BodyOptions.First(x => x.Identifier == "em").Node.Visible = true;
+        } else if (BodyOptions.Any(x => x.Identifier == "tm"))
+        {
+            BodyOptions.First(x => x.Identifier == "tm").Node.Visible = true;
+        } else if (BodyOptions.Any(x => x.Identifier == "cm"))
+        {
+            BodyOptions.First(x => x.Identifier == "cm").Node.Visible = true;
+        }  else if (BodyOptions.Any(x => x.Identifier == "au"))
+        {
+            BodyOptions.First(x => x.Identifier == "au").Node.Visible = true;
+        } else if (BodyOptions.Any(x => x.Identifier == "yu"))
+        {
+            BodyOptions.First(x => x.Identifier == "yu").Node.Visible = true;
+        } else if (BodyOptions.Any(x => x.Identifier == "eu"))
+        {
+            BodyOptions.First(x => x.Identifier == "eu").Node.Visible = true;
+        } else if (BodyOptions.Any(x => x.Identifier == "tu"))
+        {
+            BodyOptions.First(x => x.Identifier == "tu").Node.Visible = true;
+        } else if (BodyOptions.Any(x => x.Identifier == "cu"))
+        {
+            BodyOptions.First(x => x.Identifier == "cu").Node.Visible = true;
+        } else if (BodyOptions.Any(x => x.Identifier == "pu"))
+        {
+            BodyOptions.First(x => x.Identifier == "pu").Node.Visible = true;
+        }
+
+        
+
         //if (BodyOptions.Any(x => x.Node.Visible))  
             SelectedBodyOption = BodyOptions.IndexOf(BodyOptions.First(x => x.Node.Visible));
        // else if (BodyOptions.Count > 0)
@@ -664,6 +808,10 @@ public partial class Snapshotter : Node3D
         else if (type.Contains("Face Template"))
         {
             meshType = 3;
+        }
+        else if (type.Contains("Accessory"))
+        {
+            meshType = 4;
         } else if (type.Contains("Slider") || type.Contains("Preset") || type.Contains("Neighbourhood"))
         {
             return false;
@@ -1136,13 +1284,28 @@ public partial class Snapshotter : Node3D
                         bodyTypes.Add(new() { Mesh = newmesh, ItemType = bodyType, MeshName = MeshName, FaceCount = newmesh.Mesh.GetFaces().Length, MeshFileName = ref3, TextureName = texturename, TextureFileName = texturefilename, Alpha = alpha });
 
                         if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Mesh {0} is {1}", MeshName, bodyType));
+                    } else
+                    {
+                        ApplyS2Textures(texturePackage);
                     }
+                
+                
+                    
+                
+                
+                
+                
+                
+                
                 }
             }            
         }
 
         if (meshType == 1) { 
             S2HairMesh(); 
+        } else if (meshType == 4)
+        {
+            S2AccessoryMesh();
         } else if (meshType == 2)
         {
             S2ClothingMesh();
@@ -1159,8 +1322,14 @@ public partial class Snapshotter : Node3D
 
         MMATData mmat = null;
         XNGBData xngb = null;
-        if ((texturePackage.PackageData as Sims2Data).MMATDataBlock.Count > 0) mmat = (texturePackage.PackageData as Sims2Data).MMATDataBlock[0];
-        if ((texturePackage.PackageData as Sims2Data).XNGBDataBlock != null) xngb = (texturePackage.PackageData as Sims2Data).XNGBDataBlock[0];
+        if (texturePackage.Sims2Data.MMATDataBlock.Count > 0)
+        {
+            mmat = texturePackage.Sims2Data.MMATDataBlock[0];
+        } 
+        if (texturePackage.Sims2Data.XNGBDataBlock.Count > 0)
+        {
+            xngb = texturePackage.Sims2Data.XNGBDataBlock[0];
+        }
 
         if (mmat != null)
         {
@@ -1181,6 +1350,7 @@ public partial class Snapshotter : Node3D
                     mattxt = ImageTexture.CreateFromImage(txtr.Texture);
                     material.AlbedoTexture = mattxt;
                     material.Transparency = BaseMaterial3D.TransparencyEnum.AlphaDepthPrePass;
+                    material.CullMode = BaseMaterial3D.CullModeEnum.Disabled;
                     Meshes.First(x => x.Name == meshname).Mesh.SurfaceSetMaterial(0, material);
                 }
 
@@ -1201,6 +1371,7 @@ public partial class Snapshotter : Node3D
                 mattxt = ImageTexture.CreateFromImage(txtr.Texture);
                 material.AlbedoTexture = mattxt;
                 material.Transparency = BaseMaterial3D.TransparencyEnum.AlphaDepthPrePass;
+                material.CullMode = BaseMaterial3D.CullModeEnum.Disabled;
                 if (Meshes.Any(x => x.Name == meshname))
                 {
                     Meshes.First(x => x.Name == meshname).Mesh.SurfaceSetMaterial(0, material);
@@ -1435,105 +1606,7 @@ public partial class Snapshotter : Node3D
             return texturePackage.Sims2Data.GZPSDataBlock[0];
         }
     }
-
-    private string GZPSHairType(GZPSData gzps)
-    {
-        switch (gzps.Age)
-        {
-            case "1":
-                return "puhair";
-            case "2":
-                switch (gzps.Gender)
-                {
-                    case "1":
-                        return "cfhair";
-                    case "2":
-                        return "cmhair";
-                    case "3":
-                        return "cuhair";
-                }
-                break;
-            case "4":
-                switch (gzps.Gender)
-                {
-                    case "1":
-                        return "tfhair";
-                    case "2":
-                        return "tmhair";
-                    case "3":
-                        return "tuhair";
-                }
-                break;
-            case "8":
-                switch (gzps.Gender)
-                {
-                    case "1":
-                        return "afhair";
-                    case "2":
-                        return "amhair";
-                    case "3":
-                        return "auhair";
-                }
-                break;
-            case "10":
-                switch (gzps.Gender)
-                {
-                    case "1":
-                        return "efhair";
-                    case "2":
-                        return "emhair";
-                    case "3":
-                        return "euhair";
-                }
-                break;
-            case "40":
-                switch (gzps.Gender)
-                {
-                    case "1":
-                        return "yfhair";
-                    case "2":
-                        return "ymhair";
-                    case "3":
-                        return "yuhair";
-                }
-                break;
-            case "72":
-                switch (gzps.Gender)
-                {
-                    case "1":
-                        return "afhair";
-                    case "2":
-                        return "amhair";
-                    case "3":
-                        return "auhair";
-                }
-                break;
-            case "16":
-                switch (gzps.Gender)
-                {
-                    case "1":
-                        return "tfhair";
-                    case "2":
-                        return "tmhair";
-                    case "3":
-                        return "tuhair";
-                }
-                break;
-            case "64":
-                switch (gzps.Gender)
-                {
-                    case "1":
-                        return "yfhair";
-                    case "2":
-                        return "ymhair";
-                    case "3":
-                        return "yuhair";
-                }
-                break;
-        }
-        return string.Empty;
-    }
-
+    
     public void Snapshot(Window window, string ImageFolder, string PackageName)
     {
         if (!data.Recolor && !data.Mesh)
@@ -1642,6 +1715,7 @@ public partial class Snapshotter : Node3D
                     {
                         Meshes.First(x => x.Name.ToString().Contains(meshname)).Mesh.SurfaceSetMaterial(0, material);
                     }
+                    material.CullMode = BaseMaterial3D.CullModeEnum.Disabled;
                 }
 
             }
@@ -1668,6 +1742,7 @@ public partial class Snapshotter : Node3D
                 {
                     Meshes.First(x => x.Name.ToString().Contains(meshname)).Mesh.SurfaceSetMaterial(0, material);
                 }
+                material.CullMode = BaseMaterial3D.CullModeEnum.Disabled;
             }
         }
         else

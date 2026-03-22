@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -684,6 +685,7 @@ namespace SimsCCManager.Containers
     {
         public Guid Identifier {get; set;} = Guid.NewGuid();   
         public string FileName {get; set;}
+        [XmlIgnore]
         public string InfoFile
         {
             get {                     
@@ -692,7 +694,7 @@ namespace SimsCCManager.Containers
         }
         private string _location;
         public string Location {
-            get {return _location; } 
+            get { return _location; } 
             set {
                 _location = value;
                 if (!IsDirectory && !RootMod)
@@ -713,7 +715,7 @@ namespace SimsCCManager.Containers
                         return Utilities.SizeSuffix(new FileInfo(Location).Length);
                     } else
                 {
-                    return "N/a";
+                    return string.Empty;
                 }
             }
         }
@@ -831,12 +833,27 @@ namespace SimsCCManager.Containers
             get { switch (Game)
                 {
                     case SimsGames.Sims2:
-                        if (Sims2Data != null) return Sims2Data.Override; else return false;
+                        return Sims2Data.Override;
                     case SimsGames.Sims3:
-                        if (Sims3Data != null) return Sims3Data.Override; else return false;
+                        return Sims3Data.Override;
                     case SimsGames.Sims4:
-                        if (Sims4Data != null) return Sims4Data.Override; else return false;
+                        return Sims4Data.Override;
                     default: return false;                  
+                }
+            }
+            set
+            {
+                switch (Game)
+                {
+                    case SimsGames.Sims2:
+                        Sims2Data.Override = value;
+                        break;
+                    case SimsGames.Sims3:
+                        Sims3Data.Override = value;
+                        break;
+                    case SimsGames.Sims4:
+                        Sims4Data.Override = value;
+                        break;                  
                 }
             }
         }
@@ -845,28 +862,56 @@ namespace SimsCCManager.Containers
             get { switch (Game)
                 {
                     case SimsGames.Sims2:
-                        if (Sims2Data != null) return Sims2Data.OverrideReference; else return null;
+                        return Sims2Data.OverrideReference;
                     case SimsGames.Sims3:
-                        if (Sims3Data != null) return Sims3Data.OverrideReference; else return null;
+                        return Sims3Data.OverrideReference;
                     case SimsGames.Sims4:
-                        if (Sims4Data != null) return Sims4Data.OverrideReference;   else return null;
+                        return Sims4Data.OverrideReference;
                     default: return null;                  
                 }
+            } 
+            set
+            {
+                switch (Game)
+                {
+                    case SimsGames.Sims2:
+                        Sims2Data.OverrideReference = value;
+                        break;
+                    case SimsGames.Sims3:
+                        Sims3Data.OverrideReference = value;
+                        break;
+                    case SimsGames.Sims4:
+                        Sims4Data.OverrideReference = value;
+                        break;                 
+                }
             }
-        }
-
-        
+        } 
         public SpecificOverrides SpecificOverride 
         {
             get { switch (Game)
                 {
                     case SimsGames.Sims2:
-                        if (Sims2Data != null) return Sims2Data.SpecificOverride; return null;
+                        return Sims2Data.SpecificOverride; 
                     case SimsGames.Sims3:
-                        if (Sims3Data != null) return Sims3Data.SpecificOverride; return null;
+                        return Sims3Data.SpecificOverride;
                     case SimsGames.Sims4:
-                        if (Sims4Data != null) return Sims4Data.SpecificOverride; return null;
+                        return Sims4Data.SpecificOverride;
                     default: return null;                  
+                }
+            } 
+            set
+            {
+                switch (Game)
+                {
+                    case SimsGames.Sims2:
+                        Sims2Data.SpecificOverride = value;
+                        break;
+                    case SimsGames.Sims3:
+                        Sims3Data.SpecificOverride = value;
+                        break;
+                    case SimsGames.Sims4:
+                        Sims4Data.SpecificOverride = value;
+                        break;                 
                 }
             }
         }
@@ -963,7 +1008,25 @@ namespace SimsCCManager.Containers
         public Godot.Color CategoryColor { get { return PackageCategory.Background; }}
 
         public string Image {get; set;}
-        public SimsGames Game {get; set;}
+        private SimsGames _game;
+        public SimsGames Game
+        {
+            get { return _game; }
+            set { _game = value; 
+            switch (value)
+                {
+                    case SimsGames.Sims2:
+                    Sims2Data = new();
+                    break;
+                    case SimsGames.Sims3:
+                    Sims3Data = new();
+                    break;
+                    case SimsGames.Sims4:
+                    Sims4Data = new();
+                    break;
+                }
+            }
+        }
         private bool _rootmod;
         public bool RootMod {get { return _rootmod; } set
             {
@@ -977,7 +1040,6 @@ namespace SimsCCManager.Containers
             }
         }
         public bool OutOfDate {get; set;}
-        [XmlIgnore]
         public bool GameMod { get { 
             if (PackageData != null)
             {
@@ -1015,7 +1077,6 @@ namespace SimsCCManager.Containers
                 }               
             } 
         }
-        [XmlIgnore]
         public bool Mesh { get { 
             if (PackageData != null)
             {
@@ -1056,7 +1117,6 @@ namespace SimsCCManager.Containers
             } 
         
         }
-        [XmlIgnore]
         public bool Recolor { get { 
             if (PackageData != null)
             {
@@ -1094,7 +1154,6 @@ namespace SimsCCManager.Containers
                 }               
             } 
         }
-        [XmlIgnore]
         public bool Orphan { get { 
             if (PackageData != null)
             {
@@ -1132,28 +1191,36 @@ namespace SimsCCManager.Containers
                 }               
             }        
         }
-        [XmlIgnore]
-        public string ObjectGUID { get { 
-            if (PackageData != null)
-            {
-            if (Game == SimsGames.Sims2)
+        public string ObjectGUID { 
+            get {
+                switch (Game)
                 {
+                    case SimsGames.Sims2:
                     return Sims2Data.GUID;
-                } else if (Game == SimsGames.Sims3)
-                {
+                    case SimsGames.Sims3:
                     return Sims3Data.GUID;
-                } else if (Game == SimsGames.Sims4)
-                {
+                    case SimsGames.Sims4:
                     return Sims4Data.GUID;
-                } else
-                {
+                    default:
                     return string.Empty;
-                }
-            } else
+                }                
+            }
+            set
+            {
+                switch (Game)
                 {
-                    return string.Empty;
+                    case SimsGames.Sims2:
+                    Sims2Data.GUID = value;
+                    break;
+                    case SimsGames.Sims3:
+                    Sims3Data.GUID = value;
+                    break;
+                    case SimsGames.Sims4:
+                    Sims4Data.GUID = value;
+                    break;
                 }
-        }}
+            }
+        }
         public bool Favorite {get; set;}
         [XmlIgnore]
         public bool IsEnabled { get; set; }
@@ -1203,9 +1270,9 @@ namespace SimsCCManager.Containers
         }
 
         
-        public Sims2Data Sims2Data { get { return PackageData as Sims2Data; } set { PackageData = value; }}
-        public Sims3Data Sims3Data { get { return PackageData as Sims3Data; } set { PackageData = value; }}
-        public Sims4Data Sims4Data { get { return PackageData as Sims4Data; } set { PackageData = value; }}
+        public Sims2Data Sims2Data { get { return PackageData as Sims2Data; } set { PackageData = value; } }
+        public Sims3Data Sims3Data { get { return PackageData as Sims3Data; } set { PackageData = value; } }
+        public Sims4Data Sims4Data { get { return PackageData as Sims4Data; } set { PackageData = value; } }
         
         [XmlIgnore]
         public bool HasBeenRead {get; set;} = false;
@@ -1236,8 +1303,8 @@ namespace SimsCCManager.Containers
             IsDirectory = package.IsDirectory;
             Duplicates = package.Duplicates;
             Conflicts = package.Conflicts;
-            MatchingMesh = package.MatchingMesh;
-            MatchingRecolors = package.MatchingRecolors;
+            //MatchingMesh = package.MatchingMesh;
+            //MatchingRecolors = package.MatchingRecolors;
             PackageGameVersion = package.PackageGameVersion;
             LinkedFiles = package.LinkedFiles;
             LinkedFolders = package.LinkedFolders;
@@ -1250,6 +1317,15 @@ namespace SimsCCManager.Containers
             IsEnabled = package.IsEnabled;
             LoadOrder = package.LoadOrder;
             HasBeenRead = package.HasBeenRead;            
+        }
+
+        public void UpdateFromOrphanCheck(SimsPackage package)
+        {
+            if (!package.Orphan) Orphan = package.Orphan;
+            if (string.IsNullOrEmpty(MatchingMesh) && !string.IsNullOrEmpty(package.MatchingMesh)) MatchingMesh = package.MatchingMesh;
+            MatchingRecolors.AddRange(package.MatchingRecolors);
+            if(Sims2Data.FunctionSort.Count == 0) Sims2Data.FunctionSort = package.Sims2Data.FunctionSort;
+            if (string.IsNullOrEmpty(Sims2Data.AltType)) Sims2Data.AltType = package.Sims2Data.AltType;
         }
 
 
@@ -1395,6 +1471,7 @@ namespace SimsCCManager.Containers
 
     public class Sims2Data : ISimsData
     {
+        [XmlIgnore]
         public string FileLocation {get; set;}
         public string Title {get; set;}
         public string Description {get; set;}
@@ -1466,7 +1543,7 @@ namespace SimsCCManager.Containers
             });
             IndexEntryCounts = entryCounts.ToList();
         }
-
+        [XmlIgnore]
         public List<EntryCount> IndexEntryCounts {get; set;} = new();
         public List<CTSSData> CTSSDataBlock {get; set;} = new();
         public List<OBJDData> OBJDDataBlock {get; set;} = new();
@@ -1487,7 +1564,9 @@ namespace SimsCCManager.Containers
 
 
         public void GetPackageType()
-        {
+        {            
+            if (EntryCount("gmdc") > 0) Mesh = true;
+            if (EntryCount("txtr") > 0) Recolor = true;
             if (FunctionSort.Count > 0) return;
             
             if (IsMod())
@@ -1499,10 +1578,12 @@ namespace SimsCCManager.Containers
             {
                 AltType = "Accessory";
                 FunctionSort.Clear();
+                if (Mesh && !Recolor) Orphan = true;
             } else if (EntryCount("xhtn") > 0)
             {
                 AltType = "Hair";
                 FunctionSort.Clear();
+                if (Mesh && !Recolor) Orphan = true;
             } else if (EntryCount("xstn") > 0 || TXMTDataBlock.Any(x => x.MaterialDescription.Contains("naked_nude_")))
             {
                 AltType = "Skin";
@@ -1520,6 +1601,7 @@ namespace SimsCCManager.Containers
             } else if (EntryCount("xngb") > 0)
             {
                 AltType = "Hood Deco";
+                if (Mesh && !Recolor) Orphan = true;
                 FunctionSort.Clear();
             } else if (EntryCount("lxnr") > 0
             && EntryCount("AGED") > 0
@@ -1556,11 +1638,6 @@ namespace SimsCCManager.Containers
                 Recolor = false;
                 Orphan = false;
             }
-
-            if (EntryCount("gmdc") > 0 && AltType != "Slider" && AltType != "Face Template" && AltType != "Collection") Mesh = true;
-            if (EntryCount("txtr") > 0 && AltType != "Slider" && AltType != "Face Template" && AltType != "Collection") Recolor = true;
-
-
         }
 
 
