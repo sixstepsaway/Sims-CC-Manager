@@ -99,28 +99,52 @@ public partial class AllModsContainer : MarginContainer
         }
     }
 
-    public void DeferredSetModNumber()
+    private  int _modstotal;
+    public  int ModsTotal 
     {
-        CallDeferred(nameof(SetModNumber));
+        get { return  _modstotal; }
+        set {  _modstotal = value; 
+            CallDeferred(nameof(SetModNumber));
+        }
     }
+    private  int _modsread;
+    public  int ModsRead 
+    {
+        get { return  _modsread; }
+        set {  _modsread = value;  
+            CallDeferred(nameof(SetModNumber));
+        }
+    }
+    private  int _modreadingstage;
+    public  int ModReadingStage 
+    {
+        get { return  _modreadingstage; }
+        set {  _modreadingstage = value;  
+            CallDeferred(nameof(SetModNumber));
+        }
+    }
+
 
     private void SetModNumber()
     {
-        if (AllModsModsDotdotDot.Text == "") { AllModsModsDotdotDot.Text = "..."; DotTheDots(); }
-        if (Packages.Count(x => x.HasBeenRead) < Packages.Count)
+        if (!StillProcessingPackages) { AllModsModsDotdotDot.Text = "..."; DotTheDots(); }
+        switch (ModReadingStage)
         {
-            StillProcessingPackages = true;
-            AllModsModNumber.Text = string.Format("Scanning packages: {0}/{1}", Packages.Count(x => x.HasBeenRead), Packages.Count);
-        } else if (packageDisplay.runningTasks.Any(x => !x.IsCompleted) && !packageDisplay.runningTasks.IsEmpty)
-        {
-            StillProcessingPackages = true;
-            AllModsModNumber.Text = string.Format("{0}/{1} packages read - Doing final checks", Packages.Count(x => x.HasBeenRead), Packages.Count);
-        } else 
-        {
-            StillProcessingPackages = false;
-            AllModsModsDotdotDot.Text = "";
-            AllModsModNumber.Text = string.Format("{0} packages loaded", Packages.Count);
-        }
+            case 0:
+                StillProcessingPackages = true;
+                AllModsModNumber.Text = string.Format("Scanning packages: {0}/{1}", ModsRead, ModsTotal);
+            break;
+            case 1:
+                StillProcessingPackages = true;
+                AllModsModNumber.Text = string.Format("{0}/{1} packages read - Doing final checks", ModsRead, ModsTotal);
+            break;
+            case 2:
+                StillProcessingPackages = false;
+                AllModsModsDotdotDot.Text = "";
+                AllModsModNumber.Text = string.Format("{0} packages loaded", ModsTotal);
+            break;
+
+        }        
     }
 
     bool StillProcessingPackages = false;
@@ -162,9 +186,9 @@ public partial class AllModsContainer : MarginContainer
                 ShowHeader = true},
 			new DataGridHeader() { 
                 ContentType = DataGridContentType.Text,
-                StartingWidth = 350,
+                Width = 300,
                 Data = "FileName",
-                Title = "Title",
+                Title = "File Name",
                 Resizeable = true,
                 CellType = CellOptions.Text,
                 ShowHeader = true,
@@ -179,7 +203,7 @@ public partial class AllModsContainer : MarginContainer
                 Blank = true},
 			new DataGridHeader() { 
                 ContentType = DataGridContentType.Text,
-                StartingWidth = 200,
+                Width = 100,
                 Data = "Type",
                 Title = "Type",
                 Resizeable = true,
@@ -187,23 +211,23 @@ public partial class AllModsContainer : MarginContainer
                 ShowHeader = true},
 			new DataGridHeader() { 
                 ContentType = DataGridContentType.Icons,
-                Title = "Problems",
+                Title = "Flags",
                 Data = "",
                 Resizeable = false,
                 CellType = CellOptions.Icons,
                 ShowHeader = true,
-			    Blank = true},
+			    Blank = false},
 			new DataGridHeader() { 
                 ContentType = DataGridContentType.Date,
                 Data = "DateCreated",
-                StartingWidth = 150,
+                Width = 150,
                 Title = "Date Created",
                 Resizeable = true,
                 CellType = CellOptions.Text,
                 ShowHeader = false},
 			new DataGridHeader() { 
                 ContentType = DataGridContentType.Text,
-                StartingWidth = 150,
+                Width = 80,
                 Data = "CategoryName",
                 Title = "Category",
                 Resizeable = true,
@@ -211,7 +235,7 @@ public partial class AllModsContainer : MarginContainer
                 ShowHeader = true},
 			new DataGridHeader() { 
                 ContentType = DataGridContentType.Text,
-                StartingWidth = 150,
+                Width = 150,
                 Data = "Creator",
                 Title = "Creator",
                 Resizeable = true,
@@ -219,7 +243,7 @@ public partial class AllModsContainer : MarginContainer
                 ShowHeader = false},
 			new DataGridHeader() { 
                 ContentType = DataGridContentType.Text,
-                StartingWidth = 150,
+                Width = 125,
                 Data = "Location",
                 Title = "Location",
                 Resizeable = true,
@@ -229,12 +253,13 @@ public partial class AllModsContainer : MarginContainer
                 ContentType = DataGridContentType.Text,
                 Data = "FileSize",
                 Title = "File Size",
+                Width = 80,
                 Resizeable = true,
                 CellType = CellOptions.Text,
                 ShowHeader = true},
 			new DataGridHeader() { 
                 ContentType = DataGridContentType.Text,
-                StartingWidth = 100,
+                Width = 100,
                 Data = "FileType",
                 Title = "File Type",
                 Resizeable = true,
@@ -243,7 +268,7 @@ public partial class AllModsContainer : MarginContainer
 			new DataGridHeader() { 
                 ContentType = DataGridContentType.Date,
                 Data = "DateUpdated",
-                StartingWidth = 150,
+                Width = 150,
                 Title = "Date Modified",
                 Resizeable = true,
                 CellType = CellOptions.Text,
@@ -251,7 +276,7 @@ public partial class AllModsContainer : MarginContainer
 			new DataGridHeader() { 
                 ContentType = DataGridContentType.Text,
                 Data = "Game",
-                StartingWidth = 150,
+                Width = 150,
                 Title = "Game",
                 Resizeable = true,
                 CellType = CellOptions.Text,
@@ -259,7 +284,7 @@ public partial class AllModsContainer : MarginContainer
 			new DataGridHeader() { 
                 ContentType = DataGridContentType.Text,
                 Data = "OverrideRef",
-                StartingWidth = 150,
+                Width = 150,
                 Title = "Overriding",
                 Resizeable = true,
                 CellType = CellOptions.Text,
@@ -267,7 +292,7 @@ public partial class AllModsContainer : MarginContainer
 			new DataGridHeader() { 
                 ContentType = DataGridContentType.Text,
                 Data = "MatchingMesh",
-                StartingWidth = 150,
+                Width = 150,
                 Title = "Mesh",
                 Resizeable = true,
                 CellType = CellOptions.Text,
@@ -374,6 +399,7 @@ public partial class AllModsContainer : MarginContainer
         DataGrid.FirstLoaded = true;
         CallDeferred(nameof(SetModNumber));
         if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Data grid finished loading!"));
+        packageDisplay.LinkPackageDataChanged();
         packageDisplay.ReadPackageDetails();
     }
 
@@ -480,7 +506,6 @@ public partial class AllModsContainer : MarginContainer
         if (DataGrid.VisibleRows.Count != 0)
         { 
             new Thread(() => {
-
                 List<EnabledPackages> enabled = packageDisplay.ThisInstance.LoadedProfile.EnabledPackages;
                 List<Guid> IDs = enabled.Select(x => x.PackageIdentifier).ToList();
 
@@ -494,7 +519,7 @@ public partial class AllModsContainer : MarginContainer
                     {
                         CallDeferred(nameof(ChangeRowInfo), row, false, -1);
                     }
-                });            
+                });
             }){IsBackground = true}.Start();
         }
     }
@@ -521,7 +546,7 @@ public partial class AllModsContainer : MarginContainer
         newrow.SubRow = true;
         newrow.Identifier = pack.Identifier;
         newrow.SubRowItems = new();
-        if (pack.LinkedFiles.Count != 0)
+        if (pack.LinkedFiles != null)
         {
             foreach (string linkedfile in pack.LinkedFiles)
             {
@@ -592,7 +617,7 @@ public partial class AllModsContainer : MarginContainer
                 }
             }
         }
-        if (pack.LinkedFolders.Count != 0)
+        if (pack.LinkedFolders != null)
         {
             foreach (string linkedfile in pack.LinkedFolders)
             {
@@ -703,7 +728,7 @@ public partial class AllModsContainer : MarginContainer
         if (pack.RootMod)
         {
             newrow.SubRow = false;
-        } else if (pack.FileType == FileTypes.Folder || pack.LinkedFiles.Count != 0 || pack.LinkedFolders.Count != 0)
+        } else if (pack.FileType == FileTypes.Folder || pack.LinkedFiles != null || pack.LinkedFolders != null)
         {
             newrow = CreateSubRow(newrow, pack);
         }
@@ -991,7 +1016,11 @@ public partial class AllModsContainer : MarginContainer
     private void ItemToggledOrAdjusted(DataGridRow row)
     {
         new Thread(() => {
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Row adjusted: {0}", row.RowRef));
             SimsPackage package = Packages.First(x => x.Identifier == row.Identifier);
+            package.AllowInvokeDataChanged = false;
+            
+            
             int headeridx = 0;
             foreach (DataGridHeader header in DataGridHeaders)
             {
@@ -1066,9 +1095,9 @@ public partial class AllModsContainer : MarginContainer
                 headeridx++;
             }
             package.WriteXML();
+            package.AllowInvokeDataChanged = true;
         }){IsBackground = true}.Start();
-        PackagesChanged();
-        
+        PackagesChanged();        
     }
 
 
@@ -1144,52 +1173,67 @@ public partial class AllModsContainer : MarginContainer
         if (Packages.Any(x => x.Identifier == rowIdx.Identifier))
         {
             if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Data changed: {0}, {1}. New value: {2}", dataChanged, Item, rowIdx.Items[Item].ItemContent));
-            //SetProperty(pack, header.Data).ToString();
             
-            SimsPackage package = Packages.First(x => x.Identifier == rowIdx.Identifier);
+            
+            int idx = Packages.IndexOf(Packages.First(x => x.Identifier == rowIdx.Identifier));
+            Packages[idx].AllowInvokeDataChanged = false;
+            
 
-            package.SetProperty(dataChanged, rowIdx.Items[Item].ItemContent);
-
-            package.WriteXML();
+            //package.WriteXML();
 
             if (dataChanged == "IsEnabled")
-            {
+            {                
                 if (rowIdx.Items[Item].ItemContent == "True")
                 {
-                    if (!packageDisplay.ThisInstance.LoadedProfile.EnabledPackages.Any(x => x.PackageIdentifier == package.Identifier)) packageDisplay.ThisInstance.LoadedProfile.EnabledPackages.Add(new () { PackageIdentifier = package.Identifier, LoadOrder = 0, PackageLocation = package.Location, PackageName = package.FileName});
+                    if (!packageDisplay.ThisInstance.LoadedProfile.EnabledPackages.Any(x => x.PackageIdentifier == Packages[idx].Identifier)) packageDisplay.ThisInstance.LoadedProfile.EnabledPackages.Add(new () { PackageIdentifier = Packages[idx].Identifier, LoadOrder = 0, PackageLocation = Packages[idx].Location, PackageName = Packages[idx].FileName});
+                    Packages[idx].IsEnabled = true;
+                    
                 } else
                 {
-                    if (packageDisplay.ThisInstance.LoadedProfile.EnabledPackages.Any(x => x.PackageIdentifier == package.Identifier))
+                    if (packageDisplay.ThisInstance.LoadedProfile.EnabledPackages.Any(x => x.PackageIdentifier == Packages[idx].Identifier))
                     {
-                        EnabledPackages pa = packageDisplay.ThisInstance.LoadedProfile.EnabledPackages.First(x => x.PackageIdentifier == package.Identifier);
+                        EnabledPackages pa = packageDisplay.ThisInstance.LoadedProfile.EnabledPackages.First(x => x.PackageIdentifier == Packages[idx].Identifier);
                         packageDisplay.ThisInstance.LoadedProfile.RemoveEnabled(pa);
-                    }
-                    
+                    }                    
+                    Packages[idx].IsEnabled = false;
+                    Packages[idx].LoadOrder = -1;
                 }
-                
-            }
-            if (dataChanged == "LoadOrder")
-            {
-                if (rowIdx.Items[Item].ItemContent == "-1")
+                packageDisplay.ThisInstance.WriteXML();
+            } else if (dataChanged == "LoadOrder")
+            {                
+                if (rowIdx.Items.First(x => x.CellType == CellOptions.Toggle).ItemContent == "True")
                 {
-                    if (packageDisplay.ThisInstance.LoadedProfile.EnabledPackages.Any(x => x.PackageIdentifier == package.Identifier)) packageDisplay.ThisInstance.LoadedProfile.EnabledPackages.Remove(packageDisplay.ThisInstance.LoadedProfile.EnabledPackages.Where(x => x.PackageIdentifier == package.Identifier).First());
+                    if (!packageDisplay.ThisInstance.LoadedProfile.EnabledPackages.Any(x => x.PackageIdentifier == Packages[idx].Identifier)) packageDisplay.ThisInstance.LoadedProfile.EnabledPackages.Add(new () { PackageIdentifier = Packages[idx].Identifier, LoadOrder = 0, PackageLocation = Packages[idx].Location, PackageName = Packages[idx].FileName});
+                    Packages[idx].IsEnabled = true;
+                } else if (rowIdx.Items[Item].ItemContent == "-1")
+                {
+                    if (packageDisplay.ThisInstance.LoadedProfile.EnabledPackages.Any(x => x.PackageIdentifier == Packages[idx].Identifier)) packageDisplay.ThisInstance.LoadedProfile.EnabledPackages.Remove(packageDisplay.ThisInstance.LoadedProfile.EnabledPackages.First(x => x.PackageIdentifier == Packages[idx].Identifier));
+                    Packages[idx].IsEnabled = false;
+                    Packages[idx].LoadOrder = -1;
                 } else {
-                    if (packageDisplay.ThisInstance.LoadedProfile.EnabledPackages.Any(x => x.PackageIdentifier == package.Identifier))
+                    if (packageDisplay.ThisInstance.LoadedProfile.EnabledPackages.Any(x => x.PackageIdentifier == Packages[idx].Identifier))
                     {
-                        packageDisplay.ThisInstance.LoadedProfile.EnabledPackages.First(x => x.PackageIdentifier == package.Identifier).LoadOrder = int.Parse(rowIdx.Items[Item].ItemContent);
+                        packageDisplay.ThisInstance.LoadedProfile.EnabledPackages.First(x => x.PackageIdentifier == Packages[idx].Identifier).LoadOrder = int.Parse(rowIdx.Items[Item].ItemContent);
+                        Packages[idx].IsEnabled = true;
+                        Packages[idx].LoadOrder = int.Parse(rowIdx.Items[Item].ItemContent);
                     } else
                     {
-                        packageDisplay.ThisInstance.LoadedProfile.EnabledPackages.Add(new () { PackageIdentifier = package.Identifier, LoadOrder = int.Parse(rowIdx.Items[Item].ItemContent), PackageLocation = package.Location, PackageName = package.FileName});
+                        packageDisplay.ThisInstance.LoadedProfile.EnabledPackages.Add(new () { PackageIdentifier = Packages[idx].Identifier, LoadOrder = int.Parse(rowIdx.Items[Item].ItemContent), PackageLocation = Packages[idx].Location, PackageName = Packages[idx].FileName});
+                        Packages[idx].IsEnabled = true;
+                        Packages[idx].LoadOrder = int.Parse(rowIdx.Items[Item].ItemContent);
                     }
                 }
-                
-            }
-            packageDisplay.ThisInstance.WriteXML();
+                packageDisplay.ThisInstance.WriteXML();
+            } else
+            {
+                Packages[idx].SetProperty(dataChanged, rowIdx.Items[Item].ItemContent);
+            }            
+            Packages[idx].AllowInvokeDataChanged = true;
+            PackagesChanged();
         } else
         {
             if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Changed data doesn't exist?"));
         }
-        PackagesChanged();
         
     }
 
@@ -2466,13 +2510,29 @@ public partial class AllModsContainer : MarginContainer
 
 
     
-    public void UpdateItem(SimsPackage package)
+    public void UpdateItem(SimsPackage package, string data = null)
     {
-        DataGridRow rowdata = DataGrid.RowData.First(x => x.Identifier == package.Identifier);
-        rowdata = CreateRow(package, rowdata.OverallIdx);
-        DataGrid.UpdateRow(rowdata);
-
-        if (ThumbGrid != null) ThumbGrid.ReplaceTGI(package);
+        //if (data == "LoadOrder" || data == "IsEnabled") UpdateProfilePackages();
+        //package.WriteXML();
+        if (data != null)
+        {
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0} - Package data changed: {1} - New data: {2}", package.FileName, data, DataGrid.GetProperty(package, data)));
+            if (DataGridHeaders.Any(x => x.Data == data))
+            {
+                DataGridRow rowdata = DataGrid.RowData.First(x => x.Identifier == package.Identifier);
+                rowdata = CreateRow(package, rowdata.OverallIdx);
+                DataGrid.EditRow(rowdata, data);
+                if (ThumbGrid != null) ThumbGrid.ReplaceTGI(package);
+            }
+        } else
+        {
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0} - Entire package changed.", package.FileName));
+            DataGridRow rowdata = DataGrid.RowData.First(x => x.Identifier == package.Identifier);
+            rowdata = CreateRow(package, rowdata.OverallIdx);
+            DataGrid.EditRow(rowdata, data);
+        }
+        
+        
     }
 
     public void InitialReadUpdate(SimsPackage package)
@@ -2481,7 +2541,7 @@ public partial class AllModsContainer : MarginContainer
         DoingInitialUpdate = true;
         DataGridRow rowdata = DataGrid.RowData.First(x => x.Identifier == package.Identifier);
         rowdata = CreateRow(package, rowdata.OverallIdx);
-        DataGrid.InitialUpdateRow(rowdata);
+        DataGrid.EditRow(rowdata);
         if (ThumbGrid != null) ThumbGrid.ReplaceTGI(package);
         DoingInitialUpdate = false;
     }

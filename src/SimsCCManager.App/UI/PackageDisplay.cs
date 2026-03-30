@@ -22,6 +22,8 @@ using CsvHelper;
 using System.Globalization;
 using System.Net.Http.Headers;
 using MoreLinq;
+using System.Collections.ObjectModel;
+using System.Security.Principal;
 
 public partial class PackageDisplay : MarginContainer
 {
@@ -135,6 +137,8 @@ PackedFile Packages/////*.package
     PackedScene RefreshingPS;
     [Export]
     PackedScene ErrorListPS;
+    [Export]
+    PackedScene EditLoadOrderPS;
     [ExportCategory("Dialogs")]
     [Export]
     public FileDialog AddFilesDialog;
@@ -214,6 +218,9 @@ PackedFile Packages/////*.package
 
 
 
+        
+
+
 
         AddFolderDialog.DirSelected += (directory) => AddFolderToInstance(directory);
 
@@ -235,125 +242,127 @@ PackedFile Packages/////*.package
 
         InitializeUIAllMods();
         UIAllModsContainer.PackagesDataChanged += () => PackagesChanged();
-        PackagesChanged();        
+        
+        PackagesChanged();  
+        
+    }
+
+
+    public void LinkPackageDataChanged()
+    {
+        foreach (SimsPackage package in ThisInstance.Packages)
+        {
+            package.DataChanged += (data) => UIAllModsContainer.UpdateItem(package, data);
+        }
     }
 
     public void ReadPackageDetails()
     {
-        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Reading the package details!"));
+        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Reading the package details for {0} packages!", ThisInstance.Packages.Count));
         runningTasks = new();
-        new Thread(() => {
+        new Thread(() => {    
 
-            List<SimsPackage> all = ThisInstance.Files.OfType<SimsPackage>().Where(x => !x.HasBeenRead).OrderBy(x => x.FileName).ToList();
-            List<SimsPackage> firstGroup = all.Take((int)UIAllModsContainer.DataGrid.RowsOnScreen).ToList();
-            List<SimsPackage> secondGroup = all.Except(firstGroup).ToList();
-            List<List<SimsPackage>> groups = new();
-
-            ReadPackageDetailsGroup(firstGroup);
-            
-            Parallel.ForEach(runningTasks, GlobalVariables.ParallelSettings, t =>
+            if (ThisInstance.LoadedProfile.EnabledPackages.Count > 0)
             {
-                t.Start();
-            });
-
-            if (secondGroup.Count > 500)
-            {
-                List<SimsPackage[]> batch = secondGroup.Batch(250).ToList();
-                foreach (SimsPackage[] b in batch)
-                {
-                    groups.Add(b.ToList());
+                foreach (EnabledPackages p in ThisInstance.LoadedProfile.EnabledPackages)
+                {                    
+                    int idx = ThisInstance.Packages.IndexOf(ThisInstance.Packages.First(x => x.Identifier == p.PackageIdentifier));
+                    ThisInstance.Packages[idx].IsEnabled = true;
+                    ThisInstance.Packages[idx].LoadOrder = p.LoadOrder;
                 }
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("High number of packages. Splitting into groups."));
-            } else
-            {
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Only a few packages. One group will do."));
-                groups.Add(secondGroup);
-            }
+            } 
 
-            int completedTasks = 0;
-            while (runningTasks.Any(x => !x.IsCompleted)){
-                if (completedTasks != runningTasks.Count(x => x.IsCompleted)) {
-                    completedTasks = runningTasks.Count(x => x.IsCompleted);
-                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0}/{1} tasks completed", completedTasks, runningTasks.Count));                 
-                }
-            }
-
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Initial group read."));
-            
-            int i = 1;
-            foreach (List<SimsPackage> packageList in groups)
+            UIAllModsContainer.ModsTotal = ThisInstance.Packages.Count;
+            if (ThisInstance.Packages.Any(x => !x.HasBeenRead))
             {
-                runningTasks = new();
-                completedTasks = 0;
-                ReadPackageDetailsGroup(secondGroup);
-                Parallel.ForEach(runningTasks, GlobalVariables.ParallelSettings, t =>
+                UIAllModsContainer.ModReadingStage = 0;       
+                UIAllModsContainer.ModsRead = ThisInstance.Packages.Count(x => x.HasBeenRead);
+
+                Parallel.For(0, (int)UIAllModsContainer.DataGrid.RowsOnScreen, GlobalVariables.ParallelSettings, p =>
                 {
-                    t.Start();
+                    if (!ThisInstance.Packages[p].HasBeenRead)
+                    {
+                        if (ThisInstance.Packages[p].IsDirectory)
+                        {
+                                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Reading: {0}", ThisInstance.Packages[p].FileName));
+                                DirectoryInfo fi = new(ThisInstance.Packages[p].Location);                    
+                                ThisInstance.Packages[p].ReadPackageDetails(ThisInstance);
+                                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Finished reading {0}", ThisInstance.Packages[p].FileName));
+                                UIAllModsContainer.ModsRead++;
+                        } else
+                        {
+                                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Reading details of: {0}", ThisInstance.Packages[p].FileName));
+                                FileInfo fi = new(ThisInstance.Packages[p].Location);
+                                ThisInstance.Packages[p].ReadPackageDetails(ThisInstance);
+                                InstanceControllers.CheckOrphanSingle(ThisInstance.Packages[p], ThisInstance.Files.OfType<SimsPackage>().Where(x => x.HasBeenRead).ToList(), ThisInstance);
+                                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Finished reading {0}", ThisInstance.Packages[p].FileName));
+                                UIAllModsContainer.ModsRead++;
+                        }
+                    }                
                 });
-                while (runningTasks.Any(x => !x.IsCompleted))
+
+                
+                Parallel.For((int)UIAllModsContainer.DataGrid.RowsOnScreen, ThisInstance.Packages.Count, GlobalVariables.ParallelSettings, p =>
                 {
-                    if (completedTasks != runningTasks.Count(x => x.IsCompleted)) {
-                        completedTasks = runningTasks.Count(x => x.IsCompleted);
-                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Running tasks: {0}/{1} - Group {2}", completedTasks, runningTasks.Count, i));                 
+                    if (!ThisInstance.Packages[p].HasBeenRead)
+                    {
+                        if (ThisInstance.Packages[p].IsDirectory)
+                        {
+                                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Reading: {0}", ThisInstance.Packages[p].FileName));
+                                DirectoryInfo fi = new(ThisInstance.Packages[p].Location);                    
+                                ThisInstance.Packages[p].ReadPackageDetails(ThisInstance);
+                                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Finished reading {0}", ThisInstance.Packages[p].FileName));
+                                UIAllModsContainer.ModsRead++;
+                        } else
+                        {
+                                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Reading details of: {0}", ThisInstance.Packages[p].FileName));
+                                FileInfo fi = new(ThisInstance.Packages[p].Location);
+                                ThisInstance.Packages[p].ReadPackageDetails(ThisInstance);
+                                InstanceControllers.CheckOrphanSingle(ThisInstance.Packages[p], ThisInstance.Files.OfType<SimsPackage>().Where(x => x.HasBeenRead).ToList(), ThisInstance);
+                                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Finished reading {0}", ThisInstance.Packages[p].FileName));
+                                UIAllModsContainer.ModsRead++;
+                        }
                     }
-                }
-                i++;
-                //then...!
-            }            
+                });
 
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("All packages scanned."));
+                UIAllModsContainer.ModReadingStage = 1;
 
-            if (ThisInstance.Files.OfType<SimsPackage>().Any(x => x.Orphan))
-            {
-                List<SimsPackage> orphans = [..ThisInstance.Files.OfType<SimsPackage>().Where(x => x.Orphan)];
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("There are still {0} orphans. Doing a quick check...", orphans.Count));
-                runningTasks.Clear();
-                CheckRemainingOrphans(orphans);
-                Parallel.ForEach(runningTasks, GlobalVariables.ParallelSettings, t =>
+                if (ThisInstance.Files.OfType<SimsPackage>().Any(x => x.Orphan))
                 {
-                    t.Start();
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("There are still {0} orphans. Doing a quick check...", ThisInstance.Files.OfType<SimsPackage>().Count(x => x.Orphan)));
+                    Parallel.For(0, ThisInstance.Packages.Count, GlobalVariables.ParallelSettings, i =>
+                    {
+                        if (!ThisInstance.Packages[i].IsDirectory)
+                        {                        
+                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Checking for matching meshes or recolors for: {0}", ThisInstance.Packages[i].FileName));
+                            InstanceControllers.CheckOrphanSingle(ThisInstance.Packages[i], ThisInstance.Files.OfType<SimsPackage>().Where(x => x.HasBeenRead).ToList(), ThisInstance);
+                        }
+                    });
+                }
+
+                Parallel.For(0, ThisInstance.Packages.Count, GlobalVariables.ParallelSettings, p =>
+                {
+                    UIAllModsContainer.UpdateItem(ThisInstance.Packages[p], null);
+                    ThisInstance.Packages[p].WriteXML();
                 });
             }
-
-            runningTasks.Clear();
-            UIAllModsContainer.DeferredSetModNumber();
+            
+            
+            UIAllModsContainer.ModReadingStage = 2;            
 
         }){IsBackground = true}.Start();
     }
 
-    private void CheckRemainingOrphans(List<SimsPackage> packages)
+    private void CheckRemainingOrphans()
     {
         if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Checking remaining orphans."));
-        foreach (SimsPackage package in packages)
+        for (int i = 0; i < ThisInstance.Packages.Count; i++)
         {
-            if (!package.IsDirectory)
+            if (!ThisInstance.Packages[i].IsDirectory)
             {
                 Task t = new Task(() => {
-                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Checking for matching meshes or recolors for: {0}", package.FileName));
-                    
-                    List<SimsPackage> altered = InstanceControllers.CheckOrphanSingle(package, ThisInstance.Files.OfType<SimsPackage>().Where(x => x.HasBeenRead).ToList());
-                    SimsPackage prev = ThisInstance.Files.OfType<SimsPackage>().First(x => x.Identifier == package.Identifier);
-                    if (altered.Any(x => x.Sims2Data.Mesh))
-                    {                        
-                        altered[altered.IndexOf(altered.First(x => x.Sims2Data.Mesh))].MatchingRecolors.AddRange(altered.Where(x => !x.Mesh).Select(x => x.FileName));
-                        altered[altered.IndexOf(altered.First(x => x.Sims2Data.Mesh))].MatchingRecolors = altered[altered.IndexOf(altered.First(x => x.Sims2Data.Mesh))].MatchingRecolors.Distinct().ToList();
-                    }
-                    SimsPackage orphanchecked = altered.First(x => x.Identifier == prev.Identifier);
-                    altered.Remove(orphanchecked);
-                    prev.UpdateFromOrphanCheck(orphanchecked);
-                    
-                    foreach (SimsPackage p in altered)
-                    {
-                        SimsPackage pp = ThisInstance.Files.OfType<SimsPackage>().First(x => x.Identifier == package.Identifier);
-                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("File {0} original Type: {1}, new type: {2}", pp.FileName, pp.Type, p.Type));
-                        pp.UpdateFromOrphanCheck(p);
-                        UpdateInitialRead(pp);  
-                        pp.WriteXML();                      
-                    }                    
-
-                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Read: {0}", package.FileName));                                                                       
-                    prev.WriteXML();
-                    UpdateInitialRead(prev);
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Checking for matching meshes or recolors for: {0}", ThisInstance.Packages[i].FileName));
+                    InstanceControllers.CheckOrphanSingle(ThisInstance.Packages[i], ThisInstance.Files.OfType<SimsPackage>().Where(x => x.HasBeenRead).ToList(), ThisInstance);                    
                 });
                 runningTasks.Add(t);
             }
@@ -365,55 +374,31 @@ PackedFile Packages/////*.package
     }
 
     
-    private void ReadPackageDetailsGroup(List<SimsPackage> packages)
+    private void ReadPackageDetailsGroup(int startidx, int num)
     {
-        foreach (SimsPackage package in packages)
+        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Reading packages from {0} to {1} ({2} packages).", startidx, startidx + num, num));
+        for (int i = startidx; i < (startidx + num); i++)
         {
-            if (package.IsDirectory)
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Reading package {0}: {1}", i, ThisInstance.Packages[i].FileName));
+            if (ThisInstance.Packages[i].IsDirectory)
             {
                 Task t = new Task(() => {
-                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Reading: {0}", package.FileName));
-                    DirectoryInfo fi = new(package.Location);                    
-                    SimsPackage simsPackage = InstanceControllers.ReadPackage(package, package.Location, ThisInstance, fi);
-                    
-                    SimsPackage prev = ThisInstance.Files.OfType<SimsPackage>().First(x => x.Identifier == simsPackage.Identifier);
-                    prev.UpdateFromData(simsPackage); 
-                    prev.WriteXML();
-                    readPackages.Add(prev);
-                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Read: {0}", package.FileName));
-                    if (!simsPackage.RootMod) simsPackage = InstanceControllers.GetSubDirectories(ThisInstance, simsPackage.Location, simsPackage);
-                    UpdateInitialRead(prev);
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Reading: {0}", ThisInstance.Packages[i].FileName));
+                    DirectoryInfo fi = new(ThisInstance.Packages[i].Location);                    
+                    ThisInstance.Packages[i].ReadPackageDetails(ThisInstance);
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Finished reading {0}", ThisInstance.Packages[i].FileName));
+                    UIAllModsContainer.ModsRead++;
                 });
                 runningTasks.Add(t);
             } else
             {
                 Task t = new Task(() => {
-                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Reading details of: {0}", package.FileName));
-                    FileInfo fi = new(package.Location);
-                    SimsPackage simsPackage = InstanceControllers.ReadPackage(package, package.Location, ThisInstance, fi);
-                    
-                                        
-                    
-                    List<SimsPackage> altered = InstanceControllers.CheckOrphanSingle(simsPackage, ThisInstance.Files.OfType<SimsPackage>().Where(x => x.HasBeenRead).ToList());
-                    SimsPackage prev = ThisInstance.Files.OfType<SimsPackage>().First(x => x.Identifier == simsPackage.Identifier);
-                    prev.UpdateFromData(simsPackage);
-                    SimsPackage orphanchecked = altered.First(x => x.Identifier == prev.Identifier);
-                    altered.Remove(orphanchecked);
-                    prev.UpdateFromOrphanCheck(orphanchecked);
-                    
-                    foreach (SimsPackage p in altered)
-                    {
-                        SimsPackage pp = ThisInstance.Files.OfType<SimsPackage>().First(x => x.Identifier == simsPackage.Identifier);
-                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("File {0} original Type: {1}, new type: {2}", pp.FileName, pp.Type, p.Type));
-                        pp.UpdateFromOrphanCheck(p);
-                        pp.WriteXML();
-                        UpdateInitialRead(pp);                        
-                    }
-                                        
-                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Read: {0}", simsPackage.FileName));                                                                       
-                    readPackages.Add(prev);
-                    prev.WriteXML();
-                    UpdateInitialRead(prev);
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Reading details of: {0}", ThisInstance.Packages[i].FileName));
+                    FileInfo fi = new(ThisInstance.Packages[i].Location);
+                    ThisInstance.Packages[i].ReadPackageDetails(ThisInstance);
+                    InstanceControllers.CheckOrphanSingle(ThisInstance.Packages[i], ThisInstance.Files.OfType<SimsPackage>().Where(x => x.HasBeenRead).ToList(), ThisInstance);
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Finished reading {0}", ThisInstance.Packages[i].FileName));
+                    UIAllModsContainer.ModsRead++;
                 });
                 runningTasks.Add(t);
             }
@@ -436,20 +421,19 @@ PackedFile Packages/////*.package
         UIAllModsContainer.InitialReadUpdate(simsPackage);        
     }
 
-    private void UpdateItem(string id, string name)
+    /*private void UpdateItem(string id, string name)
     {
         Guid Id = Guid.Parse(id);        
         if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("ID of {0} for updating: {1}", name, Id));
         SimsPackage package = readPackages.First(x => x.Identifier == Id);
         ThisInstance.Files[ThisInstance.Files.IndexOf(ThisInstance.Files.OfType<SimsPackage>().First(x => x.Identifier == Id))] = package;
         UIAllModsContainer.UpdateItem(package);
-    }
+    }*/
 
     private void PackagesChanged()
     {
         SetErrors();
     }
-
 
     private bool InitializeUIAllMods()
     {
@@ -565,11 +549,38 @@ PackedFile Packages/////*.package
         }
     }
 
+    EditLoadOrder EDO;
+
     private void EditLoadOrder()
     {
-        //throw new NotImplementedException();
+        LockInput = true;
+        EDO = EditLoadOrderPS.Instantiate() as EditLoadOrder;
+        EDO.PackageList = ThisInstance.Packages.Where(x => x.IsEnabled).ToList();
+        EDO.CloseEditLoadOrder += (b) => CloseEditLoadOrder(b);
+        AddChild(EDO);
     }
 
+    private void CloseEditLoadOrder(bool Save)
+    {
+        if (!Save)
+        {
+            RemoveChild(EDO);
+            EDO.QueueFree();
+        } else
+        {
+            foreach (LoadOrderItem item in EDO.LoadOrderItems)
+            {
+                int idx = ThisInstance.Packages.IndexOf(ThisInstance.Packages.First(x => x.Identifier == item.Identifier));
+                ThisInstance.Packages[idx].AllowInvokeDataChanged = true;
+                ThisInstance.Packages[idx].LoadOrder = item.LoadOrder;                
+                ThisInstance.LoadedProfile.EnabledPackages.First(x => x.PackageIdentifier == item.Identifier).LoadOrder = item.LoadOrder;
+            }
+            ThisInstance.WriteXML();
+            RemoveChild(EDO);
+            EDO.QueueFree();
+        }
+        LockInput = false;
+    }
 
     private void ExportProfile()
     {
@@ -793,7 +804,7 @@ PackedFile Packages/////*.package
 
     public void SetErrors()
     {        
-        CallDeferred(nameof(SetErrorsDeferred),ThisInstance._packages.Any(x => x.Orphan || x.Broken || x.OutOfDate || x.WrongGame));
+        CallDeferred(nameof(SetErrorsDeferred),ThisInstance.Packages.Any(x => x.Orphan || x.Broken || x.OutOfDate || x.WrongGame));
     }
 
     private void SetErrorsDeferred(bool errors)
@@ -854,14 +865,14 @@ PackedFile Packages/////*.package
     private void InstanceEdited()
     {
         ThisInstance.WriteXML();
-        UIAllModsContainer.UpdateProfilePackages();
+        //UIAllModsContainer.UpdateProfilePackages();
     }
 
 
     private void ProfileChanged(string profile, int idx)
     {
         if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Profile changed to {0}: {1}", idx, profile));
-        InstanceProfile pickedprofile = ThisInstance.InstanceProfiles.Where(x => x.ProfileName == profile).First();
+        InstanceProfile pickedprofile = ThisInstance.InstanceProfiles.First(x => x.ProfileName == profile);
         CurrentProfile = pickedprofile;        
         //TO DO: ADD PROFILE CHANGE HERE.
     }
@@ -876,15 +887,16 @@ PackedFile Packages/////*.package
                 {
                     ThisInstance.LoadedProfile.EnabledPackages.Remove(en);
                 }
-                ThisInstance.WriteXML();
+                //ThisInstance.WriteXML();
             }
 
             if (ThisInstance.Files.OfType<SimsPackage>().Any(x => x.IsEnabled))
             {
                 foreach (SimsPackage p in ThisInstance.Files.OfType<SimsPackage>().Where(x => x.IsEnabled))
                 {
-                    p.IsEnabled = false;
-                    p.LoadOrder = -1;
+                    int idx = ThisInstance.Packages.IndexOf(p); 
+                    ThisInstance.Packages[idx].IsEnabled = false;
+                    ThisInstance.Packages[idx].LoadOrder = -1;
                 }
             }
             
@@ -893,19 +905,20 @@ PackedFile Packages/////*.package
                 if (ThisInstance.LoadedProfile.EnabledPackages.Any(x => x.PackageIdentifier == pack.Identifier))
                 {
                     EnabledPackages ep = ThisInstance.LoadedProfile.EnabledPackages.First(x => x.PackageIdentifier == pack.Identifier);
-                    pack.IsEnabled = true;
-                    pack.LoadOrder = ep.LoadOrder;                
+                    int idx = ThisInstance.Packages.IndexOf(pack); 
+                    ThisInstance.Packages[idx].IsEnabled = true;
+                    ThisInstance.Packages[idx].LoadOrder = ep.LoadOrder;                
                 }
             }
 
-            CallDeferred(nameof(DeferredUpdatePP));
+            //CallDeferred(nameof(DeferredUpdatePP));
         }){IsBackground = true}.Start();
         
     }
 
     private void DeferredUpdatePP()
     {
-        UIAllModsContainer.UpdateProfilePackages();
+        //UIAllModsContainer.UpdateProfilePackages();
     }
 
     private void OpenProfileManagementWindow()

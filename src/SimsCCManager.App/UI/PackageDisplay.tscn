@@ -1,4 +1,4 @@
-[gd_scene load_steps=22 format=3 uid="uid://c4rjghpqcjk60"]
+[gd_scene load_steps=23 format=3 uid="uid://c4rjghpqcjk60"]
 
 [ext_resource type="Script" uid="uid://da8nog1p33e81" path="res://UI/PackageDisplay.cs" id="1_i7mej"]
 [ext_resource type="PackedScene" uid="uid://uo2724xgb1uw" path="res://UI/Background.tscn" id="2_tqnmv"]
@@ -7,6 +7,7 @@
 [ext_resource type="PackedScene" uid="uid://3inkeuorcdqn" path="res://UI/RefreshingWait.tscn" id="5_4bg60"]
 [ext_resource type="PackedScene" uid="uid://dxpbhvncqax7u" path="res://UI/PackageDisplay/NewDownloadsContainer.tscn" id="5_aasf2"]
 [ext_resource type="PackedScene" uid="uid://c5syo7ja1jgbg" path="res://UI/PackageDisplay/PackageManagementButtons.tscn" id="6_j2qpk"]
+[ext_resource type="PackedScene" uid="uid://b6bk4cshppvfb" path="res://UI/PackageDisplay/EditLoadOrder.tscn" id="7_qwrwm"]
 [ext_resource type="PackedScene" uid="uid://7mik2db8co2o" path="res://UI/PackageDisplay/ProfilesManagement.tscn" id="7_vmldb"]
 [ext_resource type="PackedScene" uid="uid://dolbjbnv8hxy2" path="res://UI/PackageDisplay/GameStartControls.tscn" id="8_fccsn"]
 [ext_resource type="PackedScene" uid="uid://32whu6sh6ha1" path="res://UI/PackageDisplay/SettingsAndHelpControls.tscn" id="9_kqj75"]
@@ -45,6 +46,7 @@ CategoryManagementWindowPS = ExtResource("17_dynkg")
 UIAllModsPS = ExtResource("3_io27h")
 RefreshingPS = ExtResource("5_4bg60")
 ErrorListPS = ExtResource("15_r8u1u")
+EditLoadOrderPS = ExtResource("7_qwrwm")
 AddFilesDialog = NodePath("AddFileDialog")
 AddExeDialog = NodePath("AddExeDialog")
 AddFolderDialog = NodePath("AddFolderDialog")

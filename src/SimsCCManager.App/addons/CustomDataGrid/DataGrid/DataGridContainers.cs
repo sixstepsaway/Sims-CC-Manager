@@ -179,7 +179,7 @@ namespace DataGridContainers
         public string Data {get; set;}
         public bool Blank {get; set;}
         public bool Resizeable {get; set;}
-        public int StartingWidth {get; set;}
+        public int Width {get; set;}
         public DataGridContentType ContentType {get; set;} 
         public CellOptions CellType {get; set;}
         public bool ShowHeader {get; set;} = false;

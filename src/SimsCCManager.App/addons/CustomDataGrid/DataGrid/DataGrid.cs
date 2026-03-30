@@ -40,6 +40,9 @@ public partial class DataGrid : Control
 	public delegate void DataChangedEvent(DataGridRow rowIdx, string dataChanged, int Item);
 	public DataChangedEvent DataChanged;
 
+	public delegate void ToggleOrAdjustmentChangedEvent(DataGridRow row);
+	public ToggleOrAdjustmentChangedEvent ToggleOrAdjustmentChanged;
+
 	public delegate void KillTooltipEvent();
 	public KillTooltipEvent KillTooltip;
 
@@ -415,10 +418,11 @@ public partial class DataGrid : Control
 			//PreviousSelection = -1;
 
 			int currentValue = (int)val;
-
-			if (currentValue != ScrollPosition + 1 && currentValue != ScrollPosition - 1)
+			ScrollChangeRows(currentValue);
+			/*if (currentValue != ScrollPosition + 1 && currentValue != ScrollPosition - 1)
 			{
-				ScrollRepopulateRows(currentValue);
+				//ScrollRepopulateRows(currentValue);
+				ScrollChangeRows(currentValue);
 			} else
 			{
 				if (currentValue > ScrollPosition)
@@ -430,10 +434,58 @@ public partial class DataGrid : Control
 					ScrollPosition = currentValue;
 					OnScrollBarUp(currentValue);
 				}
-			}
+			}*/
 			ScrollChecker = false;
 		}){IsBackground = true}.Start();		
     }
+
+	private void ScrollChangeRows(int from)
+	{
+		if (from == -1) from = ScrollPosition;
+		new Thread(() => {		
+			if (Populating || !FirstLoaded) { 
+				return;			
+			}
+			if (RowData.Count == 0) return;
+			Populating = true;
+			CallDeferred(nameof(SetScrollBar));	
+
+			int rowsend = 0;
+			int rowsstart = 0;
+			rowsstart = from;
+			int rowsonscreenint = (int)RowsOnScreen;
+			rowsend = from + rowsonscreenint;		
+
+			
+			if (RowsOnScreen > RowData.Count){
+				rowsend = RowData.Count;
+			} else if (from <= RowsOnScreen){
+				rowsstart = from;
+				rowsend = (int)RowsOnScreen + from;
+			}
+			
+			PleasePassLog(string.Format("Rows start: {0}, Rows End: {1}", rowsstart, rowsend));
+
+			List<DataGridRow> _rows = [..RowData.OrderBy(x => x.PopulatedIdx)];
+
+			List<DataGridRow> _rowdata = new();
+			if (RowData.Count <= (int)RowsOnScreen)
+			{
+				_rowdata = [..RowData];
+			} else
+			{
+				_rowdata = _rows.GetRange(rowsstart, (int)RowsOnScreen);
+			}
+
+
+			for(int i = 0; i < _rowdata.Count; i++){
+				ChangeRow(_rowdata[i], i);
+			}
+
+			ScrollPosition = from;
+			Populating = false;
+		}){IsBackground = true}.Start();
+	}
 
 	private void ScrollRepopulateRows(int currentValue){
 		ScrollerTasks.Enqueue(new (() => { 
@@ -535,7 +587,7 @@ public partial class DataGrid : Control
     private void UpdateHeaderRow(bool rowychanged = false){
 		if (HeaderHolder.GetChildCount() != 0){
 			foreach (DataGridHeaderCell header in HeaderCells){
-				Headers[Headers.IndexOf(Headers.Where(x => x.Title == header.LabelText).First())].StartingWidth = (int)header.CellSize.X;
+				Headers[Headers.IndexOf(Headers.First(x => x.Title == header.LabelText))].Width = (int)header.CellSize.X;
 			}
 			HeaderRow.QueueFree();
 			HeaderCells.Clear();
@@ -566,13 +618,14 @@ public partial class DataGrid : Control
 				headercell.FontSize = DefaultHeaderTextSize * (HeaderTextSize/100);
 				headercell.dataGrid = this;
 				headercell.Name = header.Title;
+				headercell.Blank = header.Blank;
 				HeaderAccentColors.AddRange(headercell.Accents);
-				if (header.Blank){
+				/*if (header.Blank){
 					headercell.SetSize(new Vector2(25, HeaderY));
 				} else {
 					int g = header.Title.Length * 10;
 					headercell.SetSize(new Vector2(g, HeaderY));
-				}
+				}*/
 				headercell.LabelText = header.Title;
 				headercell.DraggerColor = AccentColor;
 				headercell.HeaderIndex = i;
@@ -596,20 +649,21 @@ public partial class DataGrid : Control
 				i++;
 				DataGridHeaderSizeAdjuster sizeAdjuster = SizeAdjusterPS.Instantiate() as DataGridHeaderSizeAdjuster;
 				sizeAdjuster.AttachedHeaderCell = headercell;
-				sizeAdjuster.HeaderResized += (idx) => HeaderResized(idx);
+				sizeAdjuster.HeaderResized += (idx) => HeaderResized(header.HeaderIdx, idx);
 				sizeAdjuster.Resizeable = header.Resizeable;
 				if (!header.Blank && header.CellType != CellOptions.Picture){
 					int min = header.Title.Length * (headercell.FontSize / 2);
-					if (header.StartingWidth < min){
-						header.StartingWidth = min;
+					if (header.Width < min){
+						header.Width = min;
 					}
 					sizeAdjuster.HeaderMinsize = min;
+					headercell.StartingWidth = header.Width;					
 				} else if (header.CellType == CellOptions.Picture){
 					headercell.StartingWidth = (int)header.PictureCellSize.X;
 					sizeAdjuster.HeaderMinsize = headercell.StartingWidth;
 				} else {
-					headercell.StartingWidth = header.StartingWidth;
-					sizeAdjuster.HeaderMinsize = 35;
+					headercell.StartingWidth = header.Width;
+					sizeAdjuster.HeaderMinsize = 100;
 				}
 				headerRow.HeaderSliders.Add(sizeAdjuster);
 				headerRow.HeaderRow.AddChild(sizeAdjuster);	
@@ -734,38 +788,223 @@ public partial class DataGrid : Control
 		DontAnnounceEdit = false;
 	}
 
-	ConcurrentBag<DataGridRow> initialUpdateRows = new();
-
-	public void InitialUpdateRow(DataGridRow importedRowData, bool newSubrow = false)
+	public void EditRow(DataGridRow importedRowData, string Data = null, bool newSubrow = false)
 	{		
 		DontAnnounceEdit = true;
 		PleasePassLog(string.Format("Checking VisibleRows for row {0}", importedRowData.OverallIdx));
 		if (VisibleRows.Any(x => x.RowData.Identifier == importedRowData.Identifier))
 		{			
 			PleasePassLog(string.Format("Found row {0} (P {1}) in visible rows!", importedRowData.OverallIdx, importedRowData.PopulatedIdx));
-			DataGridRow ogdata = RowData.First(x => x.Identifier == importedRowData.Identifier);
-			importedRowData.Selected = ogdata.Selected;
-			importedRowData.OverallIdx = ogdata.OverallIdx;
-			importedRowData.PopulatedIdx = ogdata.PopulatedIdx;
-			RowData[RowData.IndexOf(ogdata)] = importedRowData;	
+			int ogdata = RowData.IndexOf(RowData.First(x => x.Identifier == importedRowData.Identifier));
+			importedRowData.Selected = RowData[ogdata].Selected;
+			importedRowData.OverallIdx = RowData[ogdata].OverallIdx;
+			importedRowData.PopulatedIdx = RowData[ogdata].PopulatedIdx;
+			RowData[ogdata] = importedRowData;	
 			
 			int vidx = VisibleRows.IndexOf(VisibleRows.First(x => x.RowData.Identifier == importedRowData.Identifier));
 
-			//initialUpdateRows.Add(importedRowData);
-
-			EditRow(importedRowData, vidx);
-			//CallDeferred(nameof(DeferredRowUpdate), importedRowData.PopulatedIdx, vidx, importedRowData.OverallIdx, importedRowData.Identifier.ToString());
-
+			if (Data == null) EditRow(importedRowData, vidx); else EditRow(importedRowData, vidx, Data);
+			
 		} else
 		{
-			DataGridRow ogdata = RowData.First(x => x.Identifier == importedRowData.Identifier);
-			importedRowData.Selected = ogdata.Selected;
-			importedRowData.OverallIdx = ogdata.OverallIdx;
-			importedRowData.PopulatedIdx = ogdata.PopulatedIdx;
-			RowData[RowData.IndexOf(ogdata)] = importedRowData;	
+			int ogdata = RowData.IndexOf(RowData.First(x => x.Identifier == importedRowData.Identifier));
+			importedRowData.Selected = RowData[ogdata].Selected;
+			importedRowData.OverallIdx = RowData[ogdata].OverallIdx;
+			importedRowData.PopulatedIdx = RowData[ogdata].PopulatedIdx;
+			RowData[ogdata] = importedRowData;	
 			PleasePassLog(string.Format("Row {0} isn't a visible row, so we don't need to update it.", importedRowData.OverallIdx));
 		}
 		DontAnnounceEdit = false;
+	}
+
+	private void ChangeRow(DataGridRow data, int vidx)
+	{	
+		DontAnnounceEdit = true;
+		int ogpidx = VisibleRows[vidx].RowData.PopulatedIdx;
+		string ogref = VisibleRows[vidx].RowData.RowRef;
+		PleasePassLog(string.Format("Changing row {0} ({1}) to row {2} ({3})", ogpidx, ogref, data.PopulatedIdx, data.RowRef));
+		AllRows[VisibleRows[vidx].RowData.PopulatedIdx] = new();
+		VisibleRows[vidx].RowData = data;
+		if (data.UseCategoryColor)
+		{
+			VisibleRows[vidx].BackgroundColor = data.BackgroundColor;
+			VisibleRows[vidx].TextColor = data.TextColor; 
+		} else if (UniversalMethods.IsEven(data.PopulatedIdx))
+		{				
+			VisibleRows[vidx].BackgroundColor = AlternateRowColor;
+			VisibleRows[vidx].TextColor = AlternateRowTextColor; 
+		} else
+		{			
+			VisibleRows[vidx].BackgroundColor = MainRowColor;
+			VisibleRows[vidx].TextColor = MainRowTextColor; 
+		}
+		if (Headers.Any(x => x.CellType == CellOptions.Toggle))
+		{
+			VisibleRows[vidx].ToggleData = Headers.First(x => x.CellType == CellOptions.Toggle).Data;
+		}
+
+
+		VisibleRows[vidx].OverallIndex = data.OverallIdx;
+		VisibleRows[vidx].PopulatedIndex = data.PopulatedIdx;
+
+		if (Headers.Any(x => x.CellType == CellOptions.Toggle))
+		{
+			VisibleRows[vidx].ToggleData = Headers.First(x => x.CellType == CellOptions.Toggle).Data;
+		}
+		int hc = 0;
+
+		foreach (DataGridHeader head in Headers)
+		{
+			PleasePassLog(string.Format("does it reach here"));
+			int headIdx = head.HeaderIdx;
+			int cellIdx = head.ItemIndex;
+			if (head.ShowHeader)
+			{
+				PleasePassLog(string.Format("does it reach here"));
+				Vector2 size = new(0, 0);
+				DataGridHeaderCell header = HeaderRow.HeaderCells[hc];
+				DataGridHeaderSizeAdjuster sizeadjuster = HeaderRow.HeaderSliders[hc];
+				DataGridCell cell = VisibleRows[vidx].RowHeaders[headIdx].Cell;
+				cell.CellOptions = head.CellType;
+				cell.dataGrid = this;
+				cell.AccentColor = AccentColor;
+				cell.NumberAsBytes = head.NumberAsBytes;
+				cell.IncreaseHeaderSize += (n) => IncreaseNumColumnSize(n, cell);
+				if (cell.CellOptions == CellOptions.Icons)
+				{
+					cell.Icons = data.RowIcons;
+				}
+				if (cell.CellOptions == CellOptions.Toggle)
+				{
+					bool toggleresult = ToBool(data.Items[cellIdx].ItemContent);
+					VisibleRows[vidx].Toggled = toggleresult;
+				}
+				if (cell.CellOptions == CellOptions.Picture)
+				{
+					cell.ImageLocation = data.Items[cellIdx].ItemContent;
+				}
+				if (cell.CellOptions == CellOptions.AdjustableNumber)
+				{
+					cell.NumberContent = data.AdjustmentNumber;
+					cell.ToggleLinked = LinkToggleToAdjustmentNumber;
+					VisibleRows[vidx].AdjustmentNumber = data.AdjustmentNumber;					
+				}
+				if (cell.CellOptions == CellOptions.Int)
+				{
+					cell.NumberContent = int.Parse(data.Items[cellIdx].ItemContent);
+				}
+				cell.TextContent = data.Items[cellIdx].ItemContent;
+				PleasePassLog(string.Format("does it reach here (hc {0})", hc));
+				hc++;
+			}
+		}
+		PleasePassLog(string.Format("does it reach here"));
+		AllRows[data.PopulatedIdx] = VisibleRows[vidx];	
+		PleasePassLog(string.Format("FINISHED changing row {0} to row {1}", ogpidx, data.PopulatedIdx));
+		DontAnnounceEdit = false;
+	}
+
+    private void IncreaseNumColumnSize(int n, DataGridCell cell)
+    {
+		int smallest = 30;
+		int small = 35;
+		int medium = 40;
+		int big = 45;
+		int biggest = 50;
+		int huge = 55;
+		int hugest = 60;
+		int excessive = 65;
+
+        if (n < 10)
+		{
+			cell.AssociatedHeaderSizer.HeaderMinsize = smallest;
+		} else if (n < 100)
+		{
+			cell.AssociatedHeaderSizer.HeaderMinsize = small;
+		} else if (n < 1000)
+		{
+			cell.AssociatedHeaderSizer.HeaderMinsize = medium;
+		} else if (n < 10000)
+		{
+			cell.AssociatedHeaderSizer.HeaderMinsize = big;
+		} else if (n < 100000)
+		{
+			cell.AssociatedHeaderSizer.HeaderMinsize = biggest;
+		} else if (n < 1000000)
+		{
+			cell.AssociatedHeaderSizer.HeaderMinsize = huge;
+		} else if (n < 10000000)
+		{
+			cell.AssociatedHeaderSizer.HeaderMinsize = hugest;
+		} else
+		{
+			cell.AssociatedHeaderSizer.HeaderMinsize = excessive;
+		} 
+    }
+
+    private void EditRow(DataGridRow data, int vidx, string Data)
+	{		
+		VisibleRows[vidx].RowData = data;
+		if (data.UseCategoryColor)
+		{
+			VisibleRows[vidx].BackgroundColor = data.BackgroundColor;
+			VisibleRows[vidx].TextColor = data.TextColor; 
+		} else if (UniversalMethods.IsEven(data.PopulatedIdx))
+		{				
+			VisibleRows[vidx].BackgroundColor = AlternateRowColor;
+			VisibleRows[vidx].TextColor = AlternateRowTextColor; 
+		} else
+		{			
+			VisibleRows[vidx].BackgroundColor = MainRowColor;
+			VisibleRows[vidx].TextColor = MainRowTextColor; 
+		}
+		if (Headers.Any(x => x.CellType == CellOptions.Toggle))
+		{
+			VisibleRows[vidx].ToggleData = Headers.First(x => x.CellType == CellOptions.Toggle).Data;
+		}
+
+		if (Headers.Any(x => x.Data == Data))
+		{
+			DataGridHeader head = Headers.First(x => x.Data == Data);
+			int hc = Headers.Where(x => x.ShowHeader).ToList().IndexOf(head);
+			int headIdx = head.HeaderIdx;
+			int cellIdx = head.ItemIndex;
+			if (head.ShowHeader)
+			{
+				Vector2 size = new(0, 0);
+				DataGridHeaderCell header = HeaderRow.HeaderCells[hc];
+				DataGridHeaderSizeAdjuster sizeadjuster = HeaderRow.HeaderSliders[hc];
+				DataGridCell cell = VisibleRows[vidx].RowHeaders[hc].Cell;
+				cell.CellOptions = head.CellType;
+				cell.dataGrid = this;
+				cell.AccentColor = AccentColor;
+				cell.NumberAsBytes = head.NumberAsBytes;
+				if (cell.CellOptions == CellOptions.Icons)
+				{
+					cell.Icons = data.RowIcons;
+				}
+				if (cell.CellOptions == CellOptions.Toggle)
+				{
+					bool toggleresult = ToBool(data.Items[cellIdx].ItemContent);
+					VisibleRows[vidx].Toggled = toggleresult;
+				}
+				if (cell.CellOptions == CellOptions.Picture)
+				{
+					cell.ImageLocation = data.Items[cellIdx].ItemContent;
+				}
+				if (cell.CellOptions == CellOptions.AdjustableNumber)
+				{
+					cell.NumberContent = data.AdjustmentNumber;
+					VisibleRows[vidx].AdjustmentNumber = data.AdjustmentNumber;
+					cell.ToggleLinked = LinkToggleToAdjustmentNumber;
+				}
+				if (cell.CellOptions == CellOptions.Int)
+				{
+					cell.NumberContent = int.Parse(data.Items[cellIdx].ItemContent);
+				}
+				cell.TextContent = data.Items[cellIdx].ItemContent;
+			}
+		}		
 	}
 
 	private void EditRow(DataGridRow data, int vidx)
@@ -801,7 +1040,6 @@ public partial class DataGrid : Control
 				DataGridHeaderSizeAdjuster sizeadjuster = HeaderRow.HeaderSliders[hc];
 				DataGridCell cell = VisibleRows[vidx].RowHeaders[hc].Cell;
 				cell.CellOptions = head.CellType;
-				cell.FirstLoaded = FirstLoaded;
 				cell.dataGrid = this;
 				cell.AccentColor = AccentColor;
 				cell.NumberAsBytes = head.NumberAsBytes;
@@ -832,14 +1070,6 @@ public partial class DataGrid : Control
 				hc++;
 			}
 		}
-	}
-
-	private void DeferredRowUpdate(int popidx, int vidx, int overallidx, string identifier)
-	{
-		
-		RemoveRow(popidx, vidx);
-		CreateRow(initialUpdateRows.First(x => x.Identifier == Guid.Parse(identifier)), overallidx);
-		AddRow(popidx, vidx);
 	}
 
     public void PopulateRows(int from = -1){
@@ -916,18 +1146,19 @@ public partial class DataGrid : Control
 			
 			
 			
-			if (ThreadPool.PendingWorkItemCount > 0)
+			/*if (ThreadPool.PendingWorkItemCount > 0)
 			{
-				foreach (Task t in runningTasks){
-						t.Start();
+				foreach (DataGridRow row in _rowdata){					
+					PleasePassLog(string.Format("Creating row {0}: (Item {1})", row.PopulatedIdx, row.OverallIdx));
+					bool r = CreateRow(row, row.OverallIdx);					
 				}
 			} else
-			{
+			{*/
 				Parallel.ForEach(runningTasks, ParallelSettings, t =>
 				{
 					t.Start();
 				});
-			}
+			//}
 		
 
 
@@ -1033,14 +1264,7 @@ public partial class DataGrid : Control
 		row.RowData = importedRowData;
 		row.Datagrid = this;
 
-		row.Name = importedRowData.RowRef;		
-
-		row.RowEdited += (r, c) => RowWasEdited(r, c);
-		row.AdjustmentNumberChanged += (x, c, n) => AdjustableNumberOneNumberChanged(x, c, n);
-		row.AdjustmentNumberChangedPropagate += (x, c) => AdjustmentNumberAdjusted(x, c);
-		row.OverallIndex = num;
-		row.PopulatedIndex = importedRowData.PopulatedIdx;
-		row.RowSelected += (s) => RowSelected(row.RowData.PopulatedIdx, s);
+		//row.Name = importedRowData.RowRef;		
 
 		if (importedRowData.UseCategoryColor)
 		{
@@ -1083,7 +1307,6 @@ public partial class DataGrid : Control
 				rowhead.Cell = cell;
 				cell.CellOptions = head.CellType;
 				cell.thisRow = row;
-				cell.FirstLoaded = FirstLoaded;
 				cell.dataGrid = this;
 				cell.AccentColor = AccentColor;
 				cell.NumberAsBytes = head.NumberAsBytes;
@@ -1137,7 +1360,7 @@ public partial class DataGrid : Control
 				PleasePassLog(string.Format("Cell {0} for row {1} size: {2}", headIdx, num, size));
 				cell.TextContent = importedRowData.Items[cellIdx].ItemContent;
 				cell.Editable = head.ContentEditable;
-				cell.ToggleFlipped += () => ToggleItem(cell.Toggled, row.RowData);
+				//cell.ToggleFlipped += () => ToggleItem(cell.Toggled, row.RowData);
 				cell.AssociatedHeader = header;
 				cell.AssociatedHeaderSizer = sizeadjuster;
 				cell.ProduceTooltip += (t) => TooltipProduced(t);
@@ -1183,6 +1406,16 @@ public partial class DataGrid : Control
 			minigrid.Visible = false;
 		}
 
+		
+		row.RowEdited += (r, c) => RowWasEdited(r, c);
+		row.AdjustmentNumberChanged += (x, c, n) => AdjustableNumberOneNumberChanged(x, c, n);
+		//row.AdjustmentNumberChangedPropagate += (x, c) => AdjustmentNumberAdjusted(x, c);
+		row.OverallIndex = num;
+		row.PopulatedIndex = importedRowData.PopulatedIdx;
+		row.RowSelected += (i, s) => RowSelected(i, s);
+		row.CellToggled += (t, r) => RowToggled(t, r);
+
+
 		row.SetCellSettings();
 		AllRows[importedRowData.PopulatedIdx] = row;
 		PleasePassLog(string.Format("Created row {0} and put it into AllRows at {1}", importedRowData.OverallIdx, importedRowData.PopulatedIdx));
@@ -1190,7 +1423,18 @@ public partial class DataGrid : Control
 		return true;
 	}
 
-
+	public void ToggleItem(bool WhichWay, DataGridRow row)
+	{
+		row = RowData.First(x => x.Identifier == row.Identifier);
+		row.Toggled = WhichWay;
+		if (VisibleRows.Any(x => x.RowData.Identifier == row.Identifier))
+		{
+			int idx = VisibleRows.IndexOf(VisibleRows.First(x => x.RowData.Identifier == row.Identifier));
+			VisibleRows[idx].DontAnnounceEdit = true;
+			VisibleRows[idx].Toggle(WhichWay);
+			VisibleRows[idx].DontAnnounceEdit = false;			
+		}
+	}
 
 
 	
@@ -1347,59 +1591,75 @@ public partial class DataGrid : Control
 		} else if (c.CellOptions == CellOptions.Toggle)
 		{
 			RowData.First(x => x.Identifier == r.RowData.Identifier).Toggled = r.Toggled;			
+			if (r.AdjustNumberOnlyIfToggled)
+			{
+				if (r.Toggled)
+				{
+					//RowData.First(x => x.Identifier == r.RowData.Identifier).AdjustmentNumber = r.AdjustmentNumber;
+					AdjustableNumberEnabledAdd(RowData.First(x => x.Identifier == r.RowData.Identifier), false);
+				} else
+				{
+					AdjustableNumberEnabledAdd(RowData.First(x => x.Identifier == r.RowData.Identifier), true);
+				}
+							
+			}
 		}
-		ItemToggledAdj?.Invoke(RowData.First(x => x.Identifier == r.RowData.Identifier));
+		//ItemToggledAdj?.Invoke(RowData.First(x => x.Identifier == r.RowData.Identifier));
     }
 
 	private void AdjustableNumberEnabledAdd(DataGridRow row, bool remove){
 		List<DataGridRow> reorderlist = [.. RowData.Where(x => x.Toggled)];
-
+		DontAnnounceEdit = true;
 		if (remove){			
-			row.AdjustmentNumber = -1;	
 			RowData.First(x => x.Identifier == row.Identifier).AdjustmentNumber = -1;
 			reorderlist.Remove(RowData.First(x => x.Identifier == row.Identifier));
 			reorderlist = [.. reorderlist.OrderBy(x => x.AdjustmentNumber)];
 			for (int c = 0; c < reorderlist.Count; c++) {
+				DontAnnounceEdit = true;
 				reorderlist[c].AdjustmentNumber = c;
 				RowData.First(x => x.Identifier == reorderlist[c].Identifier).AdjustmentNumber = c;
 				if (VisibleRows.Any(x => x.RowData.Identifier == reorderlist[c].Identifier)){
 					VisibleRows.First(x => x.RowData.Identifier == reorderlist[c].Identifier).AdjustmentNumber = c;
-					UpdateRow(reorderlist[c]);
 				}
+				DontAnnounceEdit = false;
+				InvokeDataChanged(reorderlist[c], Headers.First(x => x.CellType == CellOptions.AdjustableNumber).Data, Headers.IndexOf(Headers.First(x => x.CellType == CellOptions.AdjustableNumber)));
 			}
 		} else {
 			reorderlist = reorderlist.OrderBy(x => x.AdjustmentNumber).ToList();			
 			row.AdjustmentNumber = reorderlist.Count-1;	
 			if (VisibleRows.Any(x => x.RowData.Identifier == row.Identifier)){
 				VisibleRows.First(x => x.RowData.Identifier == row.Identifier).AdjustmentNumber = row.AdjustmentNumber;
-				UpdateRow(row);
-			}	
+			}				
 		}
-				
+		DontAnnounceEdit = false;
+		InvokeDataChanged(row, Headers.First(x => x.CellType == CellOptions.AdjustableNumber).Data, Headers.IndexOf(Headers.First(x => x.CellType == CellOptions.AdjustableNumber)));		
 	}
 
 	private void AdjustableNumberOneNumberChanged(DataGridRowUi changed, int oldnum, int newnum)
 	{
+		DontAnnounceEdit = true;
 		int cellidx = RowData[0].Items.IndexOf(RowData[0].Items.First(x => x.CellType == CellOptions.AdjustableNumber));		
 		if (RowData.Any(x => x.AdjustmentNumber == newnum))
 		{
-			DataGridRow rowSwapped = RowData.First(x => x.AdjustmentNumber == newnum);
+			int rowSwapped = RowData.IndexOf(RowData.First(x => x.AdjustmentNumber == newnum));
 			if (RowData.Any(x => x.AdjustmentNumber == oldnum))
 			{
-				DataGridRow rowChanged = RowData.First(x => x.AdjustmentNumber == oldnum);
-				rowChanged.AdjustmentNumber = newnum;
-				rowSwapped.AdjustmentNumber = oldnum;
-				if (VisibleRows.Any(x => x.OverallIndex == rowChanged.OverallIdx)) VisibleRows.First(x => x.OverallIndex == rowChanged.OverallIdx).AdjustmentNumber = rowChanged.AdjustmentNumber;
-				if (VisibleRows.Any(x => x.OverallIndex == rowSwapped.OverallIdx)) VisibleRows.First(x => x.OverallIndex == rowSwapped.OverallIdx).AdjustmentNumber = rowSwapped.AdjustmentNumber;
-				InvokeDataChanged(rowChanged, Headers[cellidx].Data, cellidx);
-				InvokeDataChanged(rowSwapped, Headers[cellidx].Data, cellidx);
+				int rowChanged = RowData.IndexOf(RowData.First(x => x.AdjustmentNumber == oldnum));
+				RowData.First(x => x.AdjustmentNumber == oldnum).AdjustmentNumber = newnum;
+				RowData[rowSwapped].AdjustmentNumber = oldnum;
+				if (VisibleRows.Any(x => x.OverallIndex == RowData[rowChanged].OverallIdx)) VisibleRows.First(x => x.OverallIndex == RowData[rowChanged].OverallIdx).AdjustmentNumber = RowData[rowChanged].AdjustmentNumber;
+				if (VisibleRows.Any(x => x.OverallIndex == RowData[rowSwapped].OverallIdx)) VisibleRows.First(x => x.OverallIndex == RowData[rowSwapped].OverallIdx).AdjustmentNumber = RowData[rowSwapped].AdjustmentNumber;
+				DontAnnounceEdit = false;
+				InvokeDataChanged(RowData[rowChanged], Headers[cellidx].Data, cellidx);
+				InvokeDataChanged(RowData[rowSwapped], Headers[cellidx].Data, cellidx);
 			}
 		} else if (RowData.Any(x => x.AdjustmentNumber == oldnum))
 		{
-			DataGridRow rowChanged = RowData.First(x => x.AdjustmentNumber == oldnum);
-			rowChanged.AdjustmentNumber = newnum;
-			if (VisibleRows.Any(x => x.OverallIndex == rowChanged.OverallIdx)) VisibleRows.First(x => x.OverallIndex == rowChanged.OverallIdx).AdjustmentNumber = rowChanged.AdjustmentNumber;
-			InvokeDataChanged(rowChanged, Headers[cellidx].Data, cellidx);
+			int rowChanged = RowData.IndexOf(RowData.First(x => x.AdjustmentNumber == oldnum));			
+			RowData[rowChanged].AdjustmentNumber = newnum;
+			if (VisibleRows.Any(x => x.OverallIndex == RowData[rowChanged].OverallIdx)) VisibleRows.First(x => x.OverallIndex == RowData[rowChanged].OverallIdx).AdjustmentNumber = RowData[rowChanged].AdjustmentNumber;
+			DontAnnounceEdit = false;
+			InvokeDataChanged(RowData[rowChanged], Headers[cellidx].Data, cellidx);
 		}
 		
 	}
@@ -1465,9 +1725,9 @@ public partial class DataGrid : Control
 		}
 	}
 
-    public void ToggleItem(bool toggle, DataGridRow row)
+    public void RowToggled(bool toggle, DataGridRowUi row)
     {
-		DataGridRow thisRow = row;
+		DataGridRow thisRow = row.RowData;
 		int togglecell = thisRow.Items.IndexOf(thisRow.Items.First(x => x.CellType == CellOptions.Toggle));
 		thisRow.Items[togglecell].ItemContent = toggle.ToString();
 		thisRow.Toggled = toggle;
@@ -1700,11 +1960,13 @@ public partial class DataGrid : Control
 		PleasePassLog(statement);
 	}
 
-	private void HeaderResized(int idx){		
+	private void HeaderResized(int HeaderIdx, int idx){		
 		DataGridHeaderCell header = HeaderRow.HeaderCells[idx];			
 		foreach (DataGridRowUi row in VisibleRows){
 			if (row != null) row.Cells[idx].SetSize(new(header.CellSize.X, RowHeight));
 		}
+		Headers.First(x => x.HeaderIdx == HeaderIdx).Width = (int)header.CellSize.X;
+		HeadersChanged?.Invoke(Headers);
 	}
 
 	private bool LastSortAscending = false;
@@ -2349,7 +2611,6 @@ public partial class DataGrid : Control
 									VisibleRows.First(x => x.PopulatedIndex == idx).Toggle(toggle);
 								}
 								RowData[idx].Toggled = toggle;
-								//RowsUnhidden[oidx].Toggled = toggle;
 								AdjustableNumberEnabledAdd(RowData[idx], !toggle);
 							} else {
 								List<DataGridRow> selectedRows = RowData.Where(x => x.Selected).ToList();
@@ -2371,8 +2632,7 @@ public partial class DataGrid : Control
 										AdjustableNumberEnabledAdd(RowData[i], !toggle);
 									}					
 								}
-							}
-							
+							}							
 						}
 					}
 					if (RowData.Any(x => x.Selected)) SelectedRows = RowData.Where(x => x.Selected).ToList();

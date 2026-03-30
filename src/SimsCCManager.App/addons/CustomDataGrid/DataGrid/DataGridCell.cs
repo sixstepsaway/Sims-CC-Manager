@@ -3,6 +3,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Data;
 using System.IO;
 using System.Linq;
 
@@ -181,8 +182,12 @@ public partial class DataGridCell : Control
 			{
 				PotentialTooltip = value.ToString();
 			}
+			IncreaseHeaderSize?.Invoke(NumberContent);
 		}
 	}
+
+	public delegate void IncreaseHeaderSizeEvent(int count);
+	public IncreaseHeaderSizeEvent IncreaseHeaderSize;
 
 	private void ChangeNumHolderText(string text)
 	{
@@ -194,7 +199,7 @@ public partial class DataGridCell : Control
 		get { return _toggled; }
 		set { _toggled = value; 
 			CallDeferred(nameof(ToggleSelectedImages), value); 			
-			ToggleFlipped?.Invoke();
+			if (FirstLoaded) ToggleFlipped?.Invoke();
 		}
 	}
 
@@ -250,7 +255,9 @@ public partial class DataGridCell : Control
 	public DataGridHeaderCell AssociatedHeader;
 	public DataGridHeaderSizeAdjuster AssociatedHeaderSizer;
 	public List<DataGridIconOption> IconList = new();
-	public bool FirstLoaded = false;
+	public bool FirstLoaded {
+		get { return thisRow.Datagrid.FirstLoaded; }
+	}
 	private bool _hovering;
 	public bool Hovering { get {return _hovering; }
 	set {_hovering = value;

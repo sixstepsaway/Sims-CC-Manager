@@ -264,12 +264,12 @@ namespace SimsCCManager.SettingsSystem
 
         public bool IsThemeLight()
         {
-            if (BackgroundColor.Luminance < 0.5) return true; else return false;
+            if (BackgroundColor.Luminance > 0.5) return true; else return false;
         }
 
         public bool IsPropertyLight(Color property)
         {
-            if (property.Luminance < 0.5) return true; else return false;
+            if (property.Luminance > 0.5) return true; else return false;
         }
     }
 }

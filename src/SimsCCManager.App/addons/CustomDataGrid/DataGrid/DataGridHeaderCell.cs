@@ -14,7 +14,16 @@ public partial class DataGridHeaderCell : Control
 	public event HeaderClickedEvent HeaderClicked;
 	public delegate void ColumnMovedEvent(int headerIdx, int HeaderNewLocation);
 	public ColumnMovedEvent ColumnMoved;
-	public string LabelText = "";
+	private  string _labeltext;
+	public  string LabelText 
+	{
+		get { return  _labeltext; }
+		set {  _labeltext = value; 
+			if (!string.IsNullOrWhiteSpace(value) && !Blank) {
+				HeaderLabel.Text = LabelText;
+			}
+		}
+	}
 	public bool Blank = false;
 	private bool _sorted;
 	public bool Sorted { 
@@ -66,7 +75,13 @@ public partial class DataGridHeaderCell : Control
 	public Vector2 CellSize = new();
 	public int HeaderIndex;
 	public string HeaderData;
-	public int StartingWidth;
+	private  int _startingwidth;
+	public  int StartingWidth 
+	{
+		get { return  _startingwidth; }
+		set {  _startingwidth = value; 
+		SetStartingSize(); }
+	}
 	public int FontSize;
 	public Godot.Timer HeldClickTimer;
 	public bool HoldingHeader = false;
@@ -77,12 +92,10 @@ public partial class DataGridHeaderCell : Control
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{
-Clicker.Pressed += () => HeaderPressed();		
-		if (!string.IsNullOrWhiteSpace(LabelText) && !Blank) {
-HeaderLabel.Text = LabelText;
-		}
-		SetStartingSize();
-ClickHoldButton.ButtonDown += () => HeaderClickInteraction(true);
+		Clicker.Pressed += () => HeaderPressed();		
+		
+		//SetStartingSize();
+		ClickHoldButton.ButtonDown += () => HeaderClickInteraction(true);
 		ClickHoldButton.ButtonUp += () => HeaderClickInteraction(false);
 	}
 
@@ -159,7 +172,7 @@ ClickHoldButton.ButtonDown += () => HeaderClickInteraction(true);
 		if (Size.Y > NewSize.Y){
 			NewSize = new(NewSize.X, Size.Y);
 		}
-		Set("custom_minimum_size", NewSize);
+		CustomMinimumSize = NewSize;
 		Size = NewSize;
 		CellSize = NewSize;
 	}

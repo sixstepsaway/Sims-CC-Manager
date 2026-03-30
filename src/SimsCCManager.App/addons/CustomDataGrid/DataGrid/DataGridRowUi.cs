@@ -14,7 +14,7 @@ public partial class DataGridRowUi : MarginContainer
 	
 	public List<DataGridRowHeaders> RowHeaders = new();
 	
-	public delegate void RowSelectedEvent(bool selected);
+	public delegate void RowSelectedEvent(int RowIdx, bool selected);
 	public RowSelectedEvent RowSelected;
 	public delegate void RowEditedEvent(DataGridRowUi thisRow, DataGridCell cell);
 	public RowEditedEvent RowEdited;
@@ -22,9 +22,9 @@ public partial class DataGridRowUi : MarginContainer
 	public RowNumAdjustingEvent NumBeingAdjusted;
 	public delegate void AdjustmentNumberChangedEvent(DataGridRowUi row, int oldnum, int newnum);
 	public AdjustmentNumberChangedEvent AdjustmentNumberChanged;
-	public delegate void AdjustmentNumberChangedPropagateEvent(DataGridRowUi row, int AdjNum);
-	public AdjustmentNumberChangedPropagateEvent AdjustmentNumberChangedPropagate;
-	public delegate void CellToggledEvent(DataGridRowUi row, bool toggle);
+	//public delegate void AdjustmentNumberChangedPropagateEvent(DataGridRowUi row, int AdjNum);
+	//public AdjustmentNumberChangedPropagateEvent AdjustmentNumberChangedPropagate;
+	public delegate void CellToggledEvent(bool toggle, DataGridRowUi row);
 	public CellToggledEvent CellToggled;
 	[Export]	
 	public HBoxContainer RowsHolder;
@@ -104,14 +104,13 @@ public partial class DataGridRowUi : MarginContainer
 	private int _adjustmentnumber;
 	public int AdjustmentNumber
 	{
-		get { return _adjustmentnumber; }
+		get { return AdjustmentNumberCell.NumberContent; }
 		set
-		{
+		{			
+			int oldv = _adjustmentnumber;
 			_adjustmentnumber = value;
 			AdjustmentNumberCell.NumberContent = value;
-			AdjustmentNumberChangedPropagate.Invoke(this, value);
-			
-			
+			if (!DontAnnounceEdit && !ToggledToo) AdjustmentNumberChanged?.Invoke(this, oldv, value);			
 		}
 	}
 	public bool AdjustNumberOnlyIfToggled;
@@ -126,7 +125,18 @@ public partial class DataGridRowUi : MarginContainer
 	public MiniGrid SubGrid;
 
 
-	public DataGridRow RowData;
+	private  DataGridRow _rowdata;
+	public  DataGridRow RowData 
+	{
+		get { return  _rowdata; }
+		set {  _rowdata = value; 
+		CallDeferred(nameof(ChangeRowName));}
+	}
+
+	private void ChangeRowName()
+	{
+		Name = RowData.RowRef;
+	}
 
 	public bool VisibleOnScreen = false;
 
@@ -145,23 +155,54 @@ public partial class DataGridRowUi : MarginContainer
 		if (!ToggleButtonHovered && !AdjustableNumberButtonHovered){
 			if (SelectedToggle){
 				Selected = true;
-				RowSelected?.Invoke(Selected);
+				RowSelected?.Invoke(RowData.PopulatedIdx, Selected);
 				if (IsSubGrid && SubGrid != null)
 				{
 					if (!Datagrid.AreMultipleRowsSelected()) ShowSubgrid?.Invoke(SubGrid, this);
 				}
 			} else {
 				Selected = !Selected;
-				RowSelected?.Invoke(Selected);
+				RowSelected?.Invoke(RowData.PopulatedIdx, Selected);
 			}			
 		} else if (ToggleButtonHovered)
 		{
-			Toggled = !Toggled;
-			RowData.Toggled = Toggled;
-			if (!DontAnnounceEdit) RowEdited?.Invoke(this, ToggleCell);
-			CheckCellNumber();
+			Datagrid.PleasePassLog(string.Format("Setting row {0} toggle to {1}", PopulatedIndex, !Toggled));
+			Toggle(!Toggled);			
 		}
     }
+
+	bool ToggledToo = false;
+
+	public void Toggle(bool WhichWay){
+		ToggledToo = true;
+		Toggled = WhichWay;
+		Datagrid.PleasePassLog(string.Format("Row {0} toggled as: {1}", PopulatedIndex, Toggled));
+		RowData.Toggled = Toggled;
+		
+		if (!WhichWay && AdjustNumberOnlyIfToggled) 
+		{
+			AdjustmentNumberCell.NumberContent = -1; 
+		} else { 
+			CheckCellNumber();
+		}
+		ToggledToo = false;
+		if (!DontAnnounceEdit) RowEdited?.Invoke(this, ToggleCell);	
+	} 
+
+	public void CheckCellNumber()
+	{
+		if (AdjustNumberOnlyIfToggled)
+		{			
+			if (!Toggled)
+			{
+				AdjustmentNumber = -1;
+			} else
+			{
+				int max = Datagrid.RowData.Max(x => x.AdjustmentNumber);
+				AdjustmentNumber = max + 1;
+			}			
+		}
+	}
 
 	public void KillThumbnail(bool BlockThumbs)
 	{
@@ -175,17 +216,13 @@ public partial class DataGridRowUi : MarginContainer
 		ImageCell?.KillThumbnail();
 	}
 
-	public void Toggle(bool WhichWay){
-		Toggled = WhichWay;
-		if (!WhichWay && AdjustmentNumberCell.ToggleLinked) AdjustmentNumberCell.NumberContent = -1;
-	} 
+	
 
     public void AddCell(DataGridCell cell){
 		cell.FontColor = TextColor;
 		cell.FontSize = TextSize;
 		cell.ToggleHovered += (h) => ToggleHovered(h);
 		cell.AdjustableNumberHovered += (h) => AdjustableNumberHovered(h);
-		//cell.ShowNumberAdjuster += (t) => NumAdjusting(t);
 		cell.NumAdjusted += (u, b) => NumberAdjusted(u, b);
 		Cells.Add(cell);
 		RowsHolder.AddChild(cell);
@@ -200,24 +237,6 @@ public partial class DataGridRowUi : MarginContainer
 		Cells.Clear();
 	}
 
-	public void CheckCellNumber()
-	{
-		if (AdjustNumberOnlyIfToggled)
-		{
-			if (AdjustmentNumberCell.ToggleLinked)
-			{
-				if (!Toggled)
-				{
-					AdjustmentNumber = -1;
-				} else
-				{
-					int max = Datagrid.RowData.Max(x => x.AdjustmentNumber);
-					AdjustmentNumber = max + 1;
-				}
-			}
-		}
-	}
-
 	public void SetCellSettings()
 	{
 		if (AdjustmentNumberCell != null) {
@@ -229,9 +248,9 @@ public partial class DataGridRowUi : MarginContainer
 
     private void NumberAdjusted(int u, bool solo)
     {
-		int oldnum = AdjustmentNumber;
+		//int oldnum = AdjustmentNumber;
 		AdjustmentNumber = u;
-		AdjustmentNumberChanged.Invoke(this, oldnum, u);
+		//AdjustmentNumberChanged.Invoke(this, oldnum, u);
     }
 
 

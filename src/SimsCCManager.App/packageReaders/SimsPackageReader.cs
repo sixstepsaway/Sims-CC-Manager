@@ -1275,7 +1275,7 @@ namespace SimsCCManager.PackageReaders
 
         }
 
-        private SimsPackage CheckSims2Overrides (SimsPackage package)
+        private void CheckSims2Overrides (SimsPackage package)
         {
             List<string> notOver = new()
             {
@@ -1377,7 +1377,11 @@ namespace SimsCCManager.PackageReaders
             if (!Matches.IsEmpty)
             {
                 package.Sims2Data.Override = true;
-                package.Sims2Data.OverrideReference.AddRange(Matches);
+                foreach (SimsOverrides orr in Matches)
+                {
+                    if (package.Sims2Data.OverrideReference == null) package.Sims2Data.OverrideReference = new();
+                    package.Sims2Data.OverrideReference.Add(orr);
+                }                
                 if (GlobalVariables.Sims2SpecificOverrides.Any(s => s.Entries.Any(e => package.Sims2Data.OverrideReference.Any(or => or.Entries.Any(oe => oe.InstanceID == e.InstanceID && oe.GroupID == e.GroupID)))))
                 {
                     try { 
@@ -1397,17 +1401,13 @@ namespace SimsCCManager.PackageReaders
                 if (package.Sims2Data.AltType == "Skin") package.Sims2Data.AltType = "Skin Override";
                 if (package.Sims2Data.AltType == "Eyecolor") package.Sims2Data.AltType = "Eyecolor Override";
             }
-            return package;
         }
 
-        public SimsPackage CheckOverrides(SimsPackage package)
+        public void CheckOverrides(SimsPackage package)
         {
-
             FileInfo fi = new(package.Location);
-            if (fi.Extension != ".package") return package;
-            if (package.Game == SimsGames.Sims2) package = CheckSims2Overrides(package);
-            //package.WriteXML();
-            return package;
+            if (fi.Extension != ".package") return;
+            if (package.Game == SimsGames.Sims2) CheckSims2Overrides(package);
         }
 
 
@@ -1444,8 +1444,15 @@ namespace SimsCCManager.PackageReaders
             if (Potentials.Any(x => x.IsDuplicate))
             {
                 package.IsDuplicate = true;
-                package.Duplicates.AddRange(Potentials.Where(x => x.IsDuplicate).Select(x => x.Package.FileName));
-                package.Conflicts.AddRange(Potentials.Where(x => !x.IsDuplicate).Select(x => x.Package.FileName));                
+                foreach (string d in Potentials.Where(x => x.IsDuplicate).Select(x => x.Package.FileName))
+                {
+                    package.Duplicates.Add(d);
+                }
+                foreach (string c in Potentials.Where(x => !x.IsDuplicate).Select(x => x.Package.FileName))
+                {
+                    package.Conflicts.Add(c); 
+                }
+                               
                 package.WriteXML();
 
                 foreach (PotentialDuplicateSimsPackage pdsp in Potentials.Where(x => x.IsDuplicate))

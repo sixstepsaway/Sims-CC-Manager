@@ -339,7 +339,7 @@ public partial class PackageViewerContainer : MarginContainer
         AddPVI("For Game:", package.Game.ToString()); 
         AddPVI("Mesh:", package.Mesh.ToString());     
         AddPVI("Recolor:", package.Recolor.ToString()); 
-        if (package.MatchingRecolors.Any())
+        if (package.MatchingRecolors != null) if (package.MatchingRecolors.Any())
         {
             StringBuilder sb = new();
             foreach (string mr in package.MatchingRecolors.OrderBy(x => x))

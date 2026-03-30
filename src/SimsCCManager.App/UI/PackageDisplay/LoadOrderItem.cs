@@ -5,6 +5,7 @@ using System;
 
 public partial class LoadOrderItem : Control
 {
+    public Guid Identifier;
     [Export]
     public MarginContainer Item;
     [Export]
@@ -19,6 +20,7 @@ public partial class LoadOrderItem : Control
     Panel SelectedPanel;
     [Export]
     public Button button;
+
 
 
     private bool _ismoving;
@@ -67,15 +69,20 @@ public partial class LoadOrderItem : Control
         }
     }
 
+    public delegate void LoadOrderItemSelectedEvent(bool Selected);
+    public LoadOrderItemSelectedEvent LoadOrderItemSelected;
+
     public override void _Ready()
     {
         button.MouseEntered += () => { InBox = true; };
         button.MouseExited += () => { InBox = false; }; 
 
-        button.Pressed += () => { 
+        /*button.Pressed += () => { 
             //GD.Print("Pressed!");
             IsSelected = !IsSelected; 
-        };
+            LoadOrderItemSelected?.Invoke(IsSelected);
+            GD.Print(string.Format("Item {0} is selected.", GetIndex()));
+        };*/
         
         IsSelected = false;
         //Floater.GlobalPosition = this.GlobalPosition;
