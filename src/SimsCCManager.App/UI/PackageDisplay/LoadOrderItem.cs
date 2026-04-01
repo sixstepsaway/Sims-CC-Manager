@@ -1,6 +1,7 @@
 using Godot;
 using SimsCCManager.Debugging;
 using SimsCCManager.Globals;
+using SimsCCManager.ThemeUtilities;
 using System;
 
 public partial class LoadOrderItem : Control
@@ -76,6 +77,8 @@ public partial class LoadOrderItem : Control
     {
         button.MouseEntered += () => { InBox = true; };
         button.MouseExited += () => { InBox = false; }; 
+
+        ThemeUpdater.UpdateLoadOrderItemColors(NormalPanel, SelectedPanel, new() { LoadOrderLabel, ItemNameLabel});
 
         /*button.Pressed += () => { 
             //GD.Print("Pressed!");

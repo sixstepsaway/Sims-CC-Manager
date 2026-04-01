@@ -1,3 +1,4 @@
+using CsvHelper;
 using DataGridContainers;
 using Godot;
 using ICSharpCode.SharpZipLib.Zip;
@@ -763,9 +764,9 @@ public partial class AllModsContainer : MarginContainer
             }
             else if (!string.IsNullOrEmpty(header.Data))
             {
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Finding data for {0}", header.Data));
+                //if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Finding data for {0}", header.Data));
                 item.ItemContent = DataGrid.GetProperty(pack, header.Data).ToString();
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Got it! Data: {0}", DataGrid.GetProperty(pack, header.Data).ToString()));
+                //if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Got it! Data: {0}", DataGrid.GetProperty(pack, header.Data).ToString()));
             }
             item.ItemName = header.Data;
             c++;
@@ -1172,7 +1173,7 @@ public partial class AllModsContainer : MarginContainer
     {
         if (Packages.Any(x => x.Identifier == rowIdx.Identifier))
         {
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Data changed: {0}, {1}. New value: {2}", dataChanged, Item, rowIdx.Items[Item].ItemContent));
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Data changed: {3} - {0}, {1}. New value: {2}", dataChanged, Item, rowIdx.Items[Item].ItemContent, rowIdx.RowRef));
             
             
             int idx = Packages.IndexOf(Packages.First(x => x.Identifier == rowIdx.Identifier));
@@ -1201,15 +1202,15 @@ public partial class AllModsContainer : MarginContainer
                 packageDisplay.ThisInstance.WriteXML();
             } else if (dataChanged == "LoadOrder")
             {                
-                if (rowIdx.Items.First(x => x.CellType == CellOptions.Toggle).ItemContent == "True")
-                {
-                    if (!packageDisplay.ThisInstance.LoadedProfile.EnabledPackages.Any(x => x.PackageIdentifier == Packages[idx].Identifier)) packageDisplay.ThisInstance.LoadedProfile.EnabledPackages.Add(new () { PackageIdentifier = Packages[idx].Identifier, LoadOrder = 0, PackageLocation = Packages[idx].Location, PackageName = Packages[idx].FileName});
-                    Packages[idx].IsEnabled = true;
-                } else if (rowIdx.Items[Item].ItemContent == "-1")
+                if (rowIdx.Items[Item].ItemContent == "-1")
                 {
                     if (packageDisplay.ThisInstance.LoadedProfile.EnabledPackages.Any(x => x.PackageIdentifier == Packages[idx].Identifier)) packageDisplay.ThisInstance.LoadedProfile.EnabledPackages.Remove(packageDisplay.ThisInstance.LoadedProfile.EnabledPackages.First(x => x.PackageIdentifier == Packages[idx].Identifier));
                     Packages[idx].IsEnabled = false;
                     Packages[idx].LoadOrder = -1;
+                } else if (rowIdx.Items.First(x => x.CellType == CellOptions.Toggle).ItemContent == "True")
+                {
+                    if (!packageDisplay.ThisInstance.LoadedProfile.EnabledPackages.Any(x => x.PackageIdentifier == Packages[idx].Identifier)) packageDisplay.ThisInstance.LoadedProfile.EnabledPackages.Add(new () { PackageIdentifier = Packages[idx].Identifier, LoadOrder = int.Parse(rowIdx.Items[Item].ItemContent), PackageLocation = Packages[idx].Location, PackageName = Packages[idx].FileName});
+                    Packages[idx].IsEnabled = true;
                 } else {
                     if (packageDisplay.ThisInstance.LoadedProfile.EnabledPackages.Any(x => x.PackageIdentifier == Packages[idx].Identifier))
                     {
@@ -2516,13 +2517,13 @@ public partial class AllModsContainer : MarginContainer
         //package.WriteXML();
         if (data != null)
         {
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0} - Package data changed: {1} - New data: {2}", package.FileName, data, DataGrid.GetProperty(package, data)));
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0} - Package data changed: {1} - New data: {2}", package.FileName, data, DataGrid.GetProperty(package, data)));            
             if (DataGridHeaders.Any(x => x.Data == data))
-            {
+            {                
                 DataGridRow rowdata = DataGrid.RowData.First(x => x.Identifier == package.Identifier);
                 rowdata = CreateRow(package, rowdata.OverallIdx);
                 DataGrid.EditRow(rowdata, data);
-                if (ThumbGrid != null) ThumbGrid.ReplaceTGI(package);
+                ThumbGrid?.ReplaceTGI(package);
             }
         } else
         {

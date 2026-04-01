@@ -66,6 +66,185 @@ namespace SimsCCManager.Containers
         public List<InstanceProfile> InstanceProfiles { get; set; } = new();
         public List<DataGridHeader> Headers { get; set; }
 
+        public void AddProfile(InstanceProfile profile)
+        {
+            InstanceProfiles.Add(profile);
+            InstanceProfileLocations.Add(profile.ProfileFolder);
+            if (!Directory.Exists(profile.ProfileFolder))
+            {
+                Directory.CreateDirectory(profile.ProfileFolder);                
+            }
+            switch (GameChoice)
+            {
+                case SimsGames.Sims2:
+                    if (profile.LocalData)
+                    {
+                        foreach (string folder in GlobalVariables.Sims2DataFolders)
+                        {
+                            string destinationPath = Path.Combine(profile.LocalDataFolder, folder);
+                            if (!Directory.Exists(destinationPath))
+                            {
+                                Directory.CreateDirectory(destinationPath);
+                            }
+                        }
+                    }
+                    if (profile.LocalSaves)
+                    {
+                        foreach (string folder in GlobalVariables.Sims2SavesFolders)
+                        {
+                            string destinationPath = Path.Combine(profile.LocalSaveFolder, folder);
+                            if (!Directory.Exists(destinationPath))
+                            {
+                                Directory.CreateDirectory(destinationPath);
+                            }
+                        }
+                    }
+                    if (profile.LocalMedia)
+                    {
+                        foreach (string folder in GlobalVariables.Sims2MediaFolders)
+                        {
+                            string destinationPath = Path.Combine(profile.LocalMediaFolder, folder);
+                            if (!Directory.Exists(destinationPath))
+                            {
+                                Directory.CreateDirectory(destinationPath);
+                            }
+                        }
+                    }
+                    if (profile.LocalSettings)
+                    {
+                        foreach (string folder in GlobalVariables.Sims2SettingsFolders)
+                        {
+                            string destinationPath = Path.Combine(profile.LocalSettingsFolder, folder);
+                            if (!Directory.Exists(destinationPath))
+                            {
+                                Directory.CreateDirectory(destinationPath);
+                            }
+                        }
+                    }
+                break;
+
+                case SimsGames.Sims3:
+                    if (profile.LocalData)
+                    {
+                        foreach (string folder in GlobalVariables.Sims3DataFolders)
+                        {
+                            string destinationPath = Path.Combine(profile.LocalDataFolder, folder);
+                            if (!Directory.Exists(destinationPath))
+                            {
+                                Directory.CreateDirectory(destinationPath);
+                            }
+                        }
+                    }
+                    if (profile.LocalSaves)
+                    {
+                        foreach (string folder in GlobalVariables.Sims3SavesFolders)
+                        {
+                            string destinationPath = Path.Combine(profile.LocalSaveFolder, folder);
+                            if (!Directory.Exists(destinationPath))
+                            {
+                                Directory.CreateDirectory(destinationPath);
+                            }
+                        }
+                    }
+                    if (profile.LocalMedia)
+                    {
+                        foreach (string folder in GlobalVariables.Sims3MediaFolders)
+                        {
+                            string destinationPath = Path.Combine(profile.LocalMediaFolder, folder);
+                            if (!Directory.Exists(destinationPath))
+                            {
+                                Directory.CreateDirectory(destinationPath);
+                            }
+                        }
+                    }
+                break;
+
+                case SimsGames.Sims4:
+                    if (profile.LocalData)
+                    {
+                        foreach (string folder in GlobalVariables.Sims4DataFolders)
+                        {
+                            string destinationPath = Path.Combine(profile.LocalDataFolder, folder);
+                            if (!Directory.Exists(destinationPath))
+                            {
+                                Directory.CreateDirectory(destinationPath);
+                            }
+                        }
+                    }
+                    if (profile.LocalSaves)
+                    {
+                        foreach (string folder in GlobalVariables.Sims4SavesFolders)
+                        {
+                            string destinationPath = Path.Combine(profile.LocalSaveFolder, folder);
+                            if (!Directory.Exists(destinationPath))
+                            {
+                                Directory.CreateDirectory(destinationPath);
+                            }
+                        }
+                    }
+                    if (profile.LocalMedia)
+                    {
+                        foreach (string folder in GlobalVariables.Sims4MediaFolders)
+                        {
+                            string destinationPath = Path.Combine(profile.LocalMediaFolder, folder);
+                            if (!Directory.Exists(destinationPath))
+                            {
+                                Directory.CreateDirectory(destinationPath);
+                            }
+                        }
+                    }
+                    if (profile.LocalSettings)
+                    {
+                        foreach (string folder in GlobalVariables.Sims4SettingsFolders)
+                        {
+                            string destinationPath = Path.Combine(profile.LocalSettingsFolder, folder);
+                            if (!Directory.Exists(destinationPath))
+                            {
+                                Directory.CreateDirectory(destinationPath);
+                            }
+                        }
+                    }
+                break;
+
+                case SimsGames.SimsMedieval:
+                    if (profile.LocalSaves)
+                    {
+                        foreach (string folder in GlobalVariables.SimsMedievalSavesFolders)
+                        {
+                            string destinationPath = Path.Combine(profile.LocalSaveFolder, folder);
+                            if (!Directory.Exists(destinationPath))
+                            {
+                                Directory.CreateDirectory(destinationPath);
+                            }
+                        }
+                    }
+                    if (profile.LocalMedia)
+                    {
+                        foreach (string folder in GlobalVariables.SimsMedievalMediaFolders)
+                        {
+                            string destinationPath = Path.Combine(profile.LocalMediaFolder, folder);
+                            if (!Directory.Exists(destinationPath))
+                            {
+                                Directory.CreateDirectory(destinationPath);
+                            }
+                        }
+                    }
+                break;
+            }
+            WriteXML();
+        }
+
+        public void RemoveProfile(InstanceProfile profile)
+        {            
+            InstanceProfiles.Remove(profile);
+            InstanceProfileLocations.Remove(profile.ProfileFolder);
+            if (Directory.Exists(profile.ProfileFolder))
+            {
+                Utilities.MoveToRecycleBin(profile.ProfileFolder);                
+            }
+            WriteXML();
+        }
+
         private void LoadProfiles()
         {
             if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Loading {0} profiles.", InstanceProfileLocations.Count));
@@ -160,12 +339,6 @@ namespace SimsCCManager.Containers
             Categories.Add(category);
         }
 
-        public void AddProfile(InstanceProfile profile)
-        {
-            InstanceProfiles = new() { profile };
-            InstanceProfileLocations.Add(profile.ProfileFolder);
-        }
-
         private void DefaultProfile()
         {
             InstanceProfile instanceProfile = new()
@@ -201,27 +374,41 @@ namespace SimsCCManager.Containers
         {
             return Path.Combine(InstanceFolder, "Instance.xml");
         }
+        static ReaderWriterLock locker = new ReaderWriterLock();
 
         public void WriteXML()
         {
-            if (File.Exists(this.XMLfile()))
+            try
             {
-                File.Delete(this.XMLfile());
-            }
-            XmlSerializer InstanceSerializer = new XmlSerializer(this.GetType());
-            using (var writer = new StreamWriter(this.XMLfile()))
-            {
-                InstanceSerializer.Serialize(writer, this);
-            }
-
-            XmlSerializer ProfileSerializer = new XmlSerializer(typeof(InstanceProfile));
-            foreach (InstanceProfile profile in InstanceProfiles)
-            {
-                using (var writer = new StreamWriter(profile.XMLFile()))
+                locker.AcquireWriterLock(int.MaxValue);
+                if (File.Exists(this.XMLfile()))
                 {
-                    ProfileSerializer.Serialize(writer, profile);
+                    File.Delete(this.XMLfile());
                 }
+                XmlSerializer InstanceSerializer = new XmlSerializer(this.GetType());
+                using (var writer = new StreamWriter(this.XMLfile()))
+                {
+                    InstanceSerializer.Serialize(writer, this);
+                }
+
+                XmlSerializer ProfileSerializer = new XmlSerializer(typeof(InstanceProfile));
+                foreach (InstanceProfile profile in InstanceProfiles)
+                {
+                    if (File.Exists(profile.XMLFile()))
+                    {
+                        File.Delete(profile.XMLFile());
+                    }
+                    using (var writer = new StreamWriter(profile.XMLFile()))
+                    {
+                        ProfileSerializer.Serialize(writer, profile);
+                    }
+                }
+            } 
+            finally
+            {
+                locker.ReleaseWriterLock();
             }
+            
         }
 
         public GameInstance LoadInstance()
@@ -1664,7 +1851,14 @@ namespace SimsCCManager.Containers
             }
         }
         [XmlIgnore]
-        public bool IsEnabled { get; set; }
+        private  bool _isenabled;
+        [XmlIgnore]
+        public  bool IsEnabled 
+        {
+            get { return  _isenabled; }
+            set {  _isenabled = value; 
+            DataChanged?.Invoke(nameof(IsEnabled));}
+        }
         [XmlIgnore]
         private int _loadorder;
         [XmlIgnore]
@@ -1741,11 +1935,13 @@ namespace SimsCCManager.Containers
 
         [XmlIgnore]
         private  bool _hasbeenread;
+        [XmlIgnore]
         public  bool HasBeenRead 
         {
             get { return  _hasbeenread; }
             set {  _hasbeenread = value; 
-            DataChanged?.Invoke(nameof(Type)); }
+            DataChanged?.Invoke(nameof(Type)); 
+            if (value) WriteXML(); }
         }
 
         public bool ShouldSerializeSims2Data()
@@ -1806,58 +2002,60 @@ namespace SimsCCManager.Containers
         public void WriteXML()
         {
             XmlSerializer InfoSerializer = new XmlSerializer(this.GetType());
-            if (GlobalVariables.DebugMode)
+            try
             {
-                try
+                locker.AcquireWriterLock(int.MaxValue);
+                if (GlobalVariables.DebugMode)
                 {
-                    locker.AcquireWriterLock(int.MaxValue);
+                    
+                        if (File.Exists(this.InfoFile))
+                        {
+                            File.Delete(this.InfoFile);
+                        }
+                        using (var writer = new StreamWriter(this.InfoFile))
+                        {
+                            InfoSerializer.Serialize(writer, this);
+                        }
+                    
+                }
+                else
+                {
                     if (File.Exists(this.InfoFile))
                     {
                         File.Delete(this.InfoFile);
                     }
-                    using (var writer = new StreamWriter(this.InfoFile))
+
+                    using (FileStream fs = File.Create(this.InfoFile))
+                    using (ZipOutputStream zipStream = new ZipOutputStream(fs))
                     {
-                        InfoSerializer.Serialize(writer, this);
+                        // Add a file entry to the ZIP archive
+                        ZipEntry entry = new ZipEntry(this.FileName)
+                        {
+                            DateTime = this.DateUpdated
+                        };
+
+                        zipStream.PutNextEntry(entry);
+
+                        // Write file data to the ZIP stream
+
+
+                        byte[] buffer = new byte[4096];
+                        using (MemoryStream memoryStream = new())
+                        {
+                            InfoSerializer.Serialize(memoryStream, this);
+                            int bytesRead;
+                            while ((bytesRead = memoryStream.Read(buffer, 0, buffer.Length)) > 0)
+                            {
+                                zipStream.Write(buffer, 0, bytesRead);
+                            }
+                        }
+                        zipStream.CloseEntry();
                     }
-                }
-                finally
-                {
-                    locker.ReleaseWriterLock();
                 }
             }
-            else
+            finally
             {
-                if (File.Exists(this.InfoFile))
-                {
-                    File.Delete(this.InfoFile);
-                }
-
-                using (FileStream fs = File.Create(this.InfoFile))
-                using (ZipOutputStream zipStream = new ZipOutputStream(fs))
-                {
-                    // Add a file entry to the ZIP archive
-                    ZipEntry entry = new ZipEntry(this.FileName)
-                    {
-                        DateTime = this.DateUpdated
-                    };
-
-                    zipStream.PutNextEntry(entry);
-
-                    // Write file data to the ZIP stream
-
-
-                    byte[] buffer = new byte[4096];
-                    using (MemoryStream memoryStream = new())
-                    {
-                        InfoSerializer.Serialize(memoryStream, this);
-                        int bytesRead;
-                        while ((bytesRead = memoryStream.Read(buffer, 0, buffer.Length)) > 0)
-                        {
-                            zipStream.Write(buffer, 0, bytesRead);
-                        }
-                    }
-                    zipStream.CloseEntry();
-                }
+                locker.ReleaseWriterLock();
             }
         }
 

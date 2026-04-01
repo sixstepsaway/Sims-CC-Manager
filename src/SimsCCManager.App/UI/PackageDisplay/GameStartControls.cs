@@ -5,6 +5,7 @@ using SimsCCManager.Globals;
 using SimsCCManager.OptionLists;
 using SimsCCManager.SettingsSystem;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
@@ -240,8 +241,10 @@ public partial class GameStartControls : MarginContainer
 
     private bool CheckForProcess(SimsGames game){
         bool anything = false;
+        List<string> ExePossibilities = [ThisInstance.CurrentExecutable.ExeName];
         if (game == SimsGames.Sims2){
-            foreach (string exe in GlobalVariables.Sims2Exes){
+            ExePossibilities.AddRange(GlobalVariables.Sims2Exes);
+            foreach (string exe in ExePossibilities){
                 if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Checking for {0}", exe));
                 if (Process.GetProcessesByName(exe).Length == 0){
                     if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Didn't find {0}", exe));
@@ -253,7 +256,8 @@ public partial class GameStartControls : MarginContainer
                 }
             }
         } else if (game == SimsGames.Sims3){
-            foreach (string exe in GlobalVariables.Sims3Exes){
+            ExePossibilities.AddRange(GlobalVariables.Sims3Exes);
+            foreach (string exe in ExePossibilities){
                 if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Checking for {0}", exe));
                 if (Process.GetProcessesByName(exe).Length == 0){
                     if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Didn't find {0}", exe));
@@ -266,7 +270,8 @@ public partial class GameStartControls : MarginContainer
             }
 
         } else if (game == SimsGames.Sims4){
-            foreach (string exe in GlobalVariables.Sims4Exes){
+            ExePossibilities.AddRange(GlobalVariables.Sims4Exes);
+            foreach (string exe in ExePossibilities){
                 if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Checking for {0}", exe));
                 if (Process.GetProcessesByName(exe).Length == 0){
                     if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Didn't find {0}", exe));
@@ -278,7 +283,8 @@ public partial class GameStartControls : MarginContainer
                 }
             }
         }  else if (game == SimsGames.SimsMedieval){
-            foreach (string exe in GlobalVariables.SimsMedievalExes){
+            ExePossibilities.AddRange(GlobalVariables.SimsMedievalExes);
+            foreach (string exe in ExePossibilities){
                 if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Checking for {0}", exe));
                 if (Process.GetProcessesByName(exe).Length == 0){
                     if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Didn't find {0}", exe));

@@ -347,7 +347,7 @@ namespace SimsCCManager.PackageReaders
             new FunctionSortList(){Category = "TerrainPaint"}
         };
 
-        public static List<string> skinnames = new()
+        public static List<string> Sims2SkinNames = new()
         {
             "afbodynaked_nude_s1",
             "afbodynaked_nudecut_s1",
@@ -773,6 +773,23 @@ namespace SimsCCManager.PackageReaders
         uint IndexMinorVersion;
 
         public bool ReadingSingle = true;
+        
+        long IndexMajorLocation = 24;
+        long IndexMinorLocation = 60;
+
+        uint IndexCount;
+        uint IndexOffset;
+        uint IndexSize;
+        uint ChunkOffset = 0;
+        uint DateCreated;
+        uint DateModified;
+        uint HolesCount;
+        uint HolesOffset;
+        uint HolesSize;
+
+        List<string> InstanceIDs = new();
+
+        List<IndexEntry> IndexData = new();
 
         public void ReadPackage(string file)
         {
@@ -810,27 +827,66 @@ namespace SimsCCManager.PackageReaders
             }
 
         }
+        
+        public void CheckOverrides(SimsPackage package)
+        {
+            FileInfo fi = new(package.Location);
+            if (fi.Extension != ".package") return;
+            if (package.Game == SimsGames.Sims2) CheckSims2Overrides(package);
+        }
+        public void CheckDuplicates(SimsPackage package, List<SimsPackage> packages)
+        {
+            List<PotentialDuplicateSimsPackage> Potentials = new();
+            if (package.Game == SimsGames.Sims2)
+            {
+                if (packages.Any(x => x.Sims2Data.IndexEntries.Any(i => package.Sims2Data.IndexEntries.Any(e => e.GroupID == i.GroupID && e.InstanceID == i.InstanceID && x.Identifier != package.Identifier))))
+                {
+                    List<SimsPackage> matches = packages.Where(x => x.Sims2Data.IndexEntries.Any(i => package.Sims2Data.IndexEntries.Any(e => e.GroupID == i.GroupID && e.InstanceID == i.InstanceID && x.Identifier != package.Identifier))).ToList();
+                    foreach (SimsPackage pack in matches)
+                    {
+                        PotentialDuplicateSimsPackage pdsp = new();
+                        pdsp.Package = pack;
+                        Potentials.Add(pdsp);
+                    }
+                }
 
 
 
-        long IndexMajorLocation = 24;
-        long IndexMinorLocation = 60;
+                foreach (PotentialDuplicateSimsPackage potential in Potentials)
+                {
+                    foreach (IndexEntry entry in package.Sims2Data.IndexEntries)
+                    {
+                        if (!potential.Package.Sims2Data.IndexEntries.Any(i => i.GroupID == entry.GroupID && i.InstanceID == entry.InstanceID && i.TypeID == entry.TypeID))
+                        {
+                            potential.IsDuplicate = false;
+                        }
+                    }                    
+                }
+            }
 
-        uint IndexCount;
-        uint IndexOffset;
-        uint IndexSize;
-        uint ChunkOffset = 0;
-        uint DateCreated;
-        uint DateModified;
-        uint HolesCount;
-        uint HolesOffset;
-        uint HolesSize;
+            if (Potentials.Any(x => x.IsDuplicate))
+            {
+                package.IsDuplicate = true;
+                foreach (string d in Potentials.Where(x => x.IsDuplicate).Select(x => x.Package.FileName))
+                {
+                    package.Duplicates.Add(d);
+                }
+                foreach (string c in Potentials.Where(x => !x.IsDuplicate).Select(x => x.Package.FileName))
+                {
+                    package.Conflicts.Add(c); 
+                }
+                               
+                package.WriteXML();
 
-        List<string> InstanceIDs = new();
+                foreach (PotentialDuplicateSimsPackage pdsp in Potentials.Where(x => x.IsDuplicate))
+                {
+                    pdsp.Package.Duplicates.Add(package.FileName);
+                    pdsp.Package.WriteXML();
+                }
+            }
+        }
 
-        List<IndexEntry> IndexData = new();
-
-
+        #region Sims 2 Readers
 
         public void ReadSims2Package()
         {
@@ -1403,66 +1459,6 @@ namespace SimsCCManager.PackageReaders
             }
         }
 
-        public void CheckOverrides(SimsPackage package)
-        {
-            FileInfo fi = new(package.Location);
-            if (fi.Extension != ".package") return;
-            if (package.Game == SimsGames.Sims2) CheckSims2Overrides(package);
-        }
-
-
-        public void CheckDuplicates(SimsPackage package, List<SimsPackage> packages)
-        {
-            List<PotentialDuplicateSimsPackage> Potentials = new();
-            if (package.Game == SimsGames.Sims2)
-            {
-                if (packages.Any(x => x.Sims2Data.IndexEntries.Any(i => package.Sims2Data.IndexEntries.Any(e => e.GroupID == i.GroupID && e.InstanceID == i.InstanceID && x.Identifier != package.Identifier))))
-                {
-                    List<SimsPackage> matches = packages.Where(x => x.Sims2Data.IndexEntries.Any(i => package.Sims2Data.IndexEntries.Any(e => e.GroupID == i.GroupID && e.InstanceID == i.InstanceID && x.Identifier != package.Identifier))).ToList();
-                    foreach (SimsPackage pack in matches)
-                    {
-                        PotentialDuplicateSimsPackage pdsp = new();
-                        pdsp.Package = pack;
-                        Potentials.Add(pdsp);
-                    }
-                }
-
-
-
-                foreach (PotentialDuplicateSimsPackage potential in Potentials)
-                {
-                    foreach (IndexEntry entry in package.Sims2Data.IndexEntries)
-                    {
-                        if (!potential.Package.Sims2Data.IndexEntries.Any(i => i.GroupID == entry.GroupID && i.InstanceID == entry.InstanceID && i.TypeID == entry.TypeID))
-                        {
-                            potential.IsDuplicate = false;
-                        }
-                    }                    
-                }
-            }
-
-            if (Potentials.Any(x => x.IsDuplicate))
-            {
-                package.IsDuplicate = true;
-                foreach (string d in Potentials.Where(x => x.IsDuplicate).Select(x => x.Package.FileName))
-                {
-                    package.Duplicates.Add(d);
-                }
-                foreach (string c in Potentials.Where(x => !x.IsDuplicate).Select(x => x.Package.FileName))
-                {
-                    package.Conflicts.Add(c); 
-                }
-                               
-                package.WriteXML();
-
-                foreach (PotentialDuplicateSimsPackage pdsp in Potentials.Where(x => x.IsDuplicate))
-                {
-                    pdsp.Package.Duplicates.Add(package.FileName);
-                    pdsp.Package.WriteXML();
-                }
-            }
-        }
-
         public void S2ReadGMND(IndexEntry entry, int txtrc)
         {
             S2ReadGMNDChunk gmnd;
@@ -1611,7 +1607,6 @@ namespace SimsCCManager.PackageReaders
             
         }
 
-
         public void S2ReadXHTN(IndexEntry entry, int num)
         {
             S2ReadXHTNChunk xhtn = new();
@@ -1667,11 +1662,7 @@ namespace SimsCCManager.PackageReaders
             xhtn.XHTNData.CopyEntryInfo(entry);
             (SimsData as Sims2Data).XHTNDataBlock.Add(xhtn.XHTNData);
         }
-
-
-
-        
-
+     
         public void S2ReadTXMT(IndexEntry entry, int txtrc)
         {
             S2ReadTXMTChunk txmt;
@@ -1693,7 +1684,7 @@ namespace SimsCCManager.PackageReaders
                 txmt = new(packagereader, fileinfo, txtrc);
             }
             txmt.TXMTData.CopyEntryInfo(entry);
-            if (Sims2PackageStatics.skinnames.Any(x => txmt.TXMTData.FileName.Contains(x)))
+            if (Sims2PackageStatics.Sims2SkinNames.Any(x => txmt.TXMTData.FileName.Contains(x)))
             {
                 Sims2Data.AltType = "Skin";
             }
@@ -2302,22 +2293,45 @@ namespace SimsCCManager.PackageReaders
             //if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("File: {0}, {1}", fileinfo.Name, xobj.ToString()));            
         }
 
+        #endregion
 
 
 
-
-
+        #region Sims 3 Readers
 
         public void ReadSims3Package()
         {
             return;
         }
+
+
+
+        #endregion
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        #region Sims 4 Readers
+
         public void ReadSims4Package()
         {
             return;
         }
 
-
+        #endregion
 
 
 
@@ -2351,8 +2365,6 @@ namespace SimsCCManager.PackageReaders
             Sims2Data = new();
             Sims3Data = new();
             Sims4Data = new();
-            SimsData = Sims2Data;
-
         }
 
         public static string ReadEncodedString(byte[] bytes)

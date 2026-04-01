@@ -2,8 +2,10 @@ using Godot;
 using SimsCCManager.Containers;
 using SimsCCManager.Debugging;
 using SimsCCManager.Globals;
+using SimsCCManager.ThemeUtilities;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Security;
 using System.Threading;
@@ -44,6 +46,12 @@ public partial class EditLoadOrder : MarginContainer
     [Export]
     MarginContainer PlaceForItem;
 
+    [Export]
+    Panel [] normalpanels;
+
+    [Export]
+    Control sizeFinder;
+
     VScrollBar Vscroll;
 
     public bool IsDragging = false;
@@ -83,6 +91,14 @@ public partial class EditLoadOrder : MarginContainer
         };
         timer.Timeout += () => CheckIfMouseHold();
         AddChild(timer);
+
+        
+
+        ThemeUpdater.UpdateBasicButtons(new() { SaveButton, CloseButton, ResetButton });
+        ThemeUpdater.UpdateBGPanelColors(new() { SecondBackground, InternalBackground });
+        ThemeUpdater.UpdateHeaderLabels(new() { Header, Subheading});
+
+        ThemeUpdater.UpdateLoadOrderItemColors(normalpanels, MultipleItemsLabel);
 
         ResetButton.Pressed += () =>
         {
@@ -343,10 +359,12 @@ public partial class EditLoadOrder : MarginContainer
         if (@event is InputEventMouseMotion motion)
         {
             if (IsDragging) {
+                float bottomY = sizeFinder.GlobalPosition.Y + sizeFinder.Size.Y;
+                float topY = sizeFinder.GlobalPosition.Y + 10;
                 Floater.GlobalPosition = new(Floater.GlobalPosition.X, motion.GlobalPosition.Y);
                 List<LoiDistances> DistancesTo = new();
-                foreach (LoadOrderItem item in LoadOrderItems){
-                    DistancesTo.Add(new() { Distance = Floater.GlobalPosition.DistanceTo(item.GlobalPosition), Item = item});
+                foreach (CurrentLois item in currentLoadOrderItems){
+                    DistancesTo.Add(new() { Distance = Floater.GlobalPosition.DistanceTo(item.OriginalLoi.GlobalPosition), Item = item.OriginalLoi});
                 }
                 DistancesTo = DistancesTo.OrderBy(x => x.Distance).ToList();
                 int CurrentSlot = DistancesTo.First().Item.GetIndex();
@@ -355,10 +373,15 @@ public partial class EditLoadOrder : MarginContainer
                     ItemsBox.MoveChild(loi.OriginalLoi, CurrentSlot);
                     CurrentSlot++;
                 }
-                float bottom = ItemsBox.GlobalPosition.Y + ItemsBox.Size.Y;
-                if (motion.GlobalPosition.Y >= bottom)
+                //float bottom = ItemsBox.GlobalPosition.Y + ItemsBox.Size.Y;
+                //GD.Print(string.Format("Checking if mouse motion ({0}) is near {1} or {2}. Velocity: {3}", motion.GlobalPosition, topY, bottomY, motion.Velocity));
+                //number >= lowerBound && number <= upperBound
+                if (motion.GlobalPosition.Y >= bottomY - 20 && motion.GlobalPosition.Y <= bottomY + 20)
                 {
-                    Vscroll.Value++;
+                    Vscroll.Value += (0.5 * motion.Velocity.Y);
+                } else if (motion.GlobalPosition.Y <= topY + 20 && motion.GlobalPosition.Y >= topY - 20)
+                {
+                    Vscroll.Value -= (0.5 * motion.Velocity.Y);
                 }
             }
         }

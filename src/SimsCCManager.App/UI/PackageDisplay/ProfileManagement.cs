@@ -153,20 +153,22 @@ public partial class ProfileManagement : MarginContainer
             InstanceProfile profile = packageDisplay.ThisInstance.InstanceProfiles.First(x => x.ProfileName == pi.ProfileName.Text);
             bool current = false;
             if (packageDisplay.ThisInstance.LoadedProfile.ProfileIdentifier == profile.ProfileIdentifier) current = true;
-            packageDisplay.ThisInstance.InstanceProfiles.Remove(profile);
-            profile.ProfileName = ProfileNameBox.Text;
-            profile.ProfileDescription = ProfileDescriptionBox.Text;
-            profile.ProfileFolder = Path.Combine(packageDisplay.ThisInstance.InstanceFolders.InstanceProfilesFolder, profile.SafeFileName());
-            Directory.CreateDirectory(profile.ProfileFolder);
-            profile.LocalData = LocalDataCheck.IsToggled;
-            profile.LocalSaves = LocalSavesCheck.IsToggled;
-            profile.LocalMedia = LocalMediaCheck.IsToggled;
-            profile.AutoBackups = AutoBackupsCheck.IsToggled;     
-            profile.LocalSettings = LocalSettingsCheck.IsToggled;
-            packageDisplay.ThisInstance.AddProfile(profile);
             if (current)
             {
-                packageDisplay.ThisInstance.LoadedProfile = profile;
+                string ogname = packageDisplay.ThisInstance.LoadedProfile.ProfileName;
+                string ogfolder = packageDisplay.ThisInstance.LoadedProfile.ProfileFolder;
+                packageDisplay.ThisInstance.LoadedProfile.ProfileName = ProfileNameBox.Text;
+                packageDisplay.ThisInstance.LoadedProfile.ProfileDescription = ProfileDescriptionBox.Text;
+                packageDisplay.ThisInstance.LoadedProfile.ProfileFolder = Path.Combine(packageDisplay.ThisInstance.InstanceFolders.InstanceProfilesFolder, profile.SafeFileName());
+                if (Directory.Exists(ogfolder))
+                {
+                    Directory.Move(ogfolder, packageDisplay.ThisInstance.LoadedProfile.ProfileFolder);
+                }
+                packageDisplay.ThisInstance.LoadedProfile.LocalData = LocalDataCheck.IsToggled;
+                packageDisplay.ThisInstance.LoadedProfile.LocalSaves = LocalSavesCheck.IsToggled;
+                packageDisplay.ThisInstance.LoadedProfile.LocalMedia = LocalMediaCheck.IsToggled;
+                packageDisplay.ThisInstance.LoadedProfile.AutoBackups = AutoBackupsCheck.IsToggled;     
+                packageDisplay.ThisInstance.LoadedProfile.LocalSettings = LocalSettingsCheck.IsToggled;                
                 switch (packageDisplay.ThisInstance.GameChoice)
                 {
                     case SimsGames.Sims2:
@@ -179,8 +181,20 @@ public partial class ProfileManagement : MarginContainer
                         InstanceControllers.GetSims4LocalFiles(packageDisplay.ThisInstance);
                     break;
                 }
+            } else
+            {
+                packageDisplay.ThisInstance.InstanceProfiles.Remove(profile);
+                profile.ProfileName = ProfileNameBox.Text;
+                profile.ProfileDescription = ProfileDescriptionBox.Text;
+                profile.ProfileFolder = Path.Combine(packageDisplay.ThisInstance.InstanceFolders.InstanceProfilesFolder, profile.SafeFileName());
+                Directory.CreateDirectory(profile.ProfileFolder);
+                profile.LocalData = LocalDataCheck.IsToggled;
+                profile.LocalSaves = LocalSavesCheck.IsToggled;
+                profile.LocalMedia = LocalMediaCheck.IsToggled;
+                profile.AutoBackups = AutoBackupsCheck.IsToggled;     
+                profile.LocalSettings = LocalSettingsCheck.IsToggled;                
+                packageDisplay.ThisInstance.AddProfile(profile);
             }
-            packageDisplay.ThisInstance.WriteXML();
             AddProfileItem(profile);                       
         }
         MakingNew = false;
@@ -208,16 +222,12 @@ public partial class ProfileManagement : MarginContainer
             //
         } else
         {
-            ProfileItem pi = ProfileItems.Where(x => x.IsSelected).First();
-            if (pi.ProfileName.Text != "Default")
-            {
-                InstanceProfile profile = packageDisplay.ThisInstance.InstanceProfiles.Where(x => x.ProfileName == pi.ProfileName.Text).First();
-                ProfileItems.Remove(pi);
-                pi.QueueFree();
-                packageDisplay.ThisInstance.InstanceProfiles.Remove(profile);
-                packageDisplay.ThisInstance.WriteXML();
-                ProfilesUpdated.Invoke();
-            }            
+            ProfileItem pi = ProfileItems.First(x => x.IsSelected);            
+            InstanceProfile profile = packageDisplay.ThisInstance.InstanceProfiles.First(x => x.ProfileName == pi.ProfileName.Text);
+            ProfileItems.Remove(pi);
+            pi.QueueFree();
+            packageDisplay.ThisInstance.RemoveProfile(profile);
+            ProfilesUpdated.Invoke();            
         }
     }
 
@@ -235,8 +245,7 @@ public partial class ProfileManagement : MarginContainer
         profileCopy.LocalMedia = profile.LocalMedia;
         profileCopy.LocalSettings = profile.LocalSettings;
         profileCopy.AutoBackups = profile.AutoBackups;
-        packageDisplay.ThisInstance.InstanceProfiles.Add(profileCopy);
-        packageDisplay.ThisInstance.WriteXML();
+        packageDisplay.ThisInstance.AddProfile(profileCopy);
         AddProfileItem(profileCopy);
         ProfilesUpdated.Invoke();
     }
@@ -257,8 +266,8 @@ public partial class ProfileManagement : MarginContainer
         MakingNew = false;
         EditingOld = true;
         MiniWindow.Visible = true;
-        ProfileItem pi = ProfileItems.Where(x => x.IsSelected).First();
-        InstanceProfile profile = packageDisplay.ThisInstance.InstanceProfiles.Where(x => x.ProfileName == pi.ProfileName.Text).First();
+        ProfileItem pi = ProfileItems.First(x => x.IsSelected);
+        InstanceProfile profile = packageDisplay.ThisInstance.InstanceProfiles.First(x => x.ProfileName == pi.ProfileName.Text);
         ProfileNameBox.Text = profile.ProfileName;
         ProfileDescriptionBox.Text = profile.ProfileDescription;
         LocalSavesCheck.IsToggled = profile.LocalSaves;

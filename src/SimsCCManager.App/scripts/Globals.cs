@@ -482,6 +482,7 @@ namespace SimsCCManager.Globals
                     break;
                 }
             }
+            
         }
 
         public static void GetSimsMedievalLocalFiles(GameInstance instance)
@@ -796,6 +797,9 @@ namespace SimsCCManager.Globals
                             
                         }
                         Microsoft.VisualBasic.FileIO.FileSystem.MoveDirectory(folderPath, destinationPath);
+                    } else
+                    {
+                        Directory.CreateDirectory(destinationPath);
                     }
                 }
                 foreach (string file in GlobalVariables.Sims2DataFiles)
@@ -831,6 +835,9 @@ namespace SimsCCManager.Globals
                             
                         }
                         Microsoft.VisualBasic.FileIO.FileSystem.MoveDirectory(folderPath, destinationPath);
+                    } else
+                    {
+                        Directory.CreateDirectory(destinationPath);
                     }
                 }
             }
@@ -850,6 +857,9 @@ namespace SimsCCManager.Globals
                             
                         }
                         Microsoft.VisualBasic.FileIO.FileSystem.MoveDirectory(folderPath, destinationPath);
+                    } else
+                    {
+                        Directory.CreateDirectory(destinationPath);
                     }
                 }
             }
@@ -869,6 +879,9 @@ namespace SimsCCManager.Globals
                             
                         }
                         Microsoft.VisualBasic.FileIO.FileSystem.MoveDirectory(folderPath, destinationPath);
+                    } else
+                    {
+                        Directory.CreateDirectory(destinationPath);
                     }
                 }
             }
@@ -940,7 +953,7 @@ namespace SimsCCManager.Globals
                             simsPackage.HasBeenRead = true;
                         } catch (Exception e)
                         {
-                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Hit an error reading {0} - deleting.", simsPackage.InfoFile));
+                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Hit an error reading {0} - deleting. Error: {1} - Trace: {2}", simsPackage.InfoFile, e.Message, e.StackTrace));
                             Utilities.MoveToRecycleBin(simsPackage.InfoFile);
                             simsPackage.FileName = fi.Name;
                             simsPackage.StandAlone = true;
@@ -975,7 +988,7 @@ namespace SimsCCManager.Globals
                     {
                         try
                         {
-                           if (GlobalVariables.DebugMode)
+                            if (GlobalVariables.DebugMode)
                             {                    
                                 using (FileStream fileStream = new(simsPackage.InfoFile, FileMode.Open, System.IO.FileAccess.Read)){
                                     using (StreamReader streamReader = new(fileStream)){
@@ -1016,7 +1029,7 @@ namespace SimsCCManager.Globals
                             simsPackage.HasBeenRead = true;
                         } catch (Exception e)
                         {
-                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Hit an error reading {0} - deleting.", simsPackage.InfoFile));
+                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Hit an error reading {0} - deleting. Error: {1} - Trace: {2}", simsPackage.InfoFile, e.Message, e.StackTrace));
                             Utilities.MoveToRecycleBin(simsPackage.InfoFile);
                             simsPackage.IsDirectory = true;
                             simsPackage.FileName = fi.Name;

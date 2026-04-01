@@ -1009,7 +1009,7 @@ public partial class DataGrid : Control
 
 	private void EditRow(DataGridRow data, int vidx)
 	{
-		
+		PleasePassLog(string.Format("Editing row with rowref {0}, VisibleRow index {1}", data.RowRef, vidx));
 		VisibleRows[vidx].RowData = data;
 		if (data.UseCategoryColor)
 		{
@@ -1038,11 +1038,11 @@ public partial class DataGrid : Control
 				Vector2 size = new(0, 0);
 				DataGridHeaderCell header = HeaderRow.HeaderCells[hc];
 				DataGridHeaderSizeAdjuster sizeadjuster = HeaderRow.HeaderSliders[hc];
-				DataGridCell cell = VisibleRows[vidx].RowHeaders[hc].Cell;
-				cell.CellOptions = head.CellType;
-				cell.dataGrid = this;
-				cell.AccentColor = AccentColor;
-				cell.NumberAsBytes = head.NumberAsBytes;
+				DataGridCell cell = VisibleRows[vidx].RowHeaders[headIdx].Cell;
+				//cell.CellOptions = head.CellType;
+				//cell.dataGrid = this;
+				//cell.AccentColor = AccentColor;
+				//cell.NumberAsBytes = head.NumberAsBytes;
 				if (cell.CellOptions == CellOptions.Icons)
 				{
 					cell.Icons = data.RowIcons;
@@ -2814,7 +2814,7 @@ public partial class DataGrid : Control
 
 
 	public void TooltipProduced(string t){
-		MakeTooltip?.Invoke(t);
+		if (!BlockInput) MakeTooltip?.Invoke(t);
 	}
 
 

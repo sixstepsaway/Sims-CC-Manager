@@ -62,7 +62,9 @@ public partial class Snapshotter : Node3D
 	float Zoom = 0.0f;
 	float DefaultZoom = 0.0f;
 	float ZoomDist = 0.1f;
-    float MovementSpeed = 25;
+    float MovementSpeed = 20;
+    float MaxMovementSpeed = 75;
+    float MinMovementSpeed = 2;
 
     Node3D ObjectRotate;
 
@@ -195,30 +197,9 @@ public partial class Snapshotter : Node3D
 
     private void PanCamera(float delta)
     {
-        Vector2 mousepos = MyContainer.GetGlobalMousePosition();
-        /*if (mousepos.X > currentmousepos.X)
-        {
-            //moveleft
-        } else if (mousepos.X < currentmousepos.X)
-        {
-            //moveright
-        }
-        if (mousepos.Y > currentmousepos.Y)
-        {
-            //movedown
-        } else if (mousepos.Y < currentmousepos.Y)
-        {
-            //moveup
-        }*/
+        Vector2 mousepos = MyContainer.GetGlobalMousePosition();        
         Vector3 direction = GetDirection(mousepos) * delta * MovementSpeed;
-        //Position += direction;
-        //float x = CameraInner.Position.X;
-        //float y = CameraInner.Position.Y;
-        //x *= relative.X;
-        //y *= relative.Y;
-
         CameraInner.Position += direction;
-        //CameraOuter.Position = new(CameraOuter.Position.X * relative.X, CameraOuter.Position.Y * relative.Y, CameraOuter.Position.Z * relative.Z);
         currentmousepos = mousepos;
     }
 
@@ -252,22 +233,16 @@ public partial class Snapshotter : Node3D
 
     private void ZoomCamera()
     {
+        float oldzoom = CameraInner.Position.Z;
         CameraInner.Position = new(CameraInner.Position.X, CameraInner.Position.Y, Zoom);
-        if (Zoom == DefaultZoom)
+        if (oldzoom > Zoom)
         {
-            //CameraOuter.Scale = new Vector3(1, Zoom, 1);
-            //Camera.Fov = 75f;
+            MovementSpeed = float.Clamp((MovementSpeed - (oldzoom - Zoom) * 2f), MinMovementSpeed, MaxMovementSpeed);
         } else
         {
-            //float lerp = Mathf.Lerp(Scale.Y, ZoomDist * Zoom, ZoomSpeed);
-            //CameraOuter.Scale = new Vector3(1, lerp, 1);
-            //float fov = 30 * lerp;
-            //float fov = 30 * Zoom;
-            //CameraOuter.Scale = new Vector3(1, Zoom, 1);
-            //fov = Math.Clamp(fov, 1, 80);
-            //Camera.Fov = fov;
+            MovementSpeed = float.Clamp((MovementSpeed + (oldzoom - Zoom) * 2f), MinMovementSpeed, MaxMovementSpeed);
         }
-        
+        GD.Print(MovementSpeed);
     }
 
     bool rotating = false;
@@ -574,7 +549,7 @@ public partial class Snapshotter : Node3D
         {
             Node3D node3D = new();
 
-            List<Meshes> meshes = hairTypes.Where(x => x.ItemType.Contains(type)).ToList();
+            List<Meshes> meshes = bodyTypes.Where(x => x.ItemType.Contains(type)).ToList();
 
             foreach (Meshes hair in meshes)
             {
@@ -628,7 +603,7 @@ public partial class Snapshotter : Node3D
 
         if (foundTextures)
         {
-            foreach (Meshes hair in hairTypes)
+            foreach (Meshes hair in bodyTypes)
             {
                 TXTRData txtr = new();
                 if (!string.IsNullOrEmpty(hair.TextureName))
@@ -1231,6 +1206,169 @@ public partial class Snapshotter : Node3D
                             bodyType = "cmfbody";
                         }
                         else if (thisPackage.Sims2Data.GZPSDataBlock.Any(s => s.Name.Contains("pu")))
+                        {
+                            //toddler body
+                            bodyType = "pubody";
+                        }
+
+
+                        if (texturePackage.Sims2Data.TXMTDataBlock.Any(x => x.FileName.Contains(bodyType) && x.FileName.Contains(MeshName)))
+                        {
+                            foundTextures = true;
+                            List<TXMTData> txmts = [.. texturePackage.Sims2Data.TXMTDataBlock.Where(x => x.FileName.Contains(bodyType) && x.FileName.Contains(MeshName))];
+
+                            foreach (TXMTData txmt in txmts)
+                            {
+                               texturefilename = txmt.FileName;
+                                mattype = txmt.MaterialType;
+                                if (txmt.MaterialProperties.Any(m => m.PropertyName == "stdMatBaseTextureName"))
+                                {
+                                    texturename = txmt.MaterialProperties.First(m => m.PropertyName == "stdMatBaseTextureName").PropertyValue;
+                                }
+                                if (txmt.MaterialProperties.Any(m => m.PropertyName == "stdMatAlphaBlendMode"))
+                                {
+                                    if (txmt.MaterialProperties.First(m => m.PropertyName == "stdMatAlphaBlendMode").PropertyValue == "blend")
+                                    {
+                                        alpha = true;
+                                    }
+                                } 
+                            }
+                            
+                        }
+
+                        if (S2BodyAges.Any(x => ref3.Contains(x)))
+                        {
+                            bodyType = S2BodyAges.First(x => ref3.Contains(x));
+                        }
+
+                        if (bodyType.StartsWith("af") || bodyType.StartsWith("am") || bodyType.StartsWith("ef") || bodyType.StartsWith("em") || bodyType.StartsWith("yf") || bodyType.StartsWith("ym"))
+                        {
+                            newmesh.Name = string.Format("{0}_{1}", newmesh.Name, ref3);
+                        }
+                        else if (bodyType.StartsWith("tf") || bodyType.StartsWith("tm"))
+                        {
+                            newmesh.Name = string.Format("{0}_{1}", newmesh.Name, ref3);
+                        }
+                        else if (bodyType.StartsWith("pu"))
+                        {
+                            newmesh.Name = string.Format("{0}_{1}", newmesh.Name, ref3);
+                        }
+
+                        newmesh.RotationDegrees = new(-90f, 90f, 0);
+
+                        bodyTypes.Add(new() { Mesh = newmesh, ItemType = bodyType, MeshName = MeshName, FaceCount = newmesh.Mesh.GetFaces().Length, MeshFileName = ref3, TextureName = texturename, TextureFileName = texturefilename, Alpha = alpha });
+
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Mesh {0} is {1}", MeshName, bodyType));
+                    } else if (meshType == 4)
+                    {
+                        //accessory
+
+                        string bodyType = "";
+                        if (thisPackage.Sims2Data.GZPSDataBlock.Any(s => s.Name.Contains("af")))
+                        {
+                            //adult body female
+                            bodyType = "afbody";
+                        }
+                        else if (thisPackage.Sims2Data.GZPSDataBlock.Any(s => s.Name.Contains("yf")))
+                        {
+                            //ya body female
+                            bodyType = "yfbody";
+                        }
+                        else if (thisPackage.Sims2Data.GZPSDataBlock.Any(s => s.Name.Contains("ef")))
+                        {
+                            //elder body female
+                            bodyType = "efbody";
+                        }
+                        else if (thisPackage.Sims2Data.GZPSDataBlock.Any(s => s.Name.Contains("tf")))
+                        {
+                            //teen body female
+                            bodyType = "tfbody";
+                        }
+                        else if (thisPackage.Sims2Data.GZPSDataBlock.Any(s => s.Name.Contains("cf")))
+                        {
+                            //child body female
+                            bodyType = "cfbody";
+                        }
+                        else if (thisPackage.Sims2Data.GZPSDataBlock.Any(s => s.Name.Contains("am")))
+                        {
+                            //adult body male
+                            bodyType = "ambody";
+                        }
+                        else if (thisPackage.Sims2Data.GZPSDataBlock.Any(s => s.Name.Contains("em")))
+                        {
+                            //elder body male
+                            bodyType = "embody";
+                        }
+                        else if (thisPackage.Sims2Data.GZPSDataBlock.Any(s => s.Name.Contains("ym")))
+                        {
+                            //ya body male
+                            bodyType = "ymbody";
+                        }
+                        else if (thisPackage.Sims2Data.GZPSDataBlock.Any(s => s.Name.Contains("tm")))
+                        {
+                            //teen body male
+                            bodyType = "tmbody";
+                        }
+                        else if (thisPackage.Sims2Data.GZPSDataBlock.Any(s => s.Name.Contains("cm")))
+                        {
+                            //child body male
+                            bodyType = "cmfbody";
+                        }
+                        else if (thisPackage.Sims2Data.GZPSDataBlock.Any(s => s.Name.Contains("pu")))
+                        {
+                            //toddler body
+                            bodyType = "pubody";
+                        } else if (texturePackage.Sims2Data.GZPSDataBlock.Any(s => s.Name.Contains("af")))
+                        {
+                            //adult body female
+                            bodyType = "afbody";
+                        }
+                        else if (texturePackage.Sims2Data.GZPSDataBlock.Any(s => s.Name.Contains("yf")))
+                        {
+                            //ya body female
+                            bodyType = "yfbody";
+                        }
+                        else if (texturePackage.Sims2Data.GZPSDataBlock.Any(s => s.Name.Contains("ef")))
+                        {
+                            //elder body female
+                            bodyType = "efbody";
+                        }
+                        else if (texturePackage.Sims2Data.GZPSDataBlock.Any(s => s.Name.Contains("tf")))
+                        {
+                            //teen body female
+                            bodyType = "tfbody";
+                        }
+                        else if (texturePackage.Sims2Data.GZPSDataBlock.Any(s => s.Name.Contains("cf")))
+                        {
+                            //child body female
+                            bodyType = "cfbody";
+                        }
+                        else if (texturePackage.Sims2Data.GZPSDataBlock.Any(s => s.Name.Contains("am")))
+                        {
+                            //adult body male
+                            bodyType = "ambody";
+                        }
+                        else if (texturePackage.Sims2Data.GZPSDataBlock.Any(s => s.Name.Contains("em")))
+                        {
+                            //elder body male
+                            bodyType = "embody";
+                        }
+                        else if (texturePackage.Sims2Data.GZPSDataBlock.Any(s => s.Name.Contains("ym")))
+                        {
+                            //ya body male
+                            bodyType = "ymbody";
+                        }
+                        else if (texturePackage.Sims2Data.GZPSDataBlock.Any(s => s.Name.Contains("tm")))
+                        {
+                            //teen body male
+                            bodyType = "tmbody";
+                        }
+                        else if (texturePackage.Sims2Data.GZPSDataBlock.Any(s => s.Name.Contains("cm")))
+                        {
+                            //child body male
+                            bodyType = "cmfbody";
+                        }
+                        else if (texturePackage.Sims2Data.GZPSDataBlock.Any(s => s.Name.Contains("pu")))
                         {
                             //toddler body
                             bodyType = "pubody";
