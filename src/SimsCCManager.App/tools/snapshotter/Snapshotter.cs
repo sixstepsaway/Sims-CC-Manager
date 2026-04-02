@@ -818,7 +818,7 @@ public partial class Snapshotter : Node3D
         } else if (d.Mesh && !d.Recolor)
         {
             thisPackage = d;            
-            if (thisPackage.MatchingRecolors.Count > 0)
+            if (thisPackage.MatchingRecolors != null)
             {
                 List<SimsPackage> txt = new();
                 foreach (string matching in thisPackage.MatchingRecolors)

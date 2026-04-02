@@ -1570,8 +1570,6 @@ namespace SimsCCManager.Globals
         {
             if (orphan.Sims2Data != null)
             {
-                orphan.Orphan = true;
-
                 if (orphan.Type.Contains("Slider") || orphan.Type.Contains("Face Template") || orphan.Type.Contains("Collection") || orphan.Type.Contains("Hider") || orphan.GameMod )
                 {
                     if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Orphan is a slider, face template or mod, so not an orphan."));
@@ -1583,130 +1581,150 @@ namespace SimsCCManager.Globals
                     orphan.Orphan = false;
                 }
 
-                if (!string.IsNullOrEmpty(orphan.ObjectGUID) && allPackages.Any(x => x.ObjectGUID == orphan.ObjectGUID))
-                {                 
-                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Found matching GUIDs"));       
-                    if (orphan.Mesh)
-                    {
-                        List<SimsPackage> rec = [..allPackages.Where(x => x.ObjectGUID == orphan.ObjectGUID && !x.Mesh)];
-                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Found {0} recolors of mesh {1}", rec.Count, orphan.FileName));
-                        foreach (SimsPackage package in rec)
-                        { 
-                            if (orphan.Sims2Data.FunctionSort.Count != 0) instance.Packages.First(x => x.Identifier == package.Identifier).Sims2Data.FunctionSort = orphan.Sims2Data.FunctionSort; else if (!string.IsNullOrEmpty(orphan.Sims2Data.AltType)) instance.Packages.First(x => x.Identifier == package.Identifier).Sims2Data.AltType = orphan.Sims2Data.AltType;
-                            instance.Packages.First(x => x.Identifier == package.Identifier).MatchingMesh = orphan.FileName;
-                            instance.Packages.First(x => x.Identifier == package.Identifier).Orphan = false;
-                            orphan.MatchingRecolors ??= new();
-                            if (!orphan.MatchingRecolors.Contains(package.FileName)) orphan.MatchingRecolors.Add(package.FileName);
-                            //instance.Packages.First(x => x.Identifier == package.Identifier).WriteXML();
-                        }              
-                    } else if (orphan.Recolor)
-                    {
-                        if (allPackages.Any(x => x.ObjectGUID == orphan.ObjectGUID && x.Mesh))
+                try {
+                    if (!string.IsNullOrEmpty(orphan.ObjectGUID) && allPackages.Any(x => x.ObjectGUID == orphan.ObjectGUID))
+                    {                 
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Found matching GUIDs"));       
+                        if (orphan.Mesh)
                         {
-                            SimsPackage mesh = allPackages.First(x => x.ObjectGUID == orphan.ObjectGUID && x.Mesh);
                             List<SimsPackage> rec = [..allPackages.Where(x => x.ObjectGUID == orphan.ObjectGUID && !x.Mesh)];
-                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Found mesh {0} for orphan {1} and {2} recolors", mesh.FileName, orphan.FileName, rec.Count));
+                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Found {0} recolors of mesh {1}", rec.Count, orphan.FileName));
                             foreach (SimsPackage package in rec)
-                            {
-                                if (package.Identifier != orphan.Identifier)
-                                {
-                                    instance.Packages.First(x => x.Identifier == package.Identifier).MatchingMesh = mesh.FileName;
-                                    if (instance.Packages.First(x => x.Identifier == mesh.Identifier).Sims2Data.FunctionSort.Count != 0) instance.Packages.First(x => x.Identifier == package.Identifier).Sims2Data.FunctionSort = instance.Packages.First(x => x.Identifier == mesh.Identifier).Sims2Data.FunctionSort;  else if (!string.IsNullOrEmpty(instance.Packages.First(x => x.Identifier == mesh.Identifier).Sims2Data.AltType)) instance.Packages.First(x => x.Identifier == package.Identifier).Sims2Data.AltType = instance.Packages.First(x => x.Identifier == mesh.Identifier).Sims2Data.AltType;
-                                    instance.Packages.First(x => x.Identifier == package.Identifier).Orphan = false;
-                                    instance.Packages.First(x => x.Identifier == mesh.Identifier).MatchingRecolors ??= new();
-                                    if (!instance.Packages.First(x => x.Identifier == mesh.Identifier).MatchingRecolors.Contains(package.FileName)) instance.Packages.First(x => x.Identifier == mesh.Identifier).MatchingRecolors.Add(package.FileName);
-                                    //instance.Packages.First(x => x.Identifier == package.Identifier).WriteXML();
-                                    //instance.Packages.First(x => x.Identifier == mesh.Identifier).WriteXML();
-                                }
-                            }
-                            orphan.MatchingMesh = instance.Packages.First(x => x.Identifier == mesh.Identifier).FileName;
-                            orphan.Orphan = false;
-                        }                            
-                    }           
-                }
-                
-                if (orphan.Sims2Data.MMATDataBlock.Count > 0 && orphan.Mesh)
-                {                        
-                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0}: Checking for MMAT matches", orphan.FileName));
-                    string TextureName = orphan.Sims2Data.MMATDataBlock[0].Name;
-                    if (TextureName.Contains('!')) TextureName = TextureName.Split('!')[^1];
-                    if (TextureName.Contains('_')) TextureName = TextureName.Split('_')[0];
-                    if (TextureName.Contains('-')) TextureName = TextureName.Split('-')[0];
-                    if (TextureName != "")
-                    {
-                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0}: Searching for texture: {1}", orphan.FileName, TextureName));                        orphan.Orphan = false;                            
-                        List<SimsPackage> matchingrecolors = [..allPackages.Where(x => x.Sims2Data.TXTRDataBlock.Any(t => t.FullTXTRName.Contains(TextureName, StringComparison.CurrentCultureIgnoreCase) && !x.Mesh))];
-                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Found {0} recolors of mesh {1}", matchingrecolors.Count, orphan.FileName));
-                        
-                        foreach (string fn in matchingrecolors.Select(x => x.FileName))
+                            { 
+                                if (orphan.Sims2Data.FunctionSort.Count != 0) instance.Packages.First(x => x.Identifier == package.Identifier).Sims2Data.FunctionSort = orphan.Sims2Data.FunctionSort; else if (!string.IsNullOrEmpty(orphan.Sims2Data.AltType)) instance.Packages.First(x => x.Identifier == package.Identifier).Sims2Data.AltType = orphan.Sims2Data.AltType;
+                                instance.Packages.First(x => x.Identifier == package.Identifier).MatchingMesh = orphan.FileName;
+                                instance.Packages.First(x => x.Identifier == package.Identifier).Orphan = false;
+                                orphan.MatchingRecolors ??= new();
+                                if (!orphan.MatchingRecolors.Contains(package.FileName)) orphan.MatchingRecolors.Add(package.FileName);
+                                //instance.Packages.First(x => x.Identifier == package.Identifier).WriteXML();
+                            }              
+                        } else if (orphan.Recolor)
                         {
-                            orphan.MatchingRecolors ??= new();
-                            if (!orphan.MatchingRecolors.Contains(fn)) orphan.MatchingRecolors.Add(fn);
+                            if (allPackages.Any(x => x.ObjectGUID == orphan.ObjectGUID && x.Mesh))
+                            {
+                                SimsPackage mesh = allPackages.First(x => x.ObjectGUID == orphan.ObjectGUID && x.Mesh);
+                                List<SimsPackage> rec = [..allPackages.Where(x => x.ObjectGUID == orphan.ObjectGUID && !x.Mesh)];
+                                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Found mesh {0} for orphan {1} and {2} recolors", mesh.FileName, orphan.FileName, rec.Count));
+                                foreach (SimsPackage package in rec)
+                                {
+                                    if (package.Identifier != orphan.Identifier)
+                                    {
+                                        instance.Packages.First(x => x.Identifier == package.Identifier).MatchingMesh = mesh.FileName;
+                                        if (instance.Packages.First(x => x.Identifier == mesh.Identifier).Sims2Data.FunctionSort.Count != 0) instance.Packages.First(x => x.Identifier == package.Identifier).Sims2Data.FunctionSort = instance.Packages.First(x => x.Identifier == mesh.Identifier).Sims2Data.FunctionSort;  else if (!string.IsNullOrEmpty(instance.Packages.First(x => x.Identifier == mesh.Identifier).Sims2Data.AltType)) instance.Packages.First(x => x.Identifier == package.Identifier).Sims2Data.AltType = instance.Packages.First(x => x.Identifier == mesh.Identifier).Sims2Data.AltType;
+                                        instance.Packages.First(x => x.Identifier == package.Identifier).Orphan = false;
+                                        instance.Packages.First(x => x.Identifier == mesh.Identifier).MatchingRecolors ??= new();
+                                        if (!instance.Packages.First(x => x.Identifier == mesh.Identifier).MatchingRecolors.Contains(package.FileName)) instance.Packages.First(x => x.Identifier == mesh.Identifier).MatchingRecolors.Add(package.FileName);
+                                        //instance.Packages.First(x => x.Identifier == package.Identifier).WriteXML();
+                                        //instance.Packages.First(x => x.Identifier == mesh.Identifier).WriteXML();
+                                    }
+                                }
+                                orphan.MatchingMesh = instance.Packages.First(x => x.Identifier == mesh.Identifier).FileName;
+                                orphan.Orphan = false;
+                            }                            
+                        }           
+                    }
+                } catch (Exception e)
+                {
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Failed to check GUID matches for {0}. Error: {1} - {2}.", orphan.FileName, e.Message, e.StackTrace));
+                }    
+                
+                try {
+                    if (orphan.Sims2Data.MMATDataBlock.Count > 0 && orphan.Mesh)
+                    {                        
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0}: Checking for MMAT matches", orphan.FileName));
+                        string TextureName = orphan.Sims2Data.MMATDataBlock[0].Name;
+                        if (TextureName.Contains('!')) TextureName = TextureName.Split('!')[^1];
+                        if (TextureName.Contains('_')) TextureName = TextureName.Split('_')[0];
+                        if (TextureName.Contains('-')) TextureName = TextureName.Split('-')[0];
+                        if (TextureName != "")
+                        {
+                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0}: Searching for texture: {1}", orphan.FileName, TextureName));                        orphan.Orphan = false;                            
+                            List<SimsPackage> matchingrecolors = [..allPackages.Where(x => x.Sims2Data.TXTRDataBlock.Any(t => t.FullTXTRName.Contains(TextureName, StringComparison.CurrentCultureIgnoreCase) && !x.Mesh))];
+                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Found {0} recolors of mesh {1}", matchingrecolors.Count, orphan.FileName));
+                            
+                            foreach (string fn in matchingrecolors.Select(x => x.FileName))
+                            {
+                                orphan.MatchingRecolors ??= new();
+                                if (!orphan.MatchingRecolors.Contains(fn)) orphan.MatchingRecolors.Add(fn);
+                            }
+                                                    
+                            foreach (SimsPackage package in matchingrecolors)
+                            {
+                                instance.Packages.First(x => x.Identifier == package.Identifier).MatchingMesh = orphan.FileName;
+                                if (orphan.Sims2Data.FunctionSort.Count != 0) instance.Packages.First(x => x.Identifier == package.Identifier).Sims2Data.FunctionSort = orphan.Sims2Data.FunctionSort; else if (!string.IsNullOrEmpty(orphan.Sims2Data.AltType)) instance.Packages.First(x => x.Identifier == package.Identifier).Sims2Data.AltType = orphan.Sims2Data.AltType;
+                                instance.Packages.First(x => x.Identifier == package.Identifier).Orphan = false;
+                                ////instance.Packages.First(x => x.Identifier == package.Identifier).WriteXML();
+                            }                        
+                        } else
+                        {
+                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0}: Texture name was blank: {1}", orphan.FileName, orphan.Sims2Data.MMATDataBlock[0].Name));
                         }
                                                 
-                        foreach (SimsPackage package in matchingrecolors)
-                        {
-                            instance.Packages.First(x => x.Identifier == package.Identifier).MatchingMesh = orphan.FileName;
-                            if (orphan.Sims2Data.FunctionSort.Count != 0) instance.Packages.First(x => x.Identifier == package.Identifier).Sims2Data.FunctionSort = orphan.Sims2Data.FunctionSort; else if (!string.IsNullOrEmpty(orphan.Sims2Data.AltType)) instance.Packages.First(x => x.Identifier == package.Identifier).Sims2Data.AltType = orphan.Sims2Data.AltType;
-                            instance.Packages.First(x => x.Identifier == package.Identifier).Orphan = false;
-                            ////instance.Packages.First(x => x.Identifier == package.Identifier).WriteXML();
-                        }                        
-                    } else
-                    {
-                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0}: Texture name was blank: {1}", orphan.FileName, orphan.Sims2Data.MMATDataBlock[0].Name));
-                    }
-                                            
-                } 
-                
-                if (orphan.Sims2Data.XNGBDataBlock.Count > 0) // is a texture
-                {                        
-                    if (orphan.Sims2Data.XNGBDataBlock.Count > 0){
-                        string TextureName = orphan.Sims2Data.XNGBDataBlock[0].ModelName;
-                        if (TextureName.Contains('!')) TextureName = TextureName.Split('!')[^1];
-                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Mesh package has no textures. Searching for {0}", TextureName));
-
-                        if(allPackages.Any(x => x.Sims2Data.TXTRDataBlock.Any(t => t.FullTXTRName.Contains(TextureName, StringComparison.CurrentCultureIgnoreCase)))){
-                            orphan.Orphan = false;
-                            orphan.MatchingRecolors ??= new();
-                            orphan.MatchingRecolors.Add(allPackages.First(x => x.Sims2Data.TXTRDataBlock.Any(t => t.FullTXTRName.Contains(TextureName, StringComparison.CurrentCultureIgnoreCase))).FileName);
-                            SimsPackage package = allPackages.First(x => x.Sims2Data.TXTRDataBlock.Any(t => t.FullTXTRName.Contains(TextureName, StringComparison.CurrentCultureIgnoreCase)));
-                            instance.Packages.First(x => x.Identifier == package.Identifier).MatchingMesh = orphan.FileName;
-                            if (orphan.Sims2Data.FunctionSort.Count != 0) instance.Packages.First(x => x.Identifier == package.Identifier).Sims2Data.FunctionSort = orphan.Sims2Data.FunctionSort; else if (!string.IsNullOrEmpty(orphan.Sims2Data.AltType)) instance.Packages.First(x => x.Identifier == package.Identifier).Sims2Data.AltType = orphan.Sims2Data.AltType;
-                            //instance.Packages.First(x => x.Identifier == package.Identifier).WriteXML();
-                        }
-                    }                        
-                } 
-                 
-                
-                if (orphan.Sims2Data.SHPEDataBlock.Count > 0) // is a mesh
+                    } 
+                } catch (Exception e)
                 {
-                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("File {0} has a SHPE", orphan.FileName));
-                    
-                    if (allPackages.Any(x => x.Sims2Data.EIDRDataBlock.Any(e => e.ResourceKeys.Any(r => orphan.Sims2Data.SHPEDataBlock.Any(s => s.FullKey == r.FullKey)))))
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Failed to check MMAT blocks for {0} for matches. Error: {1} - {2}.", orphan.FileName, e.Message, e.StackTrace));
+                }    
+                
+                try {
+                    if (orphan.Sims2Data.XNGBDataBlock.Count > 0) // is a texture
+                    {                        
+                        if (orphan.Sims2Data.XNGBDataBlock.Count > 0){
+                            string TextureName = orphan.Sims2Data.XNGBDataBlock[0].ModelName;
+                            if (TextureName.Contains('!')) TextureName = TextureName.Split('!')[^1];
+                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Mesh package has no textures. Searching for {0}", TextureName));
+
+                            if(allPackages.Any(x => x.Sims2Data.TXTRDataBlock.Any(t => t.FullTXTRName.Contains(TextureName, StringComparison.CurrentCultureIgnoreCase)))){
+                                orphan.Orphan = false;
+                                orphan.MatchingRecolors ??= new();
+                                orphan.MatchingRecolors.Add(allPackages.First(x => x.Sims2Data.TXTRDataBlock.Any(t => t.FullTXTRName.Contains(TextureName, StringComparison.CurrentCultureIgnoreCase))).FileName);
+                                SimsPackage package = allPackages.First(x => x.Sims2Data.TXTRDataBlock.Any(t => t.FullTXTRName.Contains(TextureName, StringComparison.CurrentCultureIgnoreCase)));
+                                instance.Packages.First(x => x.Identifier == package.Identifier).MatchingMesh = orphan.FileName;
+                                if (orphan.Sims2Data.FunctionSort.Count != 0) instance.Packages.First(x => x.Identifier == package.Identifier).Sims2Data.FunctionSort = orphan.Sims2Data.FunctionSort; else if (!string.IsNullOrEmpty(orphan.Sims2Data.AltType)) instance.Packages.First(x => x.Identifier == package.Identifier).Sims2Data.AltType = orphan.Sims2Data.AltType;
+                                //instance.Packages.First(x => x.Identifier == package.Identifier).WriteXML();
+                            }
+                        }                        
+                    } 
+                } catch (Exception e)
+                {
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Failed to check XNGB blocks for {0} for matches. Error: {1} - {2}.", orphan.FileName, e.Message, e.StackTrace));
+                }    
+                 
+                try {
+                    if (orphan.Sims2Data.SHPEDataBlock.Count != 0) // is a mesh
                     {
-                        List<SimsPackage> texturePackages = [..allPackages.Where(x => x.Sims2Data.EIDRDataBlock.Any(e => e.ResourceKeys.Any(r => orphan.Sims2Data.SHPEDataBlock.Any(s => s.FullKey == r.FullKey))))];
-                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Found {0} recolors of mesh {1}", texturePackages.Count, orphan.FileName));
-                        foreach (SimsPackage package in texturePackages)
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("File {0} has a SHPE", orphan.FileName));
+                        
+                        if (allPackages.Any(x => x.Sims2Data.EIDRDataBlock.Any(e => e.ResourceKeys.Any(r => orphan.Sims2Data.SHPEDataBlock.Any(s => s.FullKey == r.FullKey)))))
                         {
-                            instance.Packages.First(x => x.Identifier == package.Identifier).MatchingMesh = orphan.FileName;
-                            if (orphan.Sims2Data.FunctionSort.Count != 0) instance.Packages.First(x => x.Identifier == package.Identifier).Sims2Data.FunctionSort = orphan.Sims2Data.FunctionSort;else if (!string.IsNullOrEmpty(orphan.Sims2Data.AltType)) instance.Packages.First(x => x.Identifier == package.Identifier).Sims2Data.AltType = orphan.Sims2Data.AltType;
-                            instance.Packages.First(x => x.Identifier == package.Identifier).Orphan = false;
-                            //instance.Packages.First(x => x.Identifier == package.Identifier).WriteXML();
-                        }
-                        orphan.Orphan = false;
-                        foreach (string fn in texturePackages.Select(x => x.FileName))
-                        {
-                            orphan.MatchingRecolors ??= new();
-                            if (!orphan.MatchingRecolors.Contains(fn)) orphan.MatchingRecolors.Add(fn);
+                            List<SimsPackage> texturePackages = [..allPackages.Where(x => x.Sims2Data.EIDRDataBlock.Any(e => e.ResourceKeys.Any(r => orphan.Sims2Data.SHPEDataBlock.Any(s => s.FullKey == r.FullKey))))];
+                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Found {0} recolors of mesh {1}", texturePackages.Count, orphan.FileName));
+                            foreach (SimsPackage package in texturePackages)
+                            {
+                                instance.Packages.First(x => x.Identifier == package.Identifier).MatchingMesh = orphan.FileName;
+                                if (orphan.Sims2Data.FunctionSort.Count != 0) instance.Packages.First(x => x.Identifier == package.Identifier).Sims2Data.FunctionSort = orphan.Sims2Data.FunctionSort;else if (!string.IsNullOrEmpty(orphan.Sims2Data.AltType)) instance.Packages.First(x => x.Identifier == package.Identifier).Sims2Data.AltType = orphan.Sims2Data.AltType;
+                                instance.Packages.First(x => x.Identifier == package.Identifier).Orphan = false;
+                                //instance.Packages.First(x => x.Identifier == package.Identifier).WriteXML();
+                            }
+                            orphan.Orphan = false;
+                            foreach (string fn in texturePackages.Select(x => x.FileName))
+                            {
+                                orphan.MatchingRecolors ??= new();
+                                if (!orphan.MatchingRecolors.Contains(fn)) orphan.MatchingRecolors.Add(fn);
+                            }
                         }
                     }
-                }
+                } catch (Exception e)
+                {
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Failed to check SHPE blocks for {0} for matches. Error: {1} - {2}.", orphan.FileName, e.Message, e.StackTrace));
+                }    
 
                 if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Checking recolor GUID {0} for a match.", orphan.ObjectGUID));
-                if (orphan.Sims2Data.EIDRDataBlock.Count > 0)
-                {
-                    if (allPackages.Any(x => x.Sims2Data.IndexEntries.Any(i => orphan.Sims2Data.EIDRDataBlock.Any(e => e.ResourceKeys.Any(r => r.FullKey == i.CompleteID && x.Mesh)))))
-                    {
+                
+                try
+                {                
+                    if (orphan.Sims2Data.EIDRDataBlock.Count != 0)
+                    {                    
                         if (allPackages.Any(x => x.Sims2Data.IndexEntries.Any(i => orphan.Sims2Data.EIDRDataBlock.Any(e => e.ResourceKeys.Any(r => r.FullKey == i.CompleteID && x.Mesh)))))
                         {
                             SimsPackage mesh = allPackages.First(x => x.Sims2Data.IndexEntries.Any(i => orphan.Sims2Data.EIDRDataBlock.Any(e => e.ResourceKeys.Any(r => r.FullKey == i.CompleteID && x.Mesh))));
@@ -1729,12 +1747,14 @@ namespace SimsCCManager.Globals
                                 }
                                 //instance.Packages.First(x => x.Identifier == mesh.Identifier).WriteXML();
                             }
-                        }
-                        
-                    }
-                }            
+                        }                    
+                    }  
+                } catch (Exception e)
+                {
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Failed to check 3IDR blocks for {0} for matches. Error: {1} - {2}.", orphan.FileName, e.Message, e.StackTrace));
+                }         
 
-                if (orphan.Sims2Data.SHPEDataBlock.Count > 0) //is a mesh
+                /*if (orphan.Sims2Data.SHPEDataBlock.Count != 0) //is a mesh
                 {
                     if (allPackages.Any(x => x.Sims2Data.EIDRDataBlock.Any(e => e.ResourceKeys.Any(r => orphan.Sims2Data.IndexEntries.Any(i => i.CompleteID == r.FullKey))))){
                         List<SimsPackage> matches = allPackages.Where(x => x.Sims2Data.EIDRDataBlock.Any(e => e.ResourceKeys.Any(r => orphan.Sims2Data.IndexEntries.Any(i => i.CompleteID == r.FullKey)))).ToList();
@@ -1752,7 +1772,8 @@ namespace SimsCCManager.Globals
                             if (!orphan.MatchingRecolors.Contains(fn)) orphan.MatchingRecolors.Add(fn);
                         }
                     }
-                }
+                }*/
+                
             }
             orphan.HasBeenRead = true;
             //orphan.WriteXML();

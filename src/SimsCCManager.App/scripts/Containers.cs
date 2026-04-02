@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Metadata.Ecma335;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -1998,6 +1999,37 @@ namespace SimsCCManager.Containers
             if (string.IsNullOrEmpty(Sims2Data.AltType)) Sims2Data.AltType = package.Sims2Data.AltType;
         }
 
+        public void CheckDuplicates(GameInstance instance)
+        {
+            List<SimsPackage> matches = [..instance.Packages.Where(i => i.PackageData.IndexEntries.Any(ie => PackageData.IndexEntries.Any(pd => pd.CompleteID == ie.CompleteID && i.Identifier != Identifier)))];
+            bool AlreadyDupe = IsDuplicate;
+            if (Duplicates == null) Duplicates = new();
+            foreach (SimsPackage match in matches)
+            {
+                Duplicates.Add(match.FileName);
+                foreach (IndexEntry ie in PackageData.IndexEntries)
+                {
+                    if (match.PackageData.IndexEntries.Any(x => x.CompleteID == ie.CompleteID)) 
+                    {
+                        IsDuplicate = true; 
+                    } else {
+                        IsDuplicate = AlreadyDupe;
+                        Duplicates.Remove(match.FileName);                        
+                        return;
+                    }
+                }
+                if (IsDuplicate)
+                {
+                    int m = instance.Packages.IndexOf(match);
+                    instance.Packages[m].IsDuplicate = true;
+                    if (instance.Packages[m].Duplicates == null) instance.Packages[m].Duplicates = new();
+                    instance.Packages[m].Duplicates.Add(FileName);
+                    instance.Packages[m].WriteXML();
+                }
+            }
+            
+        }
+
 
         public void WriteXML()
         {
@@ -2359,7 +2391,7 @@ namespace SimsCCManager.Containers
         {
             if (EntryCount("gmdc") > 0) Mesh = true;
             if (EntryCount("txtr") > 0) Recolor = true;
-            if ((Mesh && !Recolor) || (!Recolor && Mesh)) Orphan = true;
+            if ((Mesh && !Recolor) || (!Recolor && Mesh)) Orphan = true; else if (Mesh && Recolor) Orphan = false;
             if (FunctionSort.Count > 0) return;
 
             if (IsMod())

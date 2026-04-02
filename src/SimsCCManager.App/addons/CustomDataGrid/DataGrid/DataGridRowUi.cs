@@ -45,18 +45,23 @@ public partial class DataGridRowUi : MarginContainer
 	{
 		get { return _selected; }
 		set { _selected = value; 
-			if (value) {
-				ColorHolder.Color = SelectedColor;
-				foreach (DataGridCell cell in Cells)
-				{
-					cell.FontColor = SelectedTextColor;
-				}
-			} else {
-				ColorHolder.Color = BackgroundColor;
-				foreach (DataGridCell cell in Cells)
-				{
-					cell.FontColor = TextColor;
-				}
+			CallDeferred(nameof(ChangeSelected));
+		}
+	}
+
+	public void ChangeSelected()
+	{
+		if (Selected) {
+			ColorHolder.Color = SelectedColor;
+			foreach (DataGridCell cell in Cells)
+			{
+				cell.FontColor = SelectedTextColor;
+			}
+		} else {
+			ColorHolder.Color = BackgroundColor;
+			foreach (DataGridCell cell in Cells)
+			{
+				cell.FontColor = TextColor;
 			}
 		}
 	}

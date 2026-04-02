@@ -477,10 +477,10 @@ public partial class DataGrid : Control
 				_rowdata = _rows.GetRange(rowsstart, (int)RowsOnScreen);
 			}
 
-
 			for(int i = 0; i < _rowdata.Count; i++){
 				ChangeRow(_rowdata[i], i);
 			}
+			
 
 			ScrollPosition = from;
 			Populating = false;
@@ -846,6 +846,7 @@ public partial class DataGrid : Control
 
 		VisibleRows[vidx].OverallIndex = data.OverallIdx;
 		VisibleRows[vidx].PopulatedIndex = data.PopulatedIdx;
+		VisibleRows[vidx].Selected = data.Selected;
 
 		if (Headers.Any(x => x.CellType == CellOptions.Toggle))
 		{

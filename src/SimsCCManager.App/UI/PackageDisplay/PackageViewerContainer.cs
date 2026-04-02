@@ -423,7 +423,7 @@ public partial class PackageViewerContainer : MarginContainer
                 SnapshotterActive = true; 
                 Subviewport.AddChild(currSnapshotter);
                 currSnapshotter.DisplayOverlay(package);  
-            } else if ((package.Mesh && (package.MatchingRecolors.Count > 0 || package.Recolor))|| !string.IsNullOrEmpty(package.MatchingMesh))
+            } else if ((package.Mesh && (package.MatchingRecolors != null || package.Recolor))|| !string.IsNullOrEmpty(package.MatchingMesh))
             {   
                 if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Making snapshotter for {0}", package.FileName));
                 ImageContainer.Visible = true;

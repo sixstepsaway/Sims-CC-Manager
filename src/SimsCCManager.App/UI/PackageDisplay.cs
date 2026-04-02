@@ -160,7 +160,7 @@ PackedFile Packages/////*.package
 
 
     
-
+    public bool StopRunning = false;
     
 
 
@@ -258,6 +258,7 @@ PackedFile Packages/////*.package
 
     public void ReadPackageDetails()
     {
+        
         if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Reading the package details for {0} packages!", ThisInstance.Packages.Count));
         runningTasks = new();
         new Thread(() => {    
@@ -284,86 +285,129 @@ PackedFile Packages/////*.package
                 int toread = (int)UIAllModsContainer.DataGrid.RowsOnScreen;
                 if (toread > ThisInstance.Packages.Count) toread = ThisInstance.Packages.Count;
 
-                Parallel.For(0, toread, GlobalVariables.ParallelSettings, p =>
+                Parallel.For(0, toread, GlobalVariables.ParallelSettings, (p, loopState) =>
                 {
+                    if (StopRunning) loopState.Stop();
                     if (!ThisInstance.Packages[p].HasBeenRead)
                     {
                         if (ThisInstance.Packages[p].IsDirectory)
                         {
-                                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Reading: {0}", ThisInstance.Packages[p].FileName));
-                                DirectoryInfo fi = new(ThisInstance.Packages[p].Location);                    
-                                ThisInstance.Packages[p].ReadPackageDetails(ThisInstance);
-                                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Finished reading {0}", ThisInstance.Packages[p].FileName));
-                                UIAllModsContainer.ModsRead++;
+                            if (StopRunning) loopState.Stop();
+                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Reading: {0}", ThisInstance.Packages[p].FileName));
+                            DirectoryInfo fi = new(ThisInstance.Packages[p].Location);                    
+                            ThisInstance.Packages[p].ReadPackageDetails(ThisInstance);
+                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Finished reading {0}", ThisInstance.Packages[p].FileName));
+                            if (StopRunning) loopState.Stop();
+                            UIAllModsContainer.ModsRead++;
                         } else
                         {
-                                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Reading details of: {0}", ThisInstance.Packages[p].FileName));
-                                FileInfo fi = new(ThisInstance.Packages[p].Location);
-                                ThisInstance.Packages[p].ReadPackageDetails(ThisInstance);
-                                InstanceControllers.CheckOrphanSingle(ThisInstance.Packages[p], ThisInstance.Files.OfType<SimsPackage>().Where(x => x.HasBeenRead).ToList(), ThisInstance);
-                                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Finished reading {0}", ThisInstance.Packages[p].FileName));
-                                UIAllModsContainer.ModsRead++;
+                            if (StopRunning) loopState.Stop();
+                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Reading details of: {0}", ThisInstance.Packages[p].FileName));
+                            FileInfo fi = new(ThisInstance.Packages[p].Location);
+                            ThisInstance.Packages[p].ReadPackageDetails(ThisInstance);
+                            InstanceControllers.CheckOrphanSingle(ThisInstance.Packages[p], ThisInstance.Files.OfType<SimsPackage>().Where(x => x.HasBeenRead).ToList(), ThisInstance);
+                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Finished reading {0}", ThisInstance.Packages[p].FileName));
+                            if (StopRunning) loopState.Stop();
+                            UIAllModsContainer.ModsRead++;
                         }
-                    }                
+                    }  
+                    if (StopRunning) loopState.Stop();              
                 });
 
                 
                 if (toread < ThisInstance.Packages.Count)
                 {
-                    Parallel.For((int)UIAllModsContainer.DataGrid.RowsOnScreen, ThisInstance.Packages.Count, GlobalVariables.ParallelSettings, p =>
+                    Parallel.For((int)UIAllModsContainer.DataGrid.RowsOnScreen, ThisInstance.Packages.Count, GlobalVariables.ParallelSettings, (p, loopState) =>
                     {
                         if (!ThisInstance.Packages[p].HasBeenRead)
                         {
                             if (ThisInstance.Packages[p].IsDirectory)
                             {
                                     if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Reading: {0}", ThisInstance.Packages[p].FileName));
-                                    DirectoryInfo fi = new(ThisInstance.Packages[p].Location);                    
+                                    if (StopRunning) loopState.Stop();
+                                    DirectoryInfo fi = new(ThisInstance.Packages[p].Location); 
+                                    if (StopRunning) loopState.Stop();                   
                                     ThisInstance.Packages[p].ReadPackageDetails(ThisInstance);
+                                    if (StopRunning) loopState.Stop();
                                     if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Finished reading {0}", ThisInstance.Packages[p].FileName));
-                                    UIAllModsContainer.ModsRead++;
+                                    if (StopRunning) loopState.Stop();
+                                    if (IsInstanceValid(UIAllModsContainer)) UIAllModsContainer.ModsRead++;
                             } else
                             {
                                     if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Reading details of: {0}", ThisInstance.Packages[p].FileName));
+                                    if (StopRunning) loopState.Stop();
                                     FileInfo fi = new(ThisInstance.Packages[p].Location);
+                                    if (StopRunning) loopState.Stop();
                                     ThisInstance.Packages[p].ReadPackageDetails(ThisInstance);
+                                    if (StopRunning) loopState.Stop();
                                     InstanceControllers.CheckOrphanSingle(ThisInstance.Packages[p], ThisInstance.Files.OfType<SimsPackage>().Where(x => x.HasBeenRead).ToList(), ThisInstance);
+                                    if (StopRunning) loopState.Stop();
                                     if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Finished reading {0}", ThisInstance.Packages[p].FileName));
-                                    UIAllModsContainer.ModsRead++;
+                                    if (StopRunning) loopState.Stop();
+                                    if (IsInstanceValid(UIAllModsContainer)) UIAllModsContainer.ModsRead++;
                             }
                         }
+                        if (StopRunning) loopState.Stop();
                     });
                 }                
 
                 UIAllModsContainer.ModReadingStage = 1;
 
-                if (ThisInstance.Files.OfType<SimsPackage>().Any(x => x.Orphan))
+                if (ThisInstance.Packages.Any(x => x.Orphan))
                 {
                     if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("There are still {0} orphans. Doing a quick check...", ThisInstance.Files.OfType<SimsPackage>().Count(x => x.Orphan)));
-                    Parallel.For(0, ThisInstance.Packages.Count, GlobalVariables.ParallelSettings, i =>
+                    Parallel.For(0, ThisInstance.Packages.Count, GlobalVariables.ParallelSettings, (i, loopState) =>
                     {
                         if (!ThisInstance.Packages[i].IsDirectory)
-                        {                        
+                        {        
+                            if (StopRunning) loopState.Stop();               
                             if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Checking for matching meshes or recolors for: {0}", ThisInstance.Packages[i].FileName));
+                            if (StopRunning) loopState.Stop();
                             InstanceControllers.CheckOrphanSingle(ThisInstance.Packages[i], ThisInstance.Files.OfType<SimsPackage>().Where(x => x.HasBeenRead).ToList(), ThisInstance);
                         }
+                        if (StopRunning) loopState.Stop();
                     });
                 }
 
-                Parallel.For(0, ThisInstance.Packages.Count, GlobalVariables.ParallelSettings, p =>
+                Parallel.For(0, ThisInstance.Packages.Count, GlobalVariables.ParallelSettings, (p, loopState) =>
                 {
-                    if (ThisInstance.Packages[p].Type == "Unknown" && ThisInstance.Packages[p].MatchingRecolors.Any())
+                    if (ThisInstance.Packages[p].Type == "Unknown" && ThisInstance.Packages[p].MatchingRecolors != null)
                     {
-                        ThisInstance.Packages[p].PackageData.AltType = ThisInstance.Packages.First(x => x.FileName == ThisInstance.Packages[p].MatchingRecolors[0]).Type;
+                        if (StopRunning) loopState.Stop();                        
+                        if (ThisInstance.Packages.Any(x => x.FileName == ThisInstance.Packages[p].MatchingRecolors[0])) ThisInstance.Packages[p].PackageData.AltType = ThisInstance.Packages.First(x => x.FileName == ThisInstance.Packages[p].MatchingRecolors[0]).Type;
                     } else if (ThisInstance.Packages[p].Type == "Unknown" && string.IsNullOrEmpty(ThisInstance.Packages[p].MatchingMesh))
                     {
-                        ThisInstance.Packages[p].PackageData.AltType = ThisInstance.Packages.First(x => x.FileName == ThisInstance.Packages[p].MatchingMesh).Type;
+                        if (StopRunning) loopState.Stop();
+                        if (ThisInstance.Packages.Any(x => x.FileName == ThisInstance.Packages[p].MatchingMesh)) ThisInstance.Packages[p].PackageData.AltType = ThisInstance.Packages.First(x => x.FileName == ThisInstance.Packages[p].MatchingMesh).Type;
                     }
+                    if (ThisInstance.Packages[p].Mesh && ThisInstance.Packages[p].Recolor)
+                    {
+                        ThisInstance.Packages[p].Orphan = false;
+                    }
+                    if (StopRunning) loopState.Stop();
                     UIAllModsContainer.UpdateItem(ThisInstance.Packages[p], null);
+                    if (StopRunning) loopState.Stop();
+                    ThisInstance.Packages[p].WriteXML();
+                });
+
+                Parallel.For(0, ThisInstance.Packages.Count, GlobalVariables.ParallelSettings, (p, loopState) =>
+                {
+                    if (StopRunning) loopState.Stop();
+                    try { 
+                        if (ThisInstance.Packages[p].PackageData.IndexEntries.Any(ie => ThisInstance.Packages.Any(i => i.PackageData.IndexEntries.Any(ip => ip.CompleteID == ie.CompleteID && i.Identifier != ThisInstance.Packages[p].Identifier)))){
+                            if (StopRunning) loopState.Stop();
+                            ThisInstance.Packages[p].CheckDuplicates(ThisInstance);
+                        }    
+                    } catch (Exception e)
+                    {
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Caught exception checking {0} for duplicates. Error: {1} - {2}", ThisInstance.Packages[p].FileName, e.Message, e.StackTrace));
+                    }
+                    if (StopRunning) loopState.Stop();                
                     ThisInstance.Packages[p].WriteXML();
                 });
             }            
             
-            UIAllModsContainer.ModReadingStage = 2;            
+            if (IsInstanceValid(UIAllModsContainer)) UIAllModsContainer.ModReadingStage = 2;            
 
         }){IsBackground = true}.Start();
     }

@@ -63,6 +63,7 @@ public partial class SettingsAndHelpControls : MarginContainer
 
     private void ReturnToMainMenu()
     {
+        packageDisplay.StopRunning = true;
         GlobalVariables.mainWindow.ReturnToMain();
     }
 }

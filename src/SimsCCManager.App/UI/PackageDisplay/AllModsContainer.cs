@@ -105,7 +105,7 @@ public partial class AllModsContainer : MarginContainer
     {
         get { return  _modstotal; }
         set {  _modstotal = value; 
-            CallDeferred(nameof(SetModNumber));
+            if (IsInstanceValid(this)) CallDeferred(nameof(SetModNumber));
         }
     }
     private  int _modsread;
@@ -113,7 +113,7 @@ public partial class AllModsContainer : MarginContainer
     {
         get { return  _modsread; }
         set {  _modsread = value;  
-            CallDeferred(nameof(SetModNumber));
+            if (IsInstanceValid(this)) CallDeferred(nameof(SetModNumber));
         }
     }
     private  int _modreadingstage;
@@ -121,7 +121,7 @@ public partial class AllModsContainer : MarginContainer
     {
         get { return  _modreadingstage; }
         set {  _modreadingstage = value;  
-            CallDeferred(nameof(SetModNumber));
+            if (IsInstanceValid(this)) CallDeferred(nameof(SetModNumber));
         }
     }
 
@@ -303,6 +303,7 @@ public partial class AllModsContainer : MarginContainer
     List<DataGridCellIcons> icons = new() {
         new() { TooltipMessage = "Root Mod", IconData = "RootMod", IconName = "Root", IconImage = GD.Load<Texture2D>("res://assets/icons/materialicons/twotone_build_circle_black_48dp.png")},
         new() { TooltipMessage = "Out of Date", IconData = "OutOfDate", IconName = "Out of Date", IconImage = GD.Load<Texture2D>("res://assets/icons/materialicons/twotone_cancel_black_48dp.png")},
+        new() { TooltipMessage = "Has Duplicates", IconData = "IsDuplicate", IconName = "Duplicates", IconImage = GD.Load<Texture2D>("res://assets/icons/materialicons/twotone_backup_table_black_48dp.png")},
         new() { TooltipMessage = "Orphan", IconData = "Orphan", IconName = "Orphan", IconImage = GD.Load<Texture2D>("res://assets/icons/materialicons/twotone_child_care_black_48dp.png")},
         new() { TooltipMessage = "Favorite", IconData = "Favorite", IconName = "Favorite", IconImage = GD.Load<Texture2D>("res://assets/icons/materialicons/twotone_favorite_black_48dp.png")},
         new() { TooltipMessage = "Broken", IconData = "Broken", IconName = "Broken", IconImage = GD.Load<Texture2D>("res://assets/icons/materialicons/twotone_broken_image_black_48dp.png")},
@@ -2515,6 +2516,7 @@ public partial class AllModsContainer : MarginContainer
     {
         //if (data == "LoadOrder" || data == "IsEnabled") UpdateProfilePackages();
         //package.WriteXML();
+        if (packageDisplay.StopRunning) return;
         if (data != null)
         {
             if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0} - Package data changed: {1} - New data: {2}", package.FileName, data, DataGrid.GetProperty(package, data)));            
