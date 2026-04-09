@@ -116,13 +116,17 @@ public partial class PackageViewerContainer : MarginContainer
             }                
         }    
     }
+
+    
     
     private SimsPackage _package;
     public SimsPackage package
     {
         get { return _package; }
-        set { _package = value; 
-        DisplayPackage();}
+        set { 
+            ClearContents();
+            _package = value; 
+            DisplayPackage();}
     }
 
     public override void _Ready()
@@ -210,6 +214,9 @@ public partial class PackageViewerContainer : MarginContainer
         PVIs.Clear();
         if (SnapshotterActive) {
             //currSnapshotter?.DisconnectContainer();
+            int pidx = packageDisplay.ThisInstance.Packages.IndexOf(packageDisplay.ThisInstance.Packages.First(x => x.Identifier == package.Identifier));
+            packageDisplay.ThisInstance.Packages[pidx].SnapshotterCameraSettings = currSnapshotter.GetCameraSettings();
+            packageDisplay.ThisInstance.Packages[pidx].WriteXML();    
             Subviewport.RemoveChild(currSnapshotter);
             currSnapshotter?.QueueFree();
         }
@@ -223,7 +230,7 @@ public partial class PackageViewerContainer : MarginContainer
     private void DisplayPackage()
     {
         ShowOverrideThumb = false;
-        ClearContents();
+        //ClearContents();
         ImageContainer.CustomMinimumSize = new((Size.X / 2) - 10, 0);
         AddPVI("File Name:", package.FileName);
         AddPVI("File Size:", package.FileSize);
@@ -379,66 +386,35 @@ public partial class PackageViewerContainer : MarginContainer
 
         if (package.PackageData != null)
         {     
+            
+            currSnapshotter = SnapshotterPS.Instantiate() as Snapshotter;
+            currSnapshotter.Packages = packageDisplay.ThisInstance.Files.OfType<SimsPackage>().ToList();
+            currSnapshotter.MyContainer = SubviewportContainer;
+            if (package.SnapshotterCameraSettings != null) currSnapshotter.camSettings = package.SnapshotterCameraSettings;                
+            ImageContainer.Visible = true;
+            ImageTextureRect.Visible = false;
+            SubviewportTexture.Visible = true;
+            SnapshotterActive = true; 
+            Subviewport.AddChild(currSnapshotter);
             if (package.Type.Contains("Face Template"))
-            {
-                ImageContainer.Visible = true;
-                ImageTextureRect.Visible = false;
-                SubviewportTexture.Visible = true;
-                currSnapshotter = SnapshotterPS.Instantiate() as Snapshotter;
-                currSnapshotter.Packages = packageDisplay.ThisInstance.Files.OfType<SimsPackage>().ToList();
-                currSnapshotter.MyContainer = SubviewportContainer;
-                SnapshotterActive = true; 
-                Subviewport.AddChild(currSnapshotter);
+            {                
                 bool done = currSnapshotter.BuildSims2Mesh(package);
             } else if (package.Type.Contains("Skin"))
-            {
-                ImageContainer.Visible = true;
-                ImageTextureRect.Visible = false;
-                SubviewportTexture.Visible = true;
-                currSnapshotter = SnapshotterPS.Instantiate() as Snapshotter;
-                currSnapshotter.Packages = packageDisplay.ThisInstance.Files.OfType<SimsPackage>().ToList();
-                currSnapshotter.MyContainer = SubviewportContainer;
-                SnapshotterActive = true; 
-                Subviewport.AddChild(currSnapshotter);
+            {                
                 currSnapshotter.DisplaySkin(package);                
             } else if (package.Type.Contains("Eyecolor"))
-            {
-                ImageContainer.Visible = true;
-                ImageTextureRect.Visible = false;
-                SubviewportTexture.Visible = true;
-                currSnapshotter = SnapshotterPS.Instantiate() as Snapshotter;
-                currSnapshotter.Packages = packageDisplay.ThisInstance.Files.OfType<SimsPackage>().ToList();
-                currSnapshotter.MyContainer = SubviewportContainer;
-                SnapshotterActive = true; 
-                Subviewport.AddChild(currSnapshotter);
+            {                
                 currSnapshotter.DisplayEyes(package);  
             } else if (package.Type.Contains("Makeup"))
-            {
-                ImageContainer.Visible = true;
-                ImageTextureRect.Visible = false;
-                SubviewportTexture.Visible = true;
-                currSnapshotter = SnapshotterPS.Instantiate() as Snapshotter;
-                currSnapshotter.Packages = packageDisplay.ThisInstance.Files.OfType<SimsPackage>().ToList();
-                currSnapshotter.MyContainer = SubviewportContainer;
-                SnapshotterActive = true; 
-                Subviewport.AddChild(currSnapshotter);
+            {                
                 currSnapshotter.DisplayOverlay(package);  
             } else if ((package.Mesh && (package.MatchingRecolors != null || package.Recolor))|| !string.IsNullOrEmpty(package.MatchingMesh))
-            {   
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Making snapshotter for {0}", package.FileName));
-                ImageContainer.Visible = true;
-                ImageTextureRect.Visible = false;
-                SubviewportTexture.Visible = true;
-                currSnapshotter = SnapshotterPS.Instantiate() as Snapshotter;
-                currSnapshotter.Packages = packageDisplay.ThisInstance.Files.OfType<SimsPackage>().ToList();
-                currSnapshotter.MyContainer = SubviewportContainer;
-                SnapshotterActive = true; 
-                Subviewport.AddChild(currSnapshotter);
+            {                   
                 bool done = currSnapshotter.BuildSims2Mesh(package);
                 if (!done)
                 {
                     SnapshotterActive = false;
-                    if (package.PackageImage != null)
+                    /*if (package.PackageImage != null)
                     {
                         ImageContainer.Visible = true;
                         ImageTextureRect.Visible = true;
@@ -465,9 +441,9 @@ public partial class PackageViewerContainer : MarginContainer
                     } else
                     {
                         ImageContainer.Visible = false;
-                    }
+                    }*/
                 }
-            } else if (package.PackageImage != null)
+            /*} else if (package.PackageImage != null)
             {
                 ImageContainer.Visible = true;
                 ImageTextureRect.Visible = true;
@@ -475,7 +451,7 @@ public partial class PackageViewerContainer : MarginContainer
                 Images.Insert(0, package.PackageImage);
                 ImageTextureRect.Texture = ImageTexture.CreateFromImage(package.PackageImage);
                 SnapshotterActive = false;
-            } else
+            */} else
             {
                 ImageContainer.Visible = false;
                 SnapshotterActive = false;

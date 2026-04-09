@@ -1,4 +1,4 @@
-[gd_scene load_steps=21 format=3 uid="uid://co0gkpc2bm4hh"]
+[gd_scene load_steps=23 format=3 uid="uid://co0gkpc2bm4hh"]
 
 [ext_resource type="Script" uid="uid://dbbjdwavbnmsj" path="res://tools/snapshotter/Snapshotter.cs" id="1_pa3fr"]
 [ext_resource type="ArrayMesh" uid="uid://db0gc3p4vj0ls" path="res://assets/bases/af.obj" id="2_0ckba"]
@@ -6,6 +6,7 @@
 [ext_resource type="ArrayMesh" uid="uid://b42fm76a7nb6q" path="res://assets/bases/am.obj" id="3_v0l6e"]
 [ext_resource type="ArrayMesh" uid="uid://b8sart3a4ufwe" path="res://assets/bases/cu.obj" id="4_5rvtu"]
 [ext_resource type="ArrayMesh" uid="uid://bje7vh3rwcr3a" path="res://assets/bases/pu.obj" id="5_tjpfh"]
+[ext_resource type="FontFile" uid="uid://cfdedqqrcr8di" path="res://assets/fonts/Scada/Scada-Regular.ttf" id="7_5rvtu"]
 
 [sub_resource type="BoxMesh" id="BoxMesh_pa3fr"]
 flip_faces = true
@@ -61,7 +62,11 @@ roughness = 0.8
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_v0l6e"]
 
-[node name="Snapshotter" type="Node3D" node_paths=PackedStringArray("Box", "AabBox", "S2Af", "S2Am", "S2Pu", "S2Cu", "CameraOuter", "CameraInner", "Camera", "Forward", "Backward", "Left", "Right", "Up", "Down")]
+[sub_resource type="Theme" id="Theme_tjpfh"]
+Button/font_sizes/font_size = 14
+Button/fonts/font = ExtResource("7_5rvtu")
+
+[node name="Snapshotter" type="Node3D" node_paths=PackedStringArray("Box", "AabBox", "S2Af", "S2Am", "S2Pu", "S2Cu", "CameraOuter", "CameraInner", "Camera", "Forward", "Backward", "Left", "Right", "Up", "Down", "CopypasteOptionsBox", "CopyButton", "PasteButton")]
 script = ExtResource("1_pa3fr")
 Box = NodePath("Node3D/Box")
 AabBox = NodePath("Node3D/AabSize")
@@ -78,6 +83,9 @@ Left = NodePath("Left")
 Right = NodePath("Right")
 Up = NodePath("Up")
 Down = NodePath("Down")
+CopypasteOptionsBox = NodePath("Control2")
+CopyButton = NodePath("Control2/VBoxContainer/Button")
+PasteButton = NodePath("Control2/VBoxContainer/Button2")
 
 [node name="Node3D" type="Node3D" parent="."]
 
@@ -111,6 +119,7 @@ visible = false
 environment = SubResource("Environment_mi4d4")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="Node3D/WorldEnvironment"]
+visible = false
 
 [node name="Sims2" type="Node3D" parent="."]
 visible = false
@@ -228,3 +237,26 @@ theme_override_styles/hover_pressed_mirrored = SubResource("StyleBoxEmpty_v0l6e"
 theme_override_styles/disabled = SubResource("StyleBoxEmpty_v0l6e")
 theme_override_styles/disabled_mirrored = SubResource("StyleBoxEmpty_v0l6e")
 theme_override_styles/focus = SubResource("StyleBoxEmpty_v0l6e")
+
+[node name="Control2" type="Control" parent="."]
+visible = false
+top_level = true
+layout_mode = 3
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Control2"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="Button" type="Button" parent="Control2/VBoxContainer"]
+layout_mode = 2
+theme = SubResource("Theme_tjpfh")
+text = "Copy Settings"
+
+[node name="Button2" type="Button" parent="Control2/VBoxContainer"]
+layout_mode = 2
+theme = SubResource("Theme_tjpfh")
+text = "Paste Settings"

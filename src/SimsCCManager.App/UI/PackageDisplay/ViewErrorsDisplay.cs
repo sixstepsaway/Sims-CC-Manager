@@ -28,7 +28,7 @@ public partial class ViewErrorsDisplay : MarginContainer
     [Export]
     Button RemoveOrphansButton;
     [Export]
-    Button CloseButton;
+    public Button CloseButton;
     [Export]
     Label FixErrorsHeader;
     [Export]
@@ -65,7 +65,7 @@ public partial class ViewErrorsDisplay : MarginContainer
         RemoveWrongButton.Pressed += () => RemoveWrongPackages();
         RemoveOrphansButton.Pressed += () => RemoveOrphanPackages();
         MoveWrongButton.Pressed += () => MoveWrongPackages();
-        CloseButton.Pressed += () => Close();
+        //CloseButton.Pressed += () => Close();
     }
 
     private void Close()

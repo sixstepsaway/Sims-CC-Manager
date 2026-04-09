@@ -77,6 +77,7 @@ public partial class AllModsContainer : MarginContainer
                 LoadThumbGrid();
                 GridSwapLabel.Text = "Data View";
             }
+            DataGrid.BlockInput = value;
             
         }
     }
@@ -151,8 +152,8 @@ public partial class AllModsContainer : MarginContainer
     bool StillProcessingPackages = false;
 
     
-	private List<DataGridRow> _hiddenrows;
-	public List<DataGridRow> HiddenRows
+	private List<Guid> _hiddenrows;
+	public List<Guid> HiddenRows
 	{
 		get { return _hiddenrows; }
 		set { _hiddenrows = value; 
@@ -354,6 +355,7 @@ public partial class AllModsContainer : MarginContainer
 
     private void LoadThumbGrid()
     {
+        HidePackageInfo();
         ThumbGrid = ThumbgridPS.Instantiate() as ThumbnailGrid;        
         ThumbGrid.BackgroundColor = GlobalVariables.LoadedTheme.BackgroundColor;
         ThumbGrid.ItemBackgroundColor = GlobalVariables.LoadedTheme.DataGridA;
@@ -362,7 +364,7 @@ public partial class AllModsContainer : MarginContainer
         ThumbGrid.SelectedColor = GlobalVariables.LoadedTheme.DataGridSelected;
         ThumbGrid.packageDisplay = packageDisplay;        
         ThumbGrid.PaneSize = new(GridContainer.Size.X - 15, GridContainer.Size.Y);
-        ThumbGrid.PaneSizer = GridContainer;
+        //ThumbGrid.PaneSizer = GridContainer;
         ThumbGrid.ThumbGridItemsSelected += (p) => ThumbGridItemsSelected(p);
         GridContainer.AddChild(ThumbGrid);
 
@@ -580,7 +582,7 @@ public partial class AllModsContainer : MarginContainer
                                 using (FileStream fs = File.OpenRead(simsPackage.InfoFile))
                                 using (ZipFile zipFile = new ZipFile(fs))
                                 {
-                                    if (!Utilities.CheckSignature(simsPackage.InfoFile, 4, Utilities.SignatureZip)){
+                                    if (!Utilities.CheckSignature(fs, 4, Utilities.SignatureZip)){
                                         using (FileStream fileStream = new(simsPackage.InfoFile, FileMode.Open, System.IO.FileAccess.Read)){
                                             using (StreamReader streamReader = new(fileStream)){
                                                 simsPackage = (SimsPackage)simsPackageSerializer.Deserialize(streamReader);
@@ -604,7 +606,7 @@ public partial class AllModsContainer : MarginContainer
                                     }                        
                                 }
                             }
-                            simsPackage.HasBeenRead = true;
+                            //simsPackage.HasBeenRead = true;
                         } else
                         {
                             simsPackage.FileName = fi.Name;
@@ -643,7 +645,7 @@ public partial class AllModsContainer : MarginContainer
                             using (FileStream fs = File.OpenRead(simsPackage.InfoFile))
                             using (ZipFile zipFile = new ZipFile(fs))
                             {
-                                if (!Utilities.CheckSignature(simsPackage.InfoFile, 4, Utilities.SignatureZip)){
+                                if (!Utilities.CheckSignature(fs, 4, Utilities.SignatureZip)){
                                     using (FileStream fileStream = new(simsPackage.InfoFile, FileMode.Open, System.IO.FileAccess.Read)){
                                         using (StreamReader streamReader = new(fileStream)){
                                             simsPackage = (SimsPackage)simsPackageSerializer.Deserialize(streamReader);
@@ -689,7 +691,7 @@ public partial class AllModsContainer : MarginContainer
                         simsPackage.DateCreated = Directory.GetCreationTime(linkedfile);
                         simsPackage.DateUpdated = DateTime.Now;
                         simsPackage.PackageCategory = packageDisplay.ThisInstance.Categories.First(x => x.Name == "Default");
-                        simsPackage.HasBeenRead = true;
+                        //simsPackage.HasBeenRead = true;
                         //simsPackage.WriteXML();                
                     }
                     pack.LinkedPackages.Add(simsPackage);
@@ -855,7 +857,22 @@ public partial class AllModsContainer : MarginContainer
             
             int i = 0;
             if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Packages: {0}", Packages.Count));
-            foreach (SimsPackage pack in Packages.Where(x => x.StandAlone).OrderBy(x => x.IsDirectory).ThenBy(x => x.FileName)){
+
+            List<SimsPackage> packages = [..Packages.Where(x => x.StandAlone)];
+
+            Parallel.For(0, packages.Count, GlobalVariables.ParallelSettings, i =>
+            {
+                try {
+                        DataGridRow newrow = CreateRow(packages[i], i); 
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Row {0}: {1}", i, packages[i].FileName));
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("-- Is Subrow: {0}\n -- Has Subitems: {1}", newrow.SubRow, newrow.SubRowItems.Count));
+                        rows.Add(newrow);   
+                        if (!FirstLoaded) GlobalVariables.mainWindow.IncrementLoadingScreen(1, string.Format("Creating data for {0}", packages[i].FileName), "All Mods: Making Data");                     
+                        i++;
+                    } catch (Exception e) { if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Caught exception creating row for {0}: {1} - {2}", packages[i].FileName, e.Message, e.StackTrace)); }
+            });
+
+            /*foreach (SimsPackage pack in Packages.Where(x => x.StandAlone)){
                 Task t = new Task( () => {                        
                     try { 
                         DataGridRow newrow = CreateRow(pack, i); 
@@ -868,9 +885,9 @@ public partial class AllModsContainer : MarginContainer
                 //if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Task {0} is {1}", t.Id, pack.FileName));
                 i++;
                 runningTasks.Add(t);                        
-            }
+            }*/
 
-            Parallel.ForEach(runningTasks, GlobalVariables.ParallelSettings, t =>
+            /*Parallel.ForEach(runningTasks, GlobalVariables.ParallelSettings, t =>
             {
                 t.Start();
             });
@@ -886,15 +903,15 @@ public partial class AllModsContainer : MarginContainer
                         }
                     }
                 }
-            }
+            }*/
 
-            if (rows.Count != 0) { 
+            if (!rows.IsEmpty) { 
                 if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Adding {0} rows to grid.", rows.Count));
-                List<DataGridRow> _rows = rows.OrderBy(x => x.RowRef).ToList();
-                for (int r = 0; r < _rows.Count; r++){
+                List<DataGridRow> _rows = rows.OrderBy(x => x.OverallIdx).ToList();
+                /*for (int r = 0; r < _rows.Count; r++){
                     _rows[r].OverallIdx = r;
                     _rows[r].PopulatedIdx = r;
-                }
+                }*/
                 DataGrid.RowData = _rows;
             }
             FirstLoaded = true;
@@ -1597,7 +1614,7 @@ public partial class AllModsContainer : MarginContainer
             package.MovePackage(c.FolderLocation);
         }
         package.WriteXML();
-        UpdateItem(package);        
+        //UpdateItem(package);
     }
 
     private void CategoryFromFolder()
@@ -1748,7 +1765,7 @@ public partial class AllModsContainer : MarginContainer
                         package.LinkedPackages.Clear();
                         //DataGridRow rowdata = DataGrid.RowData.First(x => x.Identifier == package.Identifier);
                         package.WriteXML();
-                        UpdateItem(package);
+                        //UpdateItem(package);
                         
                         
                     } else
@@ -1759,7 +1776,7 @@ public partial class AllModsContainer : MarginContainer
                         pack = InstanceControllers.GetSubDirectoriesPackage(packageDisplay.ThisInstance, pack.Location, pack);
                         //DataGridRow rowdata = DataGrid.RowData.First(x => x.Identifier == pack.Identifier);
                         pack.WriteXML();
-                        UpdateItem(package);
+                        //UpdateItem(package);
                     }
                     
                 } else
@@ -1791,7 +1808,7 @@ public partial class AllModsContainer : MarginContainer
                         package.LinkedPackages.Clear();
                         DataGridRow rowdata = DataGrid.RowData.First(x => x.Identifier == package.Identifier);
                         package.WriteXML();
-                        UpdateItem(package);
+                        //UpdateItem(package);
                         //rowdata = CreateRow(package, rowdata.OverallIdx);
                         //DataGrid.UpdateRow(rowdata);                        
                     } else
@@ -1804,7 +1821,7 @@ public partial class AllModsContainer : MarginContainer
                         pack.WriteXML();
                         //rowdata = CreateRow(pack, rowdata.OverallIdx);
                         //DataGrid.UpdateRow(rowdata);
-                        UpdateItem(package);
+                        //UpdateItem(package);
                     }
                     
                 } else
@@ -1893,7 +1910,7 @@ public partial class AllModsContainer : MarginContainer
                 //DataGridRow rowdata = DataGrid.RowData.First(x => x.Identifier == package.Identifier);
                 //rowdata = CreateRow(package, rowdata.OverallIdx);
                 //DataGrid.UpdateRow(rowdata);
-                UpdateItem(package);
+                //UpdateItem(package);
             }            
         }
         packageDisplay.LockInput = false;
@@ -1918,7 +1935,7 @@ public partial class AllModsContainer : MarginContainer
                 package.OutOfDate = rcm.MostlyUpdated;            
                 package.WriteXML();
                 DataGridRow rowdata = DataGrid.RowData.First(x => x.Identifier == package.Identifier);
-                UpdateItem(package);
+                //UpdateItem(package);
             }
         } else
         {
@@ -1928,7 +1945,7 @@ public partial class AllModsContainer : MarginContainer
                 package.OutOfDate = rcm.MostlyUpdated;            
                 package.WriteXML();
                 DataGridRow rowdata = DataGrid.RowData.First(x => x.Identifier == package.Identifier);
-                UpdateItem(package);
+                //UpdateItem(package);
             } 
         }
         
@@ -1944,7 +1961,7 @@ public partial class AllModsContainer : MarginContainer
                 package.Favorite = !rcm.MostlyFave;             
                 package.WriteXML();
                 DataGridRow rowdata = DataGrid.RowData.First(x => x.Identifier == package.Identifier);
-                UpdateItem(package);
+                //UpdateItem(package);
             }
         } else
         {
@@ -1955,7 +1972,7 @@ public partial class AllModsContainer : MarginContainer
                 package.Favorite = !rcm.MostlyFave;            
                 package.WriteXML();
                 DataGridRow rowdata = DataGrid.RowData.First(x => x.Identifier == package.Identifier);
-                UpdateItem(package);
+                //UpdateItem(package);
             } 
         }
     }
@@ -1978,7 +1995,7 @@ public partial class AllModsContainer : MarginContainer
                 }
                 package.WriteXML();
                 DataGridRow rowdata = DataGrid.RowData.First(x => x.Identifier == package.Identifier);
-                UpdateItem(package);
+                //UpdateItem(package);
             }
         } else
         {
@@ -1997,7 +2014,7 @@ public partial class AllModsContainer : MarginContainer
                 }            
                 package.WriteXML();
                 DataGridRow rowdata = DataGrid.RowData.First(x => x.Identifier == package.Identifier);
-                UpdateItem(package);
+                //UpdateItem(package);
             } 
         }
     }
@@ -2253,7 +2270,7 @@ public partial class AllModsContainer : MarginContainer
                 }
 
                 package.WriteXML();
-                UpdateItem(package);
+                //UpdateItem(package);
             }
         } else
         {
@@ -2280,7 +2297,7 @@ public partial class AllModsContainer : MarginContainer
                 }
 
                 package.WriteXML();
-                UpdateItem(package);
+                //UpdateItem(package);
             }
         }
     }
@@ -2516,23 +2533,42 @@ public partial class AllModsContainer : MarginContainer
     {
         //if (data == "LoadOrder" || data == "IsEnabled") UpdateProfilePackages();
         //package.WriteXML();
+        if (data == "SnapshotterCameraSettings")
+        {
+            if (ThumbDisplayLoaded)
+            {
+                if (ThumbGrid.VisibleTGIs.Any(x => x.PackageReference.Identifier == package.Identifier))
+                {
+                    ThumbGrid.VisibleTGIs.First(x => x.PackageReference.Identifier == package.Identifier).snapshotter.camSettings = package.SnapshotterCameraSettings;
+                    ThumbGrid.VisibleTGIs.First(x => x.PackageReference.Identifier == package.Identifier).snapshotter.SetCamera();
+                }
+            }
+            return;
+        }
         if (packageDisplay.StopRunning) return;
         if (data != null)
         {
             if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0} - Package data changed: {1} - New data: {2}", package.FileName, data, DataGrid.GetProperty(package, data)));            
             if (DataGridHeaders.Any(x => x.Data == data))
-            {                
-                DataGridRow rowdata = DataGrid.RowData.First(x => x.Identifier == package.Identifier);
-                rowdata = CreateRow(package, rowdata.OverallIdx);
-                DataGrid.EditRow(rowdata, data);
-                ThumbGrid?.ReplaceTGI(package);
+            {   
+                if (DataGrid.RowData.Any(x => x.Identifier == package.Identifier))
+                {
+                    int idx = DataGrid.RowData.IndexOf(DataGrid.RowData.First(x => x.Identifier == package.Identifier));
+                    DataGrid.RowData[idx] = CreateRow(package, DataGrid.RowData[idx].OverallIdx);
+                    DataGrid.EditRow(DataGrid.RowData[idx], data);
+                    ThumbGrid?.ReplaceTGI(package);
+                }
+                
             }
         } else
         {
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0} - Entire package changed.", package.FileName));
-            DataGridRow rowdata = DataGrid.RowData.First(x => x.Identifier == package.Identifier);
-            rowdata = CreateRow(package, rowdata.OverallIdx);
-            DataGrid.EditRow(rowdata, data);
+            if (DataGrid.RowData.Any(x => x.Identifier == package.Identifier))
+            {
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0} - Entire package changed.", package.FileName));
+                int idx = DataGrid.RowData.IndexOf(DataGrid.RowData.First(x => x.Identifier == package.Identifier));
+                DataGrid.RowData[idx] = CreateRow(package, DataGrid.RowData[idx].OverallIdx);
+                DataGrid.EditRow(DataGrid.RowData[idx], data);  
+            }              
         }
         
         

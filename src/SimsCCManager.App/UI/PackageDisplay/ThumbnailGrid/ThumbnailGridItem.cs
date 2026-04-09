@@ -39,9 +39,13 @@ public partial class ThumbnailGridItem : MarginContainer
     public SubViewport subViewport;
     [Export]
     public TextureRect ThumbnailImage;
+    public Snapshotter snapshotter;
 
     [Export]
     Button button;
+
+    [Export]
+    public SubViewportContainer ViewportContainer;
 
     private int _imageplaceholder;
     public int ImagePlaceholder

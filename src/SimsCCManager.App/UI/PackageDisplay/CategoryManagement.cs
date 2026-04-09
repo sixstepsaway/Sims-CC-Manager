@@ -251,7 +251,6 @@ public partial class CategoryManagement : MarginContainer
 
     private void AddCategoryItem(Category category)
     {        
-        
         int categorypackages = packageDisplay.ThisInstance.Files.OfType<SimsPackage>().Count(x => x.PackageCategory.Identifier == category.Identifier);
         if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Looking for packages in the {0} category. Checking for ID: {1}. Found {2}", category.Name, category.Identifier, categorypackages));
         CategoryItem ci = CategoryItemPS.Instantiate() as CategoryItem;

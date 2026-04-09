@@ -20,7 +20,7 @@ corner_radius_bottom_right = 15
 corner_radius_bottom_left = 15
 
 [sub_resource type="ViewportTexture" id="ViewportTexture_yyji0"]
-viewport_path = NodePath("VBoxContainer/ThumbnailImage_RenderVersion/Panel/SubViewport")
+viewport_path = NodePath("VBoxContainer/ThumbnailImage_RenderVersion/Panel/SubViewportContainer/SubViewport")
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_p8wmr"]
 
@@ -46,7 +46,7 @@ corner_radius_bottom_left = 10
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_yyji0"]
 
-[node name="ThumbGridItem" type="MarginContainer" node_paths=PackedStringArray("ThumbnailSubviewerVersion", "ThumbnailImageVersion", "SelectedBox", "HoveredBox", "ItemName", "BorderColorRect", "BGColorRect", "SelectedColorRect", "HoveredColorRect", "ImageContainer", "SubviewportContainer", "subViewport", "ThumbnailImage", "button", "LabelHoverButton")]
+[node name="ThumbGridItem" type="MarginContainer" node_paths=PackedStringArray("ThumbnailSubviewerVersion", "ThumbnailImageVersion", "SelectedBox", "HoveredBox", "ItemName", "BorderColorRect", "BGColorRect", "SelectedColorRect", "HoveredColorRect", "ImageContainer", "SubviewportContainer", "subViewport", "ThumbnailImage", "button", "ViewportContainer", "LabelHoverButton")]
 custom_minimum_size = Vector2(150, 170)
 script = ExtResource("1_yyji0")
 ThumbnailSubviewerVersion = NodePath("VBoxContainer/ThumbnailImage_RenderVersion")
@@ -63,9 +63,10 @@ SubviewportContainer = NodePath("VBoxContainer/ThumbnailImage_RenderVersion")
 Sims2Image = ExtResource("2_p8wmr")
 Sims3Image = ExtResource("3_60qeh")
 Sims4Image = ExtResource("4_kublc")
-subViewport = NodePath("VBoxContainer/ThumbnailImage_RenderVersion/Panel/SubViewport")
+subViewport = NodePath("VBoxContainer/ThumbnailImage_RenderVersion/Panel/SubViewportContainer/SubViewport")
 ThumbnailImage = NodePath("VBoxContainer/ThumbnailImage_JPGVersion/Panel/ThumbnailImage")
 button = NodePath("Button")
+ViewportContainer = NodePath("VBoxContainer/ThumbnailImage_RenderVersion/Panel/SubViewportContainer")
 LabelHoverButton = NodePath("VBoxContainer/MarginContainer2/Button")
 
 [node name="Panel" type="Panel" parent="."]
@@ -145,12 +146,21 @@ grow_vertical = 2
 texture = SubResource("ViewportTexture_yyji0")
 expand_mode = 3
 
-[node name="SubViewport" type="SubViewport" parent="VBoxContainer/ThumbnailImage_RenderVersion/Panel"]
+[node name="SubViewportContainer" type="SubViewportContainer" parent="VBoxContainer/ThumbnailImage_RenderVersion/Panel"]
+layout_mode = 0
+offset_right = 100.0
+offset_bottom = 100.0
+size_flags_horizontal = 4
+
+[node name="SubViewport" type="SubViewport" parent="VBoxContainer/ThumbnailImage_RenderVersion/Panel/SubViewportContainer"]
 own_world_3d = true
-transparent_bg = true
+handle_input_locally = false
+size = Vector2i(100, 100)
+render_target_update_mode = 0
 
 [node name="MarginContainer2" type="MarginContainer" parent="VBoxContainer"]
 layout_mode = 2
+mouse_filter = 2
 theme_override_constants/margin_left = 5
 theme_override_constants/margin_top = -5
 theme_override_constants/margin_right = 5
@@ -181,6 +191,7 @@ theme_override_styles/focus = SubResource("StyleBoxEmpty_p8wmr")
 [node name="IsSelected" type="MarginContainer" parent="."]
 visible = false
 layout_mode = 2
+mouse_filter = 2
 
 [node name="Panel" type="Panel" parent="IsSelected"]
 clip_children = 1
@@ -197,6 +208,7 @@ grow_vertical = 2
 
 [node name="IsHovered" type="MarginContainer" parent="."]
 layout_mode = 2
+mouse_filter = 2
 
 [node name="Panel" type="Panel" parent="IsHovered"]
 clip_children = 1

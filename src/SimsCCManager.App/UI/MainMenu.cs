@@ -1,4 +1,6 @@
 using Godot;
+using ICSharpCode.SharpZipLib.Core;
+using ICSharpCode.SharpZipLib.Zip;
 using SimsCCManager.Containers;
 using SimsCCManager.Debugging;
 using SimsCCManager.Globals;
@@ -3025,14 +3027,20 @@ public partial class MainMenu : MarginContainer
 
     private void DevClicked()
     {     
-        string file = @"E:\Documents\Sims CC Manager\Instances\Sims 2 Testing Version\Packages\afhairhalo-AntoHailee.package";
-        SimsPackageReader spr = new();
-        spr.ReadPackage(file);
+        string file = @"M:\Sims CC Manager\Instances\The Sims 2\Packages\13pS2FarmhouseCandleHolder1.package.info";
+        string outfile = @"M:\Sims CC Manager\Instances\The Sims 2\Packages\13pS2FarmhouseCandleHolder1.package.info.txt";
+        /*SimsPackageReader spr = new();
+        spr.ReadPackage(file);*/
         SimsPackage package = new();
-        package.Location = file;
+        /*package.Location = file;
+        package.FileName = spr.fileinfo.Name;
         package.Game = SimsCCManager.OptionLists.SimsGames.Sims2;
         package.Sims2Data = spr.Sims2Data;
-        package.WriteXML();
+        package.WriteXML();*/
+        byte[] buffer = new byte[4096];
+        XmlSerializer InfoSerializer = new XmlSerializer(typeof(SimsPackage));
+
+        
 
         
     }

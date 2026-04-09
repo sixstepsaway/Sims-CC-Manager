@@ -16,8 +16,10 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
+using CsvHelper;
 using DataGridContainers;
 using Godot;
+using ICSharpCode.SharpZipLib.Core;
 using ICSharpCode.SharpZipLib.Zip;
 using Microsoft.VisualBasic;
 using Microsoft.VisualBasic.FileIO;
@@ -944,6 +946,10 @@ namespace SimsCCManager.Containers
 
     public class SimsPackage : ISimsFile
     {
+        public SimsPackage()
+        {
+            HasBeenRead = false;
+        }
         public void InvokeDataChanged(string Data)
         {
             if (AllowInvokeDataChanged) DataChanged?.Invoke(Data);
@@ -1094,7 +1100,7 @@ namespace SimsCCManager.Containers
 
                 if (File.Exists(inf.FullName))
                 {
-                    string newpath = Path.Combine(newfolder, inf.Name);
+                    string newpath = InfoFile;
                     File.Move(inf.FullName, newpath);
                 }
             }
@@ -1181,6 +1187,53 @@ namespace SimsCCManager.Containers
             //this.WriteXML();
             if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Returning {0} as read.", FileName));
             return Task.CompletedTask;
+        }
+
+        public bool ReadInfoFile()
+        {
+            XmlSerializer simsPackageSerializer = new XmlSerializer(typeof(SimsPackage));
+            if (File.Exists(InfoFile))
+            {                    
+                try {
+                    SimsPackage simsPackage = new();
+                    using (FileStream fileStream = File.OpenRead(simsPackage.InfoFile)){
+                        using (ZipFile zipFile = new ZipFile(fileStream))
+                        {
+                            try {
+                                foreach (ZipEntry entry in zipFile)
+                                {                   
+                                    if (!entry.IsFile) continue; // Skip directories
+                                    if (entry.Name.Contains("IDENTIFIER - ")) continue;
+                                                    
+                                    using (Stream zipStream = zipFile.GetInputStream(entry))
+                                    {                        
+                                        using (StreamReader reader = new(zipStream))
+                                        {                           
+                                            simsPackage = (SimsPackage)simsPackageSerializer.Deserialize(reader);
+                                        } 
+                                    }
+                                }
+                            } catch
+                            {
+                                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0} isn't a zip. Opening as XML.", simsPackage.InfoFile));
+                                using (StreamReader streamReader = new(fileStream)){
+                                    simsPackage = (SimsPackage)simsPackageSerializer.Deserialize(streamReader);
+                                    streamReader.Close();
+                                }
+                                
+                            }
+                            fileStream.Close();                        
+                        }  
+                    }
+                    UpdateFromData(simsPackage);
+                    HasBeenRead = true;
+                } catch (Exception e)
+                {
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Hit an error reading {0} - deleting. Error: {1} - Trace: {2}", InfoFile, e.Message, e.StackTrace));
+                    Utilities.MoveToRecycleBin(InfoFile);
+                }
+            }
+            return HasBeenRead;
         }
 
         private FileTypes _filetype;
@@ -1291,101 +1344,54 @@ namespace SimsCCManager.Containers
                 DataChanged?.Invoke(nameof(WrongGame));
             }
         }
+        private bool _override;
         public bool Override
         {
             get
             {
-                switch (Game)
-                {
-                    case SimsGames.Sims2:
-                        return Sims2Data.Override;
-                    case SimsGames.Sims3:
-                        return Sims3Data.Override;
-                    case SimsGames.Sims4:
-                        return Sims4Data.Override;
-                    default: return false;
-                }
+                return _override;
             }
             set
             {
-                switch (Game)
-                {
-                    case SimsGames.Sims2:
-                        Sims2Data.Override = value;
-                        break;
-                    case SimsGames.Sims3:
-                        Sims3Data.Override = value;
-                        break;
-                    case SimsGames.Sims4:
-                        Sims4Data.Override = value;
-                        break;
-                }
+                _override = value;
             }
         }
+        private ObservableCollection<SimsOverrides> _overridereference;
         public ObservableCollection<SimsOverrides> OverrideReference
         {
             get
             {
-                switch (Game)
-                {
-                    case SimsGames.Sims2:
-                        return Sims2Data.OverrideReference;
-                    case SimsGames.Sims3:
-                        return Sims3Data.OverrideReference;
-                    case SimsGames.Sims4:
-                        return Sims4Data.OverrideReference;
-                    default: return null;
-                }
+                return _overridereference;
             }
             set
             {
-                switch (Game)
-                {
-                    case SimsGames.Sims2:
-                        Sims2Data.OverrideReference = value;
-                        break;
-                    case SimsGames.Sims3:
-                        Sims3Data.OverrideReference = value;
-                        break;
-                    case SimsGames.Sims4:
-                        Sims4Data.OverrideReference = value;
-                        break;
-                }
-                value.CollectionChanged += (x, y) => { DataChanged?.Invoke(nameof(OverrideReference)); };
+                _overridereference = value;
+                DataChanged?.Invoke(nameof(OverrideReference));
+                //value.CollectionChanged += (x, y) => { DataChanged?.Invoke(nameof(OverrideReference)); };
             }
         }
+        private SpecificOverrides _specificoverride;
         public SpecificOverrides SpecificOverride
         {
             get
             {
-                switch (Game)
-                {
-                    case SimsGames.Sims2:
-                        return Sims2Data.SpecificOverride;
-                    case SimsGames.Sims3:
-                        return Sims3Data.SpecificOverride;
-                    case SimsGames.Sims4:
-                        return Sims4Data.SpecificOverride;
-                    default: return null;
-                }
+                return _specificoverride;
             }
             set
             {
-                switch (Game)
-                {
-                    case SimsGames.Sims2:
-                        Sims2Data.SpecificOverride = value;
-                        break;
-                    case SimsGames.Sims3:
-                        Sims3Data.SpecificOverride = value;
-                        break;
-                    case SimsGames.Sims4:
-                        Sims4Data.SpecificOverride = value;
-                        break;
-                }
+                _specificoverride = value;
                 DataChanged?.Invoke(nameof(SpecificOverride));
             }
         }
+
+        private  CameraPosition _snapshottercamerasettings;
+        public  CameraPosition SnapshotterCameraSettings 
+        {
+            get { return  _snapshottercamerasettings; }
+            set {  _snapshottercamerasettings = value;
+            DataChanged?.Invoke(nameof(SnapshotterCameraSettings)); }
+        }
+
         [XmlIgnore]
         public string OverrideRef { get { if (SpecificOverride != null) return string.Format("{0}: {1}", Type, SpecificOverride.Description); else return string.Empty; } }
 
@@ -1441,85 +1447,17 @@ namespace SimsCCManager.Containers
             }
         }
 
-        [XmlIgnore]
+        private string _type;
         public string Type
         {
             get
             {
-                switch (Game)
-                {
-                    case SimsGames.Sims2:
-                        if (Sims2Data != null)
-                        {
-                            if (Sims2Data.FunctionSort.Any())
-                            {
-                                if (Sims2Data.FunctionSort[0] != null)
-                                {
-                                    if (!string.IsNullOrEmpty(Sims2Data.FunctionSort[0].Subcategory))
-                                    {
-                                        return string.Format("{0}/{1}", Sims2Data.FunctionSort[0].Category, Sims2Data.FunctionSort[0].Subcategory);
-                                    }
-                                    else
-                                    {
-                                        return Sims2Data.FunctionSort[0].Category;
-                                    }
-                                }
-                            }
-
-                            if (!string.IsNullOrEmpty(Sims2Data.AltType))
-                            {
-                                return Sims2Data.AltType;
-                            }
-                        }
-                        else return string.Empty;
-                        break;
-                    case SimsGames.Sims3:
-                        if (Sims3Data != null)
-                        {
-                            if (Sims3Data.FunctionSort.Any())
-                            {
-                                if (!string.IsNullOrEmpty(Sims3Data.FunctionSort[0].Subcategory))
-                                {
-                                    return string.Format("{0}/{1}", Sims3Data.FunctionSort[0].Category, Sims3Data.FunctionSort[0].Subcategory);
-                                }
-                                else
-                                {
-                                    return Sims3Data.FunctionSort[0].Category;
-                                }
-                            }
-
-                            if (!string.IsNullOrEmpty(Sims3Data.AltType))
-                            {
-                                return Sims3Data.AltType;
-                            }
-                        }
-                        else return string.Empty;
-                        break;
-                    case SimsGames.Sims4:
-                        if (Sims4Data != null)
-                        {
-                            if (Sims4Data.FunctionSort.Any())
-                            {
-                                if (!string.IsNullOrEmpty(Sims4Data.FunctionSort[0].Subcategory))
-                                {
-                                    return string.Format("{0}/{1}", Sims4Data.FunctionSort[0].Category, Sims4Data.FunctionSort[0].Subcategory);
-                                }
-                                else
-                                {
-                                    return Sims4Data.FunctionSort[0].Category;
-                                }
-                            }
-
-                            if (!string.IsNullOrEmpty(Sims4Data.AltType))
-                            {
-                                return Sims4Data.AltType;
-                            }
-                        }
-                        else return string.Empty;
-                        break;
-                }
-                if (HasBeenRead) return "Unknown"; else return string.Empty;
-
+                if (HasBeenRead && string.IsNullOrEmpty(_type)) return "Unknown"; else return _type;
+            }
+            set
+            {
+                _type = value;
+                DataChanged?.Invoke(nameof(Type));
             }
         }
 
@@ -1611,235 +1549,49 @@ namespace SimsCCManager.Containers
             }
         }
         public bool OutOfDate { get; set; }
+        private bool _gamemod;
         public bool GameMod
         {
             get
             {
-                if (PackageData != null)
-                {
-                    if (Game == SimsGames.Sims2)
-                    {
-                        return Sims2Data.GameMod;
-                    }
-                    else if (Game == SimsGames.Sims3)
-                    {
-                        return Sims3Data.GameMod;
-                    }
-                    else if (Game == SimsGames.Sims4)
-                    {
-                        return Sims4Data.GameMod;
-                    }
-                    else
-                    {
-                        return false;
-                    }
-                }
-                else
-                {
-                    return false;
-                }
+                return _gamemod;
             }
             set
             {
-                if (Game == SimsGames.Sims2)
-                {
-                    Sims2Data.GameMod = value;
-                }
-                else if (Game == SimsGames.Sims3)
-                {
-                    Sims3Data.GameMod = value;
-                }
-                else if (Game == SimsGames.Sims4)
-                {
-                    Sims4Data.GameMod = value;
-                }
-                else
-                {
-                    return;
-                }
+                _gamemod = value;
                 DataChanged?.Invoke(nameof(GameMod));
             }
         }
-        public bool Mesh
+        private  bool _mesh;
+        public  bool Mesh 
         {
-            get
-            {
-                if (PackageData != null)
-                {
-                    if (Game == SimsGames.Sims2)
-                    {
-                        return Sims2Data.Mesh;
-                    }
-                    else if (Game == SimsGames.Sims3)
-                    {
-                        return Sims3Data.Mesh;
-                    }
-                    else if (Game == SimsGames.Sims4)
-                    {
-                        return Sims4Data.Mesh;
-                    }
-                    else
-                    {
-                        return false;
-                    }
-                }
-                else
-                {
-                    return false;
-                }
-            }
-            set
-            {
-                if (Game == SimsGames.Sims2)
-                {
-                    Sims2Data.Mesh = value;
-                }
-                else if (Game == SimsGames.Sims3)
-                {
-                    Sims3Data.Mesh = value;
-                }
-                else if (Game == SimsGames.Sims4)
-                {
-                    Sims4Data.Mesh = value;
-                }
-                else
-                {
-                    return;
-                }
-                DataChanged?.Invoke(nameof(Mesh));
-            }
-
+            get { return  _mesh; }
+            set {  _mesh = value; 
+            DataChanged?.Invoke(nameof(Mesh));}
         }
-        public bool Recolor
+        
+        private  bool _recolor;
+        public  bool Recolor 
         {
-            get
-            {
-                if (PackageData != null)
-                {
-                    if (Game == SimsGames.Sims2)
-                    {
-                        return Sims2Data.Recolor;
-                    }
-                    else if (Game == SimsGames.Sims3)
-                    {
-                        return Sims3Data.Recolor;
-                    }
-                    else if (Game == SimsGames.Sims4)
-                    {
-                        return Sims4Data.Recolor;
-                    }
-                    else
-                    {
-                        return false;
-                    }
-                }
-                else
-                {
-                    return false;
-                }
-            }
-            set
-            {
-                if (Game == SimsGames.Sims2)
-                {
-                    Sims2Data.Recolor = value;
-                }
-                else if (Game == SimsGames.Sims3)
-                {
-                    Sims3Data.Recolor = value;
-                }
-                else if (Game == SimsGames.Sims4)
-                {
-                    Sims4Data.Recolor = value;
-                }
-                else
-                {
-                    return;
-                }
-                DataChanged?.Invoke(nameof(Recolor));
-            }
+        get { return  _recolor; }
+        set {  _recolor = value;
+            DataChanged?.Invoke(nameof(Recolor)); }
         }
-        public bool Orphan
+        
+        private  bool _orphan;
+        public  bool Orphan 
         {
-            get
-            {
-                if (PackageData != null)
-                {
-                    if (Game == SimsGames.Sims2)
-                    {
-                        return Sims2Data.Orphan;
-                    }
-                    else if (Game == SimsGames.Sims3)
-                    {
-                        return Sims3Data.Orphan;
-                    }
-                    else if (Game == SimsGames.Sims4)
-                    {
-                        return Sims4Data.Orphan;
-                    }
-                    else
-                    {
-                        return false;
-                    }
-                }
-                else
-                {
-                    return false;
-                }
-            }
-            set
-            {
-                if (Game == SimsGames.Sims2)
-                {
-                    Sims2Data.Orphan = value;
-                }
-                else if (Game == SimsGames.Sims3)
-                {
-                    Sims3Data.Orphan = value;
-                }
-                else if (Game == SimsGames.Sims4)
-                {
-                    Sims4Data.Orphan = value;
-                }
-                else
-                {
-                    return;
-                }
-                DataChanged?.Invoke(nameof(Orphan));
-            }
+        get { return  _orphan; }
+        set {  _orphan = value;
+            DataChanged?.Invoke(nameof(Orphan)); }
         }
-        public string ObjectGUID
+        
+        private  string _objectguid;
+        public  string ObjectGUID 
         {
-            get
-            {
-                switch (Game)
-                {
-                    case SimsGames.Sims2:
-                        return Sims2Data.GUID;
-                    case SimsGames.Sims3:
-                        return Sims3Data.GUID;
-                    case SimsGames.Sims4:
-                        return Sims4Data.GUID;
-                    default:
-                        return string.Empty;
-                }
-            }
-            set
-            {
-                switch (Game)
-                {
-                    case SimsGames.Sims2:
-                        Sims2Data.GUID = value;
-                        break;
-                    case SimsGames.Sims3:
-                        Sims3Data.GUID = value;
-                        break;
-                    case SimsGames.Sims4:
-                        Sims4Data.GUID = value;
-                        break;
-                }
-                DataChanged?.Invoke(nameof(ObjectGUID));
-            }
+            get { return  _objectguid; }
+            set {  _objectguid = value;
+            DataChanged?.Invoke(nameof(ObjectGUID)); }
         }
         private bool _favorite;
         public bool Favorite
@@ -1900,43 +1652,180 @@ namespace SimsCCManager.Containers
             set
             {
                 _packagedata = value;
-                DataChanged?.Invoke(nameof(Type));
-                DataChanged?.Invoke(nameof(Override));
-                DataChanged?.Invoke(nameof(OverrideReference));
-                DataChanged?.Invoke(nameof(SpecificOverride));
+                PackageDataFromGameData();
             }
         }
-
-        [XmlIgnore]
-        public Image PackageImage
+        private  ClothingInfo _clothinginfo;
+        public  ClothingInfo ClothingInfo 
         {
-            get
+            get { return  _clothinginfo; }
+            set {  _clothinginfo = value;
+            DataChanged?.Invoke(nameof(ClothingInfo)); }
+        }
+
+        private  List<string> _expansions;
+        public  List<string> Expansions 
+        {
+            get { return  _expansions; }
+            set {  _expansions = value;
+            DataChanged?.Invoke(nameof(Expansions)); }
+        }
+
+        public List<string> FullKeys {get; set;}
+        public List<string> XMOLNames {get; set;}
+        public List<string> TXMTNames {get; set;}
+        public List<string> MMATNames {get; set;}
+        public List<string> TXTRNames {get; set;}
+        public List<string> GMDCNames {get; set;}
+        public List<string> SHPENames {get; set;}
+        public List<string> EIDRIDs {get; set;}
+        public List<string> SHPEMaterialNames {get; set;}
+
+
+
+
+
+
+
+
+
+
+
+        public Sims2Data Sims2Data { 
+            get { return PackageData as Sims2Data; } 
+            set { PackageData = value;
+            PackageDataFromGameData(); } 
+        }
+
+        private void PackageDataFromGameData()
+        {
+            switch (Game)
             {
-                if (Game == SimsGames.Sims2)
-                {
-                    if (Sims2Data.TXTRDataBlock != null)
+                case SimsGames.Sims2:
+                    this.Override = PackageData.Override;
+                    this.OverrideReference = PackageData.OverrideReference;
+                    this.SpecificOverride = PackageData.SpecificOverride;
+                    if (PackageData.FunctionSort.Count != 0)
                     {
-                        if (Sims2Data.TXTRDataBlock.Count > 0)
+                        if (PackageData.FunctionSort[0] != null)
                         {
-                            if (Sims2Data.TXTRDataBlock[0].Texture != null)
+                            if (!string.IsNullOrEmpty(PackageData.FunctionSort[0].Subcategory))
                             {
-                                return Sims2Data.TXTRDataBlock[0].Texture;
+                                this.Type = string.Format("{0}/{1}", PackageData.FunctionSort[0].Category, PackageData.FunctionSort[0].Subcategory);
+                            }
+                            else
+                            {
+                                this.Type = PackageData.FunctionSort[0].Category;
+                            }
+                        } 
+                    } else if (!string.IsNullOrEmpty(PackageData.AltType))
+                    {
+                        this.Type = PackageData.AltType;
+                    } else
+                    {
+                        if (HasBeenRead) this.Type = "Unknown"; else this.Type = string.Empty;
+                    }
+                    this.GameMod = PackageData.GameMod;
+                    this.Mesh = PackageData.Mesh;
+                    this.Recolor = PackageData.Recolor;
+                    this.Orphan = PackageData.Orphan;
+                    this.ObjectGUID = PackageData.GUID;
+                    this.ClothingInfo = PackageData.ClothingInfo;
+                    if (Sims2Data.Expansions.Any())
+                    {
+                        if (Expansions == null) Expansions = new();
+                        foreach (Sims2Expansions ex in Sims2Data.Expansions)
+                        {
+                            Expansions.Add(Extensions.GetDescription(ex));
+                        }
+                    }
+                    if (FullKeys == null) FullKeys = new();
+                    foreach (IndexEntry entry in Sims2Data.IndexEntries)
+                    {
+                        FullKeys.Add(entry.CompleteID);
+                    }
+                    
+                    if (Sims2Data.XMOLDataBlock.Count > 0)
+                    {
+                        if (XMOLNames == null) XMOLNames = new();
+                        foreach (XMOLData xdata in Sims2Data.XMOLDataBlock)
+                        {
+                            XMOLNames.Add(xdata.Name);
+                        }
+                    }
+                    if (Sims2Data.TXMTDataBlock.Count > 0)
+                    {
+                        if (TXMTNames == null) TXMTNames = new();
+                        foreach (TXMTData txmtdata in Sims2Data.TXMTDataBlock)
+                        {
+                            TXMTNames.Add(txmtdata.FileName);
+                        }
+                    }
+                    if (Sims2Data.TXTRDataBlock.Count > 0)
+                    {
+                        if (TXTRNames == null) TXTRNames = new();
+                        foreach (TXTRData txtrdata in Sims2Data.TXTRDataBlock)
+                        {
+                            TXTRNames.Add(txtrdata.FullTXTRName);
+                        }
+                    }
+                    if (Sims2Data.GMDCDataBlock.Count > 0)
+                    {
+                        if (GMDCNames == null) GMDCNames = new();
+                        foreach (GMDCData gmdcdata in Sims2Data.GMDCDataBlock)
+                        {
+                            GMDCNames.Add(gmdcdata.FileName);
+                        }
+                    }
+                    if (Sims2Data.SHPEDataBlock.Count > 0)
+                    {
+                        if (SHPENames == null) SHPENames = new();
+                        foreach (SHPEData shpedata in Sims2Data.SHPEDataBlock)
+                        {
+                            SHPENames.Add(shpedata.FileName);
+                            foreach (SHPEMaterial shpematerial in shpedata.Materials)
+                            {
+                                if (SHPEMaterialNames == null) SHPEMaterialNames = new();
+                                SHPEMaterialNames.Add(shpematerial.MaterialDefinition);
                             }
                         }
                     }
-                }
-                return null;
-            }
+                    if (Sims2Data.MMATDataBlock.Count > 0)
+                    {
+                        if (MMATNames == null) MMATNames = new();
+                        foreach (MMATData mmatdata in Sims2Data.MMATDataBlock)
+                        {
+                            MMATNames.Add(mmatdata.ModelName);
+                            MMATNames.Add(mmatdata.Name);
+                        }
+                    }
+                    if (Sims2Data.EIDRDataBlock.Count > 0)
+                    {
+                        if (EIDRIDs == null) EIDRIDs = new();
+                        foreach (EIDRData edirdata in Sims2Data.EIDRDataBlock)
+                        {
+                            foreach (ResourceKey e in edirdata.ResourceKeys)
+                            {
+                                EIDRIDs.Add(e.FullKey);
+                            }                            
+                        }
+                    }
+                break;
+            }            
         }
 
-
-        public Sims2Data Sims2Data { get { return PackageData as Sims2Data; } set { PackageData = value; } }
-        public Sims3Data Sims3Data { get { return PackageData as Sims3Data; } set { PackageData = value; } }
-        public Sims4Data Sims4Data { get { return PackageData as Sims4Data; } set { PackageData = value; } }
+        public Sims3Data Sims3Data { 
+            get { return PackageData as Sims3Data; } 
+            set { PackageData = value; } 
+        }
+        public Sims4Data Sims4Data { 
+            get { return PackageData as Sims4Data; } 
+            set { PackageData = value; } 
+        }
 
         [XmlIgnore]
         private  bool _hasbeenread;
-        [XmlIgnore]
+        //[XmlIgnore]
         public  bool HasBeenRead 
         {
             get { return  _hasbeenread; }
@@ -1947,20 +1836,22 @@ namespace SimsCCManager.Containers
 
         public bool ShouldSerializeSims2Data()
         {
-            return Game == SimsGames.Sims2;
+            return false;
+            //if (Game == SimsGames.Sims2 && PackageData != null) return true; else return false;
         }
         public bool ShouldSerializeSims3Data()
         {
-            return Game == SimsGames.Sims3;
+            return false;//if (Game == SimsGames.Sims3 && PackageData != null) return true; else return false;
         }
         public bool ShouldSerializeSims4Data()
         {
-            return Game == SimsGames.Sims4;
+            return false;
+            //if (Game == SimsGames.Sims4 && PackageData != null) return true; else return false;
         }
         static ReaderWriterLock locker = new ReaderWriterLock();
 
         public void UpdateFromData(SimsPackage package)
-        {
+        {            
             Broken = package.Broken;
             Game = package.Game;
             Source = package.Source;
@@ -1971,8 +1862,8 @@ namespace SimsCCManager.Containers
             IsDirectory = package.IsDirectory;
             Duplicates = package.Duplicates;
             Conflicts = package.Conflicts;
-            //MatchingMesh = package.MatchingMesh;
-            //MatchingRecolors = package.MatchingRecolors;
+            MatchingMesh = package.MatchingMesh;
+            MatchingRecolors = package.MatchingRecolors;
             PackageGameVersion = package.PackageGameVersion;
             LinkedFiles = package.LinkedFiles;
             LinkedFolders = package.LinkedFolders;
@@ -1982,9 +1873,6 @@ namespace SimsCCManager.Containers
             RootMod = package.RootMod;
             OutOfDate = package.OutOfDate;
             Favorite = package.Favorite;
-            IsEnabled = package.IsEnabled;
-            LoadOrder = package.LoadOrder;
-            HasBeenRead = package.HasBeenRead;
         }
 
         public void UpdateFromOrphanCheck(SimsPackage package)
@@ -2037,7 +1925,7 @@ namespace SimsCCManager.Containers
             try
             {
                 locker.AcquireWriterLock(int.MaxValue);
-                if (GlobalVariables.DebugMode)
+                /*if (GlobalVariables.DebugMode)
                 {
                     
                         if (File.Exists(this.InfoFile))
@@ -2051,39 +1939,54 @@ namespace SimsCCManager.Containers
                     
                 }
                 else
-                {
+                {*/
                     if (File.Exists(this.InfoFile))
                     {
                         File.Delete(this.InfoFile);
                     }
 
-                    using (FileStream fs = File.Create(this.InfoFile))
-                    using (ZipOutputStream zipStream = new ZipOutputStream(fs))
+                    using (var writer = new StreamWriter(this.InfoFile))
                     {
-                        // Add a file entry to the ZIP archive
-                        ZipEntry entry = new ZipEntry(this.FileName)
-                        {
-                            DateTime = this.DateUpdated
-                        };
-
-                        zipStream.PutNextEntry(entry);
-
-                        // Write file data to the ZIP stream
-
-
-                        byte[] buffer = new byte[4096];
-                        using (MemoryStream memoryStream = new())
-                        {
-                            InfoSerializer.Serialize(memoryStream, this);
-                            int bytesRead;
-                            while ((bytesRead = memoryStream.Read(buffer, 0, buffer.Length)) > 0)
-                            {
-                                zipStream.Write(buffer, 0, bytesRead);
-                            }
-                        }
-                        zipStream.CloseEntry();
+                        InfoSerializer.Serialize(writer, this);
                     }
-                }
+
+                    /*using (FileStream fileStream = new(InfoFile, FileMode.OpenOrCreate, System.IO.FileAccess.Write)){
+                        using (ZipOutputStream zipStream = new ZipOutputStream(fileStream))
+                        {
+                            zipStream.SetLevel(9); // 0 - store only to 9 - means best compression
+                            
+                            byte[] buffer = new byte[4096];
+
+                            //var guidEntry = new ZipEntry(string.Format("IDENTIFIER - {0}", Identifier.ToString()));
+                            //guidEntry.DateTime = DateTime.Now;       
+                            //zipStream.PutNextEntry(guidEntry);               
+                            //zipStream.CloseEntry();
+
+                            var entry = new ZipEntry(FileName.Replace(".package", ".xml"));
+
+                            // Setup the entry data as required.
+
+                            // Crc and size are handled by the library for seakable streams so no need to do them here.
+
+                            // Could also use the last write time or similar for the file.
+                            entry.DateTime = DateTime.Now;
+                            zipStream.PutNextEntry(entry);
+                            
+                            
+                            
+                            using (TextWriter tw = new StringWriter())
+                            {
+                                InfoSerializer.Serialize(tw, this);
+                                using (Stream memoryStream = new MemoryStream(UTF8Encoding.Default.GetBytes(tw.ToString())))
+                                {
+                                    StreamUtils.Copy(memoryStream, zipStream, buffer);                                
+                                }
+                                zipStream.CloseEntry();                                
+                            }
+                            
+                        }
+                    } */                   
+                //}
             }
             finally
             {
@@ -3458,5 +3361,18 @@ namespace SimsCCManager.Containers
         public bool IsDuplicate { get; set; } = true;
         public bool IsConflict { get; set; }
         public List<SimsPackage> Conflicts { get; set; } = new();
+    }
+
+    public class CameraPosition
+    {
+        public CameraTransform Outer {get; set;} = new();
+        public CameraTransform Inner {get; set;} = new();
+        public CameraTransform Cam {get; set;} = new();
+    }
+    public class CameraTransform
+    {
+        public Vector3 Rotation {get; set;}
+        public Vector3 Position {get; set;}
+        public Vector3 Scale {get; set;}
     }
 }

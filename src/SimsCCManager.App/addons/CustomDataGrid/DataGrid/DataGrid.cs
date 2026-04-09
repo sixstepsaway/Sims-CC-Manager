@@ -13,8 +13,9 @@ using System.Threading.Tasks;
 using System.Text;
 using System.Data;
 using MoreLinq;
+using System.Reflection;
+using System.ComponentModel;
 using SimsCCManager.OptionLists;
-using SimsCCManager.Globals;
 
 
 public partial class DataGrid : Control
@@ -149,8 +150,8 @@ public partial class DataGrid : Control
 
 	Func<DataGridRow, Object> orderByFunc = null;
 
-	private List<DataGridRow> _hiddenrows;
-	public List<DataGridRow> HiddenRows
+	private List<Guid> _hiddenrows;
+	public List<Guid> HiddenRows
 	{
 		get { return _hiddenrows; }
 		set { _hiddenrows = value; 
@@ -217,6 +218,7 @@ public partial class DataGrid : Control
 
 	public void UpdateRowData()
 	{
+		DontAnnounceEdit = true;
 		if (!rHidden && !Searched && !Sorted) FullRowData = [.. RowData];
 		if (!rHidden && (Searched || Sorted)) RowsUnhidden = [..FullRowData];
 
@@ -226,18 +228,25 @@ public partial class DataGrid : Control
 		if (HiddenRows.Count > 0)
 		{
 			rHidden = true;
-			_rows = _rowsunch.Except(HiddenRows).ToList();
+			foreach (DataGridRow row in _rowsunch)
+			{
+				if (!HiddenRows.Contains(row.Identifier))
+				{
+					_rows.Add(row);
+				}
+			}
 		} else
 		{
 			rHidden = false;
 			_rows = [ .. RowsUnhidden];
 		}
-		
+
 		UpdatePopulatedIndex(_rows);
 		PleasePassLog(string.Format("Total rows: {0}, rows to hide: {1}, result: {2}", RowsUnhidden.Count, HiddenRows.Count, _rows.Count));
 		PleasePassLog(string.Format("Rowdata: {0}", RowData.Count));
 		AllRows = [.._allrows];
 		if (Sorted || Searched) HeaderSorted(LastSortIndex, LastSortAscending, false, true); else PopulateRows();
+		DontAnnounceEdit = false;
 	}
 
 
@@ -856,12 +865,10 @@ public partial class DataGrid : Control
 
 		foreach (DataGridHeader head in Headers)
 		{
-			PleasePassLog(string.Format("does it reach here"));
 			int headIdx = head.HeaderIdx;
 			int cellIdx = head.ItemIndex;
 			if (head.ShowHeader)
 			{
-				PleasePassLog(string.Format("does it reach here"));
 				Vector2 size = new(0, 0);
 				DataGridHeaderCell header = HeaderRow.HeaderCells[hc];
 				DataGridHeaderSizeAdjuster sizeadjuster = HeaderRow.HeaderSliders[hc];
@@ -895,11 +902,9 @@ public partial class DataGrid : Control
 					cell.NumberContent = int.Parse(data.Items[cellIdx].ItemContent);
 				}
 				cell.TextContent = data.Items[cellIdx].ItemContent;
-				PleasePassLog(string.Format("does it reach here (hc {0})", hc));
 				hc++;
 			}
 		}
-		PleasePassLog(string.Format("does it reach here"));
 		AllRows[data.PopulatedIdx] = VisibleRows[vidx];	
 		PleasePassLog(string.Format("FINISHED changing row {0} to row {1}", ogpidx, data.PopulatedIdx));
 		DontAnnounceEdit = false;
@@ -975,7 +980,7 @@ public partial class DataGrid : Control
 				Vector2 size = new(0, 0);
 				DataGridHeaderCell header = HeaderRow.HeaderCells[hc];
 				DataGridHeaderSizeAdjuster sizeadjuster = HeaderRow.HeaderSliders[hc];
-				DataGridCell cell = VisibleRows[vidx].RowHeaders[hc].Cell;
+				DataGridCell cell = VisibleRows[vidx].RowHeaders[headIdx].Cell;
 				cell.CellOptions = head.CellType;
 				cell.dataGrid = this;
 				cell.AccentColor = AccentColor;
@@ -2897,4 +2902,29 @@ public partial class DataGrid : Control
 		return newicons;
 	}
 
+
 }
+
+	public static class Extensions
+    {
+        /// <summary>
+        /// Extensions for classes and enums.
+        /// </summary>
+        public static string GetDescription(this Enum e)
+        {
+            /// <summary>
+            /// Credit: https://stackoverflow.com/questions/7966102/how-to-assign-string-values-to-enums-and-use-that-value-in-a-switch
+            /// </summary>
+            
+            var attribute =
+                e.GetType()
+                    .GetTypeInfo()
+                    .GetMember(e.ToString())
+                    .FirstOrDefault(member => member.MemberType == MemberTypes.Field)
+                    .GetCustomAttributes(typeof(DescriptionAttribute), false)
+                    .SingleOrDefault()
+                    as DescriptionAttribute;
+
+            return attribute?.Description ?? e.ToString();
+        }
+    }

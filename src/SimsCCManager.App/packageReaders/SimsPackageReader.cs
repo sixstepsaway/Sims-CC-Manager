@@ -667,6 +667,7 @@ namespace SimsCCManager.PackageReaders
     public class SimsPackageReader : IDisposable
     {
         public static bool DebugPackageReader = false;
+        public bool Reread = false;
         public ISimsData SimsData
         {
             set
@@ -1338,6 +1339,7 @@ namespace SimsCCManager.PackageReaders
                 "534C4F54-FFFFFFFF-00000080",
                 "43545353-FFFFFFFF-000007D0",
                 "42484156-FFFFFFFF-00001002",
+                "42484156-FFFFFFFF-00001003",
                 "42484156-FFFFFFFF-00001000",
                 "474C4F42-FFFFFFFF-00000001",
                 "53545223-FFFFFFFF-00000102",
@@ -1349,7 +1351,10 @@ namespace SimsCCManager.PackageReaders
                 "53545223-FFFFFFFF-00000082",
                 "856DDBAC-FFFFFFFF-00000001",
                 "53545223-FFFFFFFF-00000001",
-                "53545223-FFFFFFFF-00000090"
+                "53545223-FFFFFFFF-00000090",
+                "53545223-FFFFFFFF-00000086",
+                "53545223-FFFFFFFF-0000012F",
+                "53545223-FFFFFFFF-0000008F"
             };
             if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Checking overrides for {0}", fileinfo.Name));
             ConcurrentBag<SimsOverrides> Matches = new();

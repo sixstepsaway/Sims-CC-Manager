@@ -14,7 +14,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
-public partial class ThumbnailGrid : MarginContainer
+public partial class ThumbnailGrid : Control
 {
     public PackageDisplay packageDisplay;
     public Vector2 PaneSize = new(0, 0);
@@ -104,7 +104,7 @@ public partial class ThumbnailGrid : MarginContainer
 
     int ScrollPosition = 0; 
 
-    List<ThumbnailGridItem> VisibleTGIs = new();
+    public List<ThumbnailGridItem> VisibleTGIs = new();
     private ThumbnailGridItem[] _visibletgis
 	{
 		get { return new ThumbnailGridItem[ItemCount]; }
@@ -119,6 +119,8 @@ public partial class ThumbnailGrid : MarginContainer
     List<SimsPackage> packages = new();    
     List<GridItem> GridItems = new();
 
+    
+
 
     public void MakeItems()
     {
@@ -131,11 +133,12 @@ public partial class ThumbnailGrid : MarginContainer
     {
         int newCount = ItemCount;
         if (Resizing) return;
-        if (fromResized && PaneSize == new Vector2(GridHolder.Size.X - 15, GridHolder.Size.Y)) return;
-        if (fromResized) { PaneSize = new Vector2(GridHolder.Size.X - 15, GridHolder.Size.Y); Resizing = true; }
+        if (fromResized && PaneSize == new Vector2(this.Size.X - 15, this.Size.Y)) return;
+        if (fromResized) { PaneSize = new Vector2(this.Size.X - 15, this.Size.Y); Resizing = true; }
+        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Pane size: {0}", PaneSize));
         if (!FirstLoaded) { 
             packages = packageDisplay.ThisInstance.Files.OfType<SimsPackage>().ToList();
-            PaneSizer.Resized += () => GetSettings(true); 
+            this.Resized += () => GetSettings(true); 
             ScrollUpButton.ButtonDown += () => OnScrollUp_ButtonUsed(true);
 		    ScrollDownButton.ButtonDown += () => OnScrollDown_ButtonUsed(true);
 		    ScrollUpButton.ButtonUp += () => OnScrollUp_ButtonUsed(false);
@@ -156,6 +159,7 @@ public partial class ThumbnailGrid : MarginContainer
         scale = itemWidth / ItemSize.X;
 
         ItemSize = new(ItemSize.X * scale, ItemSize.Y * scale);
+        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Itemsize: {0}", ItemSize));
 
         if (VisibleTGIs.Count > 0)
         {
@@ -627,6 +631,7 @@ public partial class ThumbnailGrid : MarginContainer
         tgi.PackageReference = item;
         tgi.ItemSelected += (x, y, z) => GridItemSelectionChanged(x, y, z);
         tgi.CustomMinimumSize = ItemSize;
+        tgi.IsSelected = item.IsSelected;
         if (item.Package.PackageData != null)
         {
             if (item.Package.Game == SimsGames.Sims2)
@@ -715,19 +720,39 @@ public partial class ThumbnailGrid : MarginContainer
         if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Making {0} items for thumb grid. {1} rows, {2} items per row", ItemCount, RowCount, ColumnCount));
         int items = 0;
         int position = ScrollPosition * ColumnCount;
-        for (int r = 0; r < RowCount; r++)
-        {
-            for (int c = 0; c < ColumnCount; c++)
+        if (GridItems.Count < RowCount * ColumnCount)
+        {            
+            for (int r = 0; r < RowCount; r++)
             {
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Adding item {0} - row {1}, column {2}", position, r, c));
-                ThumbnailGridItem tgi = MakeTGIItem(GridItems[position]);
-                VisibleTGIs.Add(tgi);
-                AllTGIs[position] = tgi;
-                ThumbGrid.AddChild(tgi);
-                items++;
-                position++;
+                for (int c = 0; c < ColumnCount; c++)
+                {
+                    if (items >= GridItems.Count) break;
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Adding item {0} - row {1}, column {2}", position, r, c));
+                    ThumbnailGridItem tgi = MakeTGIItem(GridItems[position]);
+                    VisibleTGIs.Add(tgi);
+                    AllTGIs[position] = tgi;
+                    ThumbGrid.AddChild(tgi);
+                    items++;
+                    position++;
+                }
             }
-        } 
+        } else
+        {
+            for (int r = 0; r < RowCount; r++)
+            {
+                for (int c = 0; c < ColumnCount; c++)
+                {
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Adding item {0} - row {1}, column {2}", position, r, c));
+                    ThumbnailGridItem tgi = MakeTGIItem(GridItems[position]);
+                    VisibleTGIs.Add(tgi);
+                    AllTGIs[position] = tgi;
+                    ThumbGrid.AddChild(tgi);
+                    items++;
+                    position++;
+                }
+            } 
+        }
+        
     }   
 
     private void GridItemSelectionChanged(bool Selected, GridItem package, ThumbnailGridItem gridItem)
@@ -788,23 +813,42 @@ public partial class ThumbnailGrid : MarginContainer
     public ThumbnailGridItem MakeViewportItem(ThumbnailGridItem tgi, SimsPackage package)
     {
         try {
+            bool done = false;
             if (package.PackageData != null)
-            {            
-                if (package.Mesh || !string.IsNullOrEmpty(package.MatchingMesh))
+            {                     
+                Snapshotter snapshotter = SnapshotterPS.Instantiate() as Snapshotter;
+                snapshotter.Packages = packageDisplay.ThisInstance.Files.OfType<SimsPackage>().ToList();
+                snapshotter.MyContainer = tgi.ViewportContainer;
+                tgi.snapshotter = snapshotter;
+                if (package.SnapshotterCameraSettings != null) snapshotter.camSettings = package.SnapshotterCameraSettings;                
+                tgi.subViewport.AddChild(snapshotter);
+                if (package.Type.Contains("Face Template"))
+                {
+                    done = snapshotter.BuildSims2Mesh(package);
+                } else if (package.Type.Contains("Skin"))
+                {
+                    snapshotter.DisplaySkin(package); 
+                    done = true;               
+                } else if (package.Type.Contains("Eyecolor"))
+                {
+                    snapshotter.DisplayEyes(package);  
+                    done = true;
+                } else if (package.Type.Contains("Makeup"))
+                {
+                    snapshotter.DisplayOverlay(package); 
+                    done = true; 
+                } else if ((package.Mesh && (package.MatchingRecolors != null || package.Recolor))|| !string.IsNullOrEmpty(package.MatchingMesh))
                 {   
-                    Snapshotter snapshotter = SnapshotterPS.Instantiate() as Snapshotter;
-                    snapshotter.Packages = packageDisplay.ThisInstance.Files.OfType<SimsPackage>().ToList();
-                    tgi.subViewport.AddChild(snapshotter);
-                    bool done = snapshotter.BuildSims2Mesh(package);
-                    if (!done)
-                    {
-                        if (package.PackageImage != null)
-                        {
-                            tgi = MakeTextureItem(tgi, package);
-                        }
-                    }
+                    done = snapshotter.BuildSims2Mesh(package);
                 }
-            }    
+            }
+            /*if (!done)
+            {
+                if (package.PackageImage != null)
+                {
+                    tgi = MakeTextureItem(tgi, package);
+                }
+            }   */           
             return tgi;
         } catch {
             return null;

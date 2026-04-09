@@ -33,11 +33,31 @@ public partial class Snapshotter : Node3D
     [Export]
     public MeshInstance3D S2Cu;
     [Export]
-    Node3D CameraOuter;
+    public Node3D CameraOuter;
     [Export]
-    Node3D CameraInner;
+    public Node3D CameraInner;
     [Export]
-    Camera3D Camera;
+    public Camera3D Camera;
+
+    private  CameraPosition _camsettings;
+    public  CameraPosition camSettings 
+    {
+        get { return  _camsettings; }
+        set {  _camsettings = value; }
+    }
+
+    public void SetCamera()
+    {
+        CameraOuter.Position = camSettings.Outer.Position;
+        CameraOuter.Rotation = camSettings.Outer.Rotation;
+        CameraOuter.Scale = camSettings.Outer.Scale;
+        CameraInner.Position = camSettings.Inner.Position;
+        CameraInner.Rotation = camSettings.Inner.Rotation;
+        CameraInner.Scale = camSettings.Inner.Scale;
+        Camera.Position = camSettings.Cam.Position;
+        Camera.Rotation = camSettings.Cam.Rotation;
+        Camera.Scale = camSettings.Cam.Scale;
+    }
 
     [ExportCategory("Directions")]
     [Export]
@@ -54,6 +74,13 @@ public partial class Snapshotter : Node3D
     Node3D Down;
     Aabb AabSize;
     List<MeshInstance3D> Meshes = new();
+
+    [Export]
+    Control CopypasteOptionsBox;
+    [Export]
+    Button CopyButton;
+    [Export]
+    Button PasteButton;
 
     
 	float MaxZoom = 300.0f;
@@ -130,16 +157,47 @@ public partial class Snapshotter : Node3D
 
     public bool MouseHovering = false;
 
+    public CameraPosition GetCameraSettings()
+    {
+        if (camSettings == null) camSettings = new();
+        camSettings.Outer.Position = CameraOuter.Position;
+        camSettings.Outer.Rotation = CameraOuter.Rotation;
+        camSettings.Outer.Scale = CameraOuter.Scale;
+        camSettings.Inner.Position = CameraInner.Position;
+        camSettings.Inner.Rotation = CameraInner.Rotation;
+        camSettings.Inner.Scale = CameraInner.Scale;
+        camSettings.Cam.Position = Camera.Position;
+        camSettings.Cam.Rotation = Camera.Rotation;
+        camSettings.Cam.Scale = Camera.Scale;
+        return camSettings;
+    }
+
     public override void _Ready()
     {
         MyContainer.MouseEntered += () => MouseInVP(true);
         MyContainer.MouseExited += () => MouseInVP(false);
+        if (camSettings != null)  SetCamera();
+
+        CopyButton.Pressed += () => CopyPaste(true);
+        PasteButton.Pressed += () => CopyPaste(false);
+
+        CopyButton.MouseEntered += () => MouseInButton(true);
+        CopyButton.MouseExited += () => MouseInButton(false);
+        PasteButton.MouseEntered += () => MouseInButton(true);
+        PasteButton.MouseExited += () => MouseInButton(false);
     }
 
     public void DisconnectContainer()
     {
         MyContainer.MouseEntered -= () => MouseInVP(true);
         MyContainer.MouseExited -= () => MouseInVP(false);
+    }
+
+    bool MouseInCPButtons = false;
+
+    private void MouseInButton(bool v)
+    {
+        MouseInCPButtons = v;
     }
 
     private void MouseInVP(bool v)
@@ -153,6 +211,11 @@ public partial class Snapshotter : Node3D
     {
         if (@event is InputEventMouseButton button)
         {
+            if (!MouseInCPButtons)
+            {
+                ShowingCopyPasteOptions = false;                 
+                CopypasteOptionsBox.Visible = false;
+            }
             if (button.ButtonIndex == MouseButton.WheelDown && button.Pressed)
             {
                 if (MouseHovering)
@@ -182,6 +245,15 @@ public partial class Snapshotter : Node3D
                 {
                     rotating = !rotating;
                 }
+            } else if (button.ButtonIndex == MouseButton.Right && button.Pressed)
+            {
+                if (MouseHovering)
+                {
+                   ShowingCopyPasteOptions = true; 
+                   if (GlobalVariables.CopiedCameraSettings != null) PasteButton.Visible = true; else PasteButton.Visible = false;
+                   CopypasteOptionsBox.GlobalPosition = button.GlobalPosition;
+                   CopypasteOptionsBox.Visible = true;
+                }
             } else if (button.IsReleased())
             {
                 rotating = false;
@@ -192,6 +264,22 @@ public partial class Snapshotter : Node3D
             if (MouseHovering && rotating) RotateCamera(motion.Relative); //else PanCamera(motion.Relative);
         }
     }
+
+    public void CopyPaste(bool Copy)
+    {
+        if (Copy)
+        {
+            GlobalVariables.CopiedCameraSettings = GetCameraSettings();
+        } else
+        {
+            camSettings = GlobalVariables.CopiedCameraSettings;
+            SetCamera();
+        }
+        ShowingCopyPasteOptions = false;
+        CopypasteOptionsBox.Visible = false;
+    }
+
+    bool ShowingCopyPasteOptions = false;
 
     Vector2 currentmousepos = new();
 
@@ -242,7 +330,7 @@ public partial class Snapshotter : Node3D
         {
             MovementSpeed = float.Clamp((MovementSpeed + (oldzoom - Zoom) * 2f), MinMovementSpeed, MaxMovementSpeed);
         }
-        GD.Print(MovementSpeed);
+        //GD.Print(MovementSpeed);
     }
 
     bool rotating = false;
@@ -253,6 +341,50 @@ public partial class Snapshotter : Node3D
     {
         CameraOuter.Rotate(new(0, -1, 0), relative.X * rotationSpeed);
         CameraInner.Rotate(new(-1, 0, 0), relative.Y * rotationSpeed);
+    }
+
+    private Node3D AddBody(Node3D node3D, string type)
+    {
+        if (type.Contains("af", StringComparison.CurrentCultureIgnoreCase) || type.Contains("ef", StringComparison.CurrentCultureIgnoreCase) || type.Contains("yf", StringComparison.CurrentCultureIgnoreCase))
+        {
+            MeshInstance3D body = S2Af.Duplicate() as MeshInstance3D;
+            if (!GlobalVariables.CensorSkins) (body.GetChild(0) as Node3D).Visible = false;
+            node3D.AddChild(body);
+            node3D.Position = new(0, -15f, 0);
+        } else if (type.Contains("am", StringComparison.CurrentCultureIgnoreCase) || type.Contains("em", StringComparison.CurrentCultureIgnoreCase) || type.Contains("ym", StringComparison.CurrentCultureIgnoreCase))
+        {
+            MeshInstance3D body = S2Am.Duplicate() as MeshInstance3D;
+            if (!GlobalVariables.CensorSkins) (body.GetChild(0) as Node3D).Visible = false;
+            node3D.AddChild(body);
+            node3D.Position = new(0, -15f, 0);
+        } else if (type.Contains("tf", StringComparison.CurrentCultureIgnoreCase))
+        {
+            MeshInstance3D body = S2Af.Duplicate() as MeshInstance3D;
+            if (!GlobalVariables.CensorSkins) (body.GetChild(0) as Node3D).Visible = false;
+            body.Scale = new(0.94f, 0.94f, 0.94f);
+            node3D.Position = new(0, -13.7f, 0);
+            node3D.AddChild(body);
+        } else if (type.Contains("tm", StringComparison.CurrentCultureIgnoreCase) || type.Contains("tu", StringComparison.CurrentCultureIgnoreCase))
+        {
+            MeshInstance3D tm = S2Am.Duplicate() as MeshInstance3D;
+            tm.Scale = new(9.4f, 9.4f, 9.4f);
+            if (!GlobalVariables.CensorSkins) (tm.GetChild(0) as Node3D).Visible = false;
+            node3D.Position = new(0, -13.7f, 0);
+            node3D.AddChild(tm);
+        } else if (type.Contains("cf", StringComparison.CurrentCultureIgnoreCase) || type.Contains("cm", StringComparison.CurrentCultureIgnoreCase) || type.Contains("cu", StringComparison.CurrentCultureIgnoreCase))
+        {
+            MeshInstance3D body = S2Cu.Duplicate() as MeshInstance3D;
+            if (!GlobalVariables.CensorSkins) (body.GetChild(0) as Node3D).Visible = false;
+            node3D.AddChild(body);
+            node3D.Position = new(0, -9.6f, 0);
+        } else if (type.Contains("pu", StringComparison.CurrentCultureIgnoreCase) || type.Contains("pf", StringComparison.CurrentCultureIgnoreCase) || type.Contains("pm", StringComparison.CurrentCultureIgnoreCase))
+        {
+            MeshInstance3D body = S2Pu.Duplicate() as MeshInstance3D;
+            if (!GlobalVariables.CensorSkins) (body.GetChild(0) as Node3D).Visible = false;
+            node3D.AddChild(body);
+            node3D.Position = new(0, -5f, 0);
+        }
+        return node3D;
     }
 
 
@@ -344,6 +476,7 @@ public partial class Snapshotter : Node3D
                     {
                         material.CullMode = BaseMaterial3D.CullModeEnum.Front;
                     }
+                    material.CullMode = BaseMaterial3D.CullModeEnum.Disabled;
                 }
 
                 int surfaces = body.Mesh.Mesh.GetSurfaceCount();
@@ -557,40 +690,13 @@ public partial class Snapshotter : Node3D
                 hair.ParentNode = node3D;
             }
 
-            if (type.Contains("af", StringComparison.CurrentCultureIgnoreCase) || type.Contains("ef", StringComparison.CurrentCultureIgnoreCase) || type.Contains("yf", StringComparison.CurrentCultureIgnoreCase))
-            {
-                node3D.AddChild(S2Af.Duplicate());
-                node3D.Position = new(0, -15f, 0);
-            } else if (type.Contains("am", StringComparison.CurrentCultureIgnoreCase) || type.Contains("em", StringComparison.CurrentCultureIgnoreCase) || type.Contains("ym", StringComparison.CurrentCultureIgnoreCase))
-            {
-                node3D.AddChild(S2Am.Duplicate());
-                node3D.Position = new(0, -15f, 0);
-            } else if (type.Contains("tf", StringComparison.CurrentCultureIgnoreCase))
-            {
-                MeshInstance3D tf = S2Af.Duplicate() as MeshInstance3D;
-                tf.Scale = new(0.94f, 0.94f, 0.94f);
-                node3D.Position = new(0, -13.7f, 0);
-                node3D.AddChild(tf);
-            } else if (type.Contains("tm", StringComparison.CurrentCultureIgnoreCase) || type.Contains("tu", StringComparison.CurrentCultureIgnoreCase))
-            {
-                MeshInstance3D tm = S2Am.Duplicate() as MeshInstance3D;
-                tm.Scale = new(9.4f, 9.4f, 9.4f);
-                node3D.Position = new(0, -13.7f, 0);
-                node3D.AddChild(tm);
-            } else if (type.Contains("cf", StringComparison.CurrentCultureIgnoreCase) || type.Contains("cm", StringComparison.CurrentCultureIgnoreCase) || type.Contains("cu", StringComparison.CurrentCultureIgnoreCase))
-            {
-                node3D.AddChild(S2Cu.Duplicate());
-                node3D.Position = new(0, -9.6f, 0);
-            } else if (type.Contains("pu", StringComparison.CurrentCultureIgnoreCase) || type.Contains("pf", StringComparison.CurrentCultureIgnoreCase) || type.Contains("pm", StringComparison.CurrentCultureIgnoreCase))
-            {
-                node3D.AddChild(S2Pu.Duplicate());
-                node3D.Position = new(0, -5f, 0);
-            }            
+            node3D = AddBody(node3D, type);
             
             node3D.RotationDegrees = new(0, -75f, 0);
             node3D.Scale = new(10, 10, 10);
             node3D.Visible = false;
             node3D.Name = type;
+            
 
             if (node3D.GetChildCount() > 1)
             {
@@ -820,13 +926,17 @@ public partial class Snapshotter : Node3D
             thisPackage = d;            
             if (thisPackage.MatchingRecolors != null)
             {
-                List<SimsPackage> txt = new();
-                foreach (string matching in thisPackage.MatchingRecolors)
+                if (thisPackage.MatchingRecolors.Count > 0)
                 {
-                    txt.Add(Packages.First(x => x.FileName == matching));
+                    List<SimsPackage> txt = new();
+                    foreach (string matching in thisPackage.MatchingRecolors)
+                    {
+                        txt.Add(Packages.First(x => x.FileName == matching));
+                    }
+                    texturePackage = txt.OrderBy(qu => Guid.NewGuid()).First();
+                    foundTextures = true; 
                 }
-                texturePackage = txt.OrderBy(qu => Guid.NewGuid()).First();
-                foundTextures = true;                          
+                                         
             }            
         }
 
@@ -1456,6 +1566,7 @@ public partial class Snapshotter : Node3D
 
     public void ApplyS2Textures(SimsPackage texturePackage)
     {
+        if (meshType == 3) return;
         if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Getting textures for {0}, using GUID {1}", data.FileLocation, data.GUID));
 
         MMATData mmat = null;

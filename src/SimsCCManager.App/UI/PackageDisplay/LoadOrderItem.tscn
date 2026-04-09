@@ -108,8 +108,10 @@ color = Color(0.8745098, 0.8745098, 0.8745098, 1)
 
 [node name="Label2" type="Label" parent="Item/MarginContainer/HBoxContainer"]
 layout_mode = 2
+size_flags_horizontal = 3
 theme = SubResource("Theme_j41ce")
 text = "simspackage.package"
+text_overrun_behavior = 3
 
 [node name="Button" type="Button" parent="Item"]
 layout_mode = 2
