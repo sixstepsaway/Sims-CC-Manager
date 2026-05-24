@@ -305,7 +305,8 @@ public partial class NewInstance : MarginContainer
             {
                 Thread.Sleep(10);
                 GlobalVariables.mainWindow.IncrementLoadingScreen(i, "Final checks...", "New Instance: Final Checks");
-            }             
+            }           
+            LoadedData.LoadedInstance = currentInstance;  
             CallDeferred(nameof(FinishLoading));
         }){IsBackground = true}.Start();
     }

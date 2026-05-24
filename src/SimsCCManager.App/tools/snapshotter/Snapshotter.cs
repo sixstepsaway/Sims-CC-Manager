@@ -4,6 +4,7 @@ using MoreLinq.Extensions;
 using SimsCCManager.Containers;
 using SimsCCManager.Debugging;
 using SimsCCManager.Globals;
+using SimsCCManager.InfoFiles;
 using SimsCCManager.PackageReaders;
 using System;
 using System.Collections.Generic;
@@ -103,12 +104,26 @@ public partial class Snapshotter : Node3D
     public SubViewportContainer MyContainer;
 
     Sims2Data data;
-    SimsPackage thisPackage;
+    private  SimsPackage _thispackage;
+    public  SimsPackage thisPackage 
+    {
+    get { return  _thispackage; }
+    set {  _thispackage = value;
+            InfoFileUtilities.ReReadPackageDetails(value);
+        }
+    }
     List<TextureMatObjectMatch> textureMats = new();
 
     int meshType = -1; // 0 = object, 1 = hair
 
-    SimsPackage texturePackage = new();
+    private  SimsPackage _texturepackage;
+    public  SimsPackage texturePackage 
+    {
+    get { return  _texturepackage; }
+    set {  _texturepackage = value;
+            InfoFileUtilities.ReReadPackageDetails(value);
+        }
+    }
 
     bool _foundtextures;
     bool foundTextures

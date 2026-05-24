@@ -264,7 +264,7 @@ public partial class LoadInstance : MarginContainer
 
             
 
-
+            LoadedData.LoadedInstance = gameInstance;
 
             GlobalVariables.mainWindow.LoadingPackageDisplayStart(pbarmax);
 

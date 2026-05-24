@@ -11,6 +11,99 @@ using SimsCCManager.Globals;
 
 namespace SimsCCManager.Debugging
 {
+    public class TemporaryLog
+    {
+        private static string templog = Path.Combine(GlobalVariables.LogFolder, "PackagesRead.log");
+        static ReaderWriterLock locker = new ReaderWriterLock();
+        static bool initialized = false;
+        
+        public static void WritePackagesRead(int num, string package)
+        {
+            if (!Directory.Exists(GlobalVariables.LogFolder)) Directory.CreateDirectory(GlobalVariables.LogFolder);
+
+            if (File.Exists(templog))
+            {
+                if (initialized)
+                {
+                    FileInfo log = new(templog);
+                    double MB = log.Length / (1024.0 * 1024.0);
+                    if (MB > 100)
+                    {
+                        try
+                        {
+                            locker.AcquireWriterLock(int.MaxValue);
+                            string lastwritetime = File.GetLastWriteTimeUtc(templog).ToString("yyyy-dd-MM hh_mm_ss");
+                            string oldtemplog = Path.Combine(GlobalVariables.LogFolder, string.Format("{0}_{1}.log", lastwritetime, "templog"));
+                            if (File.Exists(oldtemplog)) oldtemplog = Utilities.IncrementName(oldtemplog);
+                            if (File.Exists(templog)) File.Move(templog, oldtemplog);
+                        }
+                        finally
+                        {
+                            locker.ReleaseWriterLock();
+                        }
+                        CreateLog(num, package);
+                        
+                    }
+                    else
+                    {
+                        WriteLog(num, package);
+                    }
+                }
+                else
+                {
+                    initialized = true;
+                    string lastwritetime = File.GetLastWriteTimeUtc(templog).ToString("yyyy-dd-MM hh_mm_ss");
+                    string oldtemplog = Path.Combine(GlobalVariables.LogFolder, string.Format("{0}_{1}.log", lastwritetime, "templog"));
+                    if (File.Exists(oldtemplog)) oldtemplog = Utilities.IncrementName(oldtemplog);
+                    File.Move(templog, oldtemplog);
+                    CreateLog(num, package);
+                }
+            }
+            else
+            {
+                initialized = true;
+                CreateLog(num, package);
+            }
+        }
+
+        private static void WriteLog(int num, string package)
+        {
+            string time = DateTime.Now.ToString("h:mm:ss tt");
+            string statement = string.Format("Package #{0} read: {1}", num, package);
+
+            try
+            {
+                locker.AcquireWriterLock(int.MaxValue);
+                StreamWriter addToInternalLog = new StreamWriter(templog, append: true);
+                addToInternalLog.WriteLine(statement);
+                addToInternalLog.Close();
+            }
+            finally
+            {
+                locker.ReleaseWriterLock();
+            }
+            if (GlobalVariables.DebugToConsole) GlobalVariables.mainWindow.WriteGDPrint(statement);
+        }
+
+        private static void CreateLog(int num, string package)
+        {
+            string statement = string.Format("Package #{0} read: {1}", num, package);
+
+            try
+            {
+                new FileInfo(templog).Directory.Create();
+                locker.AcquireWriterLock(int.MaxValue);
+                StreamWriter addToInternalLog = new StreamWriter(templog, append: false);                              
+                addToInternalLog.WriteLine(statement);
+                addToInternalLog.Close();
+            }
+            finally
+            {
+                locker.ReleaseWriterLock();
+            }
+            if (GlobalVariables.DebugToConsole) GlobalVariables.mainWindow.WriteGDPrint(statement);
+        }
+    }
     public class Logging
     {
         /// <summary>
@@ -53,6 +146,7 @@ namespace SimsCCManager.Debugging
                             locker.AcquireWriterLock(int.MaxValue);
                             string lastwritetime = File.GetLastWriteTimeUtc(debuglog).ToString("yyyy-dd-MM hh_mm_ss");
                             string olddebuglog = Path.Combine(GlobalVariables.LogFolder, string.Format("{0}_{1}.log", lastwritetime, "DebugLog"));
+                            if (File.Exists(olddebuglog)) olddebuglog = Utilities.IncrementName(olddebuglog);
                             if (File.Exists(debuglog)) File.Move(debuglog, olddebuglog);
                         }
                         finally
@@ -72,6 +166,7 @@ namespace SimsCCManager.Debugging
                     initialized = true;
                     string lastwritetime = File.GetLastWriteTimeUtc(debuglog).ToString("yyyy-dd-MM hh_mm_ss");
                     string olddebuglog = Path.Combine(GlobalVariables.LogFolder, string.Format("{0}_{1}.log", lastwritetime, "DebugLog"));
+                    if (File.Exists(olddebuglog)) olddebuglog = Utilities.IncrementName(olddebuglog);
                     File.Move(debuglog, olddebuglog);
                     CreateLog(statement, lineNumber.ToString(), filepath, MemberName);
                 }

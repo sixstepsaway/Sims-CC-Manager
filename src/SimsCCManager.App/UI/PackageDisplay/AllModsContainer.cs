@@ -855,56 +855,41 @@ public partial class AllModsContainer : MarginContainer
         new Thread(() => {        
             if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Creating rows"));
             
-            int i = 0;
+            //int i = 0;
             if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Packages: {0}", Packages.Count));
 
             List<SimsPackage> packages = [..Packages.Where(x => x.StandAlone)];
 
-            Parallel.For(0, packages.Count, GlobalVariables.ParallelSettings, i =>
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Packages for grid: {0}", packages.Count));
+
+            if (GlobalVariables.DebugMode && GlobalVariables.DebugMultiThread)
             {
-                try {
+                for (int i = 0; i < packages.Count; i++)
+                {
+                    try {
+                            DataGridRow newrow = CreateRow(packages[i], i); 
+                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Row {0}: {1}", i, packages[i].FileName));
+                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("-- Is Subrow: {0}\n -- Has Subitems: {1}", newrow.SubRow, newrow.SubRowItems.Count));
+                            rows.Add(newrow);   
+                            if (!FirstLoaded) GlobalVariables.mainWindow.IncrementLoadingScreen(1, string.Format("Creating data for {0}", packages[i].FileName), "All Mods: Making Data");                     
+                            //i++;
+                        } catch (Exception e) { if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Caught exception creating row for {0}: {1} - {2}", packages[i].FileName, e.Message, e.StackTrace)); }
+                }
+            } else
+            {
+                Parallel.For(0, packages.Count, GlobalVariables.ParallelSettings, i =>
+                {
+                    try {
                         DataGridRow newrow = CreateRow(packages[i], i); 
                         if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Row {0}: {1}", i, packages[i].FileName));
                         if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("-- Is Subrow: {0}\n -- Has Subitems: {1}", newrow.SubRow, newrow.SubRowItems.Count));
                         rows.Add(newrow);   
                         if (!FirstLoaded) GlobalVariables.mainWindow.IncrementLoadingScreen(1, string.Format("Creating data for {0}", packages[i].FileName), "All Mods: Making Data");                     
-                        i++;
+                        //i++;
                     } catch (Exception e) { if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Caught exception creating row for {0}: {1} - {2}", packages[i].FileName, e.Message, e.StackTrace)); }
-            });
-
-            /*foreach (SimsPackage pack in Packages.Where(x => x.StandAlone)){
-                Task t = new Task( () => {                        
-                    try { 
-                        DataGridRow newrow = CreateRow(pack, i); 
-                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Row {0}: {1}", i, pack.FileName));
-                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("-- Is Subrow: {0}\n -- Has Subitems: {1}", newrow.SubRow, newrow.SubRowItems.Count));
-                        rows.Add(newrow);   
-                        if (!FirstLoaded) GlobalVariables.mainWindow.IncrementLoadingScreen(1, string.Format("Creating data for {0}", pack.FileName), "All Mods: Making Data");                     
-                    } catch (Exception e) { if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Caught exception creating row for {0}: {1} - {2}", pack.FileName, e.Message, e.StackTrace)); }
                 });
-                //if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Task {0} is {1}", t.Id, pack.FileName));
-                i++;
-                runningTasks.Add(t);                        
-            }*/
-
-            /*Parallel.ForEach(runningTasks, GlobalVariables.ParallelSettings, t =>
-            {
-                t.Start();
-            });
-
-            while (runningTasks.Any(x => !x.IsCompleted)){
-                if (completedTasks != runningTasks.Count(x => x.IsCompleted)) {
-                    completedTasks = runningTasks.Count(x => x.IsCompleted);
-                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0} tasks in runningTasks, {1} completed", runningTasks.Count, completedTasks));
-                    if (runningTasks.Any(x => x.IsFaulted)) {
-                        foreach (Task t in runningTasks.Where(x => x.IsFaulted))
-                        {
-                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Task {0} Fault: {1} - {2}", t.Id, t.Exception.Message, t.Exception.StackTrace));
-                        }
-                    }
-                }
-            }*/
-
+            }            
+            
             if (!rows.IsEmpty) { 
                 if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Adding {0} rows to grid.", rows.Count));
                 List<DataGridRow> _rows = rows.OrderBy(x => x.OverallIdx).ToList();
@@ -1169,6 +1154,7 @@ public partial class AllModsContainer : MarginContainer
 
     private void DisplayPackageInfo(SimsPackage package)
     {
+        if (!package.HasBeenRead) return;
         packageDisplay.UIPackageViewerContainer.package = package;
         if (!packageDisplay.UIDownloadsContainer.Visible)
         {
@@ -2551,9 +2537,10 @@ public partial class AllModsContainer : MarginContainer
             if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0} - Package data changed: {1} - New data: {2}", package.FileName, data, DataGrid.GetProperty(package, data)));            
             if (DataGridHeaders.Any(x => x.Data == data))
             {   
-                if (DataGrid.RowData.Any(x => x.Identifier == package.Identifier))
+                List<DataGridRow> rd = [..DataGrid.RowData];
+                if (rd.Any(x => x.Identifier == package.Identifier))
                 {
-                    int idx = DataGrid.RowData.IndexOf(DataGrid.RowData.First(x => x.Identifier == package.Identifier));
+                    int idx = rd.IndexOf(rd.First(x => x.Identifier == package.Identifier));
                     DataGrid.RowData[idx] = CreateRow(package, DataGrid.RowData[idx].OverallIdx);
                     DataGrid.EditRow(DataGrid.RowData[idx], data);
                     ThumbGrid?.ReplaceTGI(package);

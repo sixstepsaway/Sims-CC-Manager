@@ -380,7 +380,12 @@ public partial class PackageViewerContainer : MarginContainer
             }            
             foreach (string file in files)
             {
-                Images.Add(Image.LoadFromFile(file));                     
+                try { 
+                    Images.Add(Image.LoadFromFile(file)); 
+                    } catch
+                {
+                    
+                }
             }                      
         }
 

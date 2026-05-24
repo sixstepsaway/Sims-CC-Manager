@@ -834,11 +834,11 @@ public partial class DataGrid : Control
 		PleasePassLog(string.Format("Changing row {0} ({1}) to row {2} ({3})", ogpidx, ogref, data.PopulatedIdx, data.RowRef));
 		AllRows[VisibleRows[vidx].RowData.PopulatedIdx] = new();
 		VisibleRows[vidx].RowData = data;
-		if (data.UseCategoryColor)
+		/*if (data.UseCategoryColor)
 		{
 			VisibleRows[vidx].BackgroundColor = data.BackgroundColor;
 			VisibleRows[vidx].TextColor = data.TextColor; 
-		} else if (UniversalMethods.IsEven(data.PopulatedIdx))
+		} else */if (UniversalMethods.IsEven(data.PopulatedIdx))
 		{				
 			VisibleRows[vidx].BackgroundColor = AlternateRowColor;
 			VisibleRows[vidx].TextColor = AlternateRowTextColor; 
@@ -951,11 +951,11 @@ public partial class DataGrid : Control
     private void EditRow(DataGridRow data, int vidx, string Data)
 	{		
 		VisibleRows[vidx].RowData = data;
-		if (data.UseCategoryColor)
+		/*if (data.UseCategoryColor)
 		{
 			VisibleRows[vidx].BackgroundColor = data.BackgroundColor;
 			VisibleRows[vidx].TextColor = data.TextColor; 
-		} else if (UniversalMethods.IsEven(data.PopulatedIdx))
+		} else */if (UniversalMethods.IsEven(data.PopulatedIdx))
 		{				
 			VisibleRows[vidx].BackgroundColor = AlternateRowColor;
 			VisibleRows[vidx].TextColor = AlternateRowTextColor; 
@@ -1017,11 +1017,11 @@ public partial class DataGrid : Control
 	{
 		PleasePassLog(string.Format("Editing row with rowref {0}, VisibleRow index {1}", data.RowRef, vidx));
 		VisibleRows[vidx].RowData = data;
-		if (data.UseCategoryColor)
+		/*if (data.UseCategoryColor)
 		{
 			VisibleRows[vidx].BackgroundColor = data.BackgroundColor;
 			VisibleRows[vidx].TextColor = data.TextColor; 
-		} else if (UniversalMethods.IsEven(data.PopulatedIdx))
+		} else */if (UniversalMethods.IsEven(data.PopulatedIdx))
 		{				
 			VisibleRows[vidx].BackgroundColor = AlternateRowColor;
 			VisibleRows[vidx].TextColor = AlternateRowTextColor; 
@@ -1205,7 +1205,6 @@ public partial class DataGrid : Control
 		PleasePassLog(string.Format("Row selection for populating: {0} - {1}, from list of {2}", start, end, amt));
 		//int i = start; 
 		ClearRows();
-
 		
 		int p = 0;
 		for (int i = start; i < end; i++){
@@ -1224,16 +1223,8 @@ public partial class DataGrid : Control
 			RowsHolder.SizeFlagsVertical = SizeFlags.ShrinkBegin;
 		}
 		if (!FirstLoaded) {
-			UpdateRow(VisibleRows[^1].RowData);
+			//UpdateRow(VisibleRows[^1].RowData);
 			FirstLoaded = true;
-			/*for (int i = 0; i < Headers.Count; i++)
-			{
-				if (Headers[i].ShowHeader)
-				{
-					HeaderResized(i);
-					i++;
-				}
-			}*/
 			DataGridFinishedFirstLoad?.Invoke();
 		}
 		if (Updating)
@@ -1272,11 +1263,11 @@ public partial class DataGrid : Control
 
 		//row.Name = importedRowData.RowRef;		
 
-		if (importedRowData.UseCategoryColor)
+		/*if (importedRowData.UseCategoryColor)
 		{
 			row.BackgroundColor = importedRowData.BackgroundColor;
 			row.TextColor = importedRowData.TextColor; 
-		} else if (UniversalMethods.IsEven(importedRowData.PopulatedIdx))
+		} else */if (UniversalMethods.IsEven(importedRowData.PopulatedIdx))
 		{				
 			row.BackgroundColor = AlternateRowColor;
 			row.TextColor = AlternateRowTextColor; //GetFGColor(BackgroundColor);

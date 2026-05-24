@@ -8,6 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -944,6 +945,7 @@ namespace SimsCCManager.Containers
         void WriteXML();
     }
 
+    [XmlRoot("SimsPackage")]
     public class SimsPackage : ISimsFile
     {
         public SimsPackage()
@@ -1105,136 +1107,11 @@ namespace SimsCCManager.Containers
                 }
             }
         }
+              
 
+        
 
-        public Task ReadPackageDetails(GameInstance instance, bool SubFolder = false)
-        {
-            if (IsDirectory)
-            {
-                return ReadPackageDetails(instance, new DirectoryInfo(Location), SubFolder);
-            }
-            else
-            {
-                return ReadPackageDetails(instance, new FileInfo(Location), SubFolder);
-            }
-        }
-
-        public Task ReadPackageDetails(GameInstance instance, FileInfo fi, bool SubFolder)
-        {
-            SimsPackageReader simsPackageReader = new();
-            try
-            {
-                simsPackageReader.ReadPackage(Location);
-                PackageData = simsPackageReader.SimsData;
-                if (simsPackageReader.PackageGame != instance.GameChoice)
-                {
-                    if (simsPackageReader.PackageGame == SimsGames.Sims3 && instance.GameChoice == SimsGames.SimsMedieval)
-                    {
-                        Game = SimsGames.SimsMedieval;
-                        WrongGame = false;
-                    }
-                    else
-                    {
-                        Game = simsPackageReader.PackageGame;
-                        WrongGame = true;
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Couldn't read package {0}: {1} ({2})", FileName, e.Message, e.StackTrace));
-            }
-            PackageCategory = instance.Categories.First(x => x.Name == "Default");
-            simsPackageReader.Dispose();
-            DateCreated = File.GetCreationTime(Location);
-            DateUpdated = DateTime.Now;
-            simsPackageReader.CheckOverrides(this);
-            if (!Orphan) HasBeenRead = true;
-            //this.WriteXML();
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Returning {0} as read.", FileName));
-            return Task.CompletedTask;
-        }
-
-        public Task ReadPackageDetails(GameInstance instance, DirectoryInfo Dir, bool SubFolder = false)
-        {
-            IsDirectory = true;
-            if (!SubFolder)
-            {
-                StandAlone = true;
-            }
-            else
-            {
-                StandAlone = false;
-            }
-            FileName = Dir.Name;
-            Game = instance.GameChoice;
-            switch (Game)
-            {
-                case SimsGames.Sims2:
-                    Sims2Data = new();
-                    break;
-                case SimsGames.Sims3:
-                    Sims3Data = new();
-                    break;
-                case SimsGames.Sims4:
-                    Sims4Data = new();
-                    break;
-            }
-            DateCreated = Directory.GetCreationTime(Location);
-            DateUpdated = DateTime.Now;
-            PackageCategory = instance.Categories.First(x => x.Name == "Default");
-            HasBeenRead = true;
-            //this.WriteXML();
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Returning {0} as read.", FileName));
-            return Task.CompletedTask;
-        }
-
-        public bool ReadInfoFile()
-        {
-            XmlSerializer simsPackageSerializer = new XmlSerializer(typeof(SimsPackage));
-            if (File.Exists(InfoFile))
-            {                    
-                try {
-                    SimsPackage simsPackage = new();
-                    using (FileStream fileStream = File.OpenRead(simsPackage.InfoFile)){
-                        using (ZipFile zipFile = new ZipFile(fileStream))
-                        {
-                            try {
-                                foreach (ZipEntry entry in zipFile)
-                                {                   
-                                    if (!entry.IsFile) continue; // Skip directories
-                                    if (entry.Name.Contains("IDENTIFIER - ")) continue;
-                                                    
-                                    using (Stream zipStream = zipFile.GetInputStream(entry))
-                                    {                        
-                                        using (StreamReader reader = new(zipStream))
-                                        {                           
-                                            simsPackage = (SimsPackage)simsPackageSerializer.Deserialize(reader);
-                                        } 
-                                    }
-                                }
-                            } catch
-                            {
-                                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0} isn't a zip. Opening as XML.", simsPackage.InfoFile));
-                                using (StreamReader streamReader = new(fileStream)){
-                                    simsPackage = (SimsPackage)simsPackageSerializer.Deserialize(streamReader);
-                                    streamReader.Close();
-                                }
-                                
-                            }
-                            fileStream.Close();                        
-                        }  
-                    }
-                    UpdateFromData(simsPackage);
-                    HasBeenRead = true;
-                } catch (Exception e)
-                {
-                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Hit an error reading {0} - deleting. Error: {1} - Trace: {2}", InfoFile, e.Message, e.StackTrace));
-                    Utilities.MoveToRecycleBin(InfoFile);
-                }
-            }
-            return HasBeenRead;
-        }
+        
 
         private FileTypes _filetype;
         public FileTypes FileType
@@ -1452,7 +1329,14 @@ namespace SimsCCManager.Containers
         {
             get
             {
-                if (HasBeenRead && string.IsNullOrEmpty(_type)) return "Unknown"; else return _type;
+                if (HasBeenRead && string.IsNullOrEmpty(_type)) {
+                    return "Unknown";
+                } else if (!HasBeenRead)
+                {
+                    return "";
+                } else {
+                    return _type;
+                }
             }
             set
             {
@@ -1505,7 +1389,7 @@ namespace SimsCCManager.Containers
                 DataChanged?.Invoke(nameof(PackageCategory));
             }
         }
-        public string CategoryName { get { return PackageCategory.Name; } }
+        public string CategoryName { get { if (PackageCategory != null) return PackageCategory.Name; else return ""; } }
         public Godot.Color CategoryColor { get { return PackageCategory.Background; } }
 
         public string Image { get; set; }
@@ -1603,6 +1487,7 @@ namespace SimsCCManager.Containers
                 DataChanged?.Invoke(nameof(Favorite));
             }
         }
+
         [XmlIgnore]
         private  bool _isenabled;
         [XmlIgnore]
@@ -1673,6 +1558,8 @@ namespace SimsCCManager.Containers
 
         public List<string> FullKeys {get; set;}
         public List<string> XMOLNames {get; set;}
+        public List<string> XTOLNames {get; set;}
+        public List<string> XNGBNames {get; set;}
         public List<string> TXMTNames {get; set;}
         public List<string> MMATNames {get; set;}
         public List<string> TXTRNames {get; set;}
@@ -1681,15 +1568,32 @@ namespace SimsCCManager.Containers
         public List<string> EIDRIDs {get; set;}
         public List<string> SHPEMaterialNames {get; set;}
 
+        private  List<IndexEntry> _indexentries;
+        public  List<IndexEntry> IndexEntries 
+        {
+        get { return  _indexentries; }
+        set {  _indexentries = value;
+            DictionaryEntries();}
+        }
+        [XmlIgnore]
+        public List<EntryCount> IndexEntryCounts { get; set; } = new();
 
-
-
-
-
-
-
-
-
+        public void DictionaryEntries()
+        {
+            if (Game == SimsGames.Sims2)
+            {
+                ConcurrentBag<EntryCount> entryCounts = new();
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Checking {0} indexentries against {1} types", IndexEntries.Count, Sims2PackageStatics.Sims2EntryTypes.Count));
+                Parallel.ForEach(Sims2PackageStatics.Sims2EntryTypes, entryType =>
+                {
+                    int count = IndexEntries.Count(x => x.TypeID == entryType.TypeID);
+                    if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("File has {0} of entry {1}", count, entryType.Tag));
+                    if (count != 0) entryCounts.Add(new() { EntryTag = entryType.Tag.ToUpper(), Count = count });
+                });
+                IndexEntryCounts = entryCounts.ToList();
+            }
+            
+        }
 
         public Sims2Data Sims2Data { 
             get { return PackageData as Sims2Data; } 
@@ -1702,116 +1606,136 @@ namespace SimsCCManager.Containers
             switch (Game)
             {
                 case SimsGames.Sims2:
-                    this.Override = PackageData.Override;
-                    this.OverrideReference = PackageData.OverrideReference;
-                    this.SpecificOverride = PackageData.SpecificOverride;
-                    if (PackageData.FunctionSort.Count != 0)
+                if (PackageData != null)
                     {
-                        if (PackageData.FunctionSort[0] != null)
+                        this.Override = PackageData.Override;
+                        this.OverrideReference = PackageData.OverrideReference;
+                        this.SpecificOverride = PackageData.SpecificOverride;
+                        if (PackageData.FunctionSort.Count != 0)
                         {
-                            if (!string.IsNullOrEmpty(PackageData.FunctionSort[0].Subcategory))
+                            if (PackageData.FunctionSort[0] != null)
                             {
-                                this.Type = string.Format("{0}/{1}", PackageData.FunctionSort[0].Category, PackageData.FunctionSort[0].Subcategory);
-                            }
-                            else
+                                if (!string.IsNullOrEmpty(PackageData.FunctionSort[0].Subcategory))
+                                {
+                                    this.Type = string.Format("{0}/{1}", PackageData.FunctionSort[0].Category, PackageData.FunctionSort[0].Subcategory);
+                                }
+                                else
+                                {
+                                    this.Type = PackageData.FunctionSort[0].Category;
+                                }
+                            } 
+                        } else if (!string.IsNullOrEmpty(PackageData.AltType))
+                        {
+                            this.Type = PackageData.AltType;
+                        } else
+                        {
+                            if (HasBeenRead) this.Type = "Unknown"; else this.Type = string.Empty;
+                        }
+                        this.GameMod = PackageData.GameMod;
+                        this.Mesh = PackageData.Mesh;
+                        this.Recolor = PackageData.Recolor;
+                        this.Orphan = PackageData.Orphan;
+                        this.ObjectGUID = PackageData.GUID;
+                        this.ClothingInfo = PackageData.ClothingInfo;
+                        if (Sims2Data.Expansions.Any())
+                        {
+                            if (Expansions == null) Expansions = new();
+                            foreach (Sims2Expansions ex in Sims2Data.Expansions)
                             {
-                                this.Type = PackageData.FunctionSort[0].Category;
-                            }
-                        } 
-                    } else if (!string.IsNullOrEmpty(PackageData.AltType))
-                    {
-                        this.Type = PackageData.AltType;
-                    } else
-                    {
-                        if (HasBeenRead) this.Type = "Unknown"; else this.Type = string.Empty;
-                    }
-                    this.GameMod = PackageData.GameMod;
-                    this.Mesh = PackageData.Mesh;
-                    this.Recolor = PackageData.Recolor;
-                    this.Orphan = PackageData.Orphan;
-                    this.ObjectGUID = PackageData.GUID;
-                    this.ClothingInfo = PackageData.ClothingInfo;
-                    if (Sims2Data.Expansions.Any())
-                    {
-                        if (Expansions == null) Expansions = new();
-                        foreach (Sims2Expansions ex in Sims2Data.Expansions)
-                        {
-                            Expansions.Add(Extensions.GetDescription(ex));
-                        }
-                    }
-                    if (FullKeys == null) FullKeys = new();
-                    foreach (IndexEntry entry in Sims2Data.IndexEntries)
-                    {
-                        FullKeys.Add(entry.CompleteID);
-                    }
-                    
-                    if (Sims2Data.XMOLDataBlock.Count > 0)
-                    {
-                        if (XMOLNames == null) XMOLNames = new();
-                        foreach (XMOLData xdata in Sims2Data.XMOLDataBlock)
-                        {
-                            XMOLNames.Add(xdata.Name);
-                        }
-                    }
-                    if (Sims2Data.TXMTDataBlock.Count > 0)
-                    {
-                        if (TXMTNames == null) TXMTNames = new();
-                        foreach (TXMTData txmtdata in Sims2Data.TXMTDataBlock)
-                        {
-                            TXMTNames.Add(txmtdata.FileName);
-                        }
-                    }
-                    if (Sims2Data.TXTRDataBlock.Count > 0)
-                    {
-                        if (TXTRNames == null) TXTRNames = new();
-                        foreach (TXTRData txtrdata in Sims2Data.TXTRDataBlock)
-                        {
-                            TXTRNames.Add(txtrdata.FullTXTRName);
-                        }
-                    }
-                    if (Sims2Data.GMDCDataBlock.Count > 0)
-                    {
-                        if (GMDCNames == null) GMDCNames = new();
-                        foreach (GMDCData gmdcdata in Sims2Data.GMDCDataBlock)
-                        {
-                            GMDCNames.Add(gmdcdata.FileName);
-                        }
-                    }
-                    if (Sims2Data.SHPEDataBlock.Count > 0)
-                    {
-                        if (SHPENames == null) SHPENames = new();
-                        foreach (SHPEData shpedata in Sims2Data.SHPEDataBlock)
-                        {
-                            SHPENames.Add(shpedata.FileName);
-                            foreach (SHPEMaterial shpematerial in shpedata.Materials)
-                            {
-                                if (SHPEMaterialNames == null) SHPEMaterialNames = new();
-                                SHPEMaterialNames.Add(shpematerial.MaterialDefinition);
+                                Expansions.Add(Extensions.GetDescription(ex));
                             }
                         }
-                    }
-                    if (Sims2Data.MMATDataBlock.Count > 0)
-                    {
-                        if (MMATNames == null) MMATNames = new();
-                        foreach (MMATData mmatdata in Sims2Data.MMATDataBlock)
+                        if (FullKeys == null) FullKeys = new();
+                        foreach (IndexEntry entry in Sims2Data.IndexEntries)
                         {
-                            MMATNames.Add(mmatdata.ModelName);
-                            MMATNames.Add(mmatdata.Name);
+                            FullKeys.Add(entry.CompleteID);
                         }
-                    }
-                    if (Sims2Data.EIDRDataBlock.Count > 0)
-                    {
-                        if (EIDRIDs == null) EIDRIDs = new();
-                        foreach (EIDRData edirdata in Sims2Data.EIDRDataBlock)
+                        
+                        if (Sims2Data.XMOLDataBlock.Count > 0)
                         {
-                            foreach (ResourceKey e in edirdata.ResourceKeys)
+                            if (XMOLNames == null) XMOLNames = new();
+                            foreach (XMOLData xdata in Sims2Data.XMOLDataBlock)
                             {
-                                EIDRIDs.Add(e.FullKey);
-                            }                            
+                                XMOLNames.Add(xdata.Name);
+                            }
                         }
-                    }
+                        if (Sims2Data.XTOLDataBlock.Count > 0)
+                        {
+                            if (XMOLNames == null) XTOLNames = new();
+                            foreach (XTOLData xdata in Sims2Data.XTOLDataBlock)
+                            {
+                                XTOLNames.Add(xdata.Name);
+                            }
+                        }
+                        if (Sims2Data.XNGBDataBlock.Count > 0)
+                        {
+                            if (XNGBNames == null) XNGBNames = new();
+                            foreach (XNGBData xdata in Sims2Data.XNGBDataBlock)
+                            {
+                                XNGBNames.Add(xdata.ModelName);
+                            }
+                        }
+                        if (Sims2Data.TXMTDataBlock.Count > 0)
+                        {
+                            if (TXMTNames == null) TXMTNames = new();
+                            foreach (TXMTData txmtdata in Sims2Data.TXMTDataBlock)
+                            {
+                                TXMTNames.Add(txmtdata.FileName);
+                            }
+                        }
+                        if (Sims2Data.TXTRDataBlock.Count > 0)
+                        {
+                            if (TXTRNames == null) TXTRNames = new();
+                            foreach (TXTRData txtrdata in Sims2Data.TXTRDataBlock)
+                            {
+                                TXTRNames.Add(txtrdata.FullTXTRName);
+                            }
+                        }
+                        if (Sims2Data.GMDCDataBlock.Count > 0)
+                        {
+                            if (GMDCNames == null) GMDCNames = new();
+                            foreach (GMDCData gmdcdata in Sims2Data.GMDCDataBlock)
+                            {
+                                GMDCNames.Add(gmdcdata.FileName);
+                            }
+                        }
+                        if (Sims2Data.SHPEDataBlock.Count > 0)
+                        {
+                            if (SHPENames == null) SHPENames = new();
+                            foreach (SHPEData shpedata in Sims2Data.SHPEDataBlock)
+                            {
+                                SHPENames.Add(shpedata.FileName);
+                                foreach (SHPEMaterial shpematerial in shpedata.Materials)
+                                {
+                                    if (SHPEMaterialNames == null) SHPEMaterialNames = new();
+                                    SHPEMaterialNames.Add(shpematerial.MaterialDefinition);
+                                }
+                            }
+                        }
+                        if (Sims2Data.MMATDataBlock.Count > 0)
+                        {
+                            if (MMATNames == null) MMATNames = new();
+                            foreach (MMATData mmatdata in Sims2Data.MMATDataBlock)
+                            {
+                                MMATNames.Add(mmatdata.ModelName);
+                                MMATNames.Add(mmatdata.Name);
+                            }
+                        }
+                        if (Sims2Data.EIDRDataBlock.Count > 0)
+                        {
+                            if (EIDRIDs == null) EIDRIDs = new();
+                            foreach (EIDRData edirdata in Sims2Data.EIDRDataBlock)
+                            {
+                                foreach (ResourceKey e in edirdata.ResourceKeys)
+                                {
+                                    EIDRIDs.Add(e.FullKey);
+                                }                            
+                            }
+                        }
+                    }                    
                 break;
-            }            
+            } 
+            if (PackageData != null) this.IndexEntries = PackageData.IndexEntries;           
         }
 
         public Sims3Data Sims3Data { 
@@ -1825,33 +1749,35 @@ namespace SimsCCManager.Containers
 
         [XmlIgnore]
         private  bool _hasbeenread;
-        //[XmlIgnore]
         public  bool HasBeenRead 
         {
             get { return  _hasbeenread; }
             set {  _hasbeenread = value; 
             DataChanged?.Invoke(nameof(Type)); 
-            if (value) WriteXML(); }
+            //if (value) WriteXML(); 
+            }
         }
 
         public bool ShouldSerializeSims2Data()
         {
-            return false;
-            //if (Game == SimsGames.Sims2 && PackageData != null) return true; else return false;
+            if (Game == SimsGames.Sims2 && PackageData != null && GlobalVariables.DebugSerializeData) return true; else return false;
         }
         public bool ShouldSerializeSims3Data()
         {
-            return false;//if (Game == SimsGames.Sims3 && PackageData != null) return true; else return false;
+            if (Game == SimsGames.Sims3 && PackageData != null && GlobalVariables.DebugSerializeData) return true; else return false;
         }
         public bool ShouldSerializeSims4Data()
         {
-            return false;
-            //if (Game == SimsGames.Sims4 && PackageData != null) return true; else return false;
+            if (Game == SimsGames.Sims4 && PackageData != null && GlobalVariables.DebugSerializeData) return true; else return false;
         }
         static ReaderWriterLock locker = new ReaderWriterLock();
 
         public void UpdateFromData(SimsPackage package)
-        {            
+        {   
+            FileName = package.FileName;
+            Location = package.Location;
+            FileType = package.FileType;
+            DateCreated = package.DateCreated;
             Broken = package.Broken;
             Game = package.Game;
             Source = package.Source;
@@ -1873,6 +1799,8 @@ namespace SimsCCManager.Containers
             RootMod = package.RootMod;
             OutOfDate = package.OutOfDate;
             Favorite = package.Favorite;
+            StandAlone = package.StandAlone;
+            WriteXML();
         }
 
         public void UpdateFromOrphanCheck(SimsPackage package)
@@ -1925,68 +1853,15 @@ namespace SimsCCManager.Containers
             try
             {
                 locker.AcquireWriterLock(int.MaxValue);
-                /*if (GlobalVariables.DebugMode)
+                if (File.Exists(this.InfoFile))
                 {
-                    
-                        if (File.Exists(this.InfoFile))
-                        {
-                            File.Delete(this.InfoFile);
-                        }
-                        using (var writer = new StreamWriter(this.InfoFile))
-                        {
-                            InfoSerializer.Serialize(writer, this);
-                        }
-                    
-                }
-                else
-                {*/
-                    if (File.Exists(this.InfoFile))
-                    {
-                        File.Delete(this.InfoFile);
-                    }
+                    File.Delete(this.InfoFile);
+                }      
 
-                    using (var writer = new StreamWriter(this.InfoFile))
-                    {
-                        InfoSerializer.Serialize(writer, this);
-                    }
-
-                    /*using (FileStream fileStream = new(InfoFile, FileMode.OpenOrCreate, System.IO.FileAccess.Write)){
-                        using (ZipOutputStream zipStream = new ZipOutputStream(fileStream))
-                        {
-                            zipStream.SetLevel(9); // 0 - store only to 9 - means best compression
-                            
-                            byte[] buffer = new byte[4096];
-
-                            //var guidEntry = new ZipEntry(string.Format("IDENTIFIER - {0}", Identifier.ToString()));
-                            //guidEntry.DateTime = DateTime.Now;       
-                            //zipStream.PutNextEntry(guidEntry);               
-                            //zipStream.CloseEntry();
-
-                            var entry = new ZipEntry(FileName.Replace(".package", ".xml"));
-
-                            // Setup the entry data as required.
-
-                            // Crc and size are handled by the library for seakable streams so no need to do them here.
-
-                            // Could also use the last write time or similar for the file.
-                            entry.DateTime = DateTime.Now;
-                            zipStream.PutNextEntry(entry);
-                            
-                            
-                            
-                            using (TextWriter tw = new StringWriter())
-                            {
-                                InfoSerializer.Serialize(tw, this);
-                                using (Stream memoryStream = new MemoryStream(UTF8Encoding.Default.GetBytes(tw.ToString())))
-                                {
-                                    StreamUtils.Copy(memoryStream, zipStream, buffer);                                
-                                }
-                                zipStream.CloseEntry();                                
-                            }
-                            
-                        }
-                    } */                   
-                //}
+                using (var writer = new StreamWriter(this.InfoFile))
+                {
+                    InfoSerializer.Serialize(writer, this);
+                }                    
             }
             finally
             {
@@ -2317,7 +2192,7 @@ namespace SimsCCManager.Containers
             }
             else if (EntryCount("xstn") > 0 || TXMTDataBlock.Any(x => x.MaterialDescription.Contains("naked_nude_")))
             {
-                AltType = "Skin";
+                AltType = "Skintone";
                 FunctionSort.Clear();
                 Mesh = false;
                 Recolor = false;

@@ -4,6 +4,7 @@ using ICSharpCode.SharpZipLib.Zip;
 using SimsCCManager.Containers;
 using SimsCCManager.Debugging;
 using SimsCCManager.Globals;
+using SimsCCManager.InfoFiles;
 using SimsCCManager.PackageReaders;
 using System;
 using System.Collections.Concurrent;
@@ -17,6 +18,7 @@ using System.Security.AccessControl;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 using System.Xml.Serialization;
 
 public partial class MainMenu : MarginContainer
@@ -3027,22 +3029,15 @@ public partial class MainMenu : MarginContainer
 
     private void DevClicked()
     {     
-        string file = @"M:\Sims CC Manager\Instances\The Sims 2\Packages\13pS2FarmhouseCandleHolder1.package.info";
+        string file = @"M:\Sims CC Manager\Instances\The Sims 2\Packages\LC_GP02_JooseSeriesIslandStyleCounter5B.package";
         string outfile = @"M:\Sims CC Manager\Instances\The Sims 2\Packages\13pS2FarmhouseCandleHolder1.package.info.txt";
-        /*SimsPackageReader spr = new();
-        spr.ReadPackage(file);*/
-        SimsPackage package = new();
-        /*package.Location = file;
-        package.FileName = spr.fileinfo.Name;
-        package.Game = SimsCCManager.OptionLists.SimsGames.Sims2;
-        package.Sims2Data = spr.Sims2Data;
-        package.WriteXML();*/
-        byte[] buffer = new byte[4096];
-        XmlSerializer InfoSerializer = new XmlSerializer(typeof(SimsPackage));
-
         
-
+        SimsPackage pckage = new() { Location = file };
         
+        SimsPackageReader simsPackageReader = new();
+        simsPackageReader.ReadPackage(pckage.Location, true);
+        
+        GD.Print(pckage.Identifier);
     }
 
     private List<SimsOverrides> GetInfo(SimsPackageReader pr)
