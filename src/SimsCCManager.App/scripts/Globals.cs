@@ -380,6 +380,22 @@ namespace SimsCCManager.Globals
             return String.Join("_", input.Split(invalids, StringSplitOptions.RemoveEmptyEntries) ).TrimEnd('.');
         }
 
+        public static string CleanXMLInput(string strIn)
+        {
+            // Replace invalid characters with empty strings.
+            try
+            {
+                return Regex.Replace(strIn, @"[^\s\w\.@-]", "",
+                                        RegexOptions.None, TimeSpan.FromSeconds(1.5));
+            }
+            // If we timeout when replacing invalid characters,
+            // we should return Empty.
+            catch (RegexMatchTimeoutException)
+            {
+                return String.Empty;
+            }
+        }
+
         public static void MoveToRecycleBin(string path)
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)){
@@ -403,6 +419,23 @@ namespace SimsCCManager.Globals
 
     public class InstanceControllers
     {
+        public static int GetLoadingCount(GameInstance instance)
+        {
+            List<string> folders = [..Directory.EnumerateDirectories(instance.InstanceFolders.InstancePackagesFolder, "*.*", SearchOption.TopDirectoryOnly)];
+            List<string> categories = [..folders.Where(x => x.StartsWith("__CATEGORY_"))];
+            List<string> files = Directory.EnumerateFiles(instance.InstanceFolders.InstancePackagesFolder, "*.*", SearchOption.TopDirectoryOnly).Where(x => !x.EndsWith(".info")).ToList();
+            foreach (string cat in categories)
+            {
+                files.AddRange(Directory.EnumerateFiles(cat, "*.*", SearchOption.TopDirectoryOnly).Where(x => !x.EndsWith(".info")));
+            }            
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Found {0} files to be read into grid.", files.Count));
+            List<string> downloadfiles = Directory.EnumerateFiles(instance.InstanceFolders.InstanceDownloadsFolder, "*.*", SearchOption.TopDirectoryOnly).ToList();
+            
+            int fileCount = files.Count;
+            int dFileCount = downloadfiles.Count;
+            
+            return fileCount + dFileCount;
+        }
         public static void ClearInstance(GameInstance instance = null, bool onlyclear = true)
         {
             if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Removing residual files!"));
@@ -968,6 +1001,19 @@ namespace SimsCCManager.Globals
                         } 
                         Category c = CheckFolderCategory(simsPackage);
                         simsPackage.PackageCategory = c;
+                        switch (simsPackage.Game)
+                        {
+                            case SimsGames.Sims2:
+                                simsPackage = InfoFileUtilities.S2CheckFolderTypes(simsPackage);
+                                break;
+                            case SimsGames.Sims3:
+                            
+                                break;
+                            case SimsGames.Sims4:
+                            
+                                break;
+                        }
+                        
                         simsPackage.WriteXML();
                     }                    
                 } else
@@ -990,6 +1036,18 @@ namespace SimsCCManager.Globals
                     } 
                     Category c = CheckFolderCategory(simsPackage);
                     simsPackage.PackageCategory = c;
+                    switch (simsPackage.Game)
+                        {
+                            case SimsGames.Sims2:
+                                simsPackage = InfoFileUtilities.S2CheckFolderTypes(simsPackage);
+                                break;
+                            case SimsGames.Sims3:
+                            
+                                break;
+                            case SimsGames.Sims4:
+                            
+                                break;
+                        }
                     simsPackage.WriteXML();
                 }                    
                 gameInstance._packages.Add(simsPackage);  

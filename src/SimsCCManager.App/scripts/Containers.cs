@@ -1329,14 +1329,14 @@ namespace SimsCCManager.Containers
         {
             get
             {
-                if (HasBeenRead && string.IsNullOrEmpty(_type)) {
-                    return "Unknown";
-                } else if (!HasBeenRead)
+                if (!HasBeenRead && string.IsNullOrEmpty(_type))
                 {
                     return "";
-                } else {
+                } else if (!string.IsNullOrEmpty(_type)) {
                     return _type;
-                }
+                } else {
+                    return "Unknown";
+                } 
             }
             set
             {
@@ -1629,7 +1629,7 @@ namespace SimsCCManager.Containers
                             this.Type = PackageData.AltType;
                         } else
                         {
-                            if (HasBeenRead) this.Type = "Unknown"; else this.Type = string.Empty;
+                            if (HasBeenRead && this.Type == string.Empty) this.Type = "Unknown"; else this.Type = string.Empty;
                         }
                         this.GameMod = PackageData.GameMod;
                         this.Mesh = PackageData.Mesh;
@@ -1639,13 +1639,13 @@ namespace SimsCCManager.Containers
                         this.ClothingInfo = PackageData.ClothingInfo;
                         if (Sims2Data.Expansions.Any())
                         {
-                            if (Expansions == null) Expansions = new();
+                            Expansions = new();
                             foreach (Sims2Expansions ex in Sims2Data.Expansions)
                             {
                                 Expansions.Add(Extensions.GetDescription(ex));
                             }
-                        }
-                        if (FullKeys == null) FullKeys = new();
+                        }                        
+                        FullKeys = new();
                         foreach (IndexEntry entry in Sims2Data.IndexEntries)
                         {
                             FullKeys.Add(entry.CompleteID);
@@ -1653,7 +1653,7 @@ namespace SimsCCManager.Containers
                         
                         if (Sims2Data.XMOLDataBlock.Count > 0)
                         {
-                            if (XMOLNames == null) XMOLNames = new();
+                            XMOLNames = new();
                             foreach (XMOLData xdata in Sims2Data.XMOLDataBlock)
                             {
                                 XMOLNames.Add(xdata.Name);
@@ -1661,7 +1661,7 @@ namespace SimsCCManager.Containers
                         }
                         if (Sims2Data.XTOLDataBlock.Count > 0)
                         {
-                            if (XMOLNames == null) XTOLNames = new();
+                            XTOLNames = new();
                             foreach (XTOLData xdata in Sims2Data.XTOLDataBlock)
                             {
                                 XTOLNames.Add(xdata.Name);
@@ -1669,7 +1669,7 @@ namespace SimsCCManager.Containers
                         }
                         if (Sims2Data.XNGBDataBlock.Count > 0)
                         {
-                            if (XNGBNames == null) XNGBNames = new();
+                            XNGBNames = new();
                             foreach (XNGBData xdata in Sims2Data.XNGBDataBlock)
                             {
                                 XNGBNames.Add(xdata.ModelName);
@@ -1677,7 +1677,7 @@ namespace SimsCCManager.Containers
                         }
                         if (Sims2Data.TXMTDataBlock.Count > 0)
                         {
-                            if (TXMTNames == null) TXMTNames = new();
+                            TXMTNames = new();
                             foreach (TXMTData txmtdata in Sims2Data.TXMTDataBlock)
                             {
                                 TXMTNames.Add(txmtdata.FileName);
@@ -1685,7 +1685,7 @@ namespace SimsCCManager.Containers
                         }
                         if (Sims2Data.TXTRDataBlock.Count > 0)
                         {
-                            if (TXTRNames == null) TXTRNames = new();
+                            TXTRNames = new();
                             foreach (TXTRData txtrdata in Sims2Data.TXTRDataBlock)
                             {
                                 TXTRNames.Add(txtrdata.FullTXTRName);
@@ -1693,7 +1693,7 @@ namespace SimsCCManager.Containers
                         }
                         if (Sims2Data.GMDCDataBlock.Count > 0)
                         {
-                            if (GMDCNames == null) GMDCNames = new();
+                            GMDCNames = new();
                             foreach (GMDCData gmdcdata in Sims2Data.GMDCDataBlock)
                             {
                                 GMDCNames.Add(gmdcdata.FileName);
@@ -1701,20 +1701,20 @@ namespace SimsCCManager.Containers
                         }
                         if (Sims2Data.SHPEDataBlock.Count > 0)
                         {
-                            if (SHPENames == null) SHPENames = new();
+                            SHPENames = new();
                             foreach (SHPEData shpedata in Sims2Data.SHPEDataBlock)
                             {
                                 SHPENames.Add(shpedata.FileName);
                                 foreach (SHPEMaterial shpematerial in shpedata.Materials)
                                 {
-                                    if (SHPEMaterialNames == null) SHPEMaterialNames = new();
+                                    SHPEMaterialNames = new();
                                     SHPEMaterialNames.Add(shpematerial.MaterialDefinition);
                                 }
                             }
                         }
                         if (Sims2Data.MMATDataBlock.Count > 0)
                         {
-                            if (MMATNames == null) MMATNames = new();
+                            MMATNames = new();
                             foreach (MMATData mmatdata in Sims2Data.MMATDataBlock)
                             {
                                 MMATNames.Add(mmatdata.ModelName);
@@ -1723,7 +1723,7 @@ namespace SimsCCManager.Containers
                         }
                         if (Sims2Data.EIDRDataBlock.Count > 0)
                         {
-                            if (EIDRIDs == null) EIDRIDs = new();
+                            EIDRIDs = new();
                             foreach (EIDRData edirdata in Sims2Data.EIDRDataBlock)
                             {
                                 foreach (ResourceKey e in edirdata.ResourceKeys)

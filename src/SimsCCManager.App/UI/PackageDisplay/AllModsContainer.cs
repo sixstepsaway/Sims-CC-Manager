@@ -1751,7 +1751,7 @@ public partial class AllModsContainer : MarginContainer
                         package.LinkedPackages.Clear();
                         //DataGridRow rowdata = DataGrid.RowData.First(x => x.Identifier == package.Identifier);
                         package.WriteXML();
-                        //UpdateItem(package);
+                        UpdateItem(package);
                         
                         
                     } else
@@ -1762,7 +1762,7 @@ public partial class AllModsContainer : MarginContainer
                         pack = InstanceControllers.GetSubDirectoriesPackage(packageDisplay.ThisInstance, pack.Location, pack);
                         //DataGridRow rowdata = DataGrid.RowData.First(x => x.Identifier == pack.Identifier);
                         pack.WriteXML();
-                        //UpdateItem(package);
+                        UpdateItem(pack);
                     }
                     
                 } else
@@ -1788,15 +1788,13 @@ public partial class AllModsContainer : MarginContainer
                             if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Deleting {0}", info));
                             File.Delete(info);
                         }
-                        package.LinkedFiles.Clear();
-                        package.LinkedFolders.Clear();
-                        package.LinkedPackageFolders.Clear();
-                        package.LinkedPackages.Clear();
+                        if (package.LinkedFiles != null) package.LinkedFiles.Clear();
+                        if (package.LinkedFolders != null) package.LinkedFolders.Clear();
+                        if (package.LinkedPackageFolders != null) package.LinkedPackageFolders.Clear();
+                        if (package.LinkedPackages != null) package.LinkedPackages.Clear();
                         DataGridRow rowdata = DataGrid.RowData.First(x => x.Identifier == package.Identifier);
                         package.WriteXML();
-                        //UpdateItem(package);
-                        //rowdata = CreateRow(package, rowdata.OverallIdx);
-                        //DataGrid.UpdateRow(rowdata);                        
+                        UpdateItem(package);                     
                     } else
                     {
                         SimsPackage pack = Packages.First(x => x.Identifier == SelectedItems[i].Identifier);
@@ -1805,9 +1803,7 @@ public partial class AllModsContainer : MarginContainer
                         pack = InstanceControllers.GetSubDirectoriesPackage(packageDisplay.ThisInstance, pack.Location, pack);
                         DataGridRow rowdata = DataGrid.RowData.First(x => x.Identifier == pack.Identifier);
                         pack.WriteXML();
-                        //rowdata = CreateRow(pack, rowdata.OverallIdx);
-                        //DataGrid.UpdateRow(rowdata);
-                        //UpdateItem(package);
+                        UpdateItem(pack);
                     }
                     
                 } else

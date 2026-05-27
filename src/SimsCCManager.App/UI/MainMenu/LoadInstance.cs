@@ -253,14 +253,9 @@ public partial class LoadInstance : MarginContainer
             gameInstance.InstanceName, 
             gameInstance.LoadedProfile.ProfileName));
 
-            List<string> files = Directory.EnumerateFiles(gameInstance.InstanceFolders.InstancePackagesFolder, "*.*", SearchOption.AllDirectories).Where(x => x.Contains(".package") || x.Contains(".ts4script")).ToList();
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Found {0} files to be read into grid.", files.Count));
-            List<string> downloadfiles = Directory.EnumerateFiles(gameInstance.InstanceFolders.InstanceDownloadsFolder, "*.*", SearchOption.AllDirectories).ToList();
+            int pbarmax = InstanceControllers.GetLoadingCount(gameInstance);
+
             
-            int fileCount = files.Count;
-            int dFileCount = downloadfiles.Count;
-            
-            int pbarmax = fileCount + dFileCount;
 
             
 

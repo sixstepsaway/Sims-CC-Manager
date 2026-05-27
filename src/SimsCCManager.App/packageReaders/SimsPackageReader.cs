@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Numerics;
@@ -22,7 +23,9 @@ using System.Xml;
 using System.Xml.Linq;
 using System.Xml.Serialization;
 using System.Xml.XPath;
+using AuroraLib.Compression.Formats.EA;
 using CsvHelper.Configuration.Attributes;
+using ICSharpCode.SharpZipLib.GZip;
 using MoreLinq.Extensions;
 using SimsCCManager.Containers;
 using SimsCCManager.Debugging;
@@ -1374,7 +1377,7 @@ namespace SimsCCManager.PackageReaders
                             }
                         } catch (Exception e)
                         {
-                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Caught exception checking overrides for {0}: {1}", e.StackTrace, package.FileName));
+                            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Caught exception checking overrides for {0}: {1}", e.StackTrace, package.FileName));
                         }
                     }                    
                 });
@@ -1389,7 +1392,7 @@ namespace SimsCCManager.PackageReaders
                                 }     
                         } catch (Exception e)
                         {
-                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Caught exception checking overrides for {0}: {1}", e.StackTrace, package.FileName));
+                            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Caught exception checking overrides for {0}: {1}", e.StackTrace, package.FileName));
                         }                   
                     }                    
                 });
@@ -1403,7 +1406,7 @@ namespace SimsCCManager.PackageReaders
                             }
                         } catch (Exception e)
                         {
-                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Caught exception checking overrides for {0}: {1}", e.StackTrace, package.FileName));
+                            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Caught exception checking overrides for {0}: {1}", e.StackTrace, package.FileName));
                         }
                     }
                 });
@@ -1418,7 +1421,7 @@ namespace SimsCCManager.PackageReaders
                                 }
                         } catch (Exception e)
                         {
-                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Caught exception checking overrides for {0}: {1}", e.StackTrace, package.FileName));
+                            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Caught exception checking overrides for {0}: {1}", e.StackTrace, package.FileName));
                         }
                     }
                 });
@@ -1433,7 +1436,7 @@ namespace SimsCCManager.PackageReaders
                                 }
                         } catch (Exception e)
                         {
-                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Caught exception checking overrides for {0}: {1}", e.StackTrace, package.FileName));
+                            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Caught exception checking overrides for {0}: {1}", e.StackTrace, package.FileName));
                         }
                     }
                 });
@@ -1456,7 +1459,7 @@ namespace SimsCCManager.PackageReaders
                         package.Sims2Data.AltType = string.Format("{0} Override", so.Type);
                     } catch (Exception e)
                     {
-                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Caught exception checking overrides for {0}: {1}", e.StackTrace, package.FileName));
+                        if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Caught exception checking overrides for {0}: {1}", e.StackTrace, package.FileName));
                     }
                 }
             }
@@ -1708,24 +1711,63 @@ namespace SimsCCManager.PackageReaders
 
         public void S2ReadSHPE(IndexEntry entry, int txtrc)
         {
-            S2ReadSHPEChunk shpe;
-
-            //shpe.ReadingSingle = ReadingSingle;
-
+            S2ReadSHPEChunk shpe;            
             packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
+            
             int cFileSize = packagereader.ReadInt32();
+            if (cFileSize == -65535)
+            {
+                //not compressed (this is a note)
+            }
+            long pos = packagereader.BaseStream.Position;
             string cTypeID = packagereader.ReadUInt16().ToString("X4");
             if (cTypeID == "FB10")
             {
-                byte[] tempBytes = packagereader.ReadBytes(3);
-                uint cFullSize = Sims2EntryReaders.QFSLengthToInt(tempBytes);
-                DecryptByteStream decompressed = new DecryptByteStream(Sims2EntryReaders.Uncompress(packagereader.ReadBytes(cFileSize), cFullSize, 0));
-                shpe = new(decompressed, fileinfo, txtrc, ReadingSingle, BufferSize);
+                packagereader.BaseStream.Position = pos;
+            }
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("cFileSize: {0}, cTypeID: {1}", cFileSize, cTypeID));
+            
+            if (entry.IsCompressed || cTypeID == "FB10")
+            {
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("{0} SHPE is compressed!", fileinfo.Name));               
+
+                List<byte> bytes = new();
+                for (int i = 0; i < cFileSize; i++)
+                {
+                    bytes.Add(packagereader.ReadByte());
+                }
+                                
+                byte[] decompressedByte = DecompressEntry(bytes.ToArray());
+                                
+                BinaryReader binaryReader = new(new MemoryStream(decompressedByte));
+                
+                pos = 0;
+                byte cshape = binaryReader.ReadByte();                
+                while (cshape != 6)
+                {
+                    pos = binaryReader.BaseStream.Position;
+                    cshape = binaryReader.ReadByte();
+                    if (cshape == 6)
+                    {
+                        binaryReader.BaseStream.Position = pos; 
+                        if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Found CShape: {0}", SimsPackageReader.ReadEncodedString(packagereader.ReadBytes(6))));
+                    }
+                }
+                binaryReader.BaseStream.Position = pos; 
+
+                shpe = new(binaryReader);
             }
             else
-            {
-                packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
-                shpe = new(packagereader, fileinfo, txtrc, ReadingSingle, BufferSize);
+            {              
+                pos = 0;
+                byte cshape = packagereader.ReadByte();                
+                while (cshape != 6)
+                {
+                    pos = packagereader.BaseStream.Position;
+                    cshape = packagereader.ReadByte();
+                }
+                packagereader.BaseStream.Position = pos; 
+                shpe = new(packagereader);
             }
             shpe.SHPEData.CopyEntryInfo(entry);
             
@@ -2073,7 +2115,7 @@ namespace SimsCCManager.PackageReaders
                 packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
                 string cpfTypeID = packagereader.ReadUInt32().ToString("X8");
                 if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("CPFTypeID: {0}", cpfTypeID));
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("XNGB Position: {0}, Buffer Size: {1}", packagereader.BaseStream.Position, BufferSize));
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("XNGB Position: {0}, Buffer Size: {1}", packagereader.BaseStream.Position, BufferSize));
                 if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
                 {                   
                     xngb = new(packagereader, BufferSize);
@@ -2100,20 +2142,51 @@ namespace SimsCCManager.PackageReaders
 
             packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
             int cFileSize = packagereader.ReadInt32();
-            string cTypeID = packagereader.ReadUInt16().ToString("X4");
+            long pos = packagereader.BaseStream.Position;
+            string cTypeID = packagereader.ReadUInt16().ToString("X4");       
             if (cTypeID == "FB10")
             {
-                byte[] tempBytes = packagereader.ReadBytes(3);
-                uint cFullSize = Sims2EntryReaders.QFSLengthToInt(tempBytes);
-                DecryptByteStream decompressed = new DecryptByteStream(Sims2EntryReaders.Uncompress(packagereader.ReadBytes(cFileSize), cFullSize, 0));
-                txtr = new(decompressed, fileinfo, txtrc);
+                packagereader.BaseStream.Position = pos;
+            }    
+            
+            if (entry.IsCompressed || cTypeID == "FB10")
+            {
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("{0} SHPE is compressed!", fileinfo.Name));               
 
+                List<byte> bytes = new();
+                for (int i = 0; i < cFileSize; i++)
+                {
+                    bytes.Add(packagereader.ReadByte());
+                }
+                                
+                byte[] decompressedByte = DecompressEntry(bytes.ToArray());
+                                
+                BinaryReader binaryReader = new(new MemoryStream(decompressedByte));
+                
+                pos = 0;
+                byte cimagedata = binaryReader.ReadByte();                
+                while (cimagedata != 10)
+                {
+                    pos = binaryReader.BaseStream.Position;
+                    cimagedata = binaryReader.ReadByte();
+                }
+                binaryReader.BaseStream.Position = pos; 
+
+                txtr = new(binaryReader);
             }
             else
             {
-                packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
-                txtr = new(packagereader, fileinfo, txtrc);
+                pos = 0;
+                byte cimagedata = packagereader.ReadByte();                
+                while (cimagedata != 10)
+                {
+                    pos = packagereader.BaseStream.Position;
+                    cimagedata = packagereader.ReadByte();
+                }
+                packagereader.BaseStream.Position = pos; 
+                txtr = new(packagereader);
             }
+
             txtr.TXTRData.CopyEntryInfo(entry);
             (SimsData as Sims2Data).TXTRDataBlock.Add(txtr.TXTRData);
             if (!string.IsNullOrEmpty(txtr.TXTRData.GUID) && (string.IsNullOrEmpty(Sims2Data.GUID) || Sims2Data.GUID == "N/a")) Sims2Data.GUID = txtr.TXTRData.GUID;
@@ -2174,8 +2247,16 @@ namespace SimsCCManager.PackageReaders
             S2ReadMMATChunk mmat = new();
 
             packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
+
             int cFileSize = packagereader.ReadInt32();
+            if (cFileSize == -65535)
+            {
+                //not compressed (this is a note)
+            }
+            long pos = packagereader.BaseStream.Position;
             string cTypeID = packagereader.ReadUInt16().ToString("X4");
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("cFileSize: {0}, cTypeID: {1}", cFileSize, cTypeID));
+            
             if (cTypeID == "FB10")
             {
                 byte[] tempBytes = packagereader.ReadBytes(3);
@@ -2183,24 +2264,32 @@ namespace SimsCCManager.PackageReaders
                 string cpfTypeID = packagereader.ReadUInt32().ToString("X8");
                 if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
                 {
-                    mmat = new(packagereader);
+                    mmat = new(packagereader, false, 0);
                 }
                 else
                 {
-                    packagereader.BaseStream.Position = ChunkOffset + entry.Offset + 9;
-                    DecryptByteStream decompressed = new DecryptByteStream(Sims2EntryReaders.Uncompress(packagereader.ReadBytes(cFileSize), cFullSize, 0));
+                    //packagereader.BaseStream.Position = ChunkOffset + entry.Offset + 9;
+                    packagereader.BaseStream.Position = pos;
+                    List<byte> bytes = new();
+                    for (int i = 0; i < cFileSize; i++)
+                    {
+                        bytes.Add(packagereader.ReadByte());
+                    }
+                    byte[] decompressedByte = DecompressEntry(bytes.ToArray());
+                                
+                    BinaryReader binaryReader = new(new MemoryStream(decompressedByte));
                     if (cpfTypeID == "E750E0E2")
                     {
                         // Read first four bytes
-                        cpfTypeID = decompressed.ReadUInt32().ToString("X8");
+                        cpfTypeID = binaryReader.ReadUInt32().ToString("X8");
                         if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
                         {
-                            mmat = new(decompressed);
+                            mmat = new(binaryReader, false, decompressedByte.Length);
                         }
                     }
                     else
                     {
-                        mmat = new(decompressed, true);
+                        mmat = new(binaryReader, true, decompressedByte.Length);
                     }
                 }
             } else
@@ -2208,17 +2297,19 @@ namespace SimsCCManager.PackageReaders
                 packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
                 string cpfTypeID = packagereader.ReadUInt32().ToString("X8");
                 if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("CPFTypeID: {0}", cpfTypeID));
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("XNGB Position: {0}, Buffer Size: {1}", packagereader.BaseStream.Position, BufferSize));
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("XNGB Position: {0}, Buffer Size: {1}", packagereader.BaseStream.Position, BufferSize));
                 if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
-                {                   
-                    mmat = new(packagereader);
+                {
+
+                    mmat = new(packagereader, false, 0);
                 }
 
                 if (cpfTypeID == "6D783F3C")
                 {
                     packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
-                    //string xmldata = SimsPackageReader.ReadEncodedString(packagereader.ReadBytes((int)entry.FileSize));
-                    mmat = new(packagereader, entry.FileSize, true);
+                    
+                    
+                    mmat = new(packagereader, true, (int)entry.FileSize);
                 }                
             }
             mmat.MMATData.CopyEntryInfo(entry);
@@ -2232,7 +2323,18 @@ namespace SimsCCManager.PackageReaders
             S2ReadGMDCChunk gmdc;
 
             packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
-            if (entry.IsCompressed)
+            int cFileSize = packagereader.ReadInt32();
+            if (cFileSize == -65535)
+            {
+                //not compressed (this is a note)
+            }
+            long pos = packagereader.BaseStream.Position;
+            string cTypeID = packagereader.ReadUInt16().ToString("X4");
+            if (cTypeID == "FB10")
+            {
+                packagereader.BaseStream.Position = pos;
+            }
+            if (entry.IsCompressed || cTypeID == "FB10")
             {
                 if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("{0} GMDC is compressed!", fileinfo.Name));
 
@@ -2242,18 +2344,35 @@ namespace SimsCCManager.PackageReaders
                     bytes.Add(packagereader.ReadByte());
                 }
 
-
-                byte[] decompressedByte = Sims2Tools.DBPF.Utils.Decompressor.Decompress([.. bytes], entry.UncompressedSize * 5);
-
-                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Normal byte length: {0}, decompressed byte length: {1}", bytes.ToArray().Length, decompressedByte.Length));
-
+                byte[] decompressedByte = DecompressEntry(bytes.ToArray());
 
                 BinaryReader binaryReader = new(new MemoryStream(decompressedByte));
-                gmdc = new(binaryReader, BufferSize);
+                pos = binaryReader.BaseStream.Position;
+                byte cGeometryDataContainer = binaryReader.ReadByte();                
+                while (cGeometryDataContainer != 22)
+                {
+                    pos = binaryReader.BaseStream.Position;
+                    cGeometryDataContainer = binaryReader.ReadByte();
+                    if (cGeometryDataContainer == 22)
+                    {
+                        binaryReader.BaseStream.Position = pos; 
+                    }
+                }
+                binaryReader.BaseStream.Position = pos; 
+
+                gmdc = new(binaryReader);
             }
             else
             {
-                gmdc = new(packagereader, BufferSize);
+                pos = packagereader.BaseStream.Position;
+                byte cGeometryDataContainer = packagereader.ReadByte();                
+                while (cGeometryDataContainer != 22)
+                {
+                    pos = packagereader.BaseStream.Position;
+                    cGeometryDataContainer = packagereader.ReadByte();
+                }
+                packagereader.BaseStream.Position = pos; 
+                gmdc = new(packagereader);
             }
             gmdc.GMDCData.CopyEntryInfo(entry);
             (SimsData as Sims2Data).GMDCDataBlock.Add(gmdc.GMDCData);
@@ -2460,6 +2579,89 @@ namespace SimsCCManager.PackageReaders
         {
             return Utilities.RemoveInvalidXmlChars(Utilities.RemoveInvalidXmlChars(Encoding.UTF8.GetString(bytes)));
         }
+
+        public byte[] DecompressEntry(byte[] EntryByte)
+        {
+            
+            using (MemoryStream memoryStream = new MemoryStream(EntryByte))
+            {                
+                using (MemoryStream decompressedStream = new MemoryStream())
+                {
+                    RefPack rp = new();
+                    rp.Decompress(memoryStream, decompressedStream);
+                    return decompressedStream.ToArray();
+                }                
+            }
+        }
+    }
+
+    public class S2RepeatedSections
+    {
+        public static List<SHPEExtension> cObjectGraphNode(BinaryReader readFile)
+        {
+            List<SHPEExtension> Extensions = new();
+            string cObjectGraphNode = readFile.ReadString();
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("cObjectGraphNode: {0}", cObjectGraphNode));
+            
+            uint ClassID = readFile.ReadUInt32();
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("ClassID: {0}", ClassID));
+            uint cOBNVersion = readFile.ReadUInt32();
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("COGN Version: {0}", cOBNVersion));
+            
+            if (cOBNVersion == 3 || cOBNVersion == 4)
+            {
+                uint NumExtensions = readFile.ReadUInt32();
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Number of Extensions: {0}", NumExtensions));
+                for (int i = 0; i < NumExtensions; i++)
+                {
+                    SHPEExtension ex = new();
+                    ex.Enabled = readFile.ReadBoolean();
+                    ex.Depends = readFile.ReadBoolean();
+                    ex.IndexOfExtension = readFile.ReadUInt32();
+                    Extensions.Add(ex);                          
+                }
+            }
+            if (cOBNVersion == 4)
+            {
+                string repeatfilename = readFile.ReadString();
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("cOBN Repeatfilename: {0}", repeatfilename));
+            } 
+            return Extensions;
+        }
+        
+        public static string cSGResource(BinaryReader readFile)
+        {
+            string cSGResource = readFile.ReadString();
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("cSGResource: {0}", cSGResource));
+            uint SGRBlockID = readFile.ReadUInt32();
+            uint SGRVersion = readFile.ReadUInt32();
+            /*if (SGRVersion == 2)
+            {
+                for (int i = 0; i < 50; i++)
+                {
+                    byte filenamewhere = readFile.ReadByte();
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("where??? #{0}: {1}", i, filenamewhere));
+                }
+                
+            }*/
+            string filename = readFile.ReadString();
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("cSGResource Block ID: {0}, Version: {1}, FileName: {2}", SGRBlockID, SGRVersion, filename));
+
+            return filename;
+        }
+
+        public static void cReferentNode(BinaryReader readFile)
+        {
+            string cReferentNode = readFile.ReadString();
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("cReferentNode: {0}", cReferentNode));
+
+            uint ReferBlockID = readFile.ReadUInt32();
+            uint ReferVersion = readFile.ReadUInt32();
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("cReferentNode Block ID: {0}, Version: {1}", ReferBlockID, ReferVersion));
+        }
+    
+        
+    
     }
 
     public struct S2ReadGMNDChunk
@@ -4061,462 +4263,106 @@ namespace SimsCCManager.PackageReaders
         public bool ReadingSingle = true;
         public SHPEData SHPEData = new();
         public FileInfo file;
-        public S2ReadSHPEChunk(BinaryReader readFile, FileInfo fileInfo, int entryc, bool rs, int BufferSize)
-        {        
-            ReadingSingle = rs;    
-            file = fileInfo;
-            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Reading SHPE chunk {0} for file {1}", entryc, file.Name));
-            //readFile.ReadBytes(6);
-            byte nameLength = readFile.ReadByte();
-            while (nameLength != 6)
-            {
-                nameLength = readFile.ReadByte();
-            }            
-            string fieldName = SimsPackageReader.ReadEncodedString(readFile.ReadBytes(nameLength));
-            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("FieldName: {0}", fieldName));
-            string BlockID = readFile.ReadUInt32().ToString("X8");
-            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("BlockID: {0}", BlockID));
-            uint Version = readFile.ReadUInt32();
-            nameLength = readFile.ReadByte();
-            string cSGResource = SimsPackageReader.ReadEncodedString(readFile.ReadBytes(nameLength));
-            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Version: {0}, cSGResource: {1}", Version, cSGResource));
-            while (nameLength != 13)
-            {
-                nameLength = readFile.ReadByte();
-            }
-            string cReferentNode = SimsPackageReader.ReadEncodedString(readFile.ReadBytes(nameLength));
-            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("cReferentNode: {0}", cReferentNode));
-            while (nameLength != 16)
-            {
-                nameLength = readFile.ReadByte();
-            }
-            string cObjectGraphNode = SimsPackageReader.ReadEncodedString(readFile.ReadBytes(nameLength));
-            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("cObjectGraphNode: {0}", cObjectGraphNode));
 
-            //object graph
-
-            uint ClassID = readFile.ReadUInt32();
-            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("ClassID: {0}", ClassID));
-            uint cOBNVersion = readFile.ReadUInt32();
-            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("COGN Version: {0}", cOBNVersion));
-            uint NumExtensions = readFile.ReadUInt32();
-            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Number of Extensions: {0}", NumExtensions));
-            
-            for (int i = 0; i < NumExtensions; i++)
-            {
-                SHPEExtension ex = new();
-                byte byt = readFile.ReadByte();
-                if (byt == 0)
-                {
-                    ex.Enabled = false;
-                } else
-                {
-                    ex.Enabled = true;
-                }
-                byt = readFile.ReadByte();
-                if (byt == 0)
-                {
-                    ex.Depends = false;
-                } else
-                {
-                    ex.Depends = true;
-                }
-                ex.IndexOfExtension = readFile.ReadUInt32();
-                SHPEData.Extensions.Add(ex);
-                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Extension {0}: {1}", i, ex.ToString()));
-            }
-            long pos = readFile.BaseStream.Position;
-            if (cOBNVersion == 4)
-            {    
-                nameLength = readFile.ReadByte();                 
-                while (nameLength <= 1) {
-                    //if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("NameLength: {0}", nameLength));
-                    nameLength = readFile.ReadByte();                      
-                }        
-                int nl = nameLength + BufferSize;
-                if (nameLength == 90)
-                {
-                    readFile.ReadUInt32();
-                    nl = nameLength + BufferSize + 25;
-                    SHPEData.FileName = SimsPackageReader.ReadEncodedString(readFile.ReadBytes(nl));
-                    Regex re = new("(##.*_gmnd)");
-                    Match m = re.Match(SHPEData.FileName);
-                    if (m.Success) SHPEData.FileName = m.Groups[1].Value;
-                    
-                    readFile.BaseStream.Position = pos;
-                    readFile.ReadBytes(SHPEData.FileName.Length);
-                } else
-                {
-                    SHPEData.FileName = SimsPackageReader.ReadEncodedString(readFile.ReadBytes(nl));
-                }    
-                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Length: {1}, With Buffer: {2}, RepeatFileName: {0}", SHPEData.FileName, nameLength, nl));
-                
-            }
-
-
-            // LODs    
-
-            bool isLod = false;
-
-            uint count = readFile.ReadUInt32();
-            if (count > 15)
-            {
-                readFile.BaseStream.Position = pos;
-                count = readFile.ReadUInt32();
-            }
-            //readFile.Offset--;
-            nameLength = readFile.ReadByte();
-            if (Version == 7 || Version == 6 || Version == 8)
-            {
-                if (nameLength == 0) {
-                    SHPEData.LODCount = count;
-                } else
-                {
-                    SHPEData.MaterialCount = count;
-                }
-            } else
-            {
-                SHPEData.LODCount = count;
-            }   
-            readFile.BaseStream.Position--;         
-                           
-            if (SHPEData.LODCount > 0 && SHPEData.LODCount < 10)
-            {
-                if (Version == 7 || Version == 6)
-                {   
-                    //SHPEData.LODCount = readFile.ReadUInt32();
-                    if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("LOD Count: {0}", SHPEData.LODCount));
-                    for (int i = 0; i < SHPEData.LODCount; i++)
-                    {    
-                        SHPELod lod = new();    
-                        lod.LODType = readFile.ReadUInt32();
-                        if (readFile.ReadByte() == 0)
-                        {
-                            lod.Enabled = false;
-                        } else
-                        {
-                            lod.Enabled = true;
-                        }
-                        if (readFile.ReadByte() == 0)
-                        {
-                            lod.UseGMNDSubmesh = false;
-                        } else
-                        {
-                            lod.UseGMNDSubmesh = true;
-                        }
-                        lod.HeaderLinkIndex = readFile.ReadUInt32();
-                        SHPEData.LODs.Add(lod);
-                    }
-                } else if (Version == 8)
-                {
-                    //SHPEData.LODCount = readFile.ReadUInt32();    
-                    if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("LOD Count: {0}", SHPEData.LODCount));                    
-                    for (int i = 0; i < SHPEData.LODCount; i++)
-                    {
-                        SHPELod lod = new();
-                        lod.LODType = readFile.ReadUInt32();
-                        if (readFile.ReadByte() == 0)
-                        {
-                            lod.Enabled = false;
-                        } else
-                        {
-                            lod.Enabled = true;
-                        }
-                        lod.GMNDFileName = SimsPackageReader.ReadEncodedString(readFile.ReadBytes(readFile.ReadByte()));
-                        SHPEData.LODs.Add(lod);
-                    }
-                } else if (Version > 6)
-                {
-                    //SHPEData.LODCount = readFile.ReadUInt32(); 
-                    if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("LOD Count: {0}", SHPEData.LODCount));                       
-                    for (int i = 0; i < SHPEData.LODCount; i++)
-                    {
-                        SHPELod lod = new();
-                        lod.LODValue = readFile.ReadUInt32();
-                        SHPEData.LODs.Add(lod);
-                    }
-                }
-            }
-
-
-            
-                    
-                               
-            
-
-            //materials
-
-            //SHPEData.MaterialCount = readFile.ReadByte();
-            if (ReadingSingle)
-            {
-                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Material Count: {0}", SHPEData.MaterialCount));
-                for (int i = 0; i < SHPEData.MaterialCount; i++)
-                {
-                    SHPEMaterial mat = new();
-                    byte namelength = readFile.ReadByte();
-                    mat.Group = SimsPackageReader.ReadEncodedString(readFile.ReadBytes(namelength));
-                    while (mat.Group.Contains("##") || mat.Group.Length > 20)
-                    {
-                        pos--;
-                        readFile.BaseStream.Position = pos;
-                        mat.Group = SimsPackageReader.ReadEncodedString(readFile.ReadBytes(namelength));
-                    }
-                    if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Group: {0}", mat.Group));
-
-                    namelength = readFile.ReadByte();
-                    int nl = (nameLength + BufferSize);
-                    pos = readFile.BaseStream.Position;
-                    mat.MaterialDefinition = SimsPackageReader.ReadEncodedString(readFile.ReadBytes(nl));
-                    if (mat.Group.Contains("##")) mat.Group = mat.Group.Split("##")[0];
-                    if (mat.Group.Contains('_'))
-                    {
-                        string[] m = mat.Group.Split("_");
-                        if (!mat.MaterialDefinition.EndsWith(m[^1]))
-                        {
-                            while (!mat.MaterialDefinition.EndsWith(m[^1]))
-                            {
-                                nl++;
-                                readFile.BaseStream.Position = pos;
-                                mat.MaterialDefinition = SimsPackageReader.ReadEncodedString(readFile.ReadBytes(nl));
-                            }                                                       
-                            readFile.BaseStream.Position = pos;
-                            mat.MaterialDefinition = SimsPackageReader.ReadEncodedString(readFile.ReadBytes(nl));
-                        }
-                    }
-                    if (mat.MaterialDefinition.Length < 21)
-                    {
-                        readFile.BaseStream.Position = pos;
-                        nl += 75;
-                        mat.MaterialDefinition = SimsPackageReader.ReadEncodedString(readFile.ReadBytes(nl));
-                        nl = mat.MaterialDefinition.Length;
-                        readFile.BaseStream.Position = pos;
-                        mat.MaterialDefinition = SimsPackageReader.ReadEncodedString(readFile.ReadBytes(nl));
-                    }
-                    if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("MatDef: {0}", mat.MaterialDefinition));
-                    mat.LODType = readFile.ReadUInt32();
-                    mat.Enabled = readFile.ReadByte();
-                    mat.Index = readFile.ReadUInt32();
-                    SHPEData.Materials.Add(mat);
-                    if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Material {0}: {1}", i, mat.ToString()));
-                    pos = readFile.BaseStream.Position;
-                }   
-            }
-            
-                
-        }
-        public S2ReadSHPEChunk(DecryptByteStream readFile, FileInfo fileInfo, int entryc, bool rs, int BufferSize)
+        public S2ReadSHPEChunk(BinaryReader readFile)
         {
-            ReadingSingle = rs;
-            file = fileInfo;
-            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Reading SHPE chunk {0} for file {1}", entryc, file.Name));
-            
-            byte nameLength = readFile.ReadByte();
-            while (nameLength != 6)
-            {
-                //if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("NameLength: {0}", nameLength));
-                nameLength = readFile.ReadByte();
-            }            
-            string fieldName = SimsPackageReader.ReadEncodedString(readFile.ReadBytes(nameLength));
+            string fieldName = readFile.ReadString();
             if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("FieldName: {0}", fieldName));
             string BlockID = readFile.ReadUInt32().ToString("X8");
             if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("BlockID: {0}", BlockID));
             uint Version = readFile.ReadUInt32();
-            nameLength = readFile.ReadByte();
-            string cSGResource = SimsPackageReader.ReadEncodedString(readFile.ReadBytes(nameLength));
-            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Version: {0}, cSGResource: {1}", Version, cSGResource));
-            while (nameLength != 13)
-            {
-                nameLength = readFile.ReadByte();
-            }
-            string cReferentNode = SimsPackageReader.ReadEncodedString(readFile.ReadBytes(nameLength));
-            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("cReferentNode: {0}", cReferentNode));
-            while (nameLength != 16)
-            {
-                nameLength = readFile.ReadByte();
-            }
-            string cObjectGraphNode = SimsPackageReader.ReadEncodedString(readFile.ReadBytes(nameLength));
-            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("cObjectGraphNode: {0}", cObjectGraphNode));
-
-            //object graph
-
-            uint ClassID = readFile.ReadUInt32();
-            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("ClassID: {0}", ClassID));
-            uint cOBNVersion = readFile.ReadUInt32();
-            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("COGN Version: {0}", cOBNVersion));
-            uint NumExtensions = readFile.ReadUInt32();
-            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Number of Extensions: {0}", NumExtensions));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Version: {0}", Version));
             
-            for (int i = 0; i < NumExtensions; i++)
-            {
-                SHPEExtension ex = new();
-                byte byt = readFile.ReadByte();
-                if (byt == 0)
-                {
-                    ex.Enabled = false;
-                } else
-                {
-                    ex.Enabled = true;
-                }
-                byt = readFile.ReadByte();
-                if (byt == 0)
-                {
-                    ex.Depends = false;
-                } else
-                {
-                    ex.Depends = true;
-                }
-                ex.IndexOfExtension = readFile.ReadUInt32();
-                SHPEData.Extensions.Add(ex);
-                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Extension {0}: {1}", i, ex.ToString()));
-            }
+            string filename = S2RepeatedSections.cSGResource(readFile);
+
+            S2RepeatedSections.cReferentNode(readFile);
+
+            SHPEData.Extensions.AddRange(S2RepeatedSections.cObjectGraphNode(readFile));
             
-            int pos = readFile.Offset;
-            if (cOBNVersion == 4)
-            {      
-                nameLength = readFile.ReadByte(); 
-                while (nameLength <= 1) {
-                    //if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("NameLength: {0}", nameLength));
-                    nameLength = readFile.ReadByte();                      
-                }                  
-                uint nl = (uint)(nameLength + BufferSize);
-                if (nameLength == 90)
-                {
-                    readFile.ReadUInt32();
-                    nl = (uint)(nameLength + BufferSize + 25);
-                    SHPEData.FileName = SimsPackageReader.ReadEncodedString(readFile.ReadBytes(nl));
-                    Regex re = new("(##.*_gmnd)");
-                    Match m = re.Match(SHPEData.FileName);
-                    if (m.Success) SHPEData.FileName = m.Groups[1].Value;
-                    readFile.Offset = pos;
-                    readFile.ReadBytes((uint)SHPEData.FileName.Length);
-                } else
-                {
-                    SHPEData.FileName = SimsPackageReader.ReadEncodedString(readFile.ReadBytes(nl));
-                }         
-                
-                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Length: {1}, RepeatFileName: {0}", SHPEData.FileName, nameLength));
-            }
-
-
-            // LODs    
-
-            bool isLod = false;
-
-            uint count = readFile.ReadUInt32();
-            
-            if (count > 15)
+            long pos = 0;
+            if (BlockID == "FC6EB1F7")
             {
-                readFile.Offset = pos;
-                count = readFile.ReadUInt32();
-            }
-            //readFile.Offset--;
-            nameLength = readFile.ReadByte();
-            if (Version == 7 || Version == 6 || Version == 8)
-            {
-                if (nameLength == 0) {
-                    SHPEData.LODCount = count;
-                } else
+                if (Version != 6)
                 {
-                    SHPEData.MaterialCount = count;
-                }
-            } else
-            {
-                SHPEData.LODCount = count;
-            }   
-            readFile.Offset--;         
-                           
-            if (SHPEData.LODCount > 0 && SHPEData.LODCount < 10)
-            {
-                if (Version == 7 || Version == 6)
-                {   
-                    //SHPEData.LODCount = readFile.ReadUInt32();
-                    if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("LOD Count: {0}", SHPEData.LODCount));
-                    for (int i = 0; i < SHPEData.LODCount; i++)
-                    {    
-                        SHPELod lod = new();    
-                        lod.LODType = readFile.ReadUInt32();
-                        if (readFile.ReadByte() == 0)
-                        {
-                            lod.Enabled = false;
-                        } else
-                        {
-                            lod.Enabled = true;
-                        }
-                        if (readFile.ReadByte() == 0)
-                        {
-                            lod.UseGMNDSubmesh = false;
-                        } else
-                        {
-                            lod.UseGMNDSubmesh = true;
-                        }
-                        lod.HeaderLinkIndex = readFile.ReadUInt32();
-                        SHPEData.LODs.Add(lod);
-                    }
-                } else if (Version == 8)
-                {
-                    //SHPEData.LODCount = readFile.ReadUInt32();    
-                    if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("LOD Count: {0}", SHPEData.LODCount));                    
-                    for (int i = 0; i < SHPEData.LODCount; i++)
+                    pos = readFile.BaseStream.Position;
+                    uint LODCount = readFile.ReadUInt32();
+                    /*if (LODCount == 256)
                     {
-                        SHPELod lod = new();
-                        lod.LODType = readFile.ReadUInt32();
-                        if (readFile.ReadByte() == 0)
-                        {
-                            lod.Enabled = false;
-                        } else
-                        {
-                            lod.Enabled = true;
-                        }
-                        lod.GMNDFileName = SimsPackageReader.ReadEncodedString(readFile.ReadBytes(readFile.ReadByte()));
-                        SHPEData.LODs.Add(lod);
+                        readFile.BaseStream.Position = pos;
+                        LODCount = 1;
                     }
-                } else if (Version > 6)
-                {
-                    //SHPEData.LODCount = readFile.ReadUInt32(); 
-                    if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("LOD Count: {0}", SHPEData.LODCount));                       
-                    for (int i = 0; i < SHPEData.LODCount; i++)
+                    if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("LOD Count: {0}", LODCount));                
+                    for (int i = 0; i < LODCount; i++)
                     {
-                        SHPELod lod = new();
-                        lod.LODValue = readFile.ReadUInt32();
-                        SHPEData.LODs.Add(lod);
+                        
+                        if (Version > 6) { 
+                            uint LODValue = readFile.ReadUInt32();
+                            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("LOD Value: {0}", LODValue.ToString("X4")));
+                        }
+                        if (Version == 6 || Version == 7)
+                        {                    
+                            uint LODType = readFile.ReadUInt32();
+                            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("LOD Type: {0}", LODType.ToString("X4")));
+                            byte Enabled = readFile.ReadByte();
+                            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("LOD Enabled: {0}", Enabled));
+                            byte EmbeddedSubmesh = readFile.ReadByte();
+                            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("LOD Embedded: {0}", EmbeddedSubmesh));
+                            uint HeaderLinkIndex = readFile.ReadUInt32();  
+                            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("LOD Header Link Index: {0}", HeaderLinkIndex));                  
+                        }
+                        if (Version == 8)
+                        {
+                            uint LODType = readFile.ReadUInt32();
+                            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("LOD Type: {0}", LODType.ToString("X4")));
+                            byte Enabled = readFile.ReadByte();
+                            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("LOD Enabled: {0}", Enabled));
+                            string FileName = readFile.ReadString();     
+                            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("LOD FileName: {0}", FileName));               
+                        }
+                    } */
+                    for (int i = 0; i < LODCount; i++)
+                    {
+                        readFile.ReadUInt32();
                     }
-                }
-            }
-            
+                    //readFile.ReadUInt32();
+                }                
+                pos = readFile.BaseStream.Position;
+                SHPEData.ItemCount = readFile.ReadUInt32();
+                if (SHPEData.ItemCount > 50)
+                {
+                    readFile.BaseStream.Position -= 9;
                     
-                               
+                    SHPEData.ItemCount =1;
+                }
+                
             
-
-            //materials
-
-            //SHPEData.MaterialCount = readFile.ReadByte();
-            if (ReadingSingle)
-                {if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Material Count: {0}", SHPEData.MaterialCount));
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("ItemCount: {0}", SHPEData.ItemCount));      
+                for (int i = 0; i < SHPEData.ItemCount; i++)
+                {
+                    SHPEItem si  = new();
+                    si.Unknown1 = readFile.ReadInt32();
+                    si.Unknown2 = readFile.ReadByte();
+                    if (Version == 7 || Version == 6) 
+                    {
+                        si.FileName = "";
+                        si.Unknown3 = readFile.ReadInt32();
+                        si.Unknown4 = readFile.ReadByte();
+                    } 
+                    else 
+                    {
+                        si.FileName = readFile.ReadString();
+                    }
+                    SHPEData.Items.Add(si);
+                    if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Item #{0}: Filename: {1}", i, si.FileName));
+                }
+                SHPEData.MaterialCount = readFile.ReadUInt32();
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("NumMaterials: {0}", SHPEData.MaterialCount));                
                 for (int i = 0; i < SHPEData.MaterialCount; i++)
                 {
-                    SHPEMaterial mat = new();
-                    mat.Group = SimsPackageReader.ReadEncodedString(readFile.ReadBytes(readFile.ReadByte()));
+                    SHPEMaterial mat = new();                    
+                    mat.Group = readFile.ReadString();                    
                     if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Group: {0}", mat.Group));
-                    byte namelength = readFile.ReadByte();
-                    uint nl = (uint)(nameLength + BufferSize);
-                    pos = readFile.Offset;
-                    mat.MaterialDefinition = SimsPackageReader.ReadEncodedString(readFile.ReadBytes(nl));                    
-                    if (mat.Group.Contains("##")) mat.Group = mat.Group.Split("##")[0];
-                    if (mat.Group.Contains('_'))
-                    {
-                        string[] m = mat.Group.Split("_");
-                        if (!mat.MaterialDefinition.EndsWith(m[^1]))
-                        {
-                            while (!mat.MaterialDefinition.EndsWith(m[^1]))
-                            {
-                                nl++;
-                                readFile.Offset = pos;
-                                mat.MaterialDefinition = SimsPackageReader.ReadEncodedString(readFile.ReadBytes(nl));
-                            }                                                       
-                            readFile.Offset = pos;
-                            mat.MaterialDefinition = SimsPackageReader.ReadEncodedString(readFile.ReadBytes(nl));
-                        }
-                    }
+                    mat.MaterialDefinition = readFile.ReadString();
                     if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("MatDef: {0}", mat.MaterialDefinition));
                     mat.LODType = readFile.ReadUInt32();
                     mat.Enabled = readFile.ReadByte();
@@ -4525,7 +4371,7 @@ namespace SimsCCManager.PackageReaders
                     if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Material {0}: {1}", i, mat.ToString()));
                 }
             }
-        }     
+        }        
     }
 
 
@@ -5626,7 +5472,7 @@ namespace SimsCCManager.PackageReaders
 
         public S2ReadXNGBChunk(BinaryReader readFile, int BufferSize)
         {
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Reading XNGB."));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Reading XNGB."));
             uint NumItems = readFile.ReadUInt32();
             if (NumItems != 24)
             {      
@@ -5636,7 +5482,7 @@ namespace SimsCCManager.PackageReaders
                     NumItems = readFile.ReadUInt32();
                 }
             }
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("NumItems: {0}", NumItems));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("NumItems: {0}", NumItems));
             // Read the items
             for (int i = 0; i < NumItems; i++)
             {
@@ -5754,13 +5600,13 @@ namespace SimsCCManager.PackageReaders
 
                 }
 
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Item {0}: {1}", i, fieldName));
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Item {0}: {1}", i, fieldName));
             }
         }
 
         public S2ReadXNGBChunk(DecryptByteStream readFile, int BufferSize)
         {
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Reading XNGB."));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Reading XNGB."));
             readFile.ReadUInt16();
             uint NumItems = readFile.ReadUInt32();
             if (NumItems != 24)
@@ -5891,7 +5737,7 @@ namespace SimsCCManager.PackageReaders
 
         public S2ReadXNGBChunk(DecryptByteStream readFile, bool xml, int BufferSize)
         {
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Reading XNGB. XML Version: {0}", xml));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Reading XNGB. XML Version: {0}", xml));
             XmlTextReader xmlDoc = new XmlTextReader(new StringReader(SimsPackageReader.ReadEncodedString(readFile.GetEntireStream())));
             bool inDesc = false;
             string inAttrDesc = "";
@@ -6032,7 +5878,7 @@ namespace SimsCCManager.PackageReaders
     
         public S2ReadXNGBChunk(BinaryReader readFile, uint size, bool xml, int BufferSize)
         {
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Reading XNGB. XML Version: {0}", xml));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Reading XNGB. XML Version: {0}", xml));
             XmlTextReader xmlDoc = new XmlTextReader(new StringReader(SimsPackageReader.ReadEncodedString(readFile.ReadBytes((int)size))));
             
             bool inDesc = false;
@@ -6180,364 +6026,129 @@ namespace SimsCCManager.PackageReaders
         public FileInfo file;
         private List<uint> Mips = new();
         public int Buffer = 0;
-        public S2ReadTXTRChunk(BinaryReader readFile, FileInfo fileInfo, int txtrc)
+
+        public S2ReadTXTRChunk(BinaryReader readFile)
         {
-            
-            file = fileInfo;
-            uint CreatorID;
-            uint FormatFlag;
-            byte namelength = readFile.ReadByte();
-            while (namelength != 10)
+            string fieldName = readFile.ReadString();
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("FieldName: {0}", fieldName));
+            string BlockID = readFile.ReadUInt32().ToString("X4");
+            uint BlockVersion = readFile.ReadUInt32();
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("BlockID: {0}, BlockVersion: {1}", BlockID, BlockVersion));
+            //string ResourceID = readFile.ReadString();
+            //if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("ResourecID: {0}", ResourceID));
+
+            TXTRData.FullTXTRName = S2RepeatedSections.cSGResource(readFile);
+
+            //uint SGRBlockID = readFile.ReadUInt32();
+            //uint SGRVersion = readFile.ReadUInt32();
+            //byte txtrn = readFile.ReadByte();
+            //TXTRData.FullTXTRName = Encoding.ASCII.GetString(readFile.ReadBytes(txtrn));
+            //if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("cSGResource Block ID: {0}, Version: {1}, FileName: {2}", SGRBlockID, SGRVersion, TXTRData.FullTXTRName));
+
+            if (BlockID == "1C4A276C")
             {
-                namelength = readFile.ReadByte();
-            }
-            string blockName = CleanInput(SimsPackageReader.ReadEncodedString(readFile.ReadBytes(namelength)));
-            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("BlockName: {0}", blockName));
-            string BlockID = readFile.ReadUInt32().ToString("X8");
-            uint BlockVersion = readFile.ReadUInt32(); // 7, 8, or 9
-            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("TXTR BlockName: {0}, Block ID: {1}, Block Version: {2}", blockName, BlockID, BlockVersion));
-            byte resourceIDlength = readFile.ReadByte();
-            string resourceID = CleanInput(SimsPackageReader.ReadEncodedString(readFile.ReadBytes(resourceIDlength)));
-            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("ResourceID: {0}", resourceID));
-            if (resourceID != "cSGResource")
-            {
-                
-            }
-            
-            byte filenamelength = readFile.ReadByte();
-            while (filenamelength < 5)
-            {
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Filename length returned {0}. Searching for correction", filenamelength));
-                filenamelength = readFile.ReadByte();
-            }
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Found filename length of {0}.", filenamelength));
-            long pos = readFile.BaseStream.Position;
-            TXTRData.FullTXTRName = SimsPackageReader.ReadEncodedString(readFile.ReadBytes(filenamelength));
-            if (!TXTRData.FullTXTRName.EndsWith("_txtr")) 
-            {
-                int ogl = filenamelength;
-                int original = filenamelength;
-                readFile.BaseStream.Position = pos;
-                filenamelength++;
-                TXTRData.FullTXTRName = SimsPackageReader.ReadEncodedString(readFile.ReadBytes(filenamelength));
-                if (!TXTRData.FullTXTRName.EndsWith("_txtr"))
+                TXTRData.TextureWidth = readFile.ReadUInt32();
+                TXTRData.TextureHeight = readFile.ReadUInt32();                
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Height: {0}, Width: {1}", TXTRData.TextureHeight, TXTRData.TextureWidth));
+                TXTRData.FormatCode = readFile.ReadUInt32();
+                TXTRData.MipMapLevels = readFile.ReadUInt32();
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Image stored as Format {0}, Mipmaps: {1}", TXTRData.FormatCode, TXTRData.MipMapLevels));
+                float Purpose = readFile.ReadSingle();
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Purpose: {0}", Purpose));
+                //uint unknown2 = readFile.ReadUInt16();
+                //if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Unknown2 that should be 3f80,4040,4000: {0}", unknown2.ToString("X4")));
+                uint OuterLoopCount = readFile.ReadUInt32();
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Outer loops: {0}", OuterLoopCount));
+                uint unknown3 = readFile.ReadUInt32();
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("This should be 0: {0}", unknown3));
+                uint InnerLoopCount = 0;
+
+                if (BlockVersion == 9)
                 {
-                    ogl *= 2;
-                    readFile.BaseStream.Position = pos;
-                    TXTRData.FullTXTRName = SimsPackageReader.ReadEncodedString(readFile.ReadBytes(ogl));
-                    if (TXTRData.FullTXTRName.Contains("_txtr"))
+                    string repeatFileName = readFile.ReadString();
+                    if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Repeat File Name: {0}", repeatFileName));
+                }
+
+                for (int o = 0; o < OuterLoopCount; o++)
+                {
+                    if (BlockVersion != 9)
                     {
-                        Regex re = new("(.*_txtr)");
-                        Match m = re.Match(TXTRData.FullTXTRName);
-                        if (m.Success)
-                        {
-                            char[] len = m.Groups[1].Value.ToCharArray();
-                            ogl = len.Length+1;
-                            readFile.BaseStream.Position = pos;
-                            TXTRData.FullTXTRName = SimsPackageReader.ReadEncodedString(readFile.ReadBytes(ogl));
-                        }
+                        InnerLoopCount = TXTRData.MipMapLevels;
                     }
-                }
-                Buffer = ogl - original;
-            }
-            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Full Filename: {0}, Guid: {1}, Texture Name: {2}", TXTRData.FullTXTRName, TXTRData.GUID, TXTRData.TextureName));
-            
-            TXTRData.TextureWidth = readFile.ReadUInt32();
-            TXTRData.TextureHeight = readFile.ReadUInt32();
-            if (!IsReasonableSize(TXTRData.TextureWidth))
-            {
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Texture width returned {0} which isn't a reasonable size. Searching for a reasonable size.", TXTRData.TextureWidth));
-                while (!IsReasonableSize(TXTRData.TextureWidth))
-                {
-                    TXTRData.TextureWidth = readFile.ReadUInt32();
-                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Checking if {0} is a reasonable size.", TXTRData.TextureWidth));
-                }
-                TXTRData.TextureHeight = readFile.ReadUInt32();
-            }
-            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Height: {0}, Width: {1}", TXTRData.TextureHeight, TXTRData.TextureWidth));
-            TXTRData.FormatCode = readFile.ReadUInt32();
-            TXTRData.MipMapLevels = readFile.ReadUInt32();
-            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Image stored as Format {0}, Mipmaps: {1}", TXTRData.FormatCode, TXTRData.MipMapLevels));
-            uint Purpose = readFile.ReadUInt16();
-            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Purpose: {0}", Purpose));
-            uint unknown2 = readFile.ReadUInt16();
-            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Unknown2 that should be 3f80,4040,4000: {0}", unknown2.ToString("X4")));
-            uint OuterLoopCount = readFile.ReadUInt32();
-            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Outer loops: {0}", OuterLoopCount));
-            uint unknown3 = readFile.ReadUInt32();
-            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("This should be 0: {0}", unknown3));
-            uint InnerLoopCount = 0;
-            if (BlockVersion == 9)
-            {
-                byte repfilename = readFile.ReadByte();
-                string repeatFileName = SimsPackageReader.ReadEncodedString(readFile.ReadBytes(repfilename));
-                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Repeat File Name: {0}", repeatFileName));
-            }
-            for (int o = 0; o < OuterLoopCount; o++)
-            {
-                if (BlockVersion != 9)
-                {
-                    InnerLoopCount = TXTRData.MipMapLevels;
-                }
-                else if (BlockVersion == 9)
-                {
-                    InnerLoopCount = readFile.ReadUInt32();
-                }
-                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Inner Loops: {0}", InnerLoopCount));
-                for (int i = 0; i < InnerLoopCount; i++)
-                {
-                    byte DataType = readFile.ReadByte();
-                    if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("DataType: {0}", DataType));
-                    uint ImageDataSize = 0;
-                    if (DataType == 1)
+                    else if (BlockVersion == 9)
                     {
-                        byte len = readFile.ReadByte();
-                        string LIFOfile = SimsPackageReader.ReadEncodedString(readFile.ReadBytes(len));
+                        InnerLoopCount = readFile.ReadUInt32();
                     }
-                    else
+                    if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Inner Loops: {0}", InnerLoopCount));
+                    for (int i = 0; i < InnerLoopCount; i++)
                     {
-                        bool mipmaps = false;
-                        //if (TXTRData.MipMapLevels > 1) mipmaps = true;
-                        ImageDataSize = readFile.ReadUInt32();
-                        InterpretMipSize(TXTRData.MipMapLevels);
-                        if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Image Data Size: {0}", ImageDataSize));
-                        if (ImageDataSize >= Mips[0])
+                        byte DataType = readFile.ReadByte();
+                        if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("DataType: {0}", DataType));
+                        uint ImageDataSize = 0;
+                        if (DataType == 1)
                         {
-                            if (TXTRData.FormatCode == 1)
-                            {
-                                TXTRData.Texture = Godot.Image.CreateFromData((int)TXTRData.TextureWidth, (int)TXTRData.TextureHeight, mipmaps, Godot.Image.Format.Rgba8, readFile.ReadBytes((int)ImageDataSize));
-                                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Saved Image (Type: {0}, Name: {1}) to TXTRData. Size: {2}", TXTRData.FormatCode, TXTRData.FullTXTRName, TXTRData.Texture.GetDataSize()));
-                                //texture.SavePng(string.Format("{0}_{1}.dds", fileInfo.FullName, txtrc));                                
-                            }
-                            else if (TXTRData.FormatCode == 2)
-                            {
-                                TXTRData.Texture = Godot.Image.CreateFromData((int)TXTRData.TextureWidth, (int)TXTRData.TextureHeight, mipmaps, Godot.Image.Format.Rgb8, readFile.ReadBytes((int)ImageDataSize));
-                                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Saved Image (Type: {0}, Name: {1}) to TXTRData. Size: {2}", TXTRData.FormatCode, TXTRData.FullTXTRName, TXTRData.Texture.GetDataSize()));
-                                //texture.SavePng(string.Format("{0}_{1}.png", fileInfo.FullName, txtrc));
-                            }
-                            else if (TXTRData.FormatCode == 4)
-                            {
-                                TXTRData.Texture = Godot.Image.CreateFromData((int)TXTRData.TextureWidth, (int)TXTRData.TextureHeight, mipmaps, Godot.Image.Format.Dxt1, readFile.ReadBytes((int)ImageDataSize));
-                                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Saved Image (Type: {0}, Name: {1}) to TXTRData. Size: {2}", TXTRData.FormatCode, TXTRData.FullTXTRName, TXTRData.Texture.GetDataSize()));
-                                //texture.SavePng(string.Format("{0}_{1}.png", fileInfo.FullName, txtrc));
-                            }
-                            else if (TXTRData.FormatCode == 5)
-                            {
-                                TXTRData.Texture = Godot.Image.CreateFromData((int)TXTRData.TextureWidth, (int)TXTRData.TextureHeight, mipmaps, Godot.Image.Format.Dxt3, readFile.ReadBytes((int)ImageDataSize));
-                                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Saved Image (Type: {0}, Name: {1}) to TXTRData. Size: {2}", TXTRData.FormatCode, TXTRData.FullTXTRName, TXTRData.Texture.GetDataSize()));
-                                //texture.SavePng(string.Format("{0}_{1}.png", fileInfo.FullName, txtrc));
-                            }
-                            else if (TXTRData.FormatCode == 6)
-                            {
-                                TXTRData.Texture = Godot.Image.CreateFromData((int)TXTRData.TextureWidth, (int)TXTRData.TextureHeight, mipmaps, Godot.Image.Format.L8, readFile.ReadBytes((int)ImageDataSize));
-                                //TXTRData.Texture.Convert(Godot.Image.Format.L8);
-                                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Saved Image (Type: {0}, Name: {1}) to TXTRData. Size: {2}", TXTRData.FormatCode, TXTRData.FullTXTRName, TXTRData.Texture.GetDataSize()));
-                                //texture.SavePng(string.Format("{0}_{1}.png", fileInfo.FullName, txtrc));
-                            }
-                            else if (TXTRData.FormatCode == 8)
-                            {
-                                TXTRData.Texture = Godot.Image.CreateFromData((int)TXTRData.TextureWidth, (int)TXTRData.TextureHeight, mipmaps, Godot.Image.Format.Dxt5, readFile.ReadBytes((int)ImageDataSize));
-                                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Saved Image (Type: {0}, Name: {1}) to TXTRData. Size: {2}", TXTRData.FormatCode, TXTRData.FullTXTRName, TXTRData.Texture.GetDataSize()));
-                                //texture.SavePng(string.Format("{0}_{1}.png", fileInfo.FullName, txtrc));
-                            }
+                            string LIFOfile = readFile.ReadString();
                         }
                         else
                         {
-                            readFile.ReadBytes((int)ImageDataSize);
+                            bool mipmaps = false;
+                            ImageDataSize = readFile.ReadUInt32();
+                            InterpretMipSize(TXTRData.MipMapLevels);
+                            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Image Data Size: {0}", ImageDataSize));
+                            if (ImageDataSize >= Mips[0])
+                            {
+                                switch (TXTRData.FormatCode)                                
+                                {
+                                    case 1:
+                                    TXTRData.Texture = Godot.Image.CreateFromData((int)TXTRData.TextureWidth, (int)TXTRData.TextureHeight, mipmaps, Godot.Image.Format.Rgba8, readFile.ReadBytes((int)ImageDataSize));
+                                    if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Saved Image (Type: {0}, Name: {1}) to TXTRData. Size: {2}", TXTRData.FormatCode, TXTRData.FullTXTRName, TXTRData.Texture.GetDataSize())); 
+                                    break;                             
+                                
+                                    case 2:
+                                    TXTRData.Texture = Godot.Image.CreateFromData((int)TXTRData.TextureWidth, (int)TXTRData.TextureHeight, mipmaps, Godot.Image.Format.Rgb8, readFile.ReadBytes((int)ImageDataSize));
+                                    if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Saved Image (Type: {0}, Name: {1}) to TXTRData. Size: {2}", TXTRData.FormatCode, TXTRData.FullTXTRName, TXTRData.Texture.GetDataSize()));
+                                    break;
+                                
+                                    case 4: 
+                                    TXTRData.Texture = Godot.Image.CreateFromData((int)TXTRData.TextureWidth, (int)TXTRData.TextureHeight, mipmaps, Godot.Image.Format.Dxt1, readFile.ReadBytes((int)ImageDataSize));
+                                    if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Saved Image (Type: {0}, Name: {1}) to TXTRData. Size: {2}", TXTRData.FormatCode, TXTRData.FullTXTRName, TXTRData.Texture.GetDataSize()));
+                                    break;
+                                
+                                    case 5:
+                                    TXTRData.Texture = Godot.Image.CreateFromData((int)TXTRData.TextureWidth, (int)TXTRData.TextureHeight, mipmaps, Godot.Image.Format.Dxt3, readFile.ReadBytes((int)ImageDataSize));
+                                    if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Saved Image (Type: {0}, Name: {1}) to TXTRData. Size: {2}", TXTRData.FormatCode, TXTRData.FullTXTRName, TXTRData.Texture.GetDataSize()));
+                                    break;
+
+                                    case 6:
+                                    TXTRData.Texture = Godot.Image.CreateFromData((int)TXTRData.TextureWidth, (int)TXTRData.TextureHeight, mipmaps, Godot.Image.Format.L8, readFile.ReadBytes((int)ImageDataSize));
+                                    if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Saved Image (Type: {0}, Name: {1}) to TXTRData. Size: {2}", TXTRData.FormatCode, TXTRData.FullTXTRName, TXTRData.Texture.GetDataSize()));
+                                    break;
+
+                                    case 8:
+                                    TXTRData.Texture = Godot.Image.CreateFromData((int)TXTRData.TextureWidth, (int)TXTRData.TextureHeight, mipmaps, Godot.Image.Format.Dxt5, readFile.ReadBytes((int)ImageDataSize));
+                                    if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Saved Image (Type: {0}, Name: {1}) to TXTRData. Size: {2}", TXTRData.FormatCode, TXTRData.FullTXTRName, TXTRData.Texture.GetDataSize()));
+                                    break;
+                                }
+                            }
+                            else
+                            {
+                                readFile.ReadBytes((int)ImageDataSize);
+                            }
+
                         }
                     }
-                }
-                if (BlockVersion == 7)
-                {
-                    CreatorID = readFile.ReadUInt32();
-                }
-                else
-                {
-                    CreatorID = readFile.ReadUInt32();
-                    FormatFlag = readFile.ReadUInt32();
-                }
-            }
-        }
-        public S2ReadTXTRChunk(DecryptByteStream readFile, FileInfo fileInfo, int txtrc)
-        {
-            file = fileInfo;
-            uint CreatorID;
-            uint FormatFlag;
-            byte namelength = readFile.ReadByte();
-            while (namelength != 10)
-            {
-                namelength = readFile.ReadByte();
-            }
-            string blockName = CleanInput(SimsPackageReader.ReadEncodedString(readFile.ReadBytes(namelength)));
-            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("BlockName: {0}", blockName));
-            string BlockID = readFile.ReadUInt32().ToString("X8");
-            uint BlockVersion = readFile.ReadUInt32(); // 7, 8, or 9
-            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("TXTR BlockName: {0}, Block ID: {1}, Block Version: {2}", blockName, BlockID, BlockVersion));
-            byte resourceIDlength = readFile.ReadByte();
-            string resourceID = CleanInput(SimsPackageReader.ReadEncodedString(readFile.ReadBytes(resourceIDlength)));
-            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("ResourceID: {0}", resourceID));
-            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("ResourceID: {0}", resourceID));
-            if (resourceID != "cSGResource")
-            {
-                
-            }
-            
-            byte filenamelength = readFile.ReadByte();
-            while (filenamelength < 5)
-            {
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Filename length returned {0}. Searching for correction", filenamelength));
-                filenamelength = readFile.ReadByte();
-            }
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Found filename length of {0}.", filenamelength));
-            int pos = readFile.Offset;
-            TXTRData.FullTXTRName = SimsPackageReader.ReadEncodedString(readFile.ReadBytes(filenamelength));
-            if (!TXTRData.FullTXTRName.EndsWith("_txtr")) 
-            {
-                uint ogl = filenamelength;
-                uint original = filenamelength;
-                readFile.Offset = pos;
-                filenamelength++;
-                TXTRData.FullTXTRName = SimsPackageReader.ReadEncodedString(readFile.ReadBytes(filenamelength));
-                if (!TXTRData.FullTXTRName.EndsWith("_txtr"))
-                {
-                    ogl *= 2;
-                    readFile.Offset = pos;
-                    TXTRData.FullTXTRName = SimsPackageReader.ReadEncodedString(readFile.ReadBytes(ogl));
-                    if (TXTRData.FullTXTRName.Contains("_txtr"))
+                    if (BlockVersion == 7)
                     {
-                        Regex re = new("(.*_txtr)");
-                        Match m = re.Match(TXTRData.FullTXTRName);
-                        if (m.Success)
-                        {
-                            char[] len = m.Groups[1].Value.ToCharArray();
-                            ogl = (uint)len.Length+1;
-                            readFile.Offset = pos;
-                            TXTRData.FullTXTRName = SimsPackageReader.ReadEncodedString(readFile.ReadBytes(ogl));
-                        }
-                    }
-                }
-                Buffer = (int)(ogl - original);
-            }
-            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Full Filename: {0}, Guid: {1}, Texture Name: {2}", TXTRData.FullTXTRName, TXTRData.GUID, TXTRData.TextureName));
-            
-            TXTRData.TextureWidth = readFile.ReadUInt32();
-            TXTRData.TextureHeight = readFile.ReadUInt32();
-            if (!IsReasonableSize(TXTRData.TextureWidth))
-            {
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Texture width returned {0} which isn't a reasonable size. Searching for a reasonable size.", TXTRData.TextureWidth));
-                while (!IsReasonableSize(TXTRData.TextureWidth))
-                {
-                    TXTRData.TextureWidth = readFile.ReadUInt32();
-                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Checking if {0} is a reasonable size.", TXTRData.TextureWidth));
-                }
-                TXTRData.TextureHeight = readFile.ReadUInt32();
-            }
-            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Height: {0}, Width: {1}", TXTRData.TextureHeight, TXTRData.TextureWidth));
-            TXTRData.FormatCode = readFile.ReadUInt32();
-            TXTRData.MipMapLevels = readFile.ReadUInt32();
-            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Image stored as Format {0}, Mipmaps: {1}", TXTRData.FormatCode, TXTRData.MipMapLevels));
-            uint Purpose = readFile.ReadUInt16();
-            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Purpose: {0}", Purpose));
-            uint unknown2 = readFile.ReadUInt16();
-            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Unknown2 that should be 3f80,4040,4000: {0}", unknown2.ToString("X4")));
-            uint OuterLoopCount = readFile.ReadUInt32();
-            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Outer loops: {0}", OuterLoopCount));
-            uint unknown3 = readFile.ReadUInt32();
-            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("This should be 0: {0}", unknown3));
-            uint InnerLoopCount = 0;
-            if (BlockVersion == 9)
-            {
-                byte repfilename = readFile.ReadByte();
-                string repeatFileName = SimsPackageReader.ReadEncodedString(readFile.ReadBytes(repfilename));
-                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Repeat File Name: {0}", repeatFileName));
-            }
-            for (int o = 0; o < OuterLoopCount; o++)
-            {
-                if (BlockVersion != 9)
-                {
-                    InnerLoopCount = TXTRData.MipMapLevels;
-                }
-                else if (BlockVersion == 9)
-                {
-                    InnerLoopCount = readFile.ReadUInt32();
-                }
-                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Inner Loops: {0}", InnerLoopCount));
-                for (int i = 0; i < InnerLoopCount; i++)
-                {
-                    byte DataType = readFile.ReadByte();
-                    if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("DataType: {0}", DataType));
-                    uint ImageDataSize = 0;
-                    if (DataType == 1)
-                    {
-                        byte len = readFile.ReadByte();
-                        string LIFOfile = SimsPackageReader.ReadEncodedString(readFile.ReadBytes(len));
+                        uint CreatorID = readFile.ReadUInt32();
                     }
                     else
                     {
-                        bool mipmaps = false;
-                        //if (TXTRData.MipMapLevels > 1) mipmaps = true;
-                        ImageDataSize = readFile.ReadUInt32();
-                        InterpretMipSize(TXTRData.MipMapLevels);
-                        if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Image Data Size: {0}", ImageDataSize));
-                        if (ImageDataSize >= Mips[0])
-                        {
-                            if (TXTRData.FormatCode == 1)
-                            {
-                                TXTRData.Texture = Godot.Image.CreateFromData((int)TXTRData.TextureWidth, (int)TXTRData.TextureHeight, mipmaps, Godot.Image.Format.Rgba8, readFile.ReadBytes((uint)ImageDataSize));
-                                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Saved Image (Type: {0}, Name: {1}) to TXTRData. Size: {2}", TXTRData.FormatCode, TXTRData.FullTXTRName, TXTRData.Texture.GetDataSize()));
-                                //texture.SavePng(string.Format("{0}_{1}.dds", fileInfo.FullName, txtrc));                                
-                            }
-                            else if (TXTRData.FormatCode == 2)
-                            {
-                                TXTRData.Texture = Godot.Image.CreateFromData((int)TXTRData.TextureWidth, (int)TXTRData.TextureHeight, mipmaps, Godot.Image.Format.Rgb8, readFile.ReadBytes((uint)ImageDataSize));
-                                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Saved Image (Type: {0}, Name: {1}) to TXTRData. Size: {2}", TXTRData.FormatCode, TXTRData.FullTXTRName, TXTRData.Texture.GetDataSize()));
-                                //texture.SavePng(string.Format("{0}_{1}.png", fileInfo.FullName, txtrc));
-                            }
-                            else if (TXTRData.FormatCode == 4)
-                            {
-                                TXTRData.Texture = Godot.Image.CreateFromData((int)TXTRData.TextureWidth, (int)TXTRData.TextureHeight, mipmaps, Godot.Image.Format.Dxt1, readFile.ReadBytes((uint)ImageDataSize));
-                                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Saved Image (Type: {0}, Name: {1}) to TXTRData. Size: {2}", TXTRData.FormatCode, TXTRData.FullTXTRName, TXTRData.Texture.GetDataSize()));
-                                //texture.SavePng(string.Format("{0}_{1}.png", fileInfo.FullName, txtrc));
-                            }
-                            else if (TXTRData.FormatCode == 5)
-                            {
-                                TXTRData.Texture = Godot.Image.CreateFromData((int)TXTRData.TextureWidth, (int)TXTRData.TextureHeight, mipmaps, Godot.Image.Format.Dxt3, readFile.ReadBytes((uint)ImageDataSize));
-                                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Saved Image (Type: {0}, Name: {1}) to TXTRData. Size: {2}", TXTRData.FormatCode, TXTRData.FullTXTRName, TXTRData.Texture.GetDataSize()));
-                                //texture.SavePng(string.Format("{0}_{1}.png", fileInfo.FullName, txtrc));
-                            }
-                            else if (TXTRData.FormatCode == 6)
-                            {
-                                TXTRData.Texture = Godot.Image.CreateFromData((int)TXTRData.TextureWidth, (int)TXTRData.TextureHeight, mipmaps, Godot.Image.Format.L8, readFile.ReadBytes((uint)ImageDataSize));
-                                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Saved Image (Type: {0}, Name: {1}) to TXTRData. Size: {2}", TXTRData.FormatCode, TXTRData.FullTXTRName, TXTRData.Texture.GetDataSize()));
-                                //texture.SavePng(string.Format("{0}_{1}.png", fileInfo.FullName, txtrc));
-                            }
-                            else if (TXTRData.FormatCode == 8)
-                            {
-                                TXTRData.Texture = Godot.Image.CreateFromData((int)TXTRData.TextureWidth, (int)TXTRData.TextureHeight, mipmaps, Godot.Image.Format.Dxt5, readFile.ReadBytes((uint)ImageDataSize));
-                                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Saved Image (Type: {0}, Name: {1}) to TXTRData. Size: {2}", TXTRData.FormatCode, TXTRData.FullTXTRName, TXTRData.Texture.GetDataSize()));
-                                //texture.SavePng(string.Format("{0}_{1}.png", fileInfo.FullName, txtrc));
-                            }
-                        }
-                        else
-                        {
-                            readFile.ReadBytes((uint)ImageDataSize);
-                        }
-
+                        uint CreatorID = readFile.ReadUInt32();
+                        uint FormatFlag = readFile.ReadUInt32();
                     }
-                }
-                if (BlockVersion == 7)
-                {
-                    CreatorID = readFile.ReadUInt32();
-                }
-                else
-                {
-                    CreatorID = readFile.ReadUInt32();
-                    FormatFlag = readFile.ReadUInt32();
                 }
             }
         }
-
-
         public void InterpretMipSize(uint mips)
         {
             Mips = new();
@@ -6611,23 +6222,6 @@ namespace SimsCCManager.PackageReaders
                 }
             }
 
-        }
-
-
-
-
-
-
-        private bool IsReasonableSize(uint input)
-        {            
-            if (input == 128) return true;
-            int testnum = 128;
-            for (int i = 0; i < 5; i++)
-            {
-                testnum *= 2;
-                if (input == testnum) return true;
-            }
-            return false;
         }
 
         static string CleanInput(string strIn)
@@ -6992,56 +6586,34 @@ namespace SimsCCManager.PackageReaders
     {
         public MMATData MMATData = new();
 
+        public S2ReadMMATChunk(BinaryReader readFile, bool XML, int Size)
+        {
+            if (XML)
+            {
+                S2ReadMMATChunkXML(readFile, (int)Size);
+            } else
+            {
+                S2ReadMMATChunkNormal(readFile);
+            }
+        }
 
-        public S2ReadMMATChunk(BinaryReader readFile)
+        public void S2ReadMMATChunkNormal(BinaryReader readFile)
         {
             long pos = 0;
+            readFile.ReadUInt16();
             uint NumItems = readFile.ReadUInt32();
-            if (NumItems != 11 && NumItems != 10 && NumItems != 12)
-            {   
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("NumItems: {0}", NumItems));   
-                if (readFile.BaseStream.Position != 0 && readFile.BaseStream.Position < 100) {
-                    readFile.BaseStream.Position /= 4;
-                } else
-                {
-                    pos = readFile.BaseStream.Position;
-                    readFile.BaseStream.Position -= 256;
-                }
-                int timesread = 0;
-                while (NumItems != 11 && NumItems != 10 && NumItems != 12)
-                {
-                    NumItems = readFile.ReadUInt32();
-                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("NumItems: {0}", NumItems));   
-                    timesread++;
-                    if (timesread == 64)
-                    {
-                        readFile.BaseStream.Position = pos - 510;
-                    }
-                }
-            }
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("NumItems: {0}", NumItems));
             // Read the items
-            List<string> datatypes = new()
-            {
-                "EB61E4F7", "0C264712", "0B8BEA18", "ABC78708", "CBA908E1"
-            };
+            
             for (int i = 0; i < NumItems; i++)
             {
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Reading Item {0}", i));
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Reading Item {0}", i));
                 // Get type of the item
                 string dataType = readFile.ReadUInt32().ToString("X8");
-                if (!datatypes.Any(x=>x == dataType))
-                {
-                    while (!datatypes.Any(x=>x == dataType))
-                    {
-                        dataType = readFile.ReadUInt32().ToString("X8");
-                    }
-                }
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("DataType: {0}", dataType));
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("DataType: {0}", dataType));
                 uint nameLength = readFile.ReadUInt32();
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("NameLength: {0}", nameLength));
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("NameLength: {0}", nameLength));
                 string fieldName = SimsPackageReader.ReadEncodedString(readFile.ReadBytes((int)nameLength));
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Field Name: {0}", fieldName));
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Field Name: {0}", fieldName));
 
                 uint fieldValueInt = 0;
                 uint fieldValueFloat = 0;
@@ -7109,6 +6681,93 @@ namespace SimsCCManager.PackageReaders
                     case "type":
                         MMATData.Type = fieldValueString;
                         break;
+                }
+            }
+        }
+
+        public void S2ReadMMATChunkXML(BinaryReader readFile, int Size)
+        {
+            XmlTextReader xmlDoc = new XmlTextReader(new StringReader(SimsPackageReader.ReadEncodedString(readFile.ReadBytes(Size))));
+            bool inDesc = false;
+            string inAttrDesc = "";
+            while (xmlDoc.Read())
+            {
+                if (xmlDoc.NodeType == XmlNodeType.Element)
+                {
+                    if (xmlDoc.Name == "AnyString") inDesc = true;
+                    if (xmlDoc.Name == "AnyUint32") inDesc = true;
+                }
+                if (xmlDoc.NodeType == XmlNodeType.EndElement)
+                {
+                    inDesc = false;
+                    inAttrDesc = "";
+                }
+                if (inDesc == true)
+                {
+                    if (xmlDoc.AttributeCount > 0)
+                    {
+                        while (xmlDoc.MoveToNextAttribute())
+                        {
+                            switch (xmlDoc.Value.ToLower())
+                            {
+                                case "creator":
+                                case "defaultmaterial":
+                                case "family":
+                                case "flags":
+                                case "materialstateflags":
+                                case "modelname":
+                                case "name":
+                                case "objectguid":
+                                case "objectstateindex":
+                                case "subsetname":
+                                case "type":
+                                    inAttrDesc = xmlDoc.Value;
+                                    break;
+                            }
+                        }
+                    }
+                }
+                if (xmlDoc.NodeType == XmlNodeType.Text)
+                {
+                    if (inAttrDesc != "")
+                    {
+                        switch (inAttrDesc.ToLower())
+                        {
+                            case "creator":
+                                MMATData.Creator = xmlDoc.Value;
+                                break;
+                            case "defaultmaterial":
+                                MMATData.SetDefaultMaterial(xmlDoc.Value);
+                                break;
+                            case "family":
+                                MMATData.Family = xmlDoc.Value;
+                                break;
+                            case "flags":
+                                MMATData.Flags = xmlDoc.Value;
+                                break;
+                            case "materialstateflags":
+                                MMATData.MaterialStateFlags = xmlDoc.Value;
+                                break;
+                            case "modelname":
+                                MMATData.ModelName = xmlDoc.Value;
+                                break;
+                            case "name":
+                                MMATData.Name = xmlDoc.Value;
+                                break;
+                            case "objectguid":
+                                MMATData.ObjectGUID = xmlDoc.Value;
+                                break;
+                            case "objectstateindex":
+                                MMATData.ObjectStateIndex = xmlDoc.Value;
+                                break;
+                            case "subsetname":
+                                MMATData.SubsetName = xmlDoc.Value;
+                                break;
+                            case "type":
+                                MMATData.Type = xmlDoc.Value;
+                                break;
+                        }
+                    }
                 }
             }
         }
@@ -7284,7 +6943,7 @@ namespace SimsCCManager.PackageReaders
     
         public S2ReadMMATChunk(BinaryReader readFile, uint size, bool xml)
         {
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Reading MMAT. XML Version: {0}", xml));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Reading MMAT. XML Version: {0}", xml));
             XmlTextReader xmlDoc = new XmlTextReader(new StringReader(SimsPackageReader.ReadEncodedString(readFile.ReadBytes((int)size))));
             bool inDesc = false;
             string inAttrDesc = "";
@@ -7431,313 +7090,223 @@ namespace SimsCCManager.PackageReaders
 
         BinaryReader readFile;
 
-        public S2ReadGMDCChunk(BinaryReader reader, int BufferSize)
+        public S2ReadGMDCChunk(BinaryReader reader)
         {
             readFile = reader;
-            uint language = readFile.ReadUInt16();
-            uint stringstyle = readFile.ReadUInt16();
-            uint repeatvalue = readFile.ReadUInt32();
-            uint indexvalue = readFile.ReadUInt32();
-            uint filetype = readFile.ReadUInt32();
-            byte namelength = readFile.ReadByte();
-            string gmdcn = SimsPackageReader.ReadEncodedString(readFile.ReadBytes(namelength));
-            uint blockID = readFile.ReadUInt32();
-            Version = readFile.ReadUInt32();
-            byte resourcenamelength = readFile.ReadByte();
-            GMDCData.ResourceName = SimsPackageReader.ReadEncodedString(readFile.ReadBytes(resourcenamelength));
-            uint resourceID = readFile.ReadUInt32();
-            uint resourceversion = readFile.ReadUInt32();
-            byte filenamelength = readFile.ReadByte();
-            int fnl = filenamelength + BufferSize;
-            GMDCData.FileName = SimsPackageReader.ReadEncodedString(readFile.ReadBytes(fnl));
+            string gmdcn = readFile.ReadString();
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("GMDCN: {0}", gmdcn));
+            string blockID = readFile.ReadUInt32().ToString("X4");
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("BlockID: {0}", blockID));
+            if (blockID == "AC4F8687")
+            {            
+                Version = readFile.ReadUInt32();
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Version: {0}", Version));
+                GMDCData.ResourceName = readFile.ReadString();
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("ResourceName: {0}", GMDCData.ResourceName));
+                uint resourceID = readFile.ReadUInt32();
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("ResourceID: {0}", resourceID));
+                uint resourceversion = readFile.ReadUInt32();
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("ResourceVersion: {0}", resourceversion));
+                GMDCData.FileName = readFile.ReadString();
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("FileName: {0}", GMDCData.FileName));
 
 
 
-            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Version: {0}. FileName: {1}, ResourceName: {1}", Version, GMDCData.FileName, GMDCData.ResourceName));
-            // all above works
-            //most meshses use version 4, apparently
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Version: {0}. FileName: {1}, ResourceName: {1}", Version, GMDCData.FileName, GMDCData.ResourceName));
+                // all above works
+                //most meshses use version 4, apparently
 
 
-            uint NumRecs = readFile.ReadUInt32();
-            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("NumRecs:{0}", NumRecs));
+                uint NumRecs = readFile.ReadUInt32();
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("NumRecs:{0}", NumRecs));
 
-            for (int i = 0; i < NumRecs; i++)
-            {
-                GMDCElement element = new();
-                element.Index = i;
-                //uint number = readFile.ReadUInt32();
-                element.Number = readFile.ReadUInt32();
-                element.Identity = readFile.ReadUInt32().ToString("X8");
-                if (Identities.Contains(element.Identity))
+                for (int i = 0; i < NumRecs; i++)
                 {
-                    Types.TryGetValue(element.Identity, out string Type);
-                    element.IdentityName = Type;
-                }
-                uint RepeatCount = readFile.ReadUInt32();
-                //readFile.ReadUInt32();
-                element.BlockFormat = readFile.ReadUInt32();
-                element.SetFormat = readFile.ReadUInt32();
-
-
-
-                element.BlockSize = readFile.ReadUInt32();
-                element.ElementLocation = readFile.BaseStream.Position;
-
-                if (element.BlockSize != 0)
-                {
-                    var e = ReadElement(element);
-                    IElements.Add(e);
-                    if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(e.ToString());
-                }
-                else
-                {
-                    element.ItemCount = readFile.ReadUInt32();
-                    if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(element.ToString());
-                    IElements.Add(element);
-                }
-
-
-                //readFile.ReadBytes((int)element.BlockSize);
-
-                //
-
-                //if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Identity: {0}, Block Format: {1}, Set Format: {2}, BlockSize: {3}, ItemCount: {4}", element.Identity, element.BlockFormat, element.SetFormat, element.BlockSize, element.ItemCount));
-
-
-            }
-
-            //get linkages
-
-            uint NumLinkages = readFile.ReadUInt32();
-            for (int i = 0; i < NumLinkages; i++)
-            {
-                GMDCLinkage linkage = new();
-                linkage.IndexCount = readFile.ReadUInt32();
-                //linkage.BlockStart = readFile.BaseStream.Position;
-
-                for (int c = 0; c < linkage.IndexCount; c++)
-                {
-                    if (Version == 4)
+                    GMDCElement element = new();
+                    element.Index = i;
+                    //uint number = readFile.ReadUInt32();
+                    element.Number = readFile.ReadUInt32();
+                    element.Identity = readFile.ReadUInt32().ToString("X8");
+                    if (Identities.Contains(element.Identity))
                     {
-                        linkage.IndexValues.Add(readFile.ReadUInt16());
+                        Types.TryGetValue(element.Identity, out string Type);
+                        element.IdentityName = Type;
+                    }
+                    uint RepeatCount = readFile.ReadUInt32();
+                    //readFile.ReadUInt32();
+                    element.BlockFormat = readFile.ReadUInt32();
+                    element.SetFormat = readFile.ReadUInt32();
+
+
+
+                    element.BlockSize = readFile.ReadUInt32();
+                    element.ElementLocation = readFile.BaseStream.Position;
+
+                    if (element.BlockSize != 0)
+                    {
+                        var e = ReadElement(element);
+                        IElements.Add(e);
+                        if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(e.ToString());
                     }
                     else
                     {
-                        linkage.IndexValues.Add(readFile.ReadUInt32());
+                        element.ItemCount = readFile.ReadUInt32();
+                        if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(element.ToString());
+                        IElements.Add(element);
                     }
+
                 }
 
-                linkage.ArraySize = readFile.ReadUInt32();
-                linkage.ActiveElements = readFile.ReadUInt32();
-                linkage.SubmodelVertexCount = readFile.ReadUInt32();
+                //get linkages
 
-                for (int c = 0; c < linkage.SubmodelVertexCount; c++)
+                uint NumLinkages = readFile.ReadUInt32();
+                for (int i = 0; i < NumLinkages; i++)
                 {
-                    if (Version == 4)
-                    {
-                        linkage.SubmodelIndexValues.Add(readFile.ReadUInt16());
-                    }
-                    else
-                    {
-                        linkage.SubmodelIndexValues.Add(readFile.ReadUInt32());
-                    }
-                }
+                    GMDCLinkage linkage = new();
+                    linkage.IndexCount = readFile.ReadUInt32();
+                    //linkage.BlockStart = readFile.BaseStream.Position;
 
-                linkage.SubmodelNormalsCount = readFile.ReadUInt32();
-
-                for (int c = 0; c < linkage.SubmodelNormalsCount; c++)
-                {
-                    if (Version == 4)
-                    {
-                        linkage.NormalsIndexValues.Add(readFile.ReadUInt16());
-                    }
-                    else
-                    {
-                        linkage.NormalsIndexValues.Add(readFile.ReadUInt32());
-                    }
-                }
-                linkage.SubmodelUVCount = readFile.ReadUInt32();
-
-                for (int c = 0; c < linkage.SubmodelNormalsCount; c++)
-                {
-                    if (Version == 4)
-                    {
-                        linkage.UVIndexValues.Add(readFile.ReadUInt16());
-                    }
-                    else
-                    {
-                        linkage.UVIndexValues.Add(readFile.ReadUInt32());
-                    }
-                }
-                Linkages.Add(linkage);
-                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("{0}", linkage.ToString()));
-
-            }
-
-            //get groups
-
-            uint groupCount = readFile.ReadUInt32();
-
-            for (int g = 0; g < groupCount; g++)
-            {
-                GMDCGroup group = new();
-                group.PrimitiveType = readFile.ReadUInt32();
-                group.LinkIndex = readFile.ReadUInt32();
-                byte objectNameLength = readFile.ReadByte();
-                group.ObjectName = SimsPackageReader.ReadEncodedString(readFile.ReadBytes(objectNameLength));
-                group.FaceCount = readFile.ReadUInt32();
-                int gg = 0;
-                Godot.Vector3 face = new();
-                for (int fc = 0; fc < group.FaceCount; fc++)
-                {
-                    if (Version == 4)
-                    {
-                        if (gg == 0)
-                        {
-                            face.X = readFile.ReadUInt16();
-                        }
-                        else if (gg == 1)
-                        {
-                            face.Y = readFile.ReadUInt16();
-                        }
-                        else if (gg == 2)
-                        {
-                            face.Z = readFile.ReadUInt16();
-                        }
-                    }
-                    else
-                    {
-                        if (gg == 0)
-                        {
-                            face.X = readFile.ReadUInt32();
-                        }
-                        else if (gg == 1)
-                        {
-                            face.Y = readFile.ReadUInt32();
-                        }
-                        else if (gg == 2)
-                        {
-                            face.Z = readFile.ReadUInt32();
-                        }
-                    }
-                    if (gg == 2)
-                    {
-                        group.Faces.Add(face);
-                        gg = 0;
-                    }
-                    else
-                    {
-                        gg++;
-                    }
-                }
-
-                group.OpacityAmount = readFile.ReadUInt32().ToString("X8");
-                if (Version != 1)
-                {
-                    uint subsetCount = readFile.ReadUInt32();
-                    for (int s = 0; s < subsetCount; s++)
+                    for (int c = 0; c < linkage.IndexCount; c++)
                     {
                         if (Version == 4)
                         {
-                            group.ModelSubsetReference.Add(readFile.ReadUInt16());
+                            linkage.IndexValues.Add(readFile.ReadUInt16());
                         }
                         else
                         {
-                            group.ModelSubsetReference.Add(readFile.ReadUInt32());
+                            linkage.IndexValues.Add(readFile.ReadUInt32());
                         }
                     }
-                }
-                Groups.Add(group);
-            }
 
-            /*uint blockcount = readFile.ReadUInt32();
-            for (int i = 0; i < blockcount; i++)
-            {
-                TransformMatrix matrix = new();
-                matrix.QuaternionX = readFile.ReadUInt32();
-                matrix.QuaternionY = readFile.ReadUInt32();
-                matrix.QuaternionZ = readFile.ReadUInt32();
-                matrix.QuaternionW = readFile.ReadUInt32();
-                matrix.TransformX = readFile.ReadUInt32();
-                matrix.TransformY = readFile.ReadUInt32();
-                matrix.TransformZ = readFile.ReadUInt32();
-                Model.TransformMatrices.Add(matrix);
-            }
+                    linkage.ArraySize = readFile.ReadUInt32();
+                    linkage.ActiveElements = readFile.ReadUInt32();
+                    linkage.SubmodelVertexCount = readFile.ReadUInt32();
 
-            uint namepaircount = readFile.ReadUInt32();
-            for (int i = 0; i < namepaircount; i++)
-            {
-                NamePair np = new();
-                byte length = readFile.ReadByte();
-                np.BlendGroupName = SimsPackageReader.ReadEncodedString(readFile.ReadBytes(length)); 
-                length = readFile.ReadByte();
-                np.AssignedElementName = SimsPackageReader.ReadEncodedString(readFile.ReadBytes(length)); 
-                Model.NamedPairs.Add(np);
-            }
-
-            
-            uint vertcount = readFile.ReadUInt32();
-            if (vertcount > 0)
-            {
-                uint facecount = readFile.ReadUInt32();
-                for (int i = 0; i < vertcount; i++)                
-                {
-                    Godot.Vector3 v3 = new();
-                    v3.X = readFile.ReadUInt32();
-                    v3.Y = readFile.ReadUInt32();
-                    v3.Z = readFile.ReadUInt32();
-                    Model.Verts.Add(v3);                    
-                }
-                for (int i = 0; i < facecount; i++)
-                {
-                    if (Version == 4)
-                    {
-                        Model.Faces.Add(readFile.ReadUInt16());
-                    } else
-                    {
-                        Model.Faces.Add(readFile.ReadUInt32());
-                    }
-                    
-                }
-            }
-
-            uint subsetcount = readFile.ReadUInt32();
-
-            for (int i = 0; i < subsetcount; i++)
-            {
-                GMDCSubset subset = new();
-                uint vertexcount = readFile.ReadUInt32();
-                if (vertexcount > 0)
-                {
-                    uint facecount = readFile.ReadUInt32();
-                    for (int v = 0; v < vertcount; v++)                
-                    {
-                        Godot.Vector3 v3 = new();
-                        v3.X = readFile.ReadUInt32();
-                        v3.Y = readFile.ReadUInt32();
-                        v3.Z = readFile.ReadUInt32();
-                        subset.Verts.Add(v3);                    
-                    }
-                    for (int f = 0; f < facecount; f++)
+                    for (int c = 0; c < linkage.SubmodelVertexCount; c++)
                     {
                         if (Version == 4)
                         {
-                            subset.Faces.Add(readFile.ReadUInt16());
-                        } else
-                        {
-                            subset.Faces.Add(readFile.ReadUInt32());
+                            linkage.SubmodelIndexValues.Add(readFile.ReadUInt16());
                         }
-                        
+                        else
+                        {
+                            linkage.SubmodelIndexValues.Add(readFile.ReadUInt32());
+                        }
                     }
-                }
-                Subsets.Add(subset);
-            }*/
 
-            GMDCData.Groups = Groups;
-            GMDCData.ToElements(IElements);
-            GMDCData.Linkages = Linkages;
-            GMDCData.Model = Model;
-            GMDCData.Subsets = Subsets;
+                    linkage.SubmodelNormalsCount = readFile.ReadUInt32();
+
+                    for (int c = 0; c < linkage.SubmodelNormalsCount; c++)
+                    {
+                        if (Version == 4)
+                        {
+                            linkage.NormalsIndexValues.Add(readFile.ReadUInt16());
+                        }
+                        else
+                        {
+                            linkage.NormalsIndexValues.Add(readFile.ReadUInt32());
+                        }
+                    }
+                    linkage.SubmodelUVCount = readFile.ReadUInt32();
+
+                    for (int c = 0; c < linkage.SubmodelNormalsCount; c++)
+                    {
+                        if (Version == 4)
+                        {
+                            linkage.UVIndexValues.Add(readFile.ReadUInt16());
+                        }
+                        else
+                        {
+                            linkage.UVIndexValues.Add(readFile.ReadUInt32());
+                        }
+                    }
+                    Linkages.Add(linkage);
+                    if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("{0}", linkage.ToString()));
+
+                }
+
+                //get groups
+
+                uint groupCount = readFile.ReadUInt32();
+
+                for (int g = 0; g < groupCount; g++)
+                {
+                    GMDCGroup group = new();
+                    group.PrimitiveType = readFile.ReadUInt32();
+                    group.LinkIndex = readFile.ReadUInt32();
+                    group.ObjectName = readFile.ReadString();
+                    group.FaceCount = readFile.ReadUInt32();
+                    int gg = 0;
+                    Godot.Vector3 face = new();
+                    for (int fc = 0; fc < group.FaceCount; fc++)
+                    {
+                        if (Version == 4)
+                        {
+                            if (gg == 0)
+                            {
+                                face.X = readFile.ReadUInt16();
+                            }
+                            else if (gg == 1)
+                            {
+                                face.Y = readFile.ReadUInt16();
+                            }
+                            else if (gg == 2)
+                            {
+                                face.Z = readFile.ReadUInt16();
+                            }
+                        }
+                        else
+                        {
+                            if (gg == 0)
+                            {
+                                face.X = readFile.ReadUInt32();
+                            }
+                            else if (gg == 1)
+                            {
+                                face.Y = readFile.ReadUInt32();
+                            }
+                            else if (gg == 2)
+                            {
+                                face.Z = readFile.ReadUInt32();
+                            }
+                        }
+                        if (gg == 2)
+                        {
+                            group.Faces.Add(face);
+                            gg = 0;
+                        }
+                        else
+                        {
+                            gg++;
+                        }
+                    }
+
+                    group.OpacityAmount = readFile.ReadUInt32().ToString("X8");
+                    if (Version != 1)
+                    {
+                        uint subsetCount = readFile.ReadUInt32();
+                        for (int s = 0; s < subsetCount; s++)
+                        {
+                            if (Version == 4)
+                            {
+                                group.ModelSubsetReference.Add(readFile.ReadUInt16());
+                            }
+                            else
+                            {
+                                group.ModelSubsetReference.Add(readFile.ReadUInt32());
+                            }
+                        }
+                    }
+                    Groups.Add(group);
+                }
+                
+
+                GMDCData.Groups = Groups;
+                GMDCData.ToElements(IElements);
+                GMDCData.Linkages = Linkages;
+                GMDCData.Model = Model;
+                GMDCData.Subsets = Subsets;
+            }
         }
 
         private IGMDCElement ReadItems(IGMDCElement element)
@@ -7849,7 +7418,7 @@ namespace SimsCCManager.PackageReaders
                         return ReadItems(element10);
                 }
             }
-            readFile.ReadUInt32();
+            try { readFile.ReadUInt32(); } catch {}
             return new GMDCElement();
         }
 
@@ -9113,6 +8682,9 @@ namespace SimsCCManager.PackageReaders
         public List<SHPELod> LODs {get; set;} = new();
         public uint MaterialCount {get; set;}
         public List<SHPEMaterial> Materials {get; set;} = new();
+        public uint ItemCount {get; set;}
+        public List<SHPEItem> Items {get; set;} = new();
+
     }
 
     public class SHPEMaterial : IIndexEntry
@@ -9138,6 +8710,15 @@ namespace SimsCCManager.PackageReaders
         {
             return string.Format("Group: {0}, MaterialDefinition: {1}", Group, MaterialDefinition);
         }
+    }
+
+    public class SHPEItem
+    {
+        public int Unknown1 {get; set;}
+        public byte Unknown2 {get; set;}
+        public int Unknown3 {get; set;}
+        public byte Unknown4 {get; set;}
+        public string FileName {get; set;}
     }
 
     public class SHPELod
@@ -9300,7 +8881,8 @@ namespace SimsCCManager.PackageReaders
             GroupID = entry.GroupID; 
             InstanceID = entry.InstanceID; 
         }
-        public string FullTXTRName { get; set; }
+        private string _fulltxtrname;
+        public string FullTXTRName { get { return _fulltxtrname; } set { _fulltxtrname = value; } }
         public string GUID
         {
             get
@@ -10760,4 +10342,8 @@ namespace SimsCCManager.PackageReaders
             return elements;
         }
     }
+    
+
 }
+
+

@@ -7,6 +7,8 @@
     <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>  
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="AuroraLib.Compression-Extended" Version="2.0.0" />
+    <PackageReference Include="AuroraLib.Core" Version="1.7.0" />
     <PackageReference Include="CsvHelper" Version="33.1.0" />
     <PackageReference Include="morelinq" Version="4.3.0" />
     <PackageReference Include="SharpZipLib" Version="1.4.2" />

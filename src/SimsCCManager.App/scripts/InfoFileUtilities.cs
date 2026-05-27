@@ -24,13 +24,23 @@ namespace SimsCCManager.InfoFiles
 
             simsPackage = GetData(xdoc, simsPackage).Result;
 
-            /*simsPackage.Identifier = Guid.Parse(xdoc.Descendants().First(x => x.Name == "Identifier").Value);
+            simsPackage.Identifier = Guid.Parse(xdoc.Descendants().First(x => x.Name == "Identifier").Value);
             simsPackage.Location = xdoc.Descendants().First(x => x.Name == "Location").Value;
             simsPackage.HasBeenRead = bool.Parse(xdoc.Descendants().First(x => x.Name == "HasBeenRead").Value);
             simsPackage.StandAlone = bool.Parse(xdoc.Descendants().First(x => x.Name == "StandAlone").Value);
-            */
+            simsPackage.Type = xdoc.Descendants().First(x => x.Name == "Type").Value;
+            simsPackage.Orphan = bool.Parse(xdoc.Descendants().First(x => x.Name == "Orphan").Value);
+            simsPackage.Mesh = bool.Parse(xdoc.Descendants().First(x => x.Name == "Mesh").Value);
+            simsPackage.Recolor = bool.Parse(xdoc.Descendants().First(x => x.Name == "Recolor").Value);
+            simsPackage.GameMod = bool.Parse(xdoc.Descendants().First(x => x.Name == "GameMod").Value);
+            simsPackage.RootMod = bool.Parse(xdoc.Descendants().First(x => x.Name == "RootMod").Value);
+            simsPackage.WrongGame = bool.Parse(xdoc.Descendants().First(x => x.Name == "WrongGame").Value);
+            simsPackage.Broken = bool.Parse(xdoc.Descendants().First(x => x.Name == "Broken").Value);
+
+
             return simsPackage;
         }
+        
         public static async Task<SimsPackage> ReadBasicData(DirectoryInfo fi)
         {
             SimsPackage simsPackage = new();
@@ -38,11 +48,20 @@ namespace SimsCCManager.InfoFiles
 
             simsPackage = GetData(xdoc, simsPackage).Result;
 
-            /*simsPackage.Identifier = Guid.Parse(xdoc.Descendants().First(x => x.Name == "Identifier").Value);
+            simsPackage.Identifier = Guid.Parse(xdoc.Descendants().First(x => x.Name == "Identifier").Value);
             simsPackage.Location = xdoc.Descendants().First(x => x.Name == "Location").Value;
             simsPackage.HasBeenRead = bool.Parse(xdoc.Descendants().First(x => x.Name == "HasBeenRead").Value);
             simsPackage.StandAlone = bool.Parse(xdoc.Descendants().First(x => x.Name == "StandAlone").Value);
-            */
+            simsPackage.Type = xdoc.Descendants().First(x => x.Name == "Type").Value;
+            simsPackage.Orphan = bool.Parse(xdoc.Descendants().First(x => x.Name == "Orphan").Value);
+            simsPackage.Mesh = bool.Parse(xdoc.Descendants().First(x => x.Name == "Mesh").Value);
+            simsPackage.Recolor = bool.Parse(xdoc.Descendants().First(x => x.Name == "Recolor").Value);
+            simsPackage.GameMod = bool.Parse(xdoc.Descendants().First(x => x.Name == "GameMod").Value);
+            simsPackage.RootMod = bool.Parse(xdoc.Descendants().First(x => x.Name == "RootMod").Value);
+            simsPackage.WrongGame = bool.Parse(xdoc.Descendants().First(x => x.Name == "WrongGame").Value);
+            simsPackage.Broken = bool.Parse(xdoc.Descendants().First(x => x.Name == "Broken").Value);
+
+
             return simsPackage;
         }
 
@@ -182,6 +201,43 @@ namespace SimsCCManager.InfoFiles
         public static SimsPackage ReadPackageDetails(SimsPackage package, GameInstance instance, DirectoryInfo Dir, bool SubFolder = false)
         {
             if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Checking {0} for folders matching neigborhoods or lighting.", package.FileName));
+            
+            
+            
+            package.IsDirectory = true;
+            if (!SubFolder)
+            {
+                package.StandAlone = true;
+            }
+            else
+            {
+                package.StandAlone = false;
+            }
+            package.FileName = Dir.Name;
+            package.Game = instance.GameChoice;
+            switch (package.Game)
+            {
+                case SimsGames.Sims2:
+                    package.Sims2Data = new();
+                    package = S2CheckFolderTypes(package);
+                    break;
+                case SimsGames.Sims3:
+                    package.Sims3Data = new();
+                    break;
+                case SimsGames.Sims4:
+                    package.Sims4Data = new();
+                    break;
+            }
+            package.DateCreated = Directory.GetCreationTime(package.Location);
+            package.DateUpdated = DateTime.Now;
+            package.HasBeenRead = true;
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Returning {0} as read.", package.FileName));
+            package.WriteXML();
+            return package;
+        }
+
+        public static SimsPackage S2CheckFolderTypes(SimsPackage package)
+        {
             List<string> folders = [..Directory.EnumerateDirectories(package.Location, "*.*", SearchOption.AllDirectories)];
             List<string> files = [..Directory.EnumerateFiles(package.Location, "*.*", SearchOption.AllDirectories)];
 
@@ -204,7 +260,7 @@ namespace SimsCCManager.InfoFiles
             if (folders.Any(x => x.Contains("Lots", StringComparison.InvariantCultureIgnoreCase) || files.Any(x => x.Contains("Neighborhood", StringComparison.InvariantCultureIgnoreCase))))
             {                
                 package.Type = "Neighborhood Template";                
-            } else if (files.Any(x => x.Contains("RLS-dD-BON", StringComparison.InvariantCultureIgnoreCase) || files.Any(x => x.Contains("RLS-Shaders", StringComparison.InvariantCultureIgnoreCase) || files.Any(x => x.Contains("Lighting", StringComparison.InvariantCultureIgnoreCase)))))
+            } else if (files.Any(x => x.Contains("RLS-", StringComparison.InvariantCultureIgnoreCase) || files.Any(x => x.Contains("RLS-Shaders", StringComparison.InvariantCultureIgnoreCase) || files.Any(x => x.Contains("Lighting", StringComparison.InvariantCultureIgnoreCase)))))
             {
                 package.Type = "Lighting Mod";
             } else if (folders.Any(x => x.Contains("STORE_LIGHTS", StringComparison.InvariantCultureIgnoreCase)))
@@ -218,36 +274,6 @@ namespace SimsCCManager.InfoFiles
                 foldersList = foldersList.Trim(',');
                 if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Folders list - {0} - and files list {1} - came up with no matches for lighting or neighborhoods in {2}", foldersList, filesList, package.FileName));
             }
-            
-            
-            package.IsDirectory = true;
-            if (!SubFolder)
-            {
-                package.StandAlone = true;
-            }
-            else
-            {
-                package.StandAlone = false;
-            }
-            package.FileName = Dir.Name;
-            package.Game = instance.GameChoice;
-            switch (package.Game)
-            {
-                case SimsGames.Sims2:
-                    package.Sims2Data = new();
-                    break;
-                case SimsGames.Sims3:
-                    package.Sims3Data = new();
-                    break;
-                case SimsGames.Sims4:
-                    package.Sims4Data = new();
-                    break;
-            }
-            package.DateCreated = Directory.GetCreationTime(package.Location);
-            package.DateUpdated = DateTime.Now;
-            package.HasBeenRead = true;
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Returning {0} as read.", package.FileName));
-            package.WriteXML();
             return package;
         }
 

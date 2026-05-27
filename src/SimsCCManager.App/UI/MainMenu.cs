@@ -3029,7 +3029,7 @@ public partial class MainMenu : MarginContainer
 
     private void DevClicked()
     {     
-        string file = @"M:\Sims CC Manager\Instances\The Sims 2\Packages\LC_GP02_JooseSeriesIslandStyleCounter5B.package";
+        string file = @"M:\Sims CC Manager\Instances\The Sims 2\Packages\LC_RuinedCastleE.package";
         string outfile = @"M:\Sims CC Manager\Instances\The Sims 2\Packages\13pS2FarmhouseCandleHolder1.package.info.txt";
         
         SimsPackage pckage = new() { Location = file };

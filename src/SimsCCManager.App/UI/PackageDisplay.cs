@@ -302,7 +302,18 @@ PackedFile Packages/////*.package
                 if (UIAllModsContainer.ModsRead != modsread)
                 {
                     modsread = UIAllModsContainer.ModsRead;
-                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("PACKAGE READING STATUS UPDATE: Packages: {0}, Read: {1} (UI says {2}), left to read: {3}.", ThisInstance.Packages.Count, ThisInstance.Packages.Count(x => x.HasBeenRead), UIAllModsContainer.ModsRead, ThisInstance.Packages.Count(x => !x.HasBeenRead)));
+                    if (ThisInstance.Packages.Count(x => !x.HasBeenRead) < 50)
+                    {
+                        StringBuilder sb = new();
+                        foreach (SimsPackage p in ThisInstance.Packages.Where(x => !x.HasBeenRead))
+                        {
+                            sb.AppendLine(p.FileName);
+                        }
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("PACKAGE READING STATUS UPDATE: Packages: {0}, Read: {1} (UI says {2}), left to read: {3} ({4}).", ThisInstance.Packages.Count, ThisInstance.Packages.Count(x => x.HasBeenRead), UIAllModsContainer.ModsRead, ThisInstance.Packages.Count(x => !x.HasBeenRead), sb.ToString()));
+                    } else
+                    {
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("PACKAGE READING STATUS UPDATE: Packages: {0}, Read: {1} (UI says {2}), left to read: {3}.", ThisInstance.Packages.Count, ThisInstance.Packages.Count(x => x.HasBeenRead), UIAllModsContainer.ModsRead, ThisInstance.Packages.Count(x => !x.HasBeenRead)));
+                    }                    
                 }
             }
         }){IsBackground = true}.Start();
