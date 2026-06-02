@@ -19,7 +19,7 @@ bgcolor = [NodePath("EditDetails_Options/BGColorRect3"), NodePath("CategoryOptio
 bordercolor = [NodePath("EditDetails_Options/Panel3/BorderColorRect"), NodePath("CategoryOptions/Panel2/BorderColorRect"), NodePath("MarginContainer/Panel/BorderColorRect")]
 CategoryOptions = NodePath("CategoryOptions")
 EditDetails = NodePath("EditDetails_Options")
-Categorylist = NodePath("CategoryOptions/VBoxContainer")
+Categorylist = NodePath("CategoryOptions/ScrollContainer/VBoxContainer")
 MakeRoot = NodePath("MarginContainer/MarginContainer/VBoxContainer/MakeRoot")
 Fave = NodePath("MarginContainer/MarginContainer/VBoxContainer/Fave")
 WrongGame = NodePath("MarginContainer/MarginContainer/VBoxContainer/WrongGame")
@@ -116,8 +116,13 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.23352596, 0.5170328, 0.41327563, 1)
 
-[node name="VBoxContainer" type="VBoxContainer" parent="CategoryOptions"]
+[node name="ScrollContainer" type="ScrollContainer" parent="CategoryOptions"]
 layout_mode = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CategoryOptions/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
 
 [node name="EditDetails_Options" type="MarginContainer" parent="."]
 visible = false

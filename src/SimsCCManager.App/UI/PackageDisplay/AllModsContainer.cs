@@ -414,8 +414,9 @@ public partial class AllModsContainer : MarginContainer
 
 
     private void ShowRCMenu(HeaderClickMenuHolder menu)
-    {
-        packageDisplay.AddChild(menu);
+    {        
+        packageDisplay.AddChild(menu);       
+        
     }
 
 
@@ -906,8 +907,6 @@ public partial class AllModsContainer : MarginContainer
 
     public void ReplaceFiles(List<SimsPackage> newFiles, List<SimsPackage> removedFiles)
     {
-        ConcurrentBag<Task> runningTasks = new();
-        int completedTasks = 0;
         ConcurrentBag<DataGridRow> rows = new();
         new Thread(() => {        
             if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Creating rows"));
@@ -916,7 +915,7 @@ public partial class AllModsContainer : MarginContainer
             {
                 int i = 0;
                 if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Packages: {0}", Packages.Count));
-                foreach (SimsPackage pack in newFiles){
+                Parallel.ForEach(newFiles, pack => {
                     if (pack.StandAlone)
                     {                    
                         Task t = Task.Run( () => {
@@ -925,13 +924,12 @@ public partial class AllModsContainer : MarginContainer
                             if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("-- Is Subrow: {0}\n -- Has Subitems: {1}", newrow.SubRow, newrow.SubRowItems.Count));
                             rows.Add(newrow);                        
                         });
-                        i++;
-                        runningTasks.Add(t);                                         
+                        i++;                                       
                     }   else
                     {
                         if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Row {0}: {1} wasn't standalone.", i, pack.FileName));
                     }         
-                }
+                });
             }
             
             if (removedFiles.Count > 0)
@@ -941,31 +939,17 @@ public partial class AllModsContainer : MarginContainer
                     if (DataGrid.RowData.Any(x => x.Identifier == pack.Identifier)) DataGrid.RowData.Remove(DataGrid.RowData.First(x => x.Identifier == pack.Identifier));
                 }  
             }
-            Task w = Task.Run(() => {
-                Thread.Sleep(5);
-            });
-            runningTasks.Add(w);
-
-
-            while (runningTasks.Any(x => !x.IsCompleted)){
-                if (completedTasks != runningTasks.Count(x => x.IsCompleted)) {
-                    completedTasks = runningTasks.Count(x => x.IsCompleted);
-                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0} tasks in runningTasks, {1} completed", runningTasks.Count, completedTasks));
-                }
-            }
 
             if (newFiles.Count > 0) { 
                 if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Adding {0} rows to grid.", rows.Count));
                 List<DataGridRow> _rows = rows.OrderBy(x => x.RowRef).ToList();
                 List<DataGridRow> rowCollection = new();
-                if (DataGrid.RowData != null) if (DataGrid.RowData.Count > 0) rowCollection = [..DataGrid.RowData];
-                rowCollection.AddRange([.._rows]);                
-                DataGrid.RefreshFileList(rowCollection);
+                if (DataGrid.RowData != null) { DataGrid.RowData.AddRange(_rows); } else { DataGrid.RowData = _rows; }
+                DataGrid.RefreshFileList(DataGrid.RowData);
             } else if (removedFiles.Count > 0)
             {
                 DataGrid.RefreshFileList(DataGrid.RowData);
-            } else DGReloadDone();        
-            
+            } else DGReloadDone();            
         }){IsBackground = true}.Start();
     }
     
@@ -1300,6 +1284,11 @@ public partial class AllModsContainer : MarginContainer
             {
                 if (@event is InputEventMouseButton mouse && mouse.ButtonIndex == MouseButton.Right && mouse.Pressed)
                 {
+                    /*if (StillProcessingPackages)
+                    {
+                        packageDisplay.RestrictedUseWindow.Visible = true;
+                        return;
+                    }*/
                     if (SelectedPackages.Count != 0)
                     {
                         SimsPackage package = SelectedPackages.First(x => x.Identifier == SelectedPackages[0].Identifier);
@@ -1434,8 +1423,14 @@ public partial class AllModsContainer : MarginContainer
         {
             if (DataGrid.IsMouseInGrid() && !DataGrid.IsMouseInHeaderBar())
             {
+                
                 if (@event is InputEventMouseButton mouse && mouse.ButtonIndex == MouseButton.Right && mouse.Pressed)
                 {
+                    /*if (StillProcessingPackages)
+                    {
+                        packageDisplay.RestrictedUseWindow.Visible = true;
+                        return;
+                    }*/
                     if (SelectedItems.Count != 0)
                     {
                         SimsPackage package = Packages.First(x => x.Identifier == SelectedItems[0].Identifier);
@@ -1605,123 +1600,256 @@ public partial class AllModsContainer : MarginContainer
 
     private void CategoryFromFolder()
     {
-        if (ViewSwap)
+        packageDisplay.TogglePleaseWait(true);
+        if (packageDisplay.ReadingPackageDetails)
         {
-            for (int i = 0; i < SelectedPackages.Count; i++)
+            packageDisplay.LoopState.Break();
+            packageDisplay.ReadingPackageDetails = false;
+        }
+        new Thread(() => {
+        
+            if (ViewSwap)
             {
-                SimsPackage package = Packages.First(x => x.Identifier == SelectedPackages[i].Identifier);
-                
-                if (Directory.Exists(package.Location))
+                if (GlobalVariables.DebugMultiThread)
                 {
-                    DirectoryInfo dir = new(package.Location);
-                    Category cat = new(); 
-                    cat.Name = dir.Name;
-                    if (packageDisplay.ThisInstance.Categories.Any(x => x.Name == cat.Name))
+                    for (int i = 0; i < SelectedPackages.Count; i++)
                     {
-                        cat.Name = string.Format("{0}_(1)", cat.Name);
-                    }
-                    cat.Description = string.Format("Category automatically created from folder \"{0}\".", dir.Name);
-                    cat.SetFolderLocation(packageDisplay.ThisInstance.InstanceFolders.InstancePackagesFolder);
-                    if (!Directory.Exists(cat.FolderLocation)) Directory.CreateDirectory(cat.FolderLocation);
-                    packageDisplay.ThisInstance.Categories.Add(cat);
-
-                    foreach (string file in Directory.EnumerateFiles(package.Location, "*.*", SearchOption.AllDirectories))
-                    {
-                        FileInfo f = new(file);
-                        if (f.Extension != ".info")
+                        SimsPackage package = Packages.First(x => x.Identifier == SelectedPackages[i].Identifier);
+                        
+                        if (Directory.Exists(package.Location))
                         {
-                            string filename = f.Name;
-                            string newloc = Path.Combine(cat.FolderLocation, filename);
-                            newloc = Utilities.IncrementName(newloc);
-                            File.Move(file, newloc);
-                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Moving file {0} to {1}", file, newloc));
-                            if (Packages.Any(x => x.Location == file))
+                            DirectoryInfo dir = new(package.Location);
+                            Category cat = new(); 
+                            cat.Name = dir.Name;
+                            if (packageDisplay.ThisInstance.Categories.Any(x => x.Name == cat.Name))
                             {
-                                SimsPackage movepackage = Packages.First(x => x.Location == file);
-                                movepackage.MovePackage(cat.FolderLocation);
+                                cat.Name = string.Format("{0}_(1)", cat.Name);
                             }
+                            cat.Description = string.Format("Category automatically created from folder \"{0}\".", dir.Name);
+                            cat.SetFolderLocation(packageDisplay.ThisInstance.InstanceFolders.InstancePackagesFolder);
+                            if (!Directory.Exists(cat.FolderLocation)) Directory.CreateDirectory(cat.FolderLocation);
+                            packageDisplay.ThisInstance.Categories.Add(cat);
+                            packageDisplay.ThisInstance.WriteXML();
+
+                            foreach (string file in Directory.EnumerateFiles(package.Location, "*.*", SearchOption.AllDirectories))
+                            {
+                                FileInfo f = new(file);
+                                if (f.Extension != ".info")
+                                {
+                                    string filename = f.Name;
+                                    string newloc = Path.Combine(cat.FolderLocation, filename);
+                                    newloc = Utilities.IncrementName(newloc);
+                                    File.Move(file, newloc);
+                                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Moving file {0} to {1}", file, newloc));
+                                    if (Packages.Any(x => x.Location == file))
+                                    {
+                                        SimsPackage movepackage = Packages.First(x => x.Location == file);
+                                        movepackage.MovePackage(cat.FolderLocation);
+                                    }
+                                } else
+                                {
+                                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Deleting info file {0}", file));
+                                    File.Delete(file);
+                                }                        
+                            }
+
+                            foreach (string folder in Directory.EnumerateDirectories(package.Location, "*.*", SearchOption.AllDirectories))
+                            {
+                                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Deleting directory {0}", folder));
+                                Directory.Delete(folder);
+                            }
+
+                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Deleting directory {0}", package.Location));
+                            Directory.Delete(package.Location);
+                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Deleting file {0}", package.InfoFile));
+                            File.Delete(package.InfoFile);                        
                         } else
                         {
-                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Deleting info file {0}", file));
-                            File.Delete(file);
-                        }                        
+                            //not a folder!
+                        }               
                     }
-
-                    foreach (string folder in Directory.EnumerateDirectories(package.Location, "*.*", SearchOption.AllDirectories))
-                    {
-                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Deleting directory {0}", folder));
-                        Directory.Delete(folder);
-                    }
-
-                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Deleting directory {0}", package.Location));
-                    Directory.Delete(package.Location);
-                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Deleting file {0}", package.InfoFile));
-                    File.Delete(package.InfoFile);                        
                 } else
                 {
-                    //not a folder!
-                }               
-            }
-            packageDisplay.RefreshFiles(); 
-        } else
-        {
-            for (int i = 0; i < SelectedItems.Count; i++)
-            {
-                SimsPackage package = Packages.First(x => x.Identifier == SelectedItems[i].Identifier);
-                
-                if (Directory.Exists(package.Location))
-                {
-                    DirectoryInfo dir = new(package.Location);
-                    Category cat = new(); 
-                    cat.Name = dir.Name;
-                    if (packageDisplay.ThisInstance.Categories.Any(x => x.Name == cat.Name))
+                    Parallel.For (0, SelectedPackages.Count, GlobalVariables.ParallelSettings, i =>
                     {
-                        cat.Name = string.Format("{0}_(1)", cat.Name);
-                    }
-                    cat.Description = string.Format("Category automatically created from folder \"{0}\".", dir.Name);
-                    cat.SetFolderLocation(packageDisplay.ThisInstance.InstanceFolders.InstancePackagesFolder);
-                    if (!Directory.Exists(cat.FolderLocation)) Directory.CreateDirectory(cat.FolderLocation);
-                    packageDisplay.ThisInstance.Categories.Add(cat);
-
-                    foreach (string file in Directory.EnumerateFiles(package.Location, "*.*", SearchOption.AllDirectories))
-                    {
-                        FileInfo f = new(file);
-                        if (f.Extension != ".info")
+                        SimsPackage package = Packages.First(x => x.Identifier == SelectedPackages[i].Identifier);
+                        
+                        if (Directory.Exists(package.Location))
                         {
-                            string filename = f.Name;
-                            string newloc = Path.Combine(cat.FolderLocation, filename);
-                            newloc = Utilities.IncrementName(newloc);
-                            File.Move(file, newloc);
-                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Moving file {0} to {1}", file, newloc));
-                            if (Packages.Any(x => x.Location == file))
+                            DirectoryInfo dir = new(package.Location);
+                            Category cat = new(); 
+                            cat.Name = dir.Name;
+                            if (packageDisplay.ThisInstance.Categories.Any(x => x.Name == cat.Name))
                             {
-                                SimsPackage movepackage = Packages.First(x => x.Location == file);
-                                movepackage.MovePackage(cat.FolderLocation);                                
+                                cat.Name = string.Format("{0}_(1)", cat.Name);
                             }
+                            cat.Description = string.Format("Category automatically created from folder \"{0}\".", dir.Name);
+                            cat.SetFolderLocation(packageDisplay.ThisInstance.InstanceFolders.InstancePackagesFolder);
+                            if (!Directory.Exists(cat.FolderLocation)) Directory.CreateDirectory(cat.FolderLocation);
+                            packageDisplay.ThisInstance.Categories.Add(cat);
+                            packageDisplay.ThisInstance.WriteXML();
+                            packageDisplay.ThisInstance.WriteXML();
+
+                            Parallel.ForEach(Directory.EnumerateFiles(package.Location, "*.*", SearchOption.AllDirectories), GlobalVariables.ParallelSettings, file =>
+                            {
+                                FileInfo f = new(file);
+                                if (f.Extension != ".info")
+                                {
+                                    string filename = f.Name;
+                                    string newloc = Path.Combine(cat.FolderLocation, filename);
+                                    newloc = Utilities.IncrementName(newloc);
+                                    File.Move(file, newloc);
+                                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Moving file {0} to {1}", file, newloc));
+                                    if (Packages.Any(x => x.Location == file))
+                                    {
+                                        SimsPackage movepackage = Packages.First(x => x.Location == file);
+                                        movepackage.MovePackage(cat.FolderLocation);
+                                    }
+                                } else
+                                {
+                                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Deleting info file {0}", file));
+                                    File.Delete(file);
+                                }                        
+                            });
+
+                            Parallel.ForEach(Directory.EnumerateDirectories(package.Location, "*.*", SearchOption.AllDirectories), GlobalVariables.ParallelSettings, folder => 
+                            {
+                                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Deleting directory {0}", folder));
+                                Directory.Delete(folder);
+                            });
+
+                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Deleting directory {0}", package.Location));
+                            Directory.Delete(package.Location);
+                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Deleting file {0}", package.InfoFile));
+                            File.Delete(package.InfoFile);                        
                         } else
                         {
-                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Deleting info file {0}", file));
-                            File.Delete(file);
-                        }                        
-                    }
-
-                    foreach (string folder in Directory.EnumerateDirectories(package.Location, "*.*", SearchOption.AllDirectories))
+                            //not a folder!
+                        }               
+                    });
+                }            
+            } else
+            {
+                if (GlobalVariables.DebugMultiThread)
+                {
+                    for (int i = 0; i < SelectedItems.Count; i++)
                     {
-                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Deleting directory {0}", folder));
-                        Directory.Delete(folder);
-                    }
+                        SimsPackage package = Packages.First(x => x.Identifier == SelectedItems[i].Identifier);
+                        
+                        if (Directory.Exists(package.Location))
+                        {
+                            DirectoryInfo dir = new(package.Location);
+                            Category cat = new(); 
+                            cat.Name = dir.Name;
+                            if (packageDisplay.ThisInstance.Categories.Any(x => x.Name == cat.Name))
+                            {
+                                cat.Name = string.Format("{0}_(1)", cat.Name);
+                            }
+                            cat.Description = string.Format("Category automatically created from folder \"{0}\".", dir.Name);
+                            cat.SetFolderLocation(packageDisplay.ThisInstance.InstanceFolders.InstancePackagesFolder);
+                            if (!Directory.Exists(cat.FolderLocation)) Directory.CreateDirectory(cat.FolderLocation);
+                            packageDisplay.ThisInstance.Categories.Add(cat);
+                            packageDisplay.ThisInstance.WriteXML();
 
-                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Deleting directory {0}", package.Location));
-                    Directory.Delete(package.Location);
-                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Deleting file {0}", package.InfoFile));
-                    File.Delete(package.InfoFile);  
+                            foreach (string file in Directory.EnumerateFiles(package.Location, "*.*", SearchOption.AllDirectories))
+                            {
+                                FileInfo f = new(file);
+                                if (f.Extension != ".info")
+                                {
+                                    string filename = f.Name;
+                                    string newloc = Path.Combine(cat.FolderLocation, filename);
+                                    newloc = Utilities.IncrementName(newloc);
+                                    File.Move(file, newloc);
+                                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Moving file {0} to {1}", file, newloc));
+                                    if (Packages.Any(x => x.Location == file))
+                                    {
+                                        SimsPackage movepackage = Packages.First(x => x.Location == file);
+                                        movepackage.MovePackage(cat.FolderLocation);                                
+                                    }
+                                } else
+                                {
+                                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Deleting info file {0}", file));
+                                    File.Delete(file);
+                                }                        
+                            }
+
+                            foreach (string folder in Directory.EnumerateDirectories(package.Location, "*.*", SearchOption.TopDirectoryOnly))
+                            {
+                                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Deleting directory {0}", folder));
+                                Utilities.DeleteFolderTree(folder);//Directory.Delete(folder);
+                            }
+
+                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Deleting directory {0}", package.Location));
+                            Utilities.DeleteFolderTree(package.Location);
+                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Deleting file {0}", package.InfoFile));
+                            File.Delete(package.InfoFile);  
+                        } else
+                        {
+                            //not a folder!
+                        }       
+                    }
                 } else
                 {
-                    //not a folder!
-                }       
-            }
-            packageDisplay.RefreshFiles(); 
-        }  
+                    Parallel.For(0, SelectedItems.Count, GlobalVariables.ParallelSettings, i =>
+                    {
+                        SimsPackage package = Packages.First(x => x.Identifier == SelectedItems[i].Identifier);
+                        
+                        if (Directory.Exists(package.Location))
+                        {
+                            DirectoryInfo dir = new(package.Location);
+                            Category cat = new(); 
+                            cat.Name = dir.Name;
+                            if (packageDisplay.ThisInstance.Categories.Any(x => x.Name == cat.Name))
+                            {
+                                cat.Name = string.Format("{0}_(1)", cat.Name);
+                            }
+                            cat.Description = string.Format("Category automatically created from folder \"{0}\".", dir.Name);
+                            cat.SetFolderLocation(packageDisplay.ThisInstance.InstanceFolders.InstancePackagesFolder);
+                            if (!Directory.Exists(cat.FolderLocation)) Directory.CreateDirectory(cat.FolderLocation);
+                            packageDisplay.ThisInstance.Categories.Add(cat);
+
+                            foreach (string file in Directory.EnumerateFiles(package.Location, "*.*", SearchOption.AllDirectories))
+                            {
+                                FileInfo f = new(file);
+                                if (f.Extension != ".info")
+                                {
+                                    string filename = f.Name;
+                                    string newloc = Path.Combine(cat.FolderLocation, filename);
+                                    newloc = Utilities.IncrementName(newloc);
+                                    File.Move(file, newloc);
+                                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Moving file {0} to {1}", file, newloc));
+                                    if (Packages.Any(x => x.Location == file))
+                                    {
+                                        SimsPackage movepackage = Packages.First(x => x.Location == file);
+                                        movepackage.MovePackage(cat.FolderLocation);                                
+                                    }
+                                } else
+                                {
+                                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Deleting info file {0}", file));
+                                    File.Delete(file);
+                                }                        
+                            }
+
+                            foreach (string folder in Directory.EnumerateDirectories(package.Location, "*.*", SearchOption.TopDirectoryOnly))
+                            {
+                                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Deleting directory {0}", folder));
+                                Utilities.DeleteFolderTree(folder);//Directory.Delete(folder);
+                            }
+
+                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Deleting directory {0}", package.Location));
+                            Utilities.DeleteFolderTree(package.Location);
+                            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Deleting file {0}", package.InfoFile));
+                            File.Delete(package.InfoFile);  
+                        } else
+                        {
+                            //not a folder!
+                        }       
+                    });
+                }
+            }  
+            packageDisplay.TogglePleaseWait(false);    
+            packageDisplay.RefreshFiles();     
+        }){IsBackground = true}.Start();
     }
 
 
@@ -2245,9 +2373,7 @@ public partial class AllModsContainer : MarginContainer
                         package.Notes = text;
                     break;
                     case 3:
-                        if (package.Game == SimsGames.Sims2) package.Sims2Data.AltType = text;
-                        if (package.Game == SimsGames.Sims3) package.Sims3Data.AltType = text;
-                        if (package.Game == SimsGames.Sims4) package.Sims4Data.AltType = text;
+                        package.Type = text;
                     break;
                 }
 
@@ -2272,9 +2398,7 @@ public partial class AllModsContainer : MarginContainer
                         package.Notes = text;
                     break;
                     case 3:
-                        if (package.Game == SimsGames.Sims2) package.Sims2Data.AltType = text;
-                        if (package.Game == SimsGames.Sims3) package.Sims3Data.AltType = text;
-                        if (package.Game == SimsGames.Sims4) package.Sims4Data.AltType = text;
+                        package.Type = text;
                     break;
                 }
 

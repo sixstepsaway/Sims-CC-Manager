@@ -150,6 +150,8 @@ PackedFile Packages/////*.package
     [Export]
     public CustomPopupWindow AdminWarningWindow;
     [Export]
+    public CustomPopupWindow RestrictedUseWindow;
+    [Export]
     MarginContainer PleaseWaitWindow;
     [Export]
     Label PleaseWaitLabel;
@@ -223,7 +225,12 @@ PackedFile Packages/////*.package
         PleaseWaitBG.Color = GlobalVariables.LoadedTheme.BackgroundColor;
         PleaseWaitLabel.AddThemeColorOverride("font_color", GlobalVariables.LoadedTheme.MainTextColor);
 
-
+        RestrictedUseWindow.Visible = false;
+        RestrictedUseWindow.UseBrowseOption = false;
+        RestrictedUseWindow.WindowMessage.Text = "SCCM is currently scanning packages and is in restricted use mode until it is done. Please wait until all packages are scanned to change categories, assign root mods or other package changes.\nGame can still be loaded in this mode.";
+        RestrictedUseWindow.NoButton.Visible = false;
+        RestrictedUseWindow.YesButton.Text = "OK";
+        RestrictedUseWindow.YesButton.Pressed += () => { RestrictedUseWindow.Visible = false; };
 
         /*PackagesFolderWatchTimer = new()
         {
@@ -289,9 +296,14 @@ PackedFile Packages/////*.package
                
     }
 
-    ParallelLoopState LoopState;
+    public ParallelLoopState LoopState;
 
-    bool ReadingPackageDetails = false;
+    private bool _readingpackagedetails;
+    public bool ReadingPackageDetails
+    {   
+        get { return _readingpackagedetails; }
+        set { _readingpackagedetails = value; }
+    }
     int modsread = 0;
 
     private void ReportPackageStatus()
@@ -330,11 +342,10 @@ PackedFile Packages/////*.package
                 ThisInstance.Packages[p] = InfoFileUtilities.ReadFullInfoFile(ThisInstance.Packages[p], ThisInstance);                                
             } else
             {
-                ThisInstance.Packages[p] = InfoFileUtilities.ReadPackageDetails(ThisInstance.Packages[p], ThisInstance);
-                UIAllModsContainer.ModsRead++;  
+                ThisInstance.Packages[p] = InfoFileUtilities.ReadPackageDetails(ThisInstance.Packages[p], ThisInstance); 
             }                          
             if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Finished reading {0}", ThisInstance.Packages[p].FileName));
-            TemporaryLog.WritePackagesRead(UIAllModsContainer.ModsRead, ThisInstance.Packages[p].FileName);
+            //TemporaryLog.WritePackagesRead(UIAllModsContainer.ModsRead, ThisInstance.Packages[p].FileName);
         } else
         {                            
             if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Reading details of: {0}", ThisInstance.Packages[p].FileName));
@@ -345,17 +356,20 @@ PackedFile Packages/////*.package
             } else
             {
                 ThisInstance.Packages[p] = InfoFileUtilities.ReadPackageDetails(ThisInstance.Packages[p], ThisInstance);
-                UIAllModsContainer.ModsRead++;
             }  
             //InstanceControllers.CheckOrphanSingle(ThisInstance.Packages[p], ThisInstance.Files.OfType<SimsPackage>().Where(x => x.HasBeenRead).ToList(), ThisInstance);
             if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Finished reading {0}", ThisInstance.Packages[p].FileName));
-            TemporaryLog.WritePackagesRead(UIAllModsContainer.ModsRead, ThisInstance.Packages[p].FileName);
+            //TemporaryLog.WritePackagesRead(UIAllModsContainer.ModsRead, ThisInstance.Packages[p].FileName);
 
         }         
     }
 
     public void ReadPackageDetails()
     {   
+        if (ReadingPackageDetails)
+        {
+            LoopState.Break();
+        }
         ReadingPackageDetails = true;
         ReportPackageStatus();
         if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Reading the package details for {0} packages!", ThisInstance.Packages.Count));
@@ -372,44 +386,56 @@ PackedFile Packages/////*.package
                 }
             }
 
-            UIAllModsContainer.ModsTotal = ThisInstance.Packages.Count;
+            UIAllModsContainer.ModsTotal = ThisInstance.Packages.Count(x => x.StandAlone);
 
             if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("There are {0} packages and {1} of them have already been read", ThisInstance.Packages.Count(), ThisInstance.Packages.Count(x => x.HasBeenRead)));
 
             
             UIAllModsContainer.ModReadingStage = 0;       
-            UIAllModsContainer.ModsRead = ThisInstance.Packages.Count(x => x.HasBeenRead);
+            UIAllModsContainer.ModsRead = 0;
             
             if (GlobalVariables.DebugMode && GlobalVariables.DebugMultiThread)
             {
-                /*for (int p = 0; p < toread; p++)
-                {
-                    ReadPackageDetailsSinglePackage(p);                    
-                }*/
                 for (int p = 0; p < ThisInstance.Packages.Count; p++)
                 {
-                    ReadPackageDetailsSinglePackage(p);                    
+                    DirectoryInfo di = new(@"C:\");
+                    //only read packages if they're standalone
+                    if (ThisInstance.Packages[p].IsDirectory)
+                    {
+                        di = new DirectoryInfo(ThisInstance.Packages[p].Location).Parent;
+                    } else
+                    {
+                        di = new FileInfo(ThisInstance.Packages[p].Location).Directory;
+                    }
+                    if (di.Name.Contains("__CATEGORY_") || di.FullName == ThisInstance.InstanceFolders.InstancePackagesFolder)
+                    {
+                        ReadPackageDetailsSinglePackage(p);  
+                        UIAllModsContainer.UpdateItem(ThisInstance.Packages[p], null);    
+                    }
+                    UIAllModsContainer.ModsRead++; 
                 }
             } else
             {
-                /*Parallel.For(0, toread, GlobalVariables.ParallelSettings, (p, loopState) =>
-                {
-                    if (LoopState == null) LoopState = loopState; else loopState = LoopState;                
-                    
-                    ReadPackageDetailsSinglePackage(p);                    
-                });*/
                 Parallel.For(0, ThisInstance.Packages.Count, GlobalVariables.ParallelSettings, (p, loopState) =>
                 {
                     if (LoopState == null) LoopState = loopState; else loopState = LoopState;
-                    ReadPackageDetailsSinglePackage(p);                    
+                    DirectoryInfo di = new(@"C:\");
+                    //only read packages if they're standalone
+                    if (ThisInstance.Packages[p].IsDirectory)
+                    {
+                        di = new DirectoryInfo(ThisInstance.Packages[p].Location).Parent;
+                    } else
+                    {
+                        di = new FileInfo(ThisInstance.Packages[p].Location).Directory;
+                    }
+                    if (di.Name.Contains("__Category_") || di.FullName == ThisInstance.InstanceFolders.InstancePackagesFolder)
+                    {
+                        ReadPackageDetailsSinglePackage(p);  
+                        UIAllModsContainer.UpdateItem(ThisInstance.Packages[p], null);    
+                    }
+                    UIAllModsContainer.ModsRead++;                    
                 });  
             }
-
-            
-
-            
-            
-            
 
             UIAllModsContainer.ModReadingStage = 1;
 
@@ -430,38 +456,57 @@ PackedFile Packages/////*.package
             Parallel.For(0, ThisInstance.Packages.Count, GlobalVariables.ParallelSettings, (p, loopState) =>
             {
                 if (LoopState == null) LoopState = loopState; else loopState = LoopState;
+                bool changedSomething = false;
                 if (ThisInstance.Packages[p].MatchingRecolors != null) if (ThisInstance.Packages[p].MatchingRecolors.Contains(ThisInstance.Packages[p].FileName)) { 
                     ThisInstance.Packages[p].MatchingRecolors.Remove(ThisInstance.Packages[p].FileName);                        
                     if (ThisInstance.Packages[p].MatchingRecolors.Count == 0) ThisInstance.Packages[p].MatchingRecolors = null;
+                    changedSomething = true;
                 }
                 if (ThisInstance.Packages[p].Type == "Unknown" && ThisInstance.Packages[p].MatchingRecolors != null)
                 {
-                    if (ThisInstance.Packages[p].MatchingRecolors.Count > 0) if (ThisInstance.Packages.Any(x => x.FileName == ThisInstance.Packages[p].MatchingRecolors[0])) ThisInstance.Packages[p].Type = ThisInstance.Packages.First(x => x.FileName == ThisInstance.Packages[p].MatchingRecolors[0]).Type;
+                    if (ThisInstance.Packages[p].MatchingRecolors.Count > 0) { 
+                        if (ThisInstance.Packages.Any(x => x.FileName == ThisInstance.Packages[p].MatchingRecolors[0])) {
+                            ThisInstance.Packages[p].Type = ThisInstance.Packages.First(x => x.FileName == ThisInstance.Packages[p].MatchingRecolors[0]).Type;
+                            changedSomething = true;
+                        }
+                    }
                 } else if (ThisInstance.Packages[p].Type == "Unknown" && string.IsNullOrEmpty(ThisInstance.Packages[p].MatchingMesh))
                 {
-                    if (ThisInstance.Packages.Any(x => x.FileName == ThisInstance.Packages[p].MatchingMesh)) ThisInstance.Packages[p].Type = ThisInstance.Packages.First(x => x.FileName == ThisInstance.Packages[p].MatchingMesh).Type;
+                    if (ThisInstance.Packages.Any(x => x.FileName == ThisInstance.Packages[p].MatchingMesh)) {
+                        ThisInstance.Packages[p].Type = ThisInstance.Packages.First(x => x.FileName == ThisInstance.Packages[p].MatchingMesh).Type;
+                        changedSomething = true;
+                    }
                 }
                 if (ThisInstance.Packages[p].Mesh && ThisInstance.Packages[p].Recolor)
                 {
                     ThisInstance.Packages[p].Orphan = false;
                 }
-                UIAllModsContainer.UpdateItem(ThisInstance.Packages[p], null);
+                if (changedSomething) UIAllModsContainer.UpdateItem(ThisInstance.Packages[p], null);
                 ThisInstance.Packages[p].WriteXML();
+                ThisInstance.Packages[p].PackageData = null;
             });
 
             Parallel.For(0, ThisInstance.Packages.Count, GlobalVariables.ParallelSettings, (p, loopState) =>
             {
                 if (LoopState == null) LoopState = loopState; else loopState = LoopState;
-                try { 
-                    if (ThisInstance.Packages[p].PackageData.IndexEntries.Any(ie => ThisInstance.Packages.Any(i => i.PackageData.IndexEntries.Any(ip => ip.TypeID == ie.TypeID && ip.GroupID == ie.GroupID && ie.InstanceID == ip.InstanceID && i.Identifier != ThisInstance.Packages[p].Identifier)))){
-                        ThisInstance.Packages[p].CheckDuplicates(ThisInstance);
-                    }    
-                } catch (Exception e)
+                if (ThisInstance.Packages[p].IndexEntries != null)
                 {
-                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Caught exception checking {0} for duplicates. Error: {1} - {2}", ThisInstance.Packages[p].FileName, e.Message, e.StackTrace));
-                }
-                ThisInstance.Packages[p].WriteXML();
-            });           
+                    try { 
+                        if (ThisInstance.Packages[p].IndexEntries.Any(ie => ThisInstance.Packages.Where(x=>x.IndexEntries != null).Any(i => i.IndexEntries.Any(ip => ip.TypeID == ie.TypeID && ip.GroupID == ie.GroupID && ie.InstanceID == ip.InstanceID && i.Identifier != ThisInstance.Packages[p].Identifier)))){
+                            ThisInstance.Packages[p].CheckDuplicates(ThisInstance);
+                        }    
+                    } catch (Exception e)
+                    {
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Caught exception checking {0} for duplicates. Error: {1} - {2}", ThisInstance.Packages[p].FileName, e.Message, e.StackTrace));
+                    }
+                    if (ThisInstance.Packages[p].Duplicates != null)
+                    {
+                        ThisInstance.Packages[p].WriteXML();
+                        UIAllModsContainer.UpdateItem(ThisInstance.Packages[p], null);
+                    }                
+                }                
+                ThisInstance.Packages[p].PackageData = null;
+            });
             if (IsInstanceValid(UIAllModsContainer)) UIAllModsContainer.ModReadingStage = 2;            
             ReadingPackageDetails = false;
             //CallDeferred(nameof(StartPackageFolderTimer));
@@ -701,9 +746,7 @@ PackedFile Packages/////*.package
 
     public void RefreshFiles()
     {
-        new Thread(() => {
-        runningTasks = new();        
-        
+        new Thread(() => {        
             TogglePleaseWait(true);
 
             //List<SimsPackage> newpackages = [];
@@ -797,6 +840,7 @@ PackedFile Packages/////*.package
                 } 
             }            
             UIAllModsContainer.ReplaceFiles(newPackages, gonepackages);
+            TogglePleaseWait(false);
             ReadPackageDetails();
         }){IsBackground = true}.Start();
     }

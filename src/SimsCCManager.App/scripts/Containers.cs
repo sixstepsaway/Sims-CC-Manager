@@ -1537,7 +1537,7 @@ namespace SimsCCManager.Containers
             set
             {
                 _packagedata = value;
-                PackageDataFromGameData();
+                if (value != null) PackageDataFromGameData();
             }
         }
         private  ClothingInfo _clothinginfo;
@@ -1582,15 +1582,19 @@ namespace SimsCCManager.Containers
         {
             if (Game == SimsGames.Sims2)
             {
-                ConcurrentBag<EntryCount> entryCounts = new();
-                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Checking {0} indexentries against {1} types", IndexEntries.Count, Sims2PackageStatics.Sims2EntryTypes.Count));
-                Parallel.ForEach(Sims2PackageStatics.Sims2EntryTypes, entryType =>
+                if (IndexEntries != null)
                 {
-                    int count = IndexEntries.Count(x => x.TypeID == entryType.TypeID);
-                    if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("File has {0} of entry {1}", count, entryType.Tag));
-                    if (count != 0) entryCounts.Add(new() { EntryTag = entryType.Tag.ToUpper(), Count = count });
-                });
-                IndexEntryCounts = entryCounts.ToList();
+                    ConcurrentBag<EntryCount> entryCounts = new();
+                    if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Checking {0} indexentries against {1} types", IndexEntries.Count, Sims2PackageStatics.Sims2EntryTypes.Count));
+                    Parallel.ForEach(Sims2PackageStatics.Sims2EntryTypes, entryType =>
+                    {
+                        int count = IndexEntries.Count(x => x.TypeID == entryType.TypeID);
+                        //if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("File has {0} of entry {1}", count, entryType.Tag));
+                        if (count != 0) entryCounts.Add(new() { EntryTag = entryType.Tag.ToUpper(), Count = count });
+                    });
+                    IndexEntryCounts = entryCounts.ToList();
+                }
+                
             }
             
         }
@@ -1735,7 +1739,7 @@ namespace SimsCCManager.Containers
                     }                    
                 break;
             } 
-            if (PackageData != null) this.IndexEntries = PackageData.IndexEntries;           
+            if (PackageData != null) this.IndexEntries = IndexEntries;           
         }
 
         public Sims3Data Sims3Data { 
@@ -1817,15 +1821,15 @@ namespace SimsCCManager.Containers
 
         public void CheckDuplicates(GameInstance instance)
         {
-            List<SimsPackage> matches = [..instance.Packages.Where(i => i.PackageData.IndexEntries.Any(ie => PackageData.IndexEntries.Any(pd => pd.CompleteID == ie.CompleteID && i.Identifier != Identifier)))];
+            List<SimsPackage> matches = [..instance.Packages.Where(x => x.IndexEntries != null).Where(i => i.IndexEntries.Any(ie => IndexEntries.Any(pd => pd.CompleteID == ie.CompleteID && i.Identifier != Identifier)))];
             bool AlreadyDupe = IsDuplicate;
             if (Duplicates == null) Duplicates = new();
             foreach (SimsPackage match in matches)
             {
                 Duplicates.Add(match.FileName);
-                foreach (IndexEntry ie in PackageData.IndexEntries)
+                foreach (IndexEntry ie in IndexEntries)
                 {
-                    if (match.PackageData.IndexEntries.Any(x => x.CompleteID == ie.CompleteID)) 
+                    if (match.IndexEntries.Any(x => x.CompleteID == ie.CompleteID)) 
                     {
                         IsDuplicate = true; 
                     } else {
@@ -2136,11 +2140,11 @@ namespace SimsCCManager.Containers
         public void DictionaryEntries()
         {
             ConcurrentBag<EntryCount> entryCounts = new();
-            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Checking {0} indexentries against {1} types", IndexEntries.Count, Sims2PackageStatics.Sims2EntryTypes.Count));
+            //if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Checking {0} indexentries against {1} types", IndexEntries.Count, Sims2PackageStatics.Sims2EntryTypes.Count));
             Parallel.ForEach(Sims2PackageStatics.Sims2EntryTypes, entryType =>
             {
                 int count = IndexEntries.Count(x => x.TypeID == entryType.TypeID);
-                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("File has {0} of entry {1}", count, entryType.Tag));
+                //if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("File has {0} of entry {1}", count, entryType.Tag));
                 if (count != 0) entryCounts.Add(new() { EntryTag = entryType.Tag.ToUpper(), Count = count });
             });
             IndexEntryCounts = entryCounts.ToList();

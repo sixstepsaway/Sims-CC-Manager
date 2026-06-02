@@ -260,3 +260,8 @@ text = "Copy Settings"
 layout_mode = 2
 theme = SubResource("Theme_tjpfh")
 text = "Paste Settings"
+
+[node name="Button3" type="Button" parent="Control2/VBoxContainer"]
+layout_mode = 2
+theme = SubResource("Theme_tjpfh")
+text = "Save Image"

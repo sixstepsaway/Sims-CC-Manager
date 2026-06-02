@@ -219,7 +219,7 @@ namespace SimsCCManager.InfoFiles
             {
                 case SimsGames.Sims2:
                     package.Sims2Data = new();
-                    package = S2CheckFolderTypes(package);
+                    //package = S2CheckFolderTypes(package);
                     break;
                 case SimsGames.Sims3:
                     package.Sims3Data = new();
@@ -238,24 +238,25 @@ namespace SimsCCManager.InfoFiles
 
         public static SimsPackage S2CheckFolderTypes(SimsPackage package)
         {
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Checking if contents of folder {0} contains anything matching neighborhoods or lighting.", package.FileName));
             List<string> folders = [..Directory.EnumerateDirectories(package.Location, "*.*", SearchOption.AllDirectories)];
             List<string> files = [..Directory.EnumerateFiles(package.Location, "*.*", SearchOption.AllDirectories)];
 
             string foldersList = "";
             string filesList = "";
 
-            for (int i = 0; i < folders.Count; i++)
+            Parallel.For(0, folders.Count, i=>
             {
                 DirectoryInfo d = new(folders[i]);
                 folders[i] = d.Name;
-                foldersList += string.Format("{0}, ", folders[i]);
-            }
-            for (int i = 0; i < files.Count; i++)
+                //foldersList += string.Format("{0}, ", folders[i]);
+            });
+            Parallel.For(0, files.Count, i =>
             {
                 FileInfo f = new(files[i]);
                 files[i] = f.Name;
-                filesList += string.Format("{0}, ", files[i]);
-            }
+                //filesList += string.Format("{0}, ", files[i]);
+            });
 
             if (folders.Any(x => x.Contains("Lots", StringComparison.InvariantCultureIgnoreCase) || files.Any(x => x.Contains("Neighborhood", StringComparison.InvariantCultureIgnoreCase))))
             {                
@@ -266,14 +267,14 @@ namespace SimsCCManager.InfoFiles
             } else if (folders.Any(x => x.Contains("STORE_LIGHTS", StringComparison.InvariantCultureIgnoreCase)))
             {
                 package.Type = "Lighting Mod";
-            } else
+            }/* else
             {
                 filesList = filesList.Trim();
                 filesList = filesList.Trim(',');
                 foldersList = foldersList.Trim();
                 foldersList = foldersList.Trim(',');
                 if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Folders list - {0} - and files list {1} - came up with no matches for lighting or neighborhoods in {2}", foldersList, filesList, package.FileName));
-            }
+            }*/
             return package;
         }
 

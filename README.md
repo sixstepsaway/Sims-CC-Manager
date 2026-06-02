@@ -4,7 +4,8 @@
 
 You can absolutely drop your packages in right now and check which game they're for. You'll have to build it from the Godot source though, no release yet.
 
-ETA: Sims 2 should work by Christmas 2026 because I want to play it.
+~ETA: Sims 2 should work by Christmas 2026 because I want to play it.~
+I meant to put 2025 but that was a long shot too.
 
 
 # Sims CC Manager

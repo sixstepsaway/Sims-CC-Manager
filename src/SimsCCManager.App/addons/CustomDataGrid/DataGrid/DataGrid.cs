@@ -803,25 +803,35 @@ public partial class DataGrid : Control
 		PleasePassLog(string.Format("Checking VisibleRows for row {0}", importedRowData.OverallIdx));
 		if (VisibleRows.Any(x => x.RowData.Identifier == importedRowData.Identifier))
 		{			
-			PleasePassLog(string.Format("Found row {0} (P {1}) in visible rows!", importedRowData.OverallIdx, importedRowData.PopulatedIdx));
-			int ogdata = RowData.IndexOf(RowData.First(x => x.Identifier == importedRowData.Identifier));
-			importedRowData.Selected = RowData[ogdata].Selected;
-			importedRowData.OverallIdx = RowData[ogdata].OverallIdx;
-			importedRowData.PopulatedIdx = RowData[ogdata].PopulatedIdx;
-			RowData[ogdata] = importedRowData;	
+			try { 
+				PleasePassLog(string.Format("Found row {0} (P {1}) in visible rows!", importedRowData.OverallIdx, importedRowData.PopulatedIdx));
+			importedRowData.Selected = RowData[RowData.IndexOf(RowData.First(x => x.Identifier == importedRowData.Identifier))].Selected;
+			importedRowData.OverallIdx = RowData[RowData.IndexOf(RowData.First(x => x.Identifier == importedRowData.Identifier))].OverallIdx;
+			importedRowData.PopulatedIdx = RowData[RowData.IndexOf(RowData.First(x => x.Identifier == importedRowData.Identifier))].PopulatedIdx;
+			RowData[RowData.IndexOf(RowData.First(x => x.Identifier == importedRowData.Identifier))] = importedRowData;	
 			
 			int vidx = VisibleRows.IndexOf(VisibleRows.First(x => x.RowData.Identifier == importedRowData.Identifier));
 
 			if (Data == null) EditRow(importedRowData, vidx); else EditRow(importedRowData, vidx, Data);
+			} catch (Exception e)
+			{
+				PleasePassLog(string.Format("Caught an error updating visible row: {0} - {1} - {2}.", e.Message, e.InnerException, e.StackTrace));
+				
+			}
 			
 		} else
 		{
-			int ogdata = RowData.IndexOf(RowData.First(x => x.Identifier == importedRowData.Identifier));
-			importedRowData.Selected = RowData[ogdata].Selected;
-			importedRowData.OverallIdx = RowData[ogdata].OverallIdx;
-			importedRowData.PopulatedIdx = RowData[ogdata].PopulatedIdx;
-			RowData[ogdata] = importedRowData;	
+			try { 
+				importedRowData.Selected = RowData[RowData.IndexOf(RowData.First(x => x.Identifier == importedRowData.Identifier))].Selected;
+			importedRowData.OverallIdx = RowData[RowData.IndexOf(RowData.First(x => x.Identifier == importedRowData.Identifier))].OverallIdx;
+			importedRowData.PopulatedIdx = RowData[RowData.IndexOf(RowData.First(x => x.Identifier == importedRowData.Identifier))].PopulatedIdx;
+			RowData[RowData.IndexOf(RowData.First(x => x.Identifier == importedRowData.Identifier))] = importedRowData;	
 			PleasePassLog(string.Format("Row {0} isn't a visible row, so we don't need to update it.", importedRowData.OverallIdx));
+			} catch (Exception e)
+			{
+				PleasePassLog(string.Format("Caught an error updating row: {0} - {1} - {2}.", e.Message, e.InnerException, e.StackTrace));
+				
+			}
 		}
 		DontAnnounceEdit = false;
 	}
@@ -2068,6 +2078,8 @@ public partial class DataGrid : Control
 		UpdatePopulatedIndex(rows);
 	}
 
+	
+
 	private void UpdatePopulatedIndex(List<DataGridRow> _rows)
 	{
 		
@@ -2096,6 +2108,7 @@ public partial class DataGrid : Control
 		}
 		ControlHeld = false;
 		ShiftHeld = false;
+		Updating = false;
 		
 	}
 

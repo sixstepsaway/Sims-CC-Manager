@@ -3029,15 +3029,20 @@ public partial class MainMenu : MarginContainer
 
     private void DevClicked()
     {     
-        string file = @"M:\Sims CC Manager\Instances\The Sims 2\Packages\LC_RuinedCastleE.package";
+        string file = @"M:\Sims CC Manager\Instances\The Sims 2\Packages\General_Eyes\1c2a4f60Juiceeye00022.package";
+        //List<string> files = Directory.EnumerateFiles(@"M:\Sims CC Manager\Instances\The Sims 2\Packages", "*.package", SearchOption.TopDirectoryOnly).ToList();
         string outfile = @"M:\Sims CC Manager\Instances\The Sims 2\Packages\13pS2FarmhouseCandleHolder1.package.info.txt";
         
-        SimsPackage pckage = new() { Location = file };
-        
+        /*foreach (string f in files)
+        {
+            SimsPackage pckage = new() { Location = f };        
+            SimsPackageReader simsPackageReader = new();
+            simsPackageReader.ReadPackage(pckage.Location, true);
+        }*/
+
+        SimsPackage pckage = new() { Location = file };        
         SimsPackageReader simsPackageReader = new();
         simsPackageReader.ReadPackage(pckage.Location, true);
-        
-        GD.Print(pckage.Identifier);
     }
 
     private List<SimsOverrides> GetInfo(SimsPackageReader pr)

@@ -23,7 +23,7 @@
 [ext_resource type="PackedScene" uid="uid://bvm2atrydtgg6" path="res://windows/CustomPopupWindow.tscn" id="19_aasf2"]
 [ext_resource type="Theme" uid="uid://b4fe82i5mblf5" path="res://themes/packagedisplay_headers.tres" id="20_hlfwx"]
 
-[node name="PackageDisplay" type="MarginContainer" node_paths=PackedStringArray("UIAllModsContainer", "UIDownloadsContainer", "UIPackageViewerContainer", "UIPackageManagementButtons", "UIProfilesManagement", "UIGameStartControls", "UISettingsAndHelpControls", "GameRunningPopup", "ExeChoicePopupPanel", "WhereAllModsContainerLives", "VSplit", "AddFilesDialog", "AddExeDialog", "AddFolderDialog", "AdminWarningWindow", "PleaseWaitWindow", "PleaseWaitLabel", "PleaseWaitBG")]
+[node name="PackageDisplay" type="MarginContainer" node_paths=PackedStringArray("UIAllModsContainer", "UIDownloadsContainer", "UIPackageViewerContainer", "UIPackageManagementButtons", "UIProfilesManagement", "UIGameStartControls", "UISettingsAndHelpControls", "GameRunningPopup", "ExeChoicePopupPanel", "WhereAllModsContainerLives", "VSplit", "AddFilesDialog", "AddExeDialog", "AddFolderDialog", "AdminWarningWindow", "RestrictedUseWindow", "PleaseWaitWindow", "PleaseWaitLabel", "PleaseWaitBG")]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -51,6 +51,7 @@ AddFilesDialog = NodePath("AddFileDialog")
 AddExeDialog = NodePath("AddExeDialog")
 AddFolderDialog = NodePath("AddFolderDialog")
 AdminWarningWindow = NodePath("CustomPopupWindow")
+RestrictedUseWindow = NodePath("CustomPopupWindow2")
 PleaseWaitWindow = NodePath("MarginContainer")
 PleaseWaitLabel = NodePath("MarginContainer/MarginContainer/VBoxContainer/MarginContainer/Label")
 PleaseWaitBG = NodePath("MarginContainer/ColorRect")
@@ -189,3 +190,7 @@ size_flags_horizontal = 0
 size_flags_vertical = 1
 theme = ExtResource("20_hlfwx")
 text = "Please wait..."
+
+[node name="CustomPopupWindow2" parent="." instance=ExtResource("19_aasf2")]
+title = "Restricted Use Mode"
+visible = false

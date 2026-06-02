@@ -82,6 +82,8 @@ public partial class Snapshotter : Node3D
     Button CopyButton;
     [Export]
     Button PasteButton;
+    [Export]
+    Button SaveImageButton;
 
     
 	float MaxZoom = 300.0f;
@@ -97,6 +99,8 @@ public partial class Snapshotter : Node3D
     Node3D ObjectRotate;
 
     public bool RenderDone = false;
+
+    public string ClickedFileLocation = "";
 
     public delegate void SnapCompletedEvent();
     public SnapCompletedEvent SnapCompleted;
@@ -196,11 +200,23 @@ public partial class Snapshotter : Node3D
         CopyButton.Pressed += () => CopyPaste(true);
         PasteButton.Pressed += () => CopyPaste(false);
 
+        SaveImageButton.Pressed += () => SaveImage();
+
         CopyButton.MouseEntered += () => MouseInButton(true);
         CopyButton.MouseExited += () => MouseInButton(false);
         PasteButton.MouseEntered += () => MouseInButton(true);
         PasteButton.MouseExited += () => MouseInButton(false);
     }
+
+    private void SaveImage()
+    {
+        FileInfo fi = new(ClickedFileLocation);
+
+        string output = string.Format("{0}.jpg", fi.Name.Replace(fi.Extension, ""));
+        Image image = subviewport.GetTexture().GetImage();
+        image.SavePng(output);
+    }
+
 
     public void DisconnectContainer()
     {
@@ -2104,10 +2120,10 @@ public partial class Snapshotter : Node3D
 
     }
 
-    private void ScreenSnap(Window window, string ImageLoc)
+    private void ScreenSnap(string ImageLoc)
     {
         if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Loaded! Snapshotting."));
-        Image image = window.GetTexture().GetImage();
+        Image image = subviewport.GetTexture().GetImage();
         image.SavePng(ImageLoc);
         if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Done!"));
     }
