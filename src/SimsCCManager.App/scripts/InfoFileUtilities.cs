@@ -22,21 +22,7 @@ namespace SimsCCManager.InfoFiles
             SimsPackage simsPackage = new();
             XDocument xdoc = LoadData(fi.FullName).Result;
 
-            simsPackage = GetData(xdoc, simsPackage).Result;
-
-            simsPackage.Identifier = Guid.Parse(xdoc.Descendants().First(x => x.Name == "Identifier").Value);
-            simsPackage.Location = xdoc.Descendants().First(x => x.Name == "Location").Value;
-            simsPackage.HasBeenRead = bool.Parse(xdoc.Descendants().First(x => x.Name == "HasBeenRead").Value);
-            simsPackage.StandAlone = bool.Parse(xdoc.Descendants().First(x => x.Name == "StandAlone").Value);
-            simsPackage.Type = xdoc.Descendants().First(x => x.Name == "Type").Value;
-            simsPackage.Orphan = bool.Parse(xdoc.Descendants().First(x => x.Name == "Orphan").Value);
-            simsPackage.Mesh = bool.Parse(xdoc.Descendants().First(x => x.Name == "Mesh").Value);
-            simsPackage.Recolor = bool.Parse(xdoc.Descendants().First(x => x.Name == "Recolor").Value);
-            simsPackage.GameMod = bool.Parse(xdoc.Descendants().First(x => x.Name == "GameMod").Value);
-            simsPackage.RootMod = bool.Parse(xdoc.Descendants().First(x => x.Name == "RootMod").Value);
-            simsPackage.WrongGame = bool.Parse(xdoc.Descendants().First(x => x.Name == "WrongGame").Value);
-            simsPackage.Broken = bool.Parse(xdoc.Descendants().First(x => x.Name == "Broken").Value);
-
+            simsPackage = GetData(xdoc, simsPackage).Result;           
 
             return simsPackage;
         }
@@ -48,40 +34,39 @@ namespace SimsCCManager.InfoFiles
 
             simsPackage = GetData(xdoc, simsPackage).Result;
 
-            simsPackage.Identifier = Guid.Parse(xdoc.Descendants().First(x => x.Name == "Identifier").Value);
-            simsPackage.Location = xdoc.Descendants().First(x => x.Name == "Location").Value;
-            simsPackage.HasBeenRead = bool.Parse(xdoc.Descendants().First(x => x.Name == "HasBeenRead").Value);
-            simsPackage.StandAlone = bool.Parse(xdoc.Descendants().First(x => x.Name == "StandAlone").Value);
-            simsPackage.Type = xdoc.Descendants().First(x => x.Name == "Type").Value;
-            simsPackage.Orphan = bool.Parse(xdoc.Descendants().First(x => x.Name == "Orphan").Value);
-            simsPackage.Mesh = bool.Parse(xdoc.Descendants().First(x => x.Name == "Mesh").Value);
-            simsPackage.Recolor = bool.Parse(xdoc.Descendants().First(x => x.Name == "Recolor").Value);
-            simsPackage.GameMod = bool.Parse(xdoc.Descendants().First(x => x.Name == "GameMod").Value);
-            simsPackage.RootMod = bool.Parse(xdoc.Descendants().First(x => x.Name == "RootMod").Value);
-            simsPackage.WrongGame = bool.Parse(xdoc.Descendants().First(x => x.Name == "WrongGame").Value);
-            simsPackage.Broken = bool.Parse(xdoc.Descendants().First(x => x.Name == "Broken").Value);
-
+            
 
             return simsPackage;
         }
 
         public static async Task<SimsPackage> GetData(XDocument xdoc, SimsPackage simsPackage)
         {
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("GETTING DATA: {0}", simsPackage.FileName));
             simsPackage.Identifier = Guid.Parse(xdoc.Descendants().First(x => x.Name == "Identifier").Value);
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0} ID: {1}", simsPackage.FileName, simsPackage.Identifier));
             simsPackage.Location = xdoc.Descendants().First(x => x.Name == "Location").Value;
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0} Location: {1}", simsPackage.FileName, simsPackage.Location));
             simsPackage.HasBeenRead = bool.Parse(xdoc.Descendants().First(x => x.Name == "HasBeenRead").Value);
-            simsPackage.IsDirectory = bool.Parse(xdoc.Descendants().First(x => x.Name == "IsDirectory").Value);
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0} HasBeenRead: {1}", simsPackage.FileName, simsPackage.HasBeenRead));
             simsPackage.StandAlone = bool.Parse(xdoc.Descendants().First(x => x.Name == "StandAlone").Value);
-            simsPackage.RootMod = bool.Parse(xdoc.Descendants().First(x => x.Name == "RootMod").Value);
-            simsPackage.FileName = xdoc.Descendants().First(x => x.Name == "FileName").Value;
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0} StandAlone: {1}", simsPackage.FileName, simsPackage.StandAlone));
             simsPackage.Type = xdoc.Descendants().First(x => x.Name == "Type").Value;
-            simsPackage.DateCreated = DateTime.Parse(xdoc.Descendants().First(x => x.Name == "DateCreated").Value);
-            Category pc = new();
-            Guid categoryIdentifier = Guid.Parse(xdoc.Descendants().First(x => x.Name == "PackageCategory").Descendants().First(p => p.Name == "Identifier").Value);
-            pc = LoadedData.LoadedInstance.Categories.First(x => x.Identifier == categoryIdentifier);
-            
-
-            simsPackage.PackageCategory = pc;
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0} Type: {1}", simsPackage.FileName, simsPackage.Type));
+            simsPackage.Orphan = bool.Parse(xdoc.Descendants().First(x => x.Name == "Orphan").Value);
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0} Orphan: {1}", simsPackage.FileName, simsPackage.Orphan));
+            simsPackage.Mesh = bool.Parse(xdoc.Descendants().First(x => x.Name == "Mesh").Value);
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0} Mesh: {1}", simsPackage.FileName, simsPackage.Mesh));
+            simsPackage.Recolor = bool.Parse(xdoc.Descendants().First(x => x.Name == "Recolor").Value);
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0} Recolor: {1}", simsPackage.FileName, simsPackage.Recolor));
+            simsPackage.GameMod = bool.Parse(xdoc.Descendants().First(x => x.Name == "GameMod").Value);
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0} Mod: {1}", simsPackage.FileName, simsPackage.GameMod));
+            simsPackage.RootMod = bool.Parse(xdoc.Descendants().First(x => x.Name == "RootMod").Value);
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0} Root: {1}", simsPackage.FileName, simsPackage.RootMod));
+            simsPackage.WrongGame = bool.Parse(xdoc.Descendants().First(x => x.Name == "WrongGame").Value);
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0} Wrong: {1}", simsPackage.FileName, simsPackage.WrongGame));
+            simsPackage.Broken = bool.Parse(xdoc.Descendants().First(x => x.Name == "Broken").Value);
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0} Broken: {1}", simsPackage.FileName, simsPackage.Broken));
+                        
             simsPackage.Game = InterpretGameEnum(xdoc.Descendants().First(x => x.Name == "Game").Value);
 
             return simsPackage;
@@ -213,7 +198,6 @@ namespace SimsCCManager.InfoFiles
             {
                 package.StandAlone = false;
             }
-            package.FileName = Dir.Name;
             package.Game = instance.GameChoice;
             switch (package.Game)
             {

@@ -933,7 +933,7 @@ namespace SimsCCManager.Containers
     {
         public string InfoFile { get; }
         public Guid Identifier { get; set; }
-        public string FileName { get; set; }
+        public string FileName { get; }
         public string Location { get; set; }
         public string FileSize { get; }
         public FileTypes FileType { get; }
@@ -964,11 +964,20 @@ namespace SimsCCManager.Containers
         private string _filename;
         public string FileName
         {
-            get { return _filename; }
-            set
-            {
-                _filename = value;
-                InvokeDataChanged(nameof(FileName));
+            get { 
+                if (File.Exists(Location))
+                {
+                    FileInfo fi = new(Location);
+                    return fi.Name.Replace(fi.Extension, "");
+                } else if (Directory.Exists(Location))
+                {
+                    DirectoryInfo fi = new(Location);
+                    return fi.Name;
+                } else
+                {
+                    return "";
+                }
+                
             }
         }
 
@@ -1289,7 +1298,7 @@ namespace SimsCCManager.Containers
             set
             {
                 _duplicates = value;
-                value.CollectionChanged += (x, y) => { DataChanged?.Invoke(nameof(Duplicates)); };
+                if (value != null) value.CollectionChanged += (x, y) => { DataChanged?.Invoke(nameof(Duplicates)); };
             }
         }
         private ObservableCollection<string> _conflicts;
@@ -1299,7 +1308,7 @@ namespace SimsCCManager.Containers
             set
             {
                 _conflicts = value;
-                value.CollectionChanged += (x, y) => { DataChanged?.Invoke(nameof(Conflicts)); };
+                if (value != null) value.CollectionChanged += (x, y) => { DataChanged?.Invoke(nameof(Conflicts)); };
             }
         }
 
@@ -1320,7 +1329,7 @@ namespace SimsCCManager.Containers
             set
             {
                 _matchingrecolors = value;
-                value.CollectionChanged += (x, y) => { DataChanged?.Invoke(nameof(MatchingRecolors)); };
+                if (value != null) value.CollectionChanged += (x, y) => { DataChanged?.Invoke(nameof(MatchingRecolors)); };
             }
         }
 
@@ -1329,14 +1338,15 @@ namespace SimsCCManager.Containers
         {
             get
             {
-                if (!HasBeenRead && string.IsNullOrEmpty(_type))
+                /*if (!HasBeenRead && string.IsNullOrEmpty(_type))
                 {
                     return "";
                 } else if (!string.IsNullOrEmpty(_type)) {
                     return _type;
                 } else {
                     return "Unknown";
-                } 
+                } */
+                return _type;
             }
             set
             {
@@ -1380,6 +1390,7 @@ namespace SimsCCManager.Containers
         [XmlIgnore]
         public List<SimsPackage> LinkedPackageFolders { get; set; } = new();
         private Category _packagecategory;
+        [XmlIgnore]
         public Category PackageCategory
         {
             get { return _packagecategory; }
@@ -1631,10 +1642,10 @@ namespace SimsCCManager.Containers
                         } else if (!string.IsNullOrEmpty(PackageData.AltType))
                         {
                             this.Type = PackageData.AltType;
-                        } else
-                        {
-                            if (HasBeenRead && this.Type == string.Empty) this.Type = "Unknown"; else this.Type = string.Empty;
                         }
+                        
+                        if (HasBeenRead && this.Type == string.Empty) this.Type = "Unknown"; else this.Type = string.Empty;
+                        
                         this.GameMod = PackageData.GameMod;
                         this.Mesh = PackageData.Mesh;
                         this.Recolor = PackageData.Recolor;
@@ -1778,7 +1789,6 @@ namespace SimsCCManager.Containers
 
         public void UpdateFromData(SimsPackage package)
         {   
-            FileName = package.FileName;
             Location = package.Location;
             FileType = package.FileType;
             DateCreated = package.DateCreated;

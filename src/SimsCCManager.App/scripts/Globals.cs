@@ -966,7 +966,6 @@ namespace SimsCCManager.Globals
                     } catch (Exception e) {                             
                         if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Hit an error reading basic data for {0}: Error: {1} - {2} - {3}.", simsPackage.InfoFile, e.Message, e.StackTrace, e.InnerException));
                         //Utilities.MoveToRecycleBin(simsPackage.InfoFile);
-                        simsPackage.FileName = fi.Name;
                         if (Subfolder) {
                             simsPackage.StandAlone = false;
                         } else
@@ -983,7 +982,7 @@ namespace SimsCCManager.Globals
                 } else
                 {
                     if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0} doesn't have an info file.",  fi.Name));
-                    simsPackage.FileName = fi.Name;
+                    
                     if (Subfolder) {
                         simsPackage.StandAlone = false;
                     } else
@@ -1026,7 +1025,6 @@ namespace SimsCCManager.Globals
                         if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Hit an error reading {0} - deleting.", simsPackage.InfoFile));
                         Utilities.MoveToRecycleBin(simsPackage.InfoFile);
                         simsPackage.IsDirectory = true;
-                        simsPackage.FileName = fi.Name;
                         if (Subfolder) {
                             simsPackage.StandAlone = false;
                         } else
@@ -1068,7 +1066,6 @@ namespace SimsCCManager.Globals
                 {
                     if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("{0} doesn't have an info file.",  fi.Name));
                     simsPackage.IsDirectory = true;
-                    simsPackage.FileName = fi.Name;
                     if (Subfolder) {
                         simsPackage.StandAlone = false;
                     } else
@@ -1596,7 +1593,7 @@ namespace SimsCCManager.Globals
                             if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Found {0} recolors of mesh {1}", rec.Count, orphan.FileName));
                             foreach (SimsPackage package in rec)
                             { 
-                                if (orphan.PackageData.FunctionSort.Count != 0) instance.Packages.First(x => x.Identifier == package.Identifier).PackageData.FunctionSort = orphan.PackageData.FunctionSort; else if (!string.IsNullOrEmpty(orphan.PackageData.AltType)) instance.Packages.First(x => x.Identifier == package.Identifier).PackageData.AltType = orphan.PackageData.AltType;
+                                if (orphan.PackageData.FunctionSort.Count != 0) instance.Packages.First(x => x.Identifier == package.Identifier).PackageData.FunctionSort = orphan.PackageData.FunctionSort; else if (!string.IsNullOrEmpty(orphan.Type)) instance.Packages.First(x => x.Identifier == package.Identifier).Type = orphan.Type;
                                 instance.Packages.First(x => x.Identifier == package.Identifier).MatchingMesh = orphan.FileName;
                                 instance.Packages.First(x => x.Identifier == package.Identifier).Orphan = false;
                                 orphan.MatchingRecolors ??= new();
@@ -1615,7 +1612,7 @@ namespace SimsCCManager.Globals
                                     if (package.Identifier != orphan.Identifier)
                                     {
                                         instance.Packages.First(x => x.Identifier == package.Identifier).MatchingMesh = mesh.FileName;
-                                        if (instance.Packages.First(x => x.Identifier == mesh.Identifier).PackageData.FunctionSort.Count != 0) instance.Packages.First(x => x.Identifier == package.Identifier).PackageData.FunctionSort = instance.Packages.First(x => x.Identifier == mesh.Identifier).PackageData.FunctionSort;  else if (!string.IsNullOrEmpty(instance.Packages.First(x => x.Identifier == mesh.Identifier).PackageData.AltType)) instance.Packages.First(x => x.Identifier == package.Identifier).PackageData.AltType = instance.Packages.First(x => x.Identifier == mesh.Identifier).PackageData.AltType;
+                                        if (instance.Packages.First(x => x.Identifier == mesh.Identifier).PackageData.FunctionSort.Count != 0) instance.Packages.First(x => x.Identifier == package.Identifier).PackageData.FunctionSort = instance.Packages.First(x => x.Identifier == mesh.Identifier).PackageData.FunctionSort;  else if (!string.IsNullOrEmpty(instance.Packages.First(x => x.Identifier == mesh.Identifier).Type)) instance.Packages.First(x => x.Identifier == package.Identifier).Type = instance.Packages.First(x => x.Identifier == mesh.Identifier).Type;
                                         instance.Packages.First(x => x.Identifier == package.Identifier).Orphan = false;
                                         instance.Packages.First(x => x.Identifier == mesh.Identifier).MatchingRecolors ??= new();
                                         if (!instance.Packages.First(x => x.Identifier == mesh.Identifier).MatchingRecolors.Contains(package.FileName)) instance.Packages.First(x => x.Identifier == mesh.Identifier).MatchingRecolors.Add(package.FileName);
@@ -1657,7 +1654,7 @@ namespace SimsCCManager.Globals
                             foreach (SimsPackage package in matchingrecolors)
                             {
                                 instance.Packages.First(x => x.Identifier == package.Identifier).MatchingMesh = orphan.FileName;
-                                if (orphan.PackageData.FunctionSort.Count != 0) instance.Packages.First(x => x.Identifier == package.Identifier).PackageData.FunctionSort = orphan.PackageData.FunctionSort; else if (!string.IsNullOrEmpty(orphan.PackageData.AltType)) instance.Packages.First(x => x.Identifier == package.Identifier).PackageData.AltType = orphan.PackageData.AltType;
+                                if (orphan.PackageData.FunctionSort.Count != 0) instance.Packages.First(x => x.Identifier == package.Identifier).PackageData.FunctionSort = orphan.PackageData.FunctionSort; else if (!string.IsNullOrEmpty(orphan.Type)) instance.Packages.First(x => x.Identifier == package.Identifier).Type = orphan.Type;
                                 instance.Packages.First(x => x.Identifier == package.Identifier).Orphan = false;
                                 ////instance.Packages.First(x => x.Identifier == package.Identifier).WriteXML();
                             }                        
@@ -1686,7 +1683,7 @@ namespace SimsCCManager.Globals
                                 orphan.MatchingRecolors.Add(allPackages.Where(x => x.TXTRNames != null).First(x => x.TXTRNames.Any(t => t.Contains(TextureName, StringComparison.CurrentCultureIgnoreCase))).FileName);
                                 SimsPackage package = allPackages.Where(x => x.TXTRNames != null).First(x => x.TXTRNames.Any(t => t.Contains(TextureName, StringComparison.CurrentCultureIgnoreCase)));
                                 instance.Packages.First(x => x.Identifier == package.Identifier).MatchingMesh = orphan.FileName;
-                                if (orphan.PackageData.FunctionSort.Count != 0) instance.Packages.First(x => x.Identifier == package.Identifier).PackageData.FunctionSort = orphan.PackageData.FunctionSort; else if (!string.IsNullOrEmpty(orphan.PackageData.AltType)) instance.Packages.First(x => x.Identifier == package.Identifier).PackageData.AltType = orphan.PackageData.AltType;
+                                if (orphan.PackageData.FunctionSort.Count != 0) instance.Packages.First(x => x.Identifier == package.Identifier).PackageData.FunctionSort = orphan.PackageData.FunctionSort; else if (!string.IsNullOrEmpty(orphan.Type)) instance.Packages.First(x => x.Identifier == package.Identifier).Type = orphan.Type;
                                 //instance.Packages.First(x => x.Identifier == package.Identifier).WriteXML();
                             }
                         }                        
@@ -1708,7 +1705,7 @@ namespace SimsCCManager.Globals
                             foreach (SimsPackage package in texturePackages)
                             {
                                 instance.Packages.First(x => x.Identifier == package.Identifier).MatchingMesh = orphan.FileName;
-                                if (orphan.PackageData.FunctionSort.Count != 0) instance.Packages.First(x => x.Identifier == package.Identifier).PackageData.FunctionSort = orphan.PackageData.FunctionSort;else if (!string.IsNullOrEmpty(orphan.PackageData.AltType)) instance.Packages.First(x => x.Identifier == package.Identifier).PackageData.AltType = orphan.PackageData.AltType;
+                                if (orphan.PackageData.FunctionSort.Count != 0) instance.Packages.First(x => x.Identifier == package.Identifier).PackageData.FunctionSort = orphan.PackageData.FunctionSort;else if (!string.IsNullOrEmpty(orphan.Type)) instance.Packages.First(x => x.Identifier == package.Identifier).Type = orphan.Type;
                                 instance.Packages.First(x => x.Identifier == package.Identifier).Orphan = false;
                                 //instance.Packages.First(x => x.Identifier == package.Identifier).WriteXML();
                             }
@@ -1740,7 +1737,7 @@ namespace SimsCCManager.Globals
                                 foreach (SimsPackage package in matches)
                                 {
                                     instance.Packages.First(x => x.Identifier == package.Identifier).MatchingMesh = mesh.FileName;
-                                    if (instance.Packages.First(x => x.Identifier == mesh.Identifier).PackageData.FunctionSort.Count != 0) instance.Packages.First(x => x.Identifier == package.Identifier).PackageData.FunctionSort = instance.Packages.First(x => x.Identifier == mesh.Identifier).PackageData.FunctionSort; else if (!string.IsNullOrEmpty(mesh.PackageData.AltType)) instance.Packages.First(x => x.Identifier == package.Identifier).PackageData.AltType = instance.Packages.First(x => x.Identifier == mesh.Identifier).PackageData.AltType;
+                                    if (instance.Packages.First(x => x.Identifier == mesh.Identifier).PackageData.FunctionSort.Count != 0) instance.Packages.First(x => x.Identifier == package.Identifier).PackageData.FunctionSort = instance.Packages.First(x => x.Identifier == mesh.Identifier).PackageData.FunctionSort; else if (!string.IsNullOrEmpty(mesh.Type)) instance.Packages.First(x => x.Identifier == package.Identifier).Type = instance.Packages.First(x => x.Identifier == mesh.Identifier).Type;
                                     instance.Packages.First(x => x.Identifier == package.Identifier).Orphan = false;
                                     //instance.Packages.First(x => x.Identifier == package.Identifier).WriteXML();
                                 }
@@ -2147,7 +2144,6 @@ namespace SimsCCManager.Globals
                         {
                             subpackage.IsDirectory = false;
                             subpackage.StandAlone = false; 
-                            subpackage.FileName = fi.Name;
                             subpackage.Game = gameInstance.GameChoice;
                             switch (subpackage.Game)
                             {
@@ -2207,7 +2203,6 @@ namespace SimsCCManager.Globals
                         {
                             subpackage.IsDirectory = true;
                             subpackage.StandAlone = false; 
-                            subpackage.FileName = fi.Name;
                             subpackage.Game = gameInstance.GameChoice;
                             switch (subpackage.Game)
                             {
@@ -2587,7 +2582,6 @@ namespace SimsCCManager.Globals
                 {
                     simsPackage.StandAlone = false;
                 }
-                simsPackage.FileName = fi.Name;
                 simsPackage.Game = loadedinstance.GameChoice;
                 switch (simsPackage.Game)
                 {
@@ -2633,7 +2627,6 @@ namespace SimsCCManager.Globals
                 {
                     simsPackage.StandAlone = false;
                 }
-                simsPackage.FileName = fi.Name;
                 simsPackage.Game = loadedinstance.GameChoice;
                 switch (simsPackage.Game)
                 {

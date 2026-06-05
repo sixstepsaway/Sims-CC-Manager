@@ -335,7 +335,7 @@ PackedFile Packages/////*.package
     {
         if (ThisInstance.Packages[p].IsDirectory)
         {                            
-            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Reading: {0}", ThisInstance.Packages[p].FileName));
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Reading: {0}: {1}", ThisInstance.Packages[p].CategoryName, ThisInstance.Packages[p].FileName));
             DirectoryInfo fi = new(ThisInstance.Packages[p].Location);                    
             if (ThisInstance.Packages[p].HasBeenRead && File.Exists(ThisInstance.Packages[p].InfoFile))
             {
@@ -409,8 +409,12 @@ PackedFile Packages/////*.package
                     }
                     if (di.Name.Contains("__CATEGORY_") || di.FullName == ThisInstance.InstanceFolders.InstancePackagesFolder)
                     {
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Parent folder: {0}, so we'll read.", di.Name));
                         ReadPackageDetailsSinglePackage(p);  
                         UIAllModsContainer.UpdateItem(ThisInstance.Packages[p], null);    
+                    } else
+                    {
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Parent folder: {0}, so we're not reading.", di.Name));
                     }
                     UIAllModsContainer.ModsRead++; 
                 }
@@ -428,10 +432,14 @@ PackedFile Packages/////*.package
                     {
                         di = new FileInfo(ThisInstance.Packages[p].Location).Directory;
                     }
-                    if (di.Name.Contains("__Category_") || di.FullName == ThisInstance.InstanceFolders.InstancePackagesFolder)
+                    if (di.Name.Contains("__CATEGORY_") || di.FullName == ThisInstance.InstanceFolders.InstancePackagesFolder)
                     {
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Parent folder: {0}, so we'll read.", di.Name));
                         ReadPackageDetailsSinglePackage(p);  
                         UIAllModsContainer.UpdateItem(ThisInstance.Packages[p], null);    
+                    } else
+                    {
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Parent folder: {0}, so we're not reading.", di.Name));
                     }
                     UIAllModsContainer.ModsRead++;                    
                 });  

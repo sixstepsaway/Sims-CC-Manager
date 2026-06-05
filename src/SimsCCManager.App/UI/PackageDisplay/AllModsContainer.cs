@@ -610,7 +610,6 @@ public partial class AllModsContainer : MarginContainer
                             //simsPackage.HasBeenRead = true;
                         } else
                         {
-                            simsPackage.FileName = fi.Name;
                             simsPackage.StandAlone = false;
                             simsPackage.Game = packageDisplay.ThisInstance.GameChoice;
                             simsPackage.PackageCategory = packageDisplay.ThisInstance.Categories.First(x => x.Name == "Default"); 
@@ -674,7 +673,6 @@ public partial class AllModsContainer : MarginContainer
                     {
                         simsPackage.IsDirectory = true;
                         simsPackage.StandAlone = false;
-                        simsPackage.FileName = fi.Name;
                         simsPackage.Game = packageDisplay.ThisInstance.GameChoice;
                         switch (simsPackage.Game)
                         {
@@ -776,6 +774,8 @@ public partial class AllModsContainer : MarginContainer
             c++;
             newrow.Items.Add(item);
         }
+
+        if (pack.PackageCategory == null) pack.PackageCategory = LoadedData.LoadedInstance.Categories.First(x => x.Name == "Default");
 
         if (pack.CategoryName != "Default")
         {
@@ -2010,7 +2010,6 @@ public partial class AllModsContainer : MarginContainer
                 {
                     newname = Utilities.IncrementName(newname);
                 }
-                package.FileName = newname;
                 newname = Path.Combine(parent, newname);
                 File.Delete(package.InfoFile);
                 if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Pretending to rename file {0} to {1}", package.Location, newname));

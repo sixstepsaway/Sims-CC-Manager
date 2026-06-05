@@ -775,6 +775,8 @@ namespace SimsCCManager.PackageReaders
         public bool IsBroken = false;
         MemoryStream msPackage;
         BinaryReader packagereader;
+        List<MemoryStream> MemoryStreams = new();
+        List<BinaryReader> BinaryReaders = new();
         public FileInfo fileinfo;
 
         uint IndexMajorVersion;
@@ -801,11 +803,14 @@ namespace SimsCCManager.PackageReaders
 
         List<IndexEntry> IndexData = new();
 
+        byte[] PackageBytes = [];
+
         public void ReadPackage(string file, bool Debug = false)
         {
             if (Debug) DebugPackageReader = true; else DebugPackageReader = false;
             fileinfo = new(file);
-            msPackage = ByteReaders.ReadBytesToFile(file);
+            PackageBytes = ByteReaders.ReadBytesFromFile(file);
+            msPackage = ReadBytesToFile(PackageBytes);
             packagereader = new BinaryReader(msPackage);
             DBPF = Encoding.ASCII.GetString(packagereader.ReadBytes(4));
             if (GlobalVariables.DebugMode && DebugPackageReader) Logging.WriteDebugLog(string.Format("Package {0} test string: {1}", fileinfo.Name, DBPF));
@@ -815,92 +820,6 @@ namespace SimsCCManager.PackageReaders
             MinorVersion = packagereader.ReadUInt32();
             if (GlobalVariables.DebugMode && DebugPackageReader) Logging.WriteDebugLog(string.Format("File {0} is for game {1}", fileinfo.Name, PackageGame.ToString()));
 
-            switch (PackageGame)
-            {
-                case SimsGames.Sims2:
-                    SimsData = new Sims2Data() { FileLocation = file };
-                    ReadSims2Package();
-                    break;
-
-                case SimsGames.Sims3:
-                    SimsData = new Sims3Data() { FileLocation = file };
-
-                    ReadSims3Package();
-                    //run package reader
-                    break;
-
-                case SimsGames.Sims4:
-                    SimsData = new Sims4Data() { FileLocation = file };
-                    ReadSims4Package();
-                    //run package reader
-                    break;
-
-            }
-
-        }
-        
-        public void CheckOverrides(SimsPackage package)
-        {
-            FileInfo fi = new(package.Location);
-            if (fi.Extension != ".package") return;
-            if (package.Game == SimsGames.Sims2) CheckSims2Overrides(package);
-        }
-        public void CheckDuplicates(SimsPackage package, List<SimsPackage> packages)
-        {
-            List<PotentialDuplicateSimsPackage> Potentials = new();
-            if (package.Game == SimsGames.Sims2)
-            {
-                if (packages.Any(x => x.Sims2Data.IndexEntries.Any(i => package.Sims2Data.IndexEntries.Any(e => e.GroupID == i.GroupID && e.InstanceID == i.InstanceID && x.Identifier != package.Identifier))))
-                {
-                    List<SimsPackage> matches = packages.Where(x => x.Sims2Data.IndexEntries.Any(i => package.Sims2Data.IndexEntries.Any(e => e.GroupID == i.GroupID && e.InstanceID == i.InstanceID && x.Identifier != package.Identifier))).ToList();
-                    foreach (SimsPackage pack in matches)
-                    {
-                        PotentialDuplicateSimsPackage pdsp = new();
-                        pdsp.Package = pack;
-                        Potentials.Add(pdsp);
-                    }
-                }
-
-
-
-                foreach (PotentialDuplicateSimsPackage potential in Potentials)
-                {
-                    foreach (IndexEntry entry in package.Sims2Data.IndexEntries)
-                    {
-                        if (!potential.Package.Sims2Data.IndexEntries.Any(i => i.GroupID == entry.GroupID && i.InstanceID == entry.InstanceID && i.TypeID == entry.TypeID))
-                        {
-                            potential.IsDuplicate = false;
-                        }
-                    }                    
-                }
-            }
-
-            if (Potentials.Any(x => x.IsDuplicate))
-            {
-                package.IsDuplicate = true;
-                foreach (string d in Potentials.Where(x => x.IsDuplicate).Select(x => x.Package.FileName))
-                {
-                    package.Duplicates.Add(d);
-                }
-                foreach (string c in Potentials.Where(x => !x.IsDuplicate).Select(x => x.Package.FileName))
-                {
-                    package.Conflicts.Add(c); 
-                }
-                               
-                package.WriteXML();
-
-                foreach (PotentialDuplicateSimsPackage pdsp in Potentials.Where(x => x.IsDuplicate))
-                {
-                    pdsp.Package.Duplicates.Add(package.FileName);
-                    pdsp.Package.WriteXML();
-                }
-            }
-        }
-
-        #region Sims 2 Readers
-
-        public void ReadSims2Package()
-        {
             if (MinorVersion == 2) IndexMajorLocation = 24;
             if (MinorVersion == 0) IndexMajorLocation = 32;
             //packagereader.BaseStream.Position = IndexMajorLocation;
@@ -970,8 +889,118 @@ namespace SimsCCManager.PackageReaders
             }
 
 
+            switch (PackageGame)
+            {
+                case SimsGames.Sims2:
+                    SimsData = new Sims2Data() { FileLocation = file };
+                    try { 
+                        ReadSims2Package(); 
+                    }
+                    catch
+                    {
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("EXCEPTION: Failed to read {0}", fileinfo.FullName));
+                        throw new();
+                    }
+                    break;
 
-            //read types
+                case SimsGames.Sims3:
+                    SimsData = new Sims3Data() { FileLocation = file };
+                    try { 
+                        ReadSims3Package(); 
+                    }
+                    catch
+                    {
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("EXCEPTION: Failed to read {0}", fileinfo.FullName));
+                        throw new();
+                    }
+                    //run package reader
+                    break;
+
+                case SimsGames.Sims4:
+                    SimsData = new Sims4Data() { FileLocation = file };
+                    try { 
+                        ReadSims4Package(); 
+                    }
+                    catch
+                    {
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("EXCEPTION: Failed to read {0}", fileinfo.FullName));
+                        throw new();
+                    }
+                    //run package reader
+                    break;
+
+            }
+
+        }
+        
+        public void CheckOverrides(SimsPackage package)
+        {
+            FileInfo fi = new(package.Location);
+            if (fi.Extension != ".package") return;
+            if (package.Game == SimsGames.Sims2) CheckSims2Overrides(package);
+        }
+        public void CheckDuplicates(SimsPackage package, List<SimsPackage> packages)
+        {
+            List<PotentialDuplicateSimsPackage> Potentials = new();
+            if (package.Game == SimsGames.Sims2)
+            {
+                if (packages.Any(x => x.Sims2Data.IndexEntries.Any(i => package.Sims2Data.IndexEntries.Any(e => e.GroupID == i.GroupID && e.InstanceID == i.InstanceID && x.Identifier != package.Identifier))))
+                {
+                    List<SimsPackage> matches = packages.Where(x => x.Sims2Data.IndexEntries.Any(i => package.Sims2Data.IndexEntries.Any(e => e.GroupID == i.GroupID && e.InstanceID == i.InstanceID && x.Identifier != package.Identifier))).ToList();
+                    foreach (SimsPackage pack in matches)
+                    {
+                        PotentialDuplicateSimsPackage pdsp = new();
+                        pdsp.Package = pack;
+                        Potentials.Add(pdsp);
+                    }
+                }
+
+
+
+                foreach (PotentialDuplicateSimsPackage potential in Potentials)
+                {
+                    foreach (IndexEntry entry in package.Sims2Data.IndexEntries)
+                    {
+                        if (!potential.Package.Sims2Data.IndexEntries.Any(i => i.GroupID == entry.GroupID && i.InstanceID == entry.InstanceID && i.TypeID == entry.TypeID))
+                        {
+                            potential.IsDuplicate = false;
+                        }
+                    }                    
+                }
+            }
+
+            if (Potentials.Any(x => x.IsDuplicate))
+            {
+                package.IsDuplicate = true;
+                foreach (string d in Potentials.Where(x => x.IsDuplicate).Select(x => x.Package.FileName))
+                {
+                    package.Duplicates.Add(d);
+                }
+                foreach (string c in Potentials.Where(x => !x.IsDuplicate).Select(x => x.Package.FileName))
+                {
+                    package.Conflicts.Add(c); 
+                }
+                               
+                package.WriteXML();
+
+                foreach (PotentialDuplicateSimsPackage pdsp in Potentials.Where(x => x.IsDuplicate))
+                {
+                    pdsp.Package.Duplicates.Add(package.FileName);
+                    pdsp.Package.WriteXML();
+                }
+            }
+        }
+        
+        #region Sims 2 Readers
+
+        public void ReadSims2Package()
+        {
+            ReadSims2Directory();
+            ReadSims2Entries();
+        }
+
+        public void ReadSims2Directory()
+        {
             if (IndexData.Exists(x => x.EntryType == "DIR"))
             {
                 List<IndexEntry> dirs = IndexData.Where(x => x.EntryType == "DIR").ToList();
@@ -1024,234 +1053,361 @@ namespace SimsCCManager.PackageReaders
 
             if (!string.IsNullOrEmpty(SimsData.AltType)) if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Package {0} has entries: {1}. Its alt type is: {2}", fileinfo.Name, Sims2Data.WriteEntryList(), SimsData.AltType));
 
+        }
+
+        public void S2ReadSpecificEntry(Sims2EntryTypes type, IndexEntry entry)
+        {
+            switch (type)
+            {           
+            case Sims2EntryTypes.TXTR:
+            S2ReadTXTR(entry, 0);
+            break;
+            case Sims2EntryTypes.CTSS:
+            S2ReadCTSS(entry);
+            break;
+            case Sims2EntryTypes.XOBJ:
+            S2ReadXOBJ(entry);
+            break;
+            case Sims2EntryTypes.OBJD:
+            S2ReadOBJD(entry, 0);
+            break;
+            case Sims2EntryTypes.GMDC:
+            S2ReadGMDC(entry);
+            break;
+            case Sims2EntryTypes.MMAT:
+            S2ReadMMAT(entry);
+            break;
+            case Sims2EntryTypes.XFLR:
+            S2ReadXFLR(entry);
+            break;
+            case Sims2EntryTypes.XNGB:
+            S2ReadXNGB(entry);
+            break;
+            case Sims2EntryTypes.GZPS:
+            S2ReadGZPS(entry);
+            break;
+            case Sims2EntryTypes.EDIR:
+            S2Read3DIR(entry, 0);
+            break;
+            case Sims2EntryTypes.SHPE:
+            S2ReadSHPE(entry, 0);
+            break;
+            case Sims2EntryTypes.TXMT:
+            S2ReadTXMT(entry, 0);
+            break;
+            case Sims2EntryTypes.XHTN:
+            S2ReadXHTN(entry,0);
+            break;
+            case Sims2EntryTypes.XTOL:
+            S2ReadXTOL(entry,0);
+            break;
+            case Sims2EntryTypes.XMOL:
+            S2ReadXMOL(entry,0);
+            break;
+            }
+        }
+
+        public async Task S2ReadTXTR()
+        {
             if (IndexData.Exists(x => x.EntryType == "TXTR"))
             {
                 int c = 0;
                 foreach (IndexEntry entry in IndexData.Where(x => x.EntryType == "TXTR"))
-                {
-                    try { 
+                {                      
+                    /*try {
+ 
                         if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Reading TXTR #{0}", c));
                         S2ReadTXTR(entry, c);
                     } catch (Exception e)
                     {
                         if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Unable to read TXTR #{0} for {1}: {2}", c, fileinfo.Name, e.StackTrace));                       
-                    }
-                    c++;
+                    }*/
+                    S2ReadTXTR(entry, c);
+                    c++;                                            
                 }
             }
+        }
 
+        public async Task S2ReadCTSS()
+        {
             if (IndexData.Exists(x => x.EntryType == "CTSS"))
             {
                 int c = 0;
                 foreach (IndexEntry entry in IndexData.Where(x => x.EntryType == "CTSS"))
                 {
                     if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Reading {0} CTSS #{1}", fileinfo.Name, c));
-                    try
+                    
+                    /*try
                     {
                         S2ReadCTSS(entry);
                     } catch (Exception e)
                     {
                         if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Unable to read CTSS #{0} for {1}: {2}", c, fileinfo.Name, e.StackTrace));                    
-                    }                    
+                    }*/ 
+                    S2ReadCTSS(entry);
                     c++;
+                    
                 }
             }
-            else if (IndexData.Exists(x => x.EntryType == "XOBJ"))
+        }
+
+        public async Task S2ReadXOBJ()
+        {
+            if (IndexData.Exists(x => x.EntryType == "XOBJ"))
             {
                 int c = 0;
                 foreach (IndexEntry entry in IndexData.Where(x => x.EntryType == "XOBJ"))
                 {
                     if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Reading {0} XOBJ #{1}", fileinfo.Name, c));
-                    try
+                    
+                    /*try
                     {
                         S2ReadXOBJ(entry);
                     } catch (Exception e)
                     {
                         if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Unable to read XOBJ #{0} for {1}: {2}", c, fileinfo.Name, e.StackTrace));                    
-                    }
-                    
+                    }*/
+                    S2ReadXOBJ(entry);
+                                            
                     c++;
                 }
                 
             }
+        }
+
+        public async Task S2ReadOBJD()
+        {
             if (IndexData.Exists(x => x.EntryType == "OBJD"))
             {
                 int c = 0;
                 foreach (IndexEntry entry in IndexData.Where(x => x.EntryType == "OBJD"))
                 {
                     if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Reading {0} OBJD #{1}", fileinfo.Name, c));
-                    try
+                    
+                    /*try
                     {
                         S2ReadOBJD(entry, c);
                     } catch (Exception e)
                     {
                         if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Unable to read OBJD #{0} for {1}: {2}", c, fileinfo.Name, e.StackTrace));                    
-                    }
-                    
+                    }*/
+                    S2ReadOBJD(entry, c);
+                                           
                     c++;
                 }
             }
+        }
+
+        public async Task S2ReadGMDC()
+        {
             if (IndexData.Exists(x => x.EntryType == "GMDC") && ReadingSingle)
             {
                 int c = 0;
                 foreach (IndexEntry entry in IndexData.Where(x => x.EntryType == "GMDC"))
                 {
                     if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Reading {0} GMDC #{1}", fileinfo.Name, c));
-                    try
+                    
+                    /*try
                     {
                         S2ReadGMDC(entry);
                     } catch (Exception e)
                     {
                         if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Unable to read GMDC #{0} for {1}: {2}", c, fileinfo.Name, e.StackTrace));                    
-                    }
-                    
+                    }*/
+                    S2ReadGMDC(entry);                                           
                     c++;
                 }
-
             }
+        }
+
+        public async Task S2ReadMMAT()
+        {
             if (IndexData.Exists(x => x.EntryType == "MMAT"))
             {
                 int c = 0;
                 if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Found {0} MMAT files.", IndexData.Count(x => x.EntryType == "MMAT")));
                 foreach (IndexEntry entry in IndexData.Where(x => x.EntryType == "MMAT"))
-                {
-                    try
+                {                    
+                    /*try
                     {
                         S2ReadMMAT(entry);
                     } catch (Exception e)
                     {
                         if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Unable to read MMAT #{0} for {1}: {2}", c, fileinfo.Name, e.StackTrace));                                     
-                    }
+                    }                        */
+                    S2ReadMMAT(entry);
                     c++;
                 }
             }
+        }
+
+        public async Task S2ReadXFLR()
+        {
             if (IndexData.Exists(x => x.EntryType == "XFLR") && ReadingSingle)
             {
                 int c = 0;
                 foreach (IndexEntry entry in IndexData.Where(x => x.EntryType == "XFLR"))
                 {
-                    try
+                    /*try
                     {
                         S2ReadXFLR(entry);
                     } catch (Exception e)
                     {
                         if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Unable to read XFLR #{0} for {1}: {2}", c, fileinfo.Name, e.StackTrace));                                  
-                    }
-                    
+                    }                                            */
+                    S2ReadXFLR(entry);
                     c++;
                 }
             }
+        }
+
+        public async Task S2ReadXNGB()
+        {
             if (IndexData.Exists(x => x.EntryType == "XNGB") && ReadingSingle)
             {
                 int c = 0;
                 foreach (IndexEntry entry in IndexData.Where(x => x.EntryType == "XNGB"))
                 {
-                    try
+                    
+                    /*try
                     {
                         S2ReadXNGB(entry);
                     } catch (Exception e)
                     {
                         if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Unable to read XNGB #{0} for {1}: {2}", c, fileinfo.Name, e.StackTrace));                 
-                    }
-                    
+                    }*/
+                        S2ReadXNGB(entry);
+                                            
                     c++;
                 }
             }
+        }
+
+        public async Task S2ReadGZPS()
+        {
             if (IndexData.Exists(x => x.EntryType == "GZPS") && ReadingSingle)
             {
                 int c = 0;
                 foreach (IndexEntry entry in IndexData.Where(x => x.EntryType == "GZPS"))
                 {
-                    try
+                    
+                    /*try
                     {
                         S2ReadGZPS(entry); 
                     } catch (Exception e)
                     {
-                       if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Unable to read GZPS #{0} for {1}: {2}", c, fileinfo.Name, e.StackTrace));                      
-                    }
-                     
+                        if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Unable to read GZPS #{0} for {1}: {2}", c, fileinfo.Name, e.StackTrace));                      
+                    }*/
+                        S2ReadGZPS(entry); 
+                                            
                     c++;                  
                 }                
             }
-            
+        }
+
+        public async Task S2Read3DIR()
+        {
             if (IndexData.Exists(x => x.EntryType == "3IDR") && ReadingSingle)
             {
                 int c = 0;
                 foreach (IndexEntry entry in IndexData.Where(x => x.EntryType == "3IDR"))
-                {
-                    try { 
-                    S2Read3DIR(entry, c);
+                {                    
+                    /*try
+                    { 
+                        S2Read3DIR(entry, c);
                     } catch (Exception e)
                     {
                         if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Unable to read 3IDR #{0} for {1}: {2}", c, fileinfo.Name, e.StackTrace));                       
-                    }
+                    }*/
+                    S2Read3DIR(entry, c);
                     c++;
                 }
             }
+        }
+
+        public async Task S2ReadSHPE()
+        {
             if (IndexData.Exists(x => x.EntryType == "SHPE"))
             {
                 if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Found {0} SHPE entries in {1}", IndexData.Count(x => x.EntryType == "SHPE"), fileinfo.Name));
                 int c = 0;
                 foreach (IndexEntry entry in IndexData.Where(x => x.EntryType == "SHPE"))
                 {
-                    try
-                    {
-                        S2ReadSHPE(entry, c);
-                    } catch (Exception e)
-                    {
-                        if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Unable to read SHPE #{0} for {1}: {2}", c, fileinfo.Name, e.StackTrace));                        
-                    }
                     
+                            /*try
+                            {
+                                S2ReadSHPE(entry, c);
+                            } catch (Exception e)
+                            {
+                                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Unable to read SHPE #{0} for {1}: {2}", c, fileinfo.Name, e.StackTrace));                        
+                            }*/
+                                S2ReadSHPE(entry, c);
+                                            
                     c++;
                 }
             }
+        }
+
+        public async Task S2ReadTXMT()
+        {
             if (IndexData.Exists(x => x.EntryType == "TXMT"))
             {
                 if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Found {0} TXMT entries in {1}", IndexData.Count(x => x.EntryType == "TXMT"), fileinfo.Name));
                 int c = 0;
                 foreach (IndexEntry entry in IndexData.Where(x => x.EntryType == "TXMT"))
                 {
-                    try
-                    {
-                        S2ReadTXMT(entry, c);
-                    } catch (Exception e)
-                    {
-                        if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Unable to read TXMT #{0} for {1}: {2}", c, fileinfo.Name, e.StackTrace));                          
-                    }
                     
+                            /*try
+                            {
+                                S2ReadTXMT(entry, c);
+                            } catch (Exception e)
+                            {
+                                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Unable to read TXMT #{0} for {1}: {2}", c, fileinfo.Name, e.StackTrace));                          
+                            }*/
+                                S2ReadTXMT(entry, c);
+                                         
                     c++;
                 }
             }
+        }
+
+        public async Task S2ReadXHTN()
+        {
             if (IndexData.Exists(x => x.EntryType == "XHTN") && ReadingSingle)
             {
                 if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Found {0} XHTN entries in {1}", IndexData.Count(x => x.EntryType == "XHTN"), fileinfo.Name));
                 int c = 0;
                 foreach (IndexEntry entry in IndexData.Where(x => x.EntryType == "XHTN"))
                 {
-                    try
-                    {                        
-                        S2ReadXHTN(entry, c);
-                    } catch (Exception e)
-                    {
-                        if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Unable to read XHTN #{0} for {1}: {2}", c, fileinfo.Name, e.StackTrace));                        
-                    }
+                    
+                            try
+                            {                        
+                                S2ReadXHTN(entry, c);
+                            } catch (Exception e)
+                            {
+                                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Unable to read XHTN #{0} for {1}: {2}", c, fileinfo.Name, e.StackTrace));                        
+                            }
                     c++;
                 }
             }
+        }
+        
+        public async Task S2ReadXTOL()
+        {
             if (IndexData.Exists(x => x.EntryType == "XTOL") && ReadingSingle)
             {
                 if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Found {0} XTOL entries in {1}", IndexData.Count(x => x.EntryType == "XTOL"), fileinfo.Name));
                 int c = 0;
                 foreach (IndexEntry entry in IndexData.Where(x => x.EntryType == "XTOL"))
-                {
-                    //try
-                    //{
+                {                    
+                    /*try
+                    {
                         S2ReadXTOL(entry, c);
-                    /*} catch (Exception e)
+                    } catch (Exception e)
                     {
                         if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Unable to read XTOL #{0} for {1}: {2}", c, fileinfo.Name, e.StackTrace));                      
-                    }*/
-                   
+                    }                                      */
+                        S2ReadXTOL(entry, c);
                     c++;
                 }
                 string st = Sims2Data.XTOLDataBlock[0].Subtype;
@@ -1287,16 +1443,52 @@ namespace SimsCCManager.PackageReaders
                 }
                 Sims2Data.Orphan = false;
             }
+        }
 
+        public async Task S2ReadXMOL()
+        {
+            if (IndexData.Exists(x => x.EntryType == "XMOL") && ReadingSingle)
+            {
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Found {0} XMOL entries in {1}", IndexData.Count(x => x.EntryType == "XMOL"), fileinfo.Name));
+                int c = 0;
+                foreach (IndexEntry entry in IndexData.Where(x => x.EntryType == "XMOL"))
+                {                    
+                    /*try
+                    {
+                        S2ReadXMOL(entry, c);
+                    } catch (Exception e)
+                    {
+                        if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Unable to read XMOL #{0} for {1}: {2}", c, fileinfo.Name, e.StackTrace));                      
+                    }                                         */
+                        S2ReadXMOL(entry, c);
+                    c++;
+                }                
+            }
+        }
+
+        public void ReadSims2Entries()
+        {            
+            S2ReadTXTR();
+            S2ReadCTSS();
+            S2ReadXOBJ();
+            S2ReadOBJD();
+            S2ReadGMDC();
+            S2ReadMMAT();           
+            S2ReadXFLR();
+            S2ReadXNGB();
+            S2ReadGZPS();           
+            S2Read3DIR();
+            S2ReadSHPE();
+            S2ReadTXMT();
+            S2ReadXHTN();
+            S2ReadXTOL();
+            S2ReadXMOL();
 
             if (Sims2Data.MMATDataBlock.Count != 0)
             {
                 //if (string.IsNullOrEmpty(Sims2Data.GUID)) Sims2Data.GUID = Sims2Data.MMATDataBlock[0].ObjectGUID;
                 if (!string.IsNullOrEmpty(Sims2Data.MMATDataBlock[0]?.ObjectGUID) && (string.IsNullOrEmpty(Sims2Data.GUID) || Sims2Data.GUID == "N/a")) Sims2Data.GUID = Sims2Data.MMATDataBlock[0].ObjectGUID;
-            }       
-
-
-
+            }      
             
             if (IndexData.Exists(x => x.EntryType == "GMND") && ReadingSingle)
             {
@@ -1304,6 +1496,7 @@ namespace SimsCCManager.PackageReaders
                 int c = 0;
                 foreach (IndexEntry entry in IndexData.Where(x => x.EntryType == "GMND"))
                 {
+                //dont forget to give it its own binary reader
                     try
                     {                        
                         S2ReadGMND(entry, c);
@@ -1313,27 +1506,7 @@ namespace SimsCCManager.PackageReaders
                     }
                     c++;
                 }*/
-            }
-
-            if (IndexData.Exists(x => x.EntryType == "XMOL") && ReadingSingle)
-            {
-                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Found {0} XMOL entries in {1}", IndexData.Count(x => x.EntryType == "XMOL"), fileinfo.Name));
-                int c = 0;
-                foreach (IndexEntry entry in IndexData.Where(x => x.EntryType == "XMOL"))
-                {
-                    try
-                    {
-                        S2ReadXMOL(entry, c);
-                    } catch (Exception e)
-                    {
-                        if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Unable to read XMOL #{0} for {1}: {2}", c, fileinfo.Name, e.StackTrace));                      
-                    }
-                   
-                    c++;
-                }                
-            }
-
-
+            }            
 
             if (fileinfo.Name.ToLower().Contains("posebox")) Sims2Data.AltType = "Posebox";
             
@@ -1477,951 +1650,917 @@ namespace SimsCCManager.PackageReaders
         {
             S2ReadGMNDChunk gmnd;
 
-            packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
-            int cFileSize = packagereader.ReadInt32();
-            string cTypeID = packagereader.ReadUInt16().ToString("X4");
-            if (cTypeID == "FB10")
-            {
-                byte[] tempBytes = packagereader.ReadBytes(3);
-                uint cFullSize = Sims2EntryReaders.QFSLengthToInt(tempBytes);
-                DecryptByteStream decompressed = new DecryptByteStream(Sims2EntryReaders.Uncompress(packagereader.ReadBytes(cFileSize), cFullSize, 0));
-                gmnd = new(decompressed, fileinfo, txtrc);
+            using (BinaryReader reader = ReadSpecificBytes(PackageBytes, (int)entry.Offset, (int)entry.FileSize))
+            {    
+                reader.BaseStream.Position = 0;
+                int cFileSize = reader.ReadInt32();
+                string cTypeID = reader.ReadUInt16().ToString("X4");
+                if (cTypeID == "FB10")
+                {
+                    byte[] tempBytes = reader.ReadBytes(3);
+                    uint cFullSize = Sims2EntryReaders.QFSLengthToInt(tempBytes);
+                    DecryptByteStream decompressed = new DecryptByteStream(Sims2EntryReaders.Uncompress(reader.ReadBytes(cFileSize), cFullSize, 0));
+                    gmnd = new(decompressed, fileinfo, txtrc);
 
+                }
+                else
+                {
+                    reader.BaseStream.Position = 0;
+                    gmnd = new(reader, fileinfo, txtrc);
+                }
+                gmnd.GMNDData.CopyEntryInfo(entry);
+                (SimsData as Sims2Data).GMNDDataBlock.Add(gmnd.GMNDData);
             }
-            else
-            {
-                packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
-                gmnd = new(packagereader, fileinfo, txtrc);
-            }
-            gmnd.GMNDData.CopyEntryInfo(entry);
-            (SimsData as Sims2Data).GMNDDataBlock.Add(gmnd.GMNDData);
-            
-
         }
 
         public void S2ReadXMOL(IndexEntry entry, int num)
         {
             S2ReadXMOLChunk xmol = new();
 
-            packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
-            packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
+            using (BinaryReader reader = ReadSpecificBytes(PackageBytes, (int)entry.Offset, (int)entry.FileSize))
+            {    
+                reader.BaseStream.Position = 0;
 
-            int cFileSize = packagereader.ReadInt32();
-            if (cFileSize == -65535)
-            {
-                //not compressed (this is a note)
-            }
-            long pos = packagereader.BaseStream.Position;
-            string cTypeID = packagereader.ReadUInt16().ToString("X4");
-            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("cFileSize: {0}, cTypeID: {1}", cFileSize, cTypeID));
-            
-            if (cTypeID == "FB10")
-            {
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Entry is compressed!"));
-                byte[] tempBytes = packagereader.ReadBytes(3);
-                uint cFullSize = Sims2EntryReaders.QFSLengthToInt(tempBytes);
-                string cpfTypeID = packagereader.ReadUInt32().ToString("X8");
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("cFullSize: {0}, cpfTypeID: {1}", cFullSize, cpfTypeID));
-                if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
+                int cFileSize = reader.ReadInt32();
+                if (cFileSize == -65535)
                 {
-                    xmol = new(packagereader, false, 0);
+                    //not compressed (this is a note)
                 }
-                else
+                long pos = reader.BaseStream.Position;
+                string cTypeID = reader.ReadUInt16().ToString("X4");
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("cFileSize: {0}, cTypeID: {1}", cFileSize, cTypeID));
+                
+                if (cTypeID == "FB10")
                 {
-                    //packagereader.BaseStream.Position = ChunkOffset + entry.Offset + 9;
-                    packagereader.BaseStream.Position = pos;
-                                        
-                    byte[] decompressedByte = DecompressEntry(packagereader, cFileSize);
-                                
-                    BinaryReader binaryReader = new(new MemoryStream(decompressedByte));
-                    if (cpfTypeID == "E750E0E2")
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Entry is compressed!"));
+                    byte[] tempBytes = reader.ReadBytes(3);
+                    uint cFullSize = Sims2EntryReaders.QFSLengthToInt(tempBytes);
+                    string cpfTypeID = reader.ReadUInt32().ToString("X8");
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("cFullSize: {0}, cpfTypeID: {1}", cFullSize, cpfTypeID));
+                    if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
                     {
-                        // Read first four bytes
-                        cpfTypeID = binaryReader.ReadUInt32().ToString("X8");
-                        if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
-                        {
-                            xmol = new(binaryReader, false, decompressedByte.Length);
-                        }
+                        xmol = new(reader, false, 0);
                     }
                     else
                     {
-                        xmol = new(binaryReader, true, decompressedByte.Length);
+                        //reader.BaseStream.Position = ChunkOffset + entry.Offset + 9;
+                        reader.BaseStream.Position = pos;
+                                            
+                        byte[] decompressedByte = DecompressEntry(reader, cFileSize);
+                                    
+                        BinaryReader binaryReader = new(new MemoryStream(decompressedByte));
+                        BinaryReaders.Add(binaryReader);
+                        if (cpfTypeID == "E750E0E2")
+                        {
+                            // Read first four bytes
+                            cpfTypeID = binaryReader.ReadUInt32().ToString("X8");
+                            if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
+                            {
+                                xmol = new(binaryReader, false, decompressedByte.Length);
+                            }
+                        }
+                        else
+                        {
+                            xmol = new(binaryReader, true, decompressedByte.Length);
+                        }
                     }
-                }
-            } else
-            {
-                packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Entry is not compressed!"));
-                string cpfTypeID = packagereader.ReadUInt32().ToString("X8");
-                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("CPFTypeID: {0}", cpfTypeID));
-                if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
-                {                    
-                    xmol = new(packagereader, false, 0);
-                } else if (cpfTypeID == "6D783F3C")
+                } else
                 {
-                    packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
-                    //string xmldata = SimsPackageReader.ReadEncodedString(packagereader.ReadBytes((int)entry.FileSize));
-                    xmol = new(packagereader, true, (int)entry.FileSize);
+                    reader.BaseStream.Position = 0;
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Entry is not compressed!"));
+                    string cpfTypeID = reader.ReadUInt32().ToString("X8");
+                    if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("CPFTypeID: {0}", cpfTypeID));
+                    if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
+                    {                    
+                        xmol = new(reader, false, 0);
+                    } else if (cpfTypeID == "6D783F3C")
+                    {
+                        reader.BaseStream.Position = 0;
+                        //string xmldata = SimsPackageReader.ReadEncodedString(reader.ReadBytes((int)entry.FileSize));
+                        xmol = new(reader, true, (int)entry.FileSize);
+                    }                
+                }
+                if (xmol.XMOLData != null)
+                {
+                    xmol.XMOLData.CopyEntryInfo(entry);
+                    if (xmol.XMOLData.Name.Contains("face_eye_")) SimsData.AltType = "Eyecolor";
+                    (SimsData as Sims2Data).XMOLDataBlock.Add(xmol.XMOLData);
                 }                
             }
-            if (xmol.XMOLData != null)
-            {
-                xmol.XMOLData.CopyEntryInfo(entry);
-                //if (xtol.XTOLData.Name.Contains("face_eye_")) SimsData.AltType = "Eyecolor";
-                (SimsData as Sims2Data).XMOLDataBlock.Add(xmol.XMOLData);
-            }
-            
         }
 
         public void S2ReadXTOL(IndexEntry entry, int num)
         {
             S2ReadXTOLChunk xtol = new();
 
-            packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
+            using (BinaryReader reader = ReadSpecificBytes(PackageBytes, (int)entry.Offset, (int)entry.FileSize))
+            {    
+                reader.BaseStream.Position = 0;
 
-            int cFileSize = packagereader.ReadInt32();
-            if (cFileSize == -65535)
-            {
-                //not compressed (this is a note)
-            }
-            long pos = packagereader.BaseStream.Position;
-            string cTypeID = packagereader.ReadUInt16().ToString("X4");
-            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("cFileSize: {0}, cTypeID: {1}", cFileSize, cTypeID));
-            
-            if (cTypeID == "FB10")
-            {
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Entry is compressed!"));
-                byte[] tempBytes = packagereader.ReadBytes(3);
-                uint cFullSize = Sims2EntryReaders.QFSLengthToInt(tempBytes);
-                string cpfTypeID = packagereader.ReadUInt32().ToString("X8");
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("cFullSize: {0}, cpfTypeID: {1}", cFullSize, cpfTypeID));
-                if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
+                int cFileSize = reader.ReadInt32();
+                if (cFileSize == -65535)
                 {
-                    xtol = new(packagereader, false, 0);
+                    //not compressed (this is a note)
                 }
-                else
+                long pos = reader.BaseStream.Position;
+                string cTypeID = reader.ReadUInt16().ToString("X4");
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("cFileSize: {0}, cTypeID: {1}", cFileSize, cTypeID));
+                
+                if (cTypeID == "FB10")
                 {
-                    //packagereader.BaseStream.Position = ChunkOffset + entry.Offset + 9;
-                    packagereader.BaseStream.Position = pos;
-                                        
-                    byte[] decompressedByte = DecompressEntry(packagereader, cFileSize);
-                                
-                    BinaryReader binaryReader = new(new MemoryStream(decompressedByte));
-                    if (cpfTypeID == "E750E0E2")
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Entry is compressed!"));
+                    byte[] tempBytes = reader.ReadBytes(3);
+                    uint cFullSize = Sims2EntryReaders.QFSLengthToInt(tempBytes);
+                    string cpfTypeID = reader.ReadUInt32().ToString("X8");
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("cFullSize: {0}, cpfTypeID: {1}", cFullSize, cpfTypeID));
+                    if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
                     {
-                        // Read first four bytes
-                        cpfTypeID = binaryReader.ReadUInt32().ToString("X8");
-                        if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
-                        {
-                            xtol = new(binaryReader, false, decompressedByte.Length);
-                        }
+                        xtol = new(reader, false, 0);
                     }
                     else
                     {
-                        xtol = new(binaryReader, true, decompressedByte.Length);
+                        //reader.BaseStream.Position = ChunkOffset + entry.Offset + 9;
+                        reader.BaseStream.Position = pos;
+                                            
+                        byte[] decompressedByte = DecompressEntry(reader, cFileSize);
+                                    
+                        BinaryReader binaryReader = new(new MemoryStream(decompressedByte));
+                        BinaryReaders.Add(binaryReader);
+                        if (cpfTypeID == "E750E0E2")
+                        {
+                            // Read first four bytes
+                            cpfTypeID = binaryReader.ReadUInt32().ToString("X8");
+                            if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
+                            {
+                                xtol = new(binaryReader, false, decompressedByte.Length);
+                            }
+                        }
+                        else
+                        {
+                            xtol = new(binaryReader, true, decompressedByte.Length);
+                        }
                     }
-                }
-            } else
-            {
-                packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Entry is not compressed!"));
-                string cpfTypeID = packagereader.ReadUInt32().ToString("X8");
-                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("CPFTypeID: {0}", cpfTypeID));
-                if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
-                {                    
-                    xtol = new(packagereader, false, 0);
-                } else if (cpfTypeID == "6D783F3C")
+                } else
                 {
-                    packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
-                    //string xmldata = SimsPackageReader.ReadEncodedString(packagereader.ReadBytes((int)entry.FileSize));
-                    xtol = new(packagereader, true, (int)entry.FileSize);
+                    reader.BaseStream.Position = 0;
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Entry is not compressed!"));
+                    string cpfTypeID = reader.ReadUInt32().ToString("X8");
+                    if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("CPFTypeID: {0}", cpfTypeID));
+                    if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
+                    {                    
+                        xtol = new(reader, false, 0);
+                    } else if (cpfTypeID == "6D783F3C")
+                    {
+                        reader.BaseStream.Position = 0;
+                        //string xmldata = SimsPackageReader.ReadEncodedString(reader.ReadBytes((int)entry.FileSize));
+                        xtol = new(reader, true, (int)entry.FileSize);
+                    }                
+                }
+                if (xtol.XTOLData != null)
+                {
+                    xtol.XTOLData.CopyEntryInfo(entry);
+                    if (xtol.XTOLData.Name.Contains("face_eye_")) SimsData.AltType = "Eyecolor";
+                    (SimsData as Sims2Data).XTOLDataBlock.Add(xtol.XTOLData);
                 }                
             }
-            if (xtol.XTOLData != null)
-            {
-                xtol.XTOLData.CopyEntryInfo(entry);
-                if (xtol.XTOLData.Name.Contains("face_eye_")) SimsData.AltType = "Eyecolor";
-                (SimsData as Sims2Data).XTOLDataBlock.Add(xtol.XTOLData);
-            }
-            
         }
 
         public void S2ReadXHTN(IndexEntry entry, int num)
         {
             if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Reading XHTN #{0}", num));
             S2ReadXHTNChunk xhtn = new();
-            packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
+            using (BinaryReader reader = ReadSpecificBytes(PackageBytes, (int)entry.Offset, (int)entry.FileSize))
+            {    
+                reader.BaseStream.Position = 0;
 
-            int cFileSize = packagereader.ReadInt32();
-            if (cFileSize == -65535)
-            {
-                //not compressed (this is a note)
-            }
-            long pos = packagereader.BaseStream.Position;
-            string cTypeID = packagereader.ReadUInt16().ToString("X4");
-            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("cFileSize: {0}, cTypeID: {1}", cFileSize, cTypeID));
-            
-            if (cTypeID == "FB10")
-            {
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Entry is compressed!"));
-                byte[] tempBytes = packagereader.ReadBytes(3);
-                uint cFullSize = Sims2EntryReaders.QFSLengthToInt(tempBytes);
-                string cpfTypeID = packagereader.ReadUInt32().ToString("X8");
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("cFullSize: {0}, cpfTypeID: {1}", cFullSize, cpfTypeID));
-                if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
+                int cFileSize = reader.ReadInt32();
+                if (cFileSize == -65535)
                 {
-                    xhtn = new(packagereader, false, 0);
+                    //not compressed (this is a note)
                 }
-                else
+                long pos = reader.BaseStream.Position;
+                string cTypeID = reader.ReadUInt16().ToString("X4");
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("cFileSize: {0}, cTypeID: {1}", cFileSize, cTypeID));
+                
+                if (cTypeID == "FB10")
                 {
-                    //packagereader.BaseStream.Position = ChunkOffset + entry.Offset + 9;
-                    packagereader.BaseStream.Position = pos;
-                                        
-                    byte[] decompressedByte = DecompressEntry(packagereader, cFileSize);
-                                
-                    BinaryReader binaryReader = new(new MemoryStream(decompressedByte));
-                    if (cpfTypeID == "E750E0E2")
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Entry is compressed!"));
+                    byte[] tempBytes = reader.ReadBytes(3);
+                    uint cFullSize = Sims2EntryReaders.QFSLengthToInt(tempBytes);
+                    string cpfTypeID = reader.ReadUInt32().ToString("X8");
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("cFullSize: {0}, cpfTypeID: {1}", cFullSize, cpfTypeID));
+                    if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
                     {
-                        // Read first four bytes
-                        cpfTypeID = binaryReader.ReadUInt32().ToString("X8");
-                        if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
-                        {
-                            xhtn = new(binaryReader, false, decompressedByte.Length);
-                        }
+                        xhtn = new(reader, false, 0);
                     }
                     else
                     {
-                        xhtn = new(binaryReader, true, decompressedByte.Length);
+                        //reader.BaseStream.Position = ChunkOffset + entry.Offset + 9;
+                        reader.BaseStream.Position = pos;
+                                            
+                        byte[] decompressedByte = DecompressEntry(reader, cFileSize);
+                                    
+                        BinaryReader binaryReader = new(new MemoryStream(decompressedByte));
+                        BinaryReaders.Add(binaryReader);
+                        if (cpfTypeID == "E750E0E2")
+                        {
+                            // Read first four bytes
+                            cpfTypeID = binaryReader.ReadUInt32().ToString("X8");
+                            if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
+                            {
+                                xhtn = new(binaryReader, false, decompressedByte.Length);
+                            }
+                        }
+                        else
+                        {
+                            xhtn = new(binaryReader, true, decompressedByte.Length);
+                        }
                     }
-                }
-            } else
-            {
-                packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Entry is not compressed!"));
-                string cpfTypeID = packagereader.ReadUInt32().ToString("X8");
-                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("CPFTypeID: {0}", cpfTypeID));
-                if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
-                {                    
-                    xhtn = new(packagereader, false, 0);
-                } else if (cpfTypeID == "6D783F3C")
+                } else
                 {
-                    packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
-                    //string xmldata = SimsPackageReader.ReadEncodedString(packagereader.ReadBytes((int)entry.FileSize));
-                    xhtn = new(packagereader, true, (int)entry.FileSize);
-                }                
+                    reader.BaseStream.Position = 0;
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Entry is not compressed!"));
+                    string cpfTypeID = reader.ReadUInt32().ToString("X8");
+                    if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("CPFTypeID: {0}", cpfTypeID));
+                    if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
+                    {                    
+                        xhtn = new(reader, false, 0);
+                    } else if (cpfTypeID == "6D783F3C")
+                    {
+                        reader.BaseStream.Position = 0;
+                        //string xmldata = SimsPackageReader.ReadEncodedString(reader.ReadBytes((int)entry.FileSize));
+                        xhtn = new(reader, true, (int)entry.FileSize);
+                    }                
+                }
+                xhtn.XHTNData.CopyEntryInfo(entry);
+                (SimsData as Sims2Data).XHTNDataBlock.Add(xhtn.XHTNData);
             }
-            xhtn.XHTNData.CopyEntryInfo(entry);
-            (SimsData as Sims2Data).XHTNDataBlock.Add(xhtn.XHTNData);
         }
      
         public void S2ReadTXMT(IndexEntry entry, int txtrc)
         {
             S2ReadTXMTChunk txmt;
-
-            packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
-            int cFileSize = packagereader.ReadInt32();
-            if (cFileSize == -65535)
-            {
-                //not compressed (this is a note)
-            }
-            long pos = packagereader.BaseStream.Position;
-            string cTypeID = packagereader.ReadUInt16().ToString("X4");
-            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("cFileSize: {0}, cTypeID: {1}", cFileSize, cTypeID));
-            
-            if (cTypeID == "FB10")
-            {
-                packagereader.BaseStream.Position = pos;
-                byte[] decompressedByte = DecompressEntry(packagereader, cFileSize);
-
-                BinaryReader binaryReader = new(new MemoryStream(decompressedByte));
-
-                pos = binaryReader.BaseStream.Position;
-                byte cMaterialDefinition = binaryReader.ReadByte();                
-                while (cMaterialDefinition != 19)
+            using (BinaryReader reader = ReadSpecificBytes(PackageBytes, (int)entry.Offset, (int)entry.FileSize))
+            {    
+                reader.BaseStream.Position = 0;
+                int cFileSize = reader.ReadInt32();
+                if (cFileSize == -65535)
                 {
-                    pos = binaryReader.BaseStream.Position;
-                    cMaterialDefinition = binaryReader.ReadByte();
+                    //not compressed (this is a note)
                 }
-                binaryReader.BaseStream.Position = pos;
-
-                txmt = new(binaryReader, fileinfo, txtrc);
-
-            }
-            else
-            {
-                packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
+                long pos = reader.BaseStream.Position;
+                string cTypeID = reader.ReadUInt16().ToString("X4");
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("cFileSize: {0}, cTypeID: {1}", cFileSize, cTypeID));
                 
-                pos = packagereader.BaseStream.Position;
-                byte cMaterialDefinition = packagereader.ReadByte();                
-                while (cMaterialDefinition != 19)
+                if (cTypeID == "FB10")
                 {
-                    pos = packagereader.BaseStream.Position;
-                    cMaterialDefinition = packagereader.ReadByte();
-                }
-                packagereader.BaseStream.Position = pos;
-                txmt = new(packagereader, fileinfo, txtrc);
-            }
-            txmt.TXMTData.CopyEntryInfo(entry);
-            if (Sims2PackageStatics.Sims2SkinNames.Any(x => txmt.TXMTData.FileName.Contains(x)))
-            {
-                Sims2Data.AltType = "Skin";
-            }
-            if (txmt.TXMTData.MaterialProperties.Any(x => x.PropertyName == "stdMatBaseTextureName"))
-            {
-                txmt.TXMTData.stdMatBaseTextureName = txmt.TXMTData.MaterialProperties.First(x => x.PropertyName == "stdMatBaseTextureName").PropertyValue;
-            }
-            (SimsData as Sims2Data).TXMTDataBlock.Add(txmt.TXMTData);
-            
+                    reader.BaseStream.Position = pos;
+                    byte[] decompressedByte = DecompressEntry(reader, cFileSize);
 
+                    BinaryReader binaryReader = new(new MemoryStream(decompressedByte));
+                        BinaryReaders.Add(binaryReader);
+
+                    pos = binaryReader.BaseStream.Position;
+                    byte cMaterialDefinition = binaryReader.ReadByte();                
+                    while (cMaterialDefinition != 19)
+                    {
+                        pos = binaryReader.BaseStream.Position;
+                        cMaterialDefinition = binaryReader.ReadByte();
+                    }
+                    binaryReader.BaseStream.Position = pos;
+
+                    txmt = new(binaryReader, fileinfo, txtrc);
+
+                }
+                else
+                {
+                    reader.BaseStream.Position = 0;
+                    
+                    pos = reader.BaseStream.Position;
+                    byte cMaterialDefinition = reader.ReadByte();                
+                    while (cMaterialDefinition != 19)
+                    {
+                        pos = reader.BaseStream.Position;
+                        cMaterialDefinition = reader.ReadByte();
+                    }
+                    reader.BaseStream.Position = pos;
+                    txmt = new(reader, fileinfo, txtrc);
+                }
+                txmt.TXMTData.CopyEntryInfo(entry);
+                if (!string.IsNullOrEmpty(txmt.TXMTData.FileName)) if (Sims2PackageStatics.Sims2SkinNames.Any(x => txmt.TXMTData.FileName.Contains(x)))
+                {
+                    Sims2Data.AltType = "Skin";
+                }
+                if (txmt.TXMTData.MaterialProperties != null) if (txmt.TXMTData.MaterialProperties.Any(x => x.PropertyName == "stdMatBaseTextureName"))
+                {
+                    txmt.TXMTData.stdMatBaseTextureName = txmt.TXMTData.MaterialProperties.First(x => x.PropertyName == "stdMatBaseTextureName").PropertyValue;
+                }
+                (SimsData as Sims2Data).TXMTDataBlock.Add(txmt.TXMTData);
+                
+            }
         }
 
         public void S2ReadSHPE(IndexEntry entry, int txtrc)
         {
             S2ReadSHPEChunk shpe;            
-            packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
-            
-            int cFileSize = packagereader.ReadInt32();
-            if (cFileSize == -65535)
-            {
-                //not compressed (this is a note)
-            }
-            long pos = packagereader.BaseStream.Position;
-            string cTypeID = packagereader.ReadUInt16().ToString("X4");
-            if (cTypeID == "FB10")
-            {
-                packagereader.BaseStream.Position = pos;
-            }
-            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("cFileSize: {0}, cTypeID: {1}", cFileSize, cTypeID));
-            
-            if (entry.IsCompressed || cTypeID == "FB10")
-            {
-                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("{0} SHPE is compressed!", fileinfo.Name));               
-
-                byte[] decompressedByte = DecompressEntry(packagereader, cFileSize);
-                                
-                BinaryReader binaryReader = new(new MemoryStream(decompressedByte));
+            using (BinaryReader reader = ReadSpecificBytes(PackageBytes, (int)entry.Offset, (int)entry.FileSize))
+            {   
+                reader.BaseStream.Position = 0;
                 
-                pos = 0;
-                byte cshape = binaryReader.ReadByte();                
-                while (cshape != 6)
+                int cFileSize = reader.ReadInt32();
+                if (cFileSize == -65535)
                 {
-                    pos = binaryReader.BaseStream.Position;
-                    cshape = binaryReader.ReadByte();
-                    if (cshape == 6)
+                    //not compressed (this is a note)
+                }
+                long pos = reader.BaseStream.Position;
+                string cTypeID = reader.ReadUInt16().ToString("X4");
+                if (cTypeID == "FB10")
+                {
+                    reader.BaseStream.Position = pos;
+                }
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("cFileSize: {0}, cTypeID: {1}", cFileSize, cTypeID));
+                
+                if (entry.IsCompressed || cTypeID == "FB10")
+                {
+                    if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("{0} SHPE is compressed!", fileinfo.Name));               
+
+                    byte[] decompressedByte = DecompressEntry(reader, cFileSize);
+                                    
+                    BinaryReader binaryReader = new(new MemoryStream(decompressedByte));
+                        BinaryReaders.Add(binaryReader);
+                    
+                    pos = 0;
+                    byte cshape = binaryReader.ReadByte();                
+                    while (cshape != 6)
                     {
-                        binaryReader.BaseStream.Position = pos; 
-                        if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Found CShape: {0}", SimsPackageReader.ReadEncodedString(packagereader.ReadBytes(6))));
+                        pos = binaryReader.BaseStream.Position;
+                        cshape = binaryReader.ReadByte();
+                        if (cshape == 6)
+                        {
+                            binaryReader.BaseStream.Position = pos; 
+                            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Found CShape: {0}", SimsPackageReader.ReadEncodedString(reader.ReadBytes(6))));
+                        }
                     }
-                }
-                binaryReader.BaseStream.Position = pos; 
+                    binaryReader.BaseStream.Position = pos; 
 
-                shpe = new(binaryReader);
-            }
-            else
-            {              
-                pos = 0;
-                byte cshape = packagereader.ReadByte();                
-                while (cshape != 6)
-                {
-                    pos = packagereader.BaseStream.Position;
-                    cshape = packagereader.ReadByte();
+                    shpe = new(binaryReader);
                 }
-                packagereader.BaseStream.Position = pos; 
-                shpe = new(packagereader);
+                else
+                {              
+                    pos = 0;
+                    byte cshape = reader.ReadByte();                
+                    while (cshape != 6)
+                    {
+                        pos = reader.BaseStream.Position;
+                        cshape = reader.ReadByte();
+                    }
+                    reader.BaseStream.Position = pos; 
+                    shpe = new(reader);
+                }
+                shpe.SHPEData.CopyEntryInfo(entry);
+                
+                (SimsData as Sims2Data).SHPEDataBlock.Add(shpe.SHPEData);
+                
             }
-            shpe.SHPEData.CopyEntryInfo(entry);
-            
-            (SimsData as Sims2Data).SHPEDataBlock.Add(shpe.SHPEData);
-            
-
         }
 
         public void S2Read3DIR(IndexEntry entry, int txtrc)
         {
             S2Read3IDRChunk eidr;
-
-            packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
-            
-            int cFileSize = packagereader.ReadInt32();
-            if (cFileSize == -65535)
-            {
-                //not compressed (this is a note)
-            }
-            long pos = packagereader.BaseStream.Position;
-            string cTypeID = packagereader.ReadUInt16().ToString("X4");
-            if (cTypeID == "FB10")
-            {
-                packagereader.BaseStream.Position = pos;
-            }
-            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("cFileSize: {0}, cTypeID: {1}", cFileSize, cTypeID));
-            
-            if (entry.IsCompressed || cTypeID == "FB10")
-            {
-                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("{0} 3IDR is compressed!", fileinfo.Name));               
-
-                byte[] decompressedByte = DecompressEntry(packagereader, cFileSize);
-                                
-                BinaryReader binaryReader = new(new MemoryStream(decompressedByte));
+            using (BinaryReader reader = ReadSpecificBytes(PackageBytes, (int)entry.Offset, (int)entry.FileSize))
+            {    
+                reader.BaseStream.Position = 0;
                 
-                eidr = new(binaryReader, fileinfo);
-            }
-            else
-            {              
-                eidr = new(packagereader, fileinfo);
-            }
+                int cFileSize = reader.ReadInt32();
+                if (cFileSize == -65535)
+                {
+                    //not compressed (this is a note)
+                }
+                long pos = reader.BaseStream.Position;
+                string cTypeID = reader.ReadUInt16().ToString("X4");
+                if (cTypeID == "FB10")
+                {
+                    reader.BaseStream.Position = pos;
+                }
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("cFileSize: {0}, cTypeID: {1}", cFileSize, cTypeID));
+                
+                if (entry.IsCompressed || cTypeID == "FB10")
+                {
+                    if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("{0} 3IDR is compressed!", fileinfo.Name));               
 
-            /*packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
-            int cFileSize = packagereader.ReadInt32();
-            string cTypeID = packagereader.ReadUInt16().ToString("X4");
-            if (cTypeID == "FB10")
-            {
-                byte[] tempBytes = packagereader.ReadBytes(3);
-                uint cFullSize = Sims2EntryReaders.QFSLengthToInt(tempBytes);
-                DecryptByteStream decompressed = new DecryptByteStream(Sims2EntryReaders.Uncompress(packagereader.ReadBytes(cFileSize), cFullSize, 0));
-                eidr = new(decompressed, fileinfo);
+                    byte[] decompressedByte = DecompressEntry(reader, cFileSize);
+                                    
+                    BinaryReader binaryReader = new(new MemoryStream(decompressedByte));
+                        BinaryReaders.Add(binaryReader);
+                    
+                    eidr = new(binaryReader, fileinfo);
+                }
+                else
+                {              
+                    eidr = new(reader, fileinfo);
+                }
 
+                
+                eidr.EIDRData.CopyEntryInfo(entry);
+                (SimsData as Sims2Data).EIDRDataBlock.Add(eidr.EIDRData);
+                
             }
-            else
-            {
-                packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
-                eidr = new(packagereader, fileinfo);
-            }*/
-            eidr.EIDRData.CopyEntryInfo(entry);
-            (SimsData as Sims2Data).EIDRDataBlock.Add(eidr.EIDRData);
-            
-
         }
         
         public void S2ReadGZPS(IndexEntry entry)
         {
             S2ReadGZPSChunk gzps = new();
-            packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
+            using (BinaryReader reader = ReadSpecificBytes(PackageBytes, (int)entry.Offset, (int)entry.FileSize))
+            {   
+                reader.BaseStream.Position = 0;
 
-            int cFileSize = packagereader.ReadInt32();
-            if (cFileSize == -65535)
-            {
-                //not compressed (this is a note)
-            }
-            long pos = packagereader.BaseStream.Position;
-            string cTypeID = packagereader.ReadUInt16().ToString("X4");
-            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("cFileSize: {0}, cTypeID: {1}", cFileSize, cTypeID));
-            
-            if (cTypeID == "FB10")
-            {
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Entry is compressed!"));
-                byte[] tempBytes = packagereader.ReadBytes(3);
-                uint cFullSize = Sims2EntryReaders.QFSLengthToInt(tempBytes);
-                string cpfTypeID = packagereader.ReadUInt32().ToString("X8");
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("cFullSize: {0}, cpfTypeID: {1}", cFullSize, cpfTypeID));
-                if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
+                int cFileSize = reader.ReadInt32();
+                if (cFileSize == -65535)
                 {
-                    gzps = new(packagereader, false, 0);
+                    //not compressed (this is a note)
                 }
-                else
+                long pos = reader.BaseStream.Position;
+                string cTypeID = reader.ReadUInt16().ToString("X4");
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("cFileSize: {0}, cTypeID: {1}", cFileSize, cTypeID));
+                
+                if (cTypeID == "FB10")
                 {
-                    //packagereader.BaseStream.Position = ChunkOffset + entry.Offset + 9;
-                    packagereader.BaseStream.Position = pos;
-                                        
-                    byte[] decompressedByte = DecompressEntry(packagereader, cFileSize);
-                                
-                    BinaryReader binaryReader = new(new MemoryStream(decompressedByte));
-                    if (cpfTypeID == "E750E0E2")
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Entry is compressed!"));
+                    byte[] tempBytes = reader.ReadBytes(3);
+                    uint cFullSize = Sims2EntryReaders.QFSLengthToInt(tempBytes);
+                    string cpfTypeID = reader.ReadUInt32().ToString("X8");
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("cFullSize: {0}, cpfTypeID: {1}", cFullSize, cpfTypeID));
+                    if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
                     {
-                        // Read first four bytes
-                        cpfTypeID = binaryReader.ReadUInt32().ToString("X8");
-                        if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
-                        {
-                            gzps = new(binaryReader, false, decompressedByte.Length);
-                        }
+                        gzps = new(reader, false, 0);
                     }
                     else
                     {
-                        gzps = new(binaryReader, true, decompressedByte.Length);
-                    }
-                }
-            } else
-            {
-                packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Entry is not compressed!"));
-                string cpfTypeID = packagereader.ReadUInt32().ToString("X8");
-                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("CPFTypeID: {0}", cpfTypeID));
-                if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
-                {                    
-                    gzps = new(packagereader, false, 0);
-                } else if (cpfTypeID == "6D783F3C")
-                {
-                    packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
-                    //string xmldata = SimsPackageReader.ReadEncodedString(packagereader.ReadBytes((int)entry.FileSize));
-                    gzps = new(packagereader, true, (int)entry.FileSize);
-                }                
-            }
-            /*packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
-            int cFileSize = packagereader.ReadInt32();
-            string cTypeID = packagereader.ReadUInt16().ToString("X4");
-            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("GZPS cType: {0}", cTypeID));
-            if (cTypeID == "FB10")
-            {
-                byte[] tempBytes = packagereader.ReadBytes(3);
-                uint cFullSize = Sims2EntryReaders.QFSLengthToInt(tempBytes);
-                string cpfTypeID = packagereader.ReadUInt32().ToString("X8");
-                if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
-                {
-                    gzps = new(packagereader);
-                }
-                else
-                {
-                    packagereader.BaseStream.Position = ChunkOffset + entry.Offset + 9;
-                    DecryptByteStream decompressed = new DecryptByteStream(Sims2EntryReaders.Uncompress(packagereader.ReadBytes(cFileSize), cFullSize, 0));
-                    if (cpfTypeID == "E750E0E2")
-                    {
-                        // Read first four bytes
-                        cpfTypeID = decompressed.ReadUInt32().ToString("X8");
-                        if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
+                        //reader.BaseStream.Position = ChunkOffset + entry.Offset + 9;
+                        reader.BaseStream.Position = pos;
+                                            
+                        byte[] decompressedByte = DecompressEntry(reader, cFileSize);
+                                    
+                        BinaryReader binaryReader = new(new MemoryStream(decompressedByte));
+                        BinaryReaders.Add(binaryReader);
+                        if (cpfTypeID == "E750E0E2")
                         {
-                            gzps = new(decompressed);
+                            // Read first four bytes
+                            cpfTypeID = binaryReader.ReadUInt32().ToString("X8");
+                            if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
+                            {
+                                gzps = new(binaryReader, false, decompressedByte.Length);
+                            }
+                        }
+                        else
+                        {
+                            gzps = new(binaryReader, true, decompressedByte.Length);
                         }
                     }
-                    else
-                    {
-                        gzps = new(decompressed, true);
-                    }
-                }
-            } else
-            {
-                packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
-                string cpfTypeID = packagereader.ReadUInt32().ToString("X8");
-                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("CPFTypeID: {0}", cpfTypeID));
-                if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
-                {                    
-                    gzps = new(packagereader);
-                }
-
-                if (cpfTypeID == "6D783F3C")
+                } else
                 {
-                    packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
-                    string xmldata = SimsPackageReader.ReadEncodedString(packagereader.ReadBytes((int)entry.FileSize));
-                    gzps = new(packagereader, entry.FileSize, true);
+                    reader.BaseStream.Position = 0;
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Entry is not compressed!"));
+                    string cpfTypeID = reader.ReadUInt32().ToString("X8");
+                    if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("CPFTypeID: {0}", cpfTypeID));
+                    if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
+                    {                    
+                        gzps = new(reader, false, 0);
+                    } else if (cpfTypeID == "6D783F3C")
+                    {
+                        reader.BaseStream.Position = 0;
+                        //string xmldata = SimsPackageReader.ReadEncodedString(reader.ReadBytes((int)entry.FileSize));
+                        gzps = new(reader, true, (int)entry.FileSize);
+                    }                
                 }
                 
-            }*/
-            gzps.GZPSData.CopyEntryInfo(entry);
-            
-            (SimsData as Sims2Data).GZPSDataBlock.Add(gzps.GZPSData);
-            string category = "";
-            string subcategory = "";
+                gzps.GZPSData.CopyEntryInfo(entry);
+                
+                (SimsData as Sims2Data).GZPSDataBlock.Add(gzps.GZPSData);
+                string category = "";
+                string subcategory = "";
 
-            switch (gzps.GZPSData.Product)
-            {
-                case "0":
-                if (!Sims2Data.Expansions.Contains(Sims2Expansions.BaseGame)) Sims2Data.Expansions.Add(Sims2Expansions.BaseGame);
-                break;
-            }
+                switch (gzps.GZPSData.Product)
+                {
+                    case "0":
+                    if (!Sims2Data.Expansions.Contains(Sims2Expansions.BaseGame)) Sims2Data.Expansions.Add(Sims2Expansions.BaseGame);
+                    break;
+                }
 
-            if (Sims2Data.AltType != "Hair" && Sims2Data.AltType != "Skin")
-            {
-                    switch (gzps.GZPSData.Override0subset)
-                    {                    
-                        case "body":
-                        category = "Clothing";
-                        subcategory = "Full body";
-                        break;           
-                        case "top":
-                        category = "Clothing";
-                        subcategory = "Top";
-                        break;           
-                        case "bottom":
-                        category = "Clothing";
-                        subcategory = "Bottom";
+                if (Sims2Data.AltType != "Hair" && Sims2Data.AltType != "Skin")
+                {
+                        switch (gzps.GZPSData.Override0subset)
+                        {                    
+                            case "body":
+                            category = "Clothing";
+                            subcategory = "Full body";
+                            break;           
+                            case "top":
+                            category = "Clothing";
+                            subcategory = "Top";
+                            break;           
+                            case "bottom":
+                            category = "Clothing";
+                            subcategory = "Bottom";
+                            break;
+                        }
+                        if (!string.IsNullOrEmpty(category)) Sims2Data.FunctionSort.Add(new () { Category = category, Subcategory = subcategory});
+                            
+
+                    string cate = "";
+                    switch (gzps.GZPSData.Category)
+                    {
+                        case "4991":
+                            cate = "All";
+                            if (!Sims2Data.ClothingInfo.Category.Contains(cate))Sims2Data.ClothingInfo.Category.Add(cate);
+                        break;
+                        case "1":
+                            cate = "Casual1";
+                            if (!Sims2Data.ClothingInfo.Category.Contains(cate))Sims2Data.ClothingInfo.Category.Add(cate);
+                        break;
+                        case "2":
+                            cate = "Casual2";
+                            if (!Sims2Data.ClothingInfo.Category.Contains(cate))Sims2Data.ClothingInfo.Category.Add(cate);
+                        break;
+                        case "4":
+                            cate = "Casual3";
+                            if (!Sims2Data.ClothingInfo.Category.Contains(cate))Sims2Data.ClothingInfo.Category.Add(cate);
+                        break;
+                        case "7":
+                            cate = "Everyday";
+                            if (!Sims2Data.ClothingInfo.Category.Contains(cate))Sims2Data.ClothingInfo.Category.Add(cate);
+                        break;
+                        case "8":
+                            cate = "Swimwear";
+                            if (!Sims2Data.ClothingInfo.Category.Contains(cate))Sims2Data.ClothingInfo.Category.Add(cate);
+                        break;
+                        case "10":
+                            cate = "Swimwear";
+                            if (!Sims2Data.ClothingInfo.Category.Contains(cate))Sims2Data.ClothingInfo.Category.Add(cate);
+                        break;
+                        case "20":
+                            cate = "Formal";
+                            if (!Sims2Data.ClothingInfo.Category.Contains(cate))Sims2Data.ClothingInfo.Category.Add(cate);
+                        break;
+                        case "40":
+                            cate = "Underwear";
+                            if (!Sims2Data.ClothingInfo.Category.Contains(cate))Sims2Data.ClothingInfo.Category.Add(cate);
+                        break;
+                        case "80":
+                            //Sims2Data.FunctionSort = [new() { Category = "Skintone"}];
+                            //Sims2Data.ClothingInfo.Category.Add("Skintone");
+                        break;
+                        case "100":
+                            cate = "Maternity";
+                            if (!Sims2Data.ClothingInfo.Category.Contains(cate))Sims2Data.ClothingInfo.Category.Add(cate);
+                        break;
+                        case "200":
+                            cate = "Activewear";
+                            if (!Sims2Data.ClothingInfo.Category.Contains(cate))Sims2Data.ClothingInfo.Category.Add(cate);
+                        break;
+                        case "400":
+                            cate = "TryOn";
+                            if (!Sims2Data.ClothingInfo.Category.Contains(cate))Sims2Data.ClothingInfo.Category.Add(cate);
+                        break;
+                        case "800":
+                            cate = "NakedOverlay";
+                            if (!Sims2Data.ClothingInfo.Category.Contains(cate))Sims2Data.ClothingInfo.Category.Add(cate);
+                        break;
+                        case "1000":
+                            cate = "Outerwear";
+                            if (!Sims2Data.ClothingInfo.Category.Contains(cate))Sims2Data.ClothingInfo.Category.Add(cate);
+                        break;
+                        
+                    }
+
+                    string ca = "";
+                    switch (gzps.GZPSData.Age)
+                    {
+                        case "48":
+                            ca = "Adult";
+                            if (!Sims2Data.ClothingInfo.Age.Contains(ca))Sims2Data.ClothingInfo.Age.Add(ca);
+                        break;
+                        case "2":
+                            ca = "Child";
+                            if (!Sims2Data.ClothingInfo.Age.Contains(ca))Sims2Data.ClothingInfo.Age.Add(ca);
+                        break;
+                        case "10":
+                            ca = "Elder";
+                            if (!Sims2Data.ClothingInfo.Age.Contains(ca))Sims2Data.ClothingInfo.Age.Add(ca);
+                        break;
+                        case "4":
+                            ca = "Teen";
+                            if (!Sims2Data.ClothingInfo.Age.Contains(ca))Sims2Data.ClothingInfo.Age.Add(ca);
+                        break;
+                        case "1":
+                            ca = "Toddler";
+                            if (!Sims2Data.ClothingInfo.Age.Contains(ca))Sims2Data.ClothingInfo.Age.Add(ca);
+                        break;
+                        case "20":
+                            ca = "Baby";
+                            if (!Sims2Data.ClothingInfo.Age.Contains(ca))Sims2Data.ClothingInfo.Age.Add(ca);
+                        break;
+                        case "40":
+                            ca = "Young Adult";
+                            if (!Sims2Data.ClothingInfo.Age.Contains(ca))Sims2Data.ClothingInfo.Age.Add(ca);
                         break;
                     }
-                    if (!string.IsNullOrEmpty(category)) Sims2Data.FunctionSort.Add(new () { Category = category, Subcategory = subcategory});
+                    string gen = "";
+                    switch (gzps.GZPSData.Gender)
+                    {
                         
+                        case "1":
+                            gen = "Female";
+                            if (!Sims2Data.ClothingInfo.Age.Contains(gen))Sims2Data.ClothingInfo.Age.Add(gen);
+                        break;
+                        case "2":
+                            gen = "Male";
+                            if (!Sims2Data.ClothingInfo.Age.Contains(gen))Sims2Data.ClothingInfo.Age.Add(gen);
+                        break;
+                        case "3":
+                            gen = "Unisex";
+                            if (!Sims2Data.ClothingInfo.Age.Contains(gen))Sims2Data.ClothingInfo.Age.Add(gen);
+                        break;
+                    }
 
-                string cate = "";
-                switch (gzps.GZPSData.Category)
-                {
-                    case "4991":
-                        cate = "All";
-                        if (!Sims2Data.ClothingInfo.Category.Contains(cate))Sims2Data.ClothingInfo.Category.Add(cate);
-                    break;
-                    case "1":
-                        cate = "Casual1";
-                        if (!Sims2Data.ClothingInfo.Category.Contains(cate))Sims2Data.ClothingInfo.Category.Add(cate);
-                    break;
-                    case "2":
-                        cate = "Casual2";
-                        if (!Sims2Data.ClothingInfo.Category.Contains(cate))Sims2Data.ClothingInfo.Category.Add(cate);
-                    break;
-                    case "4":
-                        cate = "Casual3";
-                        if (!Sims2Data.ClothingInfo.Category.Contains(cate))Sims2Data.ClothingInfo.Category.Add(cate);
-                    break;
-                    case "7":
-                        cate = "Everyday";
-                        if (!Sims2Data.ClothingInfo.Category.Contains(cate))Sims2Data.ClothingInfo.Category.Add(cate);
-                    break;
-                    case "8":
-                        cate = "Swimwear";
-                        if (!Sims2Data.ClothingInfo.Category.Contains(cate))Sims2Data.ClothingInfo.Category.Add(cate);
-                    break;
-                    case "10":
-                        cate = "Swimwear";
-                        if (!Sims2Data.ClothingInfo.Category.Contains(cate))Sims2Data.ClothingInfo.Category.Add(cate);
-                    break;
-                    case "20":
-                        cate = "Formal";
-                        if (!Sims2Data.ClothingInfo.Category.Contains(cate))Sims2Data.ClothingInfo.Category.Add(cate);
-                    break;
-                    case "40":
-                        cate = "Underwear";
-                        if (!Sims2Data.ClothingInfo.Category.Contains(cate))Sims2Data.ClothingInfo.Category.Add(cate);
-                    break;
-                    case "80":
-                        //Sims2Data.FunctionSort = [new() { Category = "Skintone"}];
-                        //Sims2Data.ClothingInfo.Category.Add("Skintone");
-                    break;
-                    case "100":
-                        cate = "Maternity";
-                        if (!Sims2Data.ClothingInfo.Category.Contains(cate))Sims2Data.ClothingInfo.Category.Add(cate);
-                    break;
-                    case "200":
-                        cate = "Activewear";
-                        if (!Sims2Data.ClothingInfo.Category.Contains(cate))Sims2Data.ClothingInfo.Category.Add(cate);
-                    break;
-                    case "400":
-                        cate = "TryOn";
-                        if (!Sims2Data.ClothingInfo.Category.Contains(cate))Sims2Data.ClothingInfo.Category.Add(cate);
-                    break;
-                    case "800":
-                        cate = "NakedOverlay";
-                        if (!Sims2Data.ClothingInfo.Category.Contains(cate))Sims2Data.ClothingInfo.Category.Add(cate);
-                    break;
-                    case "1000":
-                        cate = "Outerwear";
-                        if (!Sims2Data.ClothingInfo.Category.Contains(cate))Sims2Data.ClothingInfo.Category.Add(cate);
-                    break;
+                    switch (gzps.GZPSData.Hairtone)
+                    {
+                        case "00000001-0000-0000-0000-000000000000":
+                            gzps.GZPSData.HairColor = "Black";
+                        break; 
+                        case "00000002-0000-0000-0000-000000000000":
+                            gzps.GZPSData.HairColor = "Brown";
+                        break;
+                        case "00000003-0000-0000-0000-000000000000":
+                            gzps.GZPSData.HairColor = "Blond";
+                        break;
+                        case "00000004-0000-0000-0000-000000000000":
+                            gzps.GZPSData.HairColor = "Red";
+                        break;
+                        case "00000005-0000-0000-0000-000000000000":
+                            gzps.GZPSData.HairColor = "Grey";
+                        break;
+                        default:
+                            gzps.GZPSData.HairColor = "Other";
+                        break;
+                    }
+
+                    switch (gzps.GZPSData.Outfit)
+                    {
+                        case "1":
+                            cate = "Hair";
+                        break;
+                        case "2":
+                            cate = "Face";
+                        break;
+                        case "4":
+                            cate = "Clothing Top";
+                        break;
+                        case "8":
+                            cate = "Clothing Full Body";
+                        break;
+                        case "10":
+                            cate = "Clothing Bottom";
+                        break;
+                        case "20":
+                            cate = "Accessory";
+                        break;
+                        case "40":
+                            cate = "TailLong";
+                        break;
+                        case "80":
+                            cate = "EarsUp";
+                        break;
+                        case "100":
+                            cate = "TailShort";
+                        break;
+                        case "200":
+                            cate = "EarsDown";
+                        break;
+                        case "400":
+                            cate = "BrushTailLong";
+                        break;
+                        case "800":
+                            cate = "BrushTailShort";
+                        break;
+                        case "10000":
+                            cate = "SpitzTail";
+                        break;
+                        case "2000":
+                            cate = "BrushSpitzTail";
+                        break;                    
+                    }
                     
-                }
-
-                string ca = "";
-                switch (gzps.GZPSData.Age)
-                {
-                    case "48":
-                        ca = "Adult";
-                        if (!Sims2Data.ClothingInfo.Age.Contains(ca))Sims2Data.ClothingInfo.Age.Add(ca);
-                    break;
-                    case "2":
-                        ca = "Child";
-                        if (!Sims2Data.ClothingInfo.Age.Contains(ca))Sims2Data.ClothingInfo.Age.Add(ca);
-                    break;
-                    case "10":
-                        ca = "Elder";
-                        if (!Sims2Data.ClothingInfo.Age.Contains(ca))Sims2Data.ClothingInfo.Age.Add(ca);
-                    break;
-                    case "4":
-                        ca = "Teen";
-                        if (!Sims2Data.ClothingInfo.Age.Contains(ca))Sims2Data.ClothingInfo.Age.Add(ca);
-                    break;
-                    case "1":
-                        ca = "Toddler";
-                        if (!Sims2Data.ClothingInfo.Age.Contains(ca))Sims2Data.ClothingInfo.Age.Add(ca);
-                    break;
-                    case "20":
-                        ca = "Baby";
-                        if (!Sims2Data.ClothingInfo.Age.Contains(ca))Sims2Data.ClothingInfo.Age.Add(ca);
-                    break;
-                    case "40":
-                        ca = "Young Adult";
-                        if (!Sims2Data.ClothingInfo.Age.Contains(ca))Sims2Data.ClothingInfo.Age.Add(ca);
-                    break;
-                }
-                string gen = "";
-                switch (gzps.GZPSData.Gender)
-                {
-                    
-                    case "1":
-                        gen = "Female";
-                        if (!Sims2Data.ClothingInfo.Age.Contains(gen))Sims2Data.ClothingInfo.Age.Add(gen);
-                    break;
-                    case "2":
-                        gen = "Male";
-                        if (!Sims2Data.ClothingInfo.Age.Contains(gen))Sims2Data.ClothingInfo.Age.Add(gen);
-                    break;
-                    case "3":
-                        gen = "Unisex";
-                        if (!Sims2Data.ClothingInfo.Age.Contains(gen))Sims2Data.ClothingInfo.Age.Add(gen);
-                    break;
-                }
-
-                switch (gzps.GZPSData.Hairtone)
-                {
-                    case "00000001-0000-0000-0000-000000000000":
-                        gzps.GZPSData.HairColor = "Black";
-                    break; 
-                    case "00000002-0000-0000-0000-000000000000":
-                        gzps.GZPSData.HairColor = "Brown";
-                    break;
-                    case "00000003-0000-0000-0000-000000000000":
-                        gzps.GZPSData.HairColor = "Blond";
-                    break;
-                    case "00000004-0000-0000-0000-000000000000":
-                        gzps.GZPSData.HairColor = "Red";
-                    break;
-                    case "00000005-0000-0000-0000-000000000000":
-                        gzps.GZPSData.HairColor = "Grey";
-                    break;
-                    default:
-                        gzps.GZPSData.HairColor = "Other";
-                    break;
-                }
-
-                switch (gzps.GZPSData.Outfit)
-                {
-                    case "1":
-                        cate = "Hair";
-                    break;
-                    case "2":
-                        cate = "Face";
-                    break;
-                    case "4":
-                        cate = "Clothing Top";
-                    break;
-                    case "8":
-                        cate = "Clothing Full Body";
-                    break;
-                    case "10":
-                        cate = "Clothing Bottom";
-                    break;
-                    case "20":
-                        cate = "Accessory";
-                    break;
-                    case "40":
-                        cate = "TailLong";
-                    break;
-                    case "80":
-                        cate = "EarsUp";
-                    break;
-                    case "100":
-                        cate = "TailShort";
-                    break;
-                    case "200":
-                        cate = "EarsDown";
-                    break;
-                    case "400":
-                        cate = "BrushTailLong";
-                    break;
-                    case "800":
-                        cate = "BrushTailShort";
-                    break;
-                    case "10000":
-                        cate = "SpitzTail";
-                    break;
-                    case "2000":
-                        cate = "BrushSpitzTail";
-                    break;                    
-                }
-                
-                if (!Sims2Data.ClothingInfo.Category.Contains(cate))Sims2Data.ClothingInfo.Category.Add(cate);
-            }                    
+                    if (!Sims2Data.ClothingInfo.Category.Contains(cate))Sims2Data.ClothingInfo.Category.Add(cate);
+                }   
+            }                
         }
 
         public void S2ReadXNGB(IndexEntry entry)
         {
             S2ReadXNGBChunk xngb = new();
+            using (BinaryReader reader = ReadSpecificBytes(PackageBytes, (int)entry.Offset, (int)entry.FileSize))
+            {   reader.BaseStream.Position = 0;
 
-            packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
-
-            int cFileSize = packagereader.ReadInt32();
-            if (cFileSize == -65535)
-            {
-                //not compressed (this is a note)
-            }
-            long pos = packagereader.BaseStream.Position;
-            string cTypeID = packagereader.ReadUInt16().ToString("X4");
-            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("cFileSize: {0}, cTypeID: {1}", cFileSize, cTypeID));
-            
-            if (cTypeID == "FB10")
-            {
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Entry is compressed!"));
-                byte[] tempBytes = packagereader.ReadBytes(3);
-                uint cFullSize = Sims2EntryReaders.QFSLengthToInt(tempBytes);
-                string cpfTypeID = packagereader.ReadUInt32().ToString("X8");
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("cFullSize: {0}, cpfTypeID: {1}", cFullSize, cpfTypeID));
-                if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
+                int cFileSize = reader.ReadInt32();
+                if (cFileSize == -65535)
                 {
-                    xngb = new(packagereader, false, 0);
+                    //not compressed (this is a note)
                 }
-                else
+                long pos = reader.BaseStream.Position;
+                string cTypeID = reader.ReadUInt16().ToString("X4");
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("cFileSize: {0}, cTypeID: {1}", cFileSize, cTypeID));
+                
+                if (cTypeID == "FB10")
                 {
-                    //packagereader.BaseStream.Position = ChunkOffset + entry.Offset + 9;
-                    packagereader.BaseStream.Position = pos;
-                                        
-                    byte[] decompressedByte = DecompressEntry(packagereader, cFileSize);
-                                
-                    BinaryReader binaryReader = new(new MemoryStream(decompressedByte));
-                    if (cpfTypeID == "E750E0E2")
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Entry is compressed!"));
+                    byte[] tempBytes = reader.ReadBytes(3);
+                    uint cFullSize = Sims2EntryReaders.QFSLengthToInt(tempBytes);
+                    string cpfTypeID = reader.ReadUInt32().ToString("X8");
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("cFullSize: {0}, cpfTypeID: {1}", cFullSize, cpfTypeID));
+                    if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
                     {
-                        // Read first four bytes
-                        cpfTypeID = binaryReader.ReadUInt32().ToString("X8");
-                        if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
-                        {
-                            xngb = new(binaryReader, false, decompressedByte.Length);
-                        }
+                        xngb = new(reader, false, 0);
                     }
                     else
                     {
-                        xngb = new(binaryReader, true, decompressedByte.Length);
+                        //reader.BaseStream.Position = ChunkOffset + entry.Offset + 9;
+                        reader.BaseStream.Position = pos;
+                                            
+                        byte[] decompressedByte = DecompressEntry(reader, cFileSize);
+                                    
+                        BinaryReader binaryReader = new(new MemoryStream(decompressedByte));
+                        BinaryReaders.Add(binaryReader);
+                        if (cpfTypeID == "E750E0E2")
+                        {
+                            // Read first four bytes
+                            cpfTypeID = binaryReader.ReadUInt32().ToString("X8");
+                            if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
+                            {
+                                //reader.BaseStream.Position -= 4;
+                                xngb = new(binaryReader, false, decompressedByte.Length);
+                            }
+                        }
+                        else
+                        {
+                            xngb = new(binaryReader, true, decompressedByte.Length);
+                        }
                     }
-                }
-            } else
-            {
-                packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Entry is not compressed!"));
-                string cpfTypeID = packagereader.ReadUInt32().ToString("X8");
-                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("CPFTypeID: {0}", cpfTypeID));
-                if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
-                {                    
-                    xngb = new(packagereader, false, 0);
-                } else if (cpfTypeID == "6D783F3C")
+                } else
                 {
-                    packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
-                    //string xmldata = SimsPackageReader.ReadEncodedString(packagereader.ReadBytes((int)entry.FileSize));
-                    xngb = new(packagereader, true, (int)entry.FileSize);
-                }                
+                    reader.BaseStream.Position = 0;
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Entry is not compressed!"));
+                    string cpfTypeID = reader.ReadUInt32().ToString("X8");
+                    if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("CPFTypeID: {0}", cpfTypeID));
+                    if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
+                    {                    
+                        xngb = new(reader, false, 0);
+                    } else if (cpfTypeID == "6D783F3C")
+                    {
+                        reader.BaseStream.Position = 0;
+                        //string xmldata = SimsPackageReader.ReadEncodedString(reader.ReadBytes((int)entry.FileSize));
+                        xngb = new(reader, true, (int)entry.FileSize);
+                    }                
+                }
+                xngb.XNGBData.CopyEntryInfo(entry);
+                Sims2Data.XNGBDataBlock.Add(xngb.XNGBData);
+                //if (xngb.XNGBData.Type != null) SimsData.AltType = xngb.XNGBData.Type;
+                if (xngb.XNGBData.Name != null) SimsData.Title = xngb.XNGBData.Name;
+                if (xngb.XNGBData.Description != null) SimsData.Description = xngb.XNGBData.Description;
+                if (xngb.XNGBData.Guid != null) SimsData.GUID = xngb.XNGBData.Guid;
             }
-            xngb.XNGBData.CopyEntryInfo(entry);
-            Sims2Data.XNGBDataBlock.Add(xngb.XNGBData);
-            //if (xngb.XNGBData.Type != null) SimsData.AltType = xngb.XNGBData.Type;
-            if (xngb.XNGBData.Name != null) SimsData.Title = xngb.XNGBData.Name;
-            if (xngb.XNGBData.Description != null) SimsData.Description = xngb.XNGBData.Description;
-            if (xngb.XNGBData.Guid != null) SimsData.GUID = xngb.XNGBData.Guid;
         }
 
         public void S2ReadTXTR(IndexEntry entry, int txtrc)
         {
             S2ReadTXTRChunk txtr;
-
-            packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
-            int cFileSize = packagereader.ReadInt32();
-            long pos = packagereader.BaseStream.Position;
-            string cTypeID = packagereader.ReadUInt16().ToString("X4");       
-            if (cTypeID == "FB10")
-            {
-                packagereader.BaseStream.Position = pos;
-            }    
-            
-            if (entry.IsCompressed || cTypeID == "FB10")
-            {
-                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("{0} SHPE is compressed!", fileinfo.Name));               
-
-                byte[] decompressedByte = DecompressEntry(packagereader, cFileSize);
-                                
-                BinaryReader binaryReader = new(new MemoryStream(decompressedByte));
+            using (BinaryReader reader = ReadSpecificBytes(PackageBytes, (int)entry.Offset, (int)entry.FileSize))
+            {    
+                reader.BaseStream.Position = 0;
+                int cFileSize = reader.ReadInt32();
+                long pos = reader.BaseStream.Position;
+                string cTypeID = reader.ReadUInt16().ToString("X4");       
+                if (cTypeID == "FB10")
+                {
+                    reader.BaseStream.Position = pos;
+                }    
                 
-                pos = 0;
-                byte cimagedata = binaryReader.ReadByte();                
-                while (cimagedata != 10)
+                if (entry.IsCompressed || cTypeID == "FB10")
                 {
-                    pos = binaryReader.BaseStream.Position;
-                    cimagedata = binaryReader.ReadByte();
-                }
-                binaryReader.BaseStream.Position = pos; 
+                    if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("{0} SHPE is compressed!", fileinfo.Name));               
 
-                txtr = new(binaryReader, fileinfo);
-            }
-            else
-            {
-                pos = 0;
-                byte cimagedata = packagereader.ReadByte();                
-                while (cimagedata != 10)
+                    byte[] decompressedByte = DecompressEntry(reader, cFileSize);
+                                    
+                    BinaryReader binaryReader = new(new MemoryStream(decompressedByte));
+                        BinaryReaders.Add(binaryReader);
+                    
+                    pos = 0;
+                    byte cimagedata = binaryReader.ReadByte();                
+                    while (cimagedata != 10)
+                    {
+                        pos = binaryReader.BaseStream.Position;
+                        cimagedata = binaryReader.ReadByte();
+                    }
+                    binaryReader.BaseStream.Position = pos; 
+
+                    txtr = new(binaryReader, fileinfo);
+                }
+                else
                 {
-                    pos = packagereader.BaseStream.Position;
-                    cimagedata = packagereader.ReadByte();
+                    pos = 0;
+                    byte cimagedata = reader.ReadByte();                
+                    while (cimagedata != 10)
+                    {
+                        pos = reader.BaseStream.Position;
+                        cimagedata = reader.ReadByte();
+                    }
+                    reader.BaseStream.Position = pos; 
+                    txtr = new(reader, fileinfo);
                 }
-                packagereader.BaseStream.Position = pos; 
-                txtr = new(packagereader, fileinfo);
-            }
 
-            txtr.TXTRData.CopyEntryInfo(entry);
-            (SimsData as Sims2Data).TXTRDataBlock.Add(txtr.TXTRData);
-            if (!string.IsNullOrEmpty(txtr.TXTRData.GUID) && (string.IsNullOrEmpty(Sims2Data.GUID) || Sims2Data.GUID == "N/a")) Sims2Data.GUID = txtr.TXTRData.GUID;
-            if (txtr.Buffer != 0) BufferSize = txtr.Buffer;
+                txtr.TXTRData.CopyEntryInfo(entry);
+                (SimsData as Sims2Data).TXTRDataBlock.Add(txtr.TXTRData);
+                if (!string.IsNullOrEmpty(txtr.TXTRData.GUID) && (string.IsNullOrEmpty(Sims2Data.GUID) || Sims2Data.GUID == "N/a")) Sims2Data.GUID = txtr.TXTRData.GUID;
+                if (txtr.Buffer != 0) BufferSize = txtr.Buffer;
+            }
         }
         public void S2ReadXFLR(IndexEntry entry)
         {
             S2ReadXFLRChunk xflr = new();
+            using (BinaryReader reader = ReadSpecificBytes(PackageBytes, (int)entry.Offset, (int)entry.FileSize))
+            {   reader.BaseStream.Position = 0;
 
-            packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
-
-            int cFileSize = packagereader.ReadInt32();
-            if (cFileSize == -65535)
-            {
-                //not compressed (this is a note)
-            }
-            long pos = packagereader.BaseStream.Position;
-            string cTypeID = packagereader.ReadUInt16().ToString("X4");
-            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("cFileSize: {0}, cTypeID: {1}", cFileSize, cTypeID));
-            
-            if (cTypeID == "FB10")
-            {
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Entry is compressed!"));
-                byte[] tempBytes = packagereader.ReadBytes(3);
-                uint cFullSize = Sims2EntryReaders.QFSLengthToInt(tempBytes);
-                string cpfTypeID = packagereader.ReadUInt32().ToString("X8");
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("cFullSize: {0}, cpfTypeID: {1}", cFullSize, cpfTypeID));
-                if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
+                int cFileSize = reader.ReadInt32();
+                if (cFileSize == -65535)
                 {
-                    xflr = new(packagereader, false, 0);
+                    //not compressed (this is a note)
                 }
-                else
+                long pos = reader.BaseStream.Position;
+                string cTypeID = reader.ReadUInt16().ToString("X4");
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("cFileSize: {0}, cTypeID: {1}", cFileSize, cTypeID));
+                
+                if (cTypeID == "FB10")
                 {
-                    //packagereader.BaseStream.Position = ChunkOffset + entry.Offset + 9;
-                    packagereader.BaseStream.Position = pos;
-                                        
-                    byte[] decompressedByte = DecompressEntry(packagereader, cFileSize);
-                                
-                    BinaryReader binaryReader = new(new MemoryStream(decompressedByte));
-                    if (cpfTypeID == "E750E0E2")
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Entry is compressed!"));
+                    byte[] tempBytes = reader.ReadBytes(3);
+                    uint cFullSize = Sims2EntryReaders.QFSLengthToInt(tempBytes);
+                    string cpfTypeID = reader.ReadUInt32().ToString("X8");
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("cFullSize: {0}, cpfTypeID: {1}", cFullSize, cpfTypeID));
+                    if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
                     {
-                        // Read first four bytes
-                        cpfTypeID = binaryReader.ReadUInt32().ToString("X8");
-                        if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
-                        {
-                            xflr = new(binaryReader, false, decompressedByte.Length);
-                        }
+                        xflr = new(reader, false, 0);
                     }
                     else
                     {
-                        xflr = new(binaryReader, true, decompressedByte.Length);
+                        //reader.BaseStream.Position = ChunkOffset + entry.Offset + 9;
+                        reader.BaseStream.Position = pos;
+                                            
+                        byte[] decompressedByte = DecompressEntry(reader, cFileSize);
+                                    
+                        BinaryReader binaryReader = new(new MemoryStream(decompressedByte));
+                        BinaryReaders.Add(binaryReader);
+                        if (cpfTypeID == "E750E0E2")
+                        {
+                            // Read first four bytes
+                            cpfTypeID = binaryReader.ReadUInt32().ToString("X8");
+                            if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
+                            {
+                                xflr = new(binaryReader, false, decompressedByte.Length);
+                            }
+                        }
+                        else
+                        {
+                            xflr = new(binaryReader, true, decompressedByte.Length);
+                        }
                     }
+                } else
+                {
+                    reader.BaseStream.Position = 0;
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Entry is not compressed!"));
+                    string cpfTypeID = reader.ReadUInt32().ToString("X8");
+                    if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("CPFTypeID: {0}", cpfTypeID));
+                    if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
+                    {                    
+                        xflr = new(reader, false, 0);
+                    } else if (cpfTypeID == "6D783F3C")
+                    {
+                        reader.BaseStream.Position = 0;
+                        //string xmldata = SimsPackageReader.ReadEncodedString(reader.ReadBytes((int)entry.FileSize));
+                        xflr = new(reader, true, (int)entry.FileSize);
+                    }                
                 }
-            } else
-            {
-                packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Entry is not compressed!"));
-                string cpfTypeID = packagereader.ReadUInt32().ToString("X8");
-                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("CPFTypeID: {0}", cpfTypeID));
-                if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
-                {                    
-                    xflr = new(packagereader, false, 0);
-                } else if (cpfTypeID == "6D783F3C")
+                xflr.XFLRData.CopyEntryInfo(entry);
+                Sims2Data.XFLRDataBlock.Add(xflr.XFLRData);
+                if (xflr.XFLRData.Type == "terrainPaint")
                 {
-                    packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
-                    //string xmldata = SimsPackageReader.ReadEncodedString(packagereader.ReadBytes((int)entry.FileSize));
-                    xflr = new(packagereader, true, (int)entry.FileSize);
-                }                
-            }
-            xflr.XFLRData.CopyEntryInfo(entry);
-            Sims2Data.XFLRDataBlock.Add(xflr.XFLRData);
-            if (xflr.XFLRData.Type == "terrainPaint")
-            {
-                if (Sims2PackageStatics.Sims2BuildFunctionSortList.Any(x => x.Category.Equals(xflr.XFLRData.Type, StringComparison.CurrentCultureIgnoreCase) && x.Subcategory.Equals(xflr.XFLRData.SoundSuffix, StringComparison.CurrentCultureIgnoreCase)))
-                {
-                    Sims2Data.FunctionSort.Add(Sims2PackageStatics.Sims2BuildFunctionSortList.First(x => x.Category.Equals(xflr.XFLRData.Type, StringComparison.CurrentCultureIgnoreCase) && x.Subcategory.Equals(xflr.XFLRData.SoundSuffix, StringComparison.CurrentCultureIgnoreCase)));
-                }
-                else
-                {
-                    Sims2Data.FunctionSort.Add(new() { Category = "Terrain" });
+                    if (Sims2PackageStatics.Sims2BuildFunctionSortList.Any(x => x.Category.Equals(xflr.XFLRData.Type, StringComparison.CurrentCultureIgnoreCase) && x.Subcategory.Equals(xflr.XFLRData.SoundSuffix, StringComparison.CurrentCultureIgnoreCase)))
+                    {
+                        Sims2Data.FunctionSort.Add(Sims2PackageStatics.Sims2BuildFunctionSortList.First(x => x.Category.Equals(xflr.XFLRData.Type, StringComparison.CurrentCultureIgnoreCase) && x.Subcategory.Equals(xflr.XFLRData.SoundSuffix, StringComparison.CurrentCultureIgnoreCase)));
+                    }
+                    else
+                    {
+                        Sims2Data.FunctionSort.Add(new() { Category = "Terrain" });
+                    }
                 }
             }
         }
@@ -2429,284 +2568,291 @@ namespace SimsCCManager.PackageReaders
         public void S2ReadMMAT(IndexEntry entry)
         {
             S2ReadMMATChunk mmat = new();
+            using (BinaryReader reader = ReadSpecificBytes(PackageBytes, (int)entry.Offset, (int)entry.FileSize))
+            {    
+                reader.BaseStream.Position = 0;
 
-            packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
-
-            int cFileSize = packagereader.ReadInt32();
-            if (cFileSize == -65535)
-            {
-                //not compressed (this is a note)
-            }
-            long pos = packagereader.BaseStream.Position;
-            string cTypeID = packagereader.ReadUInt16().ToString("X4");
-            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("cFileSize: {0}, cTypeID: {1}", cFileSize, cTypeID));
-            
-            if (cTypeID == "FB10")
-            {
-                byte[] tempBytes = packagereader.ReadBytes(3);
-                uint cFullSize = Sims2EntryReaders.QFSLengthToInt(tempBytes);
-                string cpfTypeID = packagereader.ReadUInt32().ToString("X8");
-                if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
+                int cFileSize = reader.ReadInt32();
+                if (cFileSize == -65535)
                 {
-                    mmat = new(packagereader, false, 0);
+                    //not compressed (this is a note)
                 }
-                else
+                long pos = reader.BaseStream.Position;
+                string cTypeID = reader.ReadUInt16().ToString("X4");
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("cFileSize: {0}, cTypeID: {1}", cFileSize, cTypeID));
+                
+                if (cTypeID == "FB10")
                 {
-                    //packagereader.BaseStream.Position = ChunkOffset + entry.Offset + 9;
-                    packagereader.BaseStream.Position = pos;
-                                        
-                    byte[] decompressedByte = DecompressEntry(packagereader, cFileSize);
-                                
-                    BinaryReader binaryReader = new(new MemoryStream(decompressedByte));
-                    if (cpfTypeID == "E750E0E2")
+                    byte[] tempBytes = reader.ReadBytes(3);
+                    uint cFullSize = Sims2EntryReaders.QFSLengthToInt(tempBytes);
+                    string cpfTypeID = reader.ReadUInt32().ToString("X8");
+                    if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
                     {
-                        // Read first four bytes
-                        cpfTypeID = binaryReader.ReadUInt32().ToString("X8");
-                        if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
-                        {
-                            mmat = new(binaryReader, false, decompressedByte.Length);
-                        }
+                        mmat = new(reader, false, 0);
                     }
                     else
                     {
-                        mmat = new(binaryReader, true, decompressedByte.Length);
+                        //reader.BaseStream.Position = ChunkOffset + entry.Offset + 9;
+                        reader.BaseStream.Position = pos;
+                                            
+                        byte[] decompressedByte = DecompressEntry(reader, cFileSize);
+                                    
+                        BinaryReader binaryReader = new(new MemoryStream(decompressedByte));
+                        BinaryReaders.Add(binaryReader);
+                        if (cpfTypeID == "E750E0E2")
+                        {
+                            // Read first four bytes
+                            cpfTypeID = binaryReader.ReadUInt32().ToString("X8");
+                            if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
+                            {
+                                mmat = new(binaryReader, false, decompressedByte.Length);
+                            }
+                        }
+                        else
+                        {
+                            mmat = new(binaryReader, true, decompressedByte.Length);
+                        }
                     }
-                }
-            } else
-            {
-                packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
-                string cpfTypeID = packagereader.ReadUInt32().ToString("X8");
-                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("CPFTypeID: {0}", cpfTypeID));
-                if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
+                } else
                 {
+                    reader.BaseStream.Position = 0;
+                    string cpfTypeID = reader.ReadUInt32().ToString("X8");
+                    if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("CPFTypeID: {0}", cpfTypeID));
+                    if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
+                    {
 
-                    mmat = new(packagereader, false, 0);
+                        mmat = new(reader, false, 0);
+                    }
+
+                    if (cpfTypeID == "6D783F3C")
+                    {
+                        reader.BaseStream.Position = 0;                  
+                        
+                        mmat = new(reader, true, (int)entry.FileSize);
+                    }                
                 }
+                mmat.MMATData.CopyEntryInfo(entry);
 
-                if (cpfTypeID == "6D783F3C")
-                {
-                    packagereader.BaseStream.Position = ChunkOffset + entry.Offset;                  
-                    
-                    mmat = new(packagereader, true, (int)entry.FileSize);
-                }                
+                (SimsData as Sims2Data).MMATDataBlock.Add(mmat.MMATData);
             }
-            mmat.MMATData.CopyEntryInfo(entry);
-
-            (SimsData as Sims2Data).MMATDataBlock.Add(mmat.MMATData);
         }
 
 
         public void S2ReadGMDC(IndexEntry entry)
         {
             S2ReadGMDCChunk gmdc;
-
-            packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
-            int cFileSize = packagereader.ReadInt32();
-            if (cFileSize == -65535)
-            {
-                //not compressed (this is a note)
-            }
-            long pos = packagereader.BaseStream.Position;
-            string cTypeID = packagereader.ReadUInt16().ToString("X4");
-            if (cTypeID == "FB10")
-            {
-                packagereader.BaseStream.Position = pos;
-            }
-            if (entry.IsCompressed || cTypeID == "FB10")
-            {
-                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("{0} GMDC is compressed!", fileinfo.Name));
-
-                byte[] decompressedByte = DecompressEntry(packagereader, cFileSize);
-
-                BinaryReader binaryReader = new(new MemoryStream(decompressedByte));
-                pos = binaryReader.BaseStream.Position;
-                byte cGeometryDataContainer = binaryReader.ReadByte();                
-                while (cGeometryDataContainer != 22)
+            using (BinaryReader reader = ReadSpecificBytes(PackageBytes, (int)entry.Offset, (int)entry.FileSize))
+            {                
+                reader.BaseStream.Position = 0;
+                int cFileSize = reader.ReadInt32();
+                if (cFileSize == -65535)
                 {
+                    //not compressed (this is a note)
+                }
+                long pos = reader.BaseStream.Position;
+                string cTypeID = reader.ReadUInt16().ToString("X4");
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("cTypeID: {0}", cTypeID));
+                if (cTypeID == "FB10")
+                {                    
+                    reader.BaseStream.Position = pos;
+                }
+                if (entry.IsCompressed || cTypeID == "FB10")
+                {
+                    if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("{0} GMDC is compressed!", fileinfo.Name));
+                    byte[] decompressedByte = DecompressEntry(reader, cFileSize);
+
+                    BinaryReader binaryReader = new(new MemoryStream(decompressedByte));
+                        BinaryReaders.Add(binaryReader);
                     pos = binaryReader.BaseStream.Position;
-                    cGeometryDataContainer = binaryReader.ReadByte();
-                    if (cGeometryDataContainer == 22)
+                    byte cGeometryDataContainer = binaryReader.ReadByte();                
+                    while (cGeometryDataContainer != 22)
                     {
-                        binaryReader.BaseStream.Position = pos; 
+                        pos = binaryReader.BaseStream.Position;
+                        cGeometryDataContainer = binaryReader.ReadByte();
+                        if (cGeometryDataContainer == 22)
+                        {
+                            binaryReader.BaseStream.Position = pos; 
+                        }
                     }
-                }
-                binaryReader.BaseStream.Position = pos; 
+                    binaryReader.BaseStream.Position = pos; 
 
-                gmdc = new(binaryReader);
-            }
-            else
-            {
-                pos = packagereader.BaseStream.Position;
-                byte cGeometryDataContainer = packagereader.ReadByte();                
-                while (cGeometryDataContainer != 22)
-                {
-                    pos = packagereader.BaseStream.Position;
-                    cGeometryDataContainer = packagereader.ReadByte();
+                    gmdc = new(binaryReader);
                 }
-                packagereader.BaseStream.Position = pos; 
-                gmdc = new(packagereader);
+                else
+                {
+                    pos = reader.BaseStream.Position;
+                    byte cGeometryDataContainer = reader.ReadByte();                
+                    while (cGeometryDataContainer != 22)
+                    {
+                        pos = reader.BaseStream.Position;
+                        cGeometryDataContainer = reader.ReadByte();
+                    }
+                    reader.BaseStream.Position = pos; 
+                    gmdc = new(reader);
+                }
+                gmdc.GMDCData.CopyEntryInfo(entry);
+                (SimsData as Sims2Data).GMDCDataBlock.Add(gmdc.GMDCData);
             }
-            gmdc.GMDCData.CopyEntryInfo(entry);
-            (SimsData as Sims2Data).GMDCDataBlock.Add(gmdc.GMDCData);
         }
 
         public void S2ReadCTSS(IndexEntry entry)
         {
             S2ReadCTSSChunk cts;
-            packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
-            int cFileSize = packagereader.ReadInt32();
-            string cTypeID = packagereader.ReadUInt16().ToString("X4");
-            if (cTypeID == "FB10")
-            {
-                byte[] tempBytes = packagereader.ReadBytes(3);
-                uint cFullSize = Sims2EntryReaders.QFSLengthToInt(tempBytes);
-                DecryptByteStream decompressed = new DecryptByteStream(Sims2EntryReaders.Uncompress(packagereader.ReadBytes(cFileSize), cFullSize, 0));
-                cts = new(decompressed);
+            using (BinaryReader reader = ReadSpecificBytes(PackageBytes, (int)entry.Offset, (int)entry.FileSize))
+            {    
+                reader.BaseStream.Position = 0;
+                int cFileSize = reader.ReadInt32();
+                string cTypeID = reader.ReadUInt16().ToString("X4");
+                if (cTypeID == "FB10")
+                {
+                    byte[] tempBytes = reader.ReadBytes(3);
+                    uint cFullSize = Sims2EntryReaders.QFSLengthToInt(tempBytes);
+                    DecryptByteStream decompressed = new DecryptByteStream(Sims2EntryReaders.Uncompress(reader.ReadBytes(cFileSize), cFullSize, 0));
+                    cts = new(decompressed);
+                }
+                else
+                {
+                    reader.BaseStream.Position = 0;
+                    cts = new(reader);
+                }
+                
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("File {0}. CTSS: {1}", fileinfo.Name, cts.ToString()));
+                cts.CTSSData.CopyEntryInfo(entry);
+                Sims2Data.CTSSDataBlock.Add(cts.CTSSData);
+                SimsData.Title = cts.CTSSData.Title;
+                SimsData.Description = cts.CTSSData.Description;
             }
-            else
-            {
-                packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
-                cts = new(packagereader);
-            }
-            
-            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("File {0}. CTSS: {1}", fileinfo.Name, cts.ToString()));
-            cts.CTSSData.CopyEntryInfo(entry);
-            Sims2Data.CTSSDataBlock.Add(cts.CTSSData);
-            SimsData.Title = cts.CTSSData.Title;
-            SimsData.Description = cts.CTSSData.Description;
         }
 
         public void S2ReadOBJD(IndexEntry entry, int objdc)
         {
             S2ReadOBJDChunk objd;
-            packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
-            int cFileSize = packagereader.ReadInt32();
-            if (cFileSize == -65535)
-            {
-                //not compressed (this is a note)
-            }
-            long pos = packagereader.BaseStream.Position;
-            string cTypeID = packagereader.ReadUInt16().ToString("X4");
-            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("cFileSize: {0}, cTypeID: {1}", cFileSize, cTypeID));
-            
-            if (cTypeID == "FB10")
-            {
-                packagereader.BaseStream.Position = pos;
-                byte[] decompressedByte = DecompressEntry(packagereader, cFileSize);
-                                
-                BinaryReader binaryReader = new(new MemoryStream(decompressedByte));
-                objd = new(binaryReader, objdc);
+            using (BinaryReader reader = ReadSpecificBytes(PackageBytes, (int)entry.Offset, (int)entry.FileSize))
+            {    
+                reader.BaseStream.Position = 0;
+                int cFileSize = reader.ReadInt32();
+                if (cFileSize == -65535)
+                {
+                    //not compressed (this is a note)
+                }
+                long pos = reader.BaseStream.Position;
+                string cTypeID = reader.ReadUInt16().ToString("X4");
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("cFileSize: {0}, cTypeID: {1}", cFileSize, cTypeID));
+                
+                if (cTypeID == "FB10")
+                {
+                    reader.BaseStream.Position = pos;
+                    byte[] decompressedByte = DecompressEntry(reader, cFileSize);
+                                    
+                    BinaryReader binaryReader = new(new MemoryStream(decompressedByte));
+                        BinaryReaders.Add(binaryReader);
+                    objd = new(binaryReader, objdc);
 
+                }
+                else
+                {
+                    reader.BaseStream.Position = 0;
+                    objd = new(reader, objdc);
+                }
+                //if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("File {0}. OBJD: {1}", fileinfo.Name, objd.ToString()));
+                objd.OBJDData.CopyEntryInfo(entry);
+                Sims2Data.OBJDDataBlock.Add(objd.OBJDData);
+                SimsData.FunctionSort.AddRange(objd.OBJDData.FunctionSort);
+                if (string.IsNullOrEmpty(SimsData.GUID)) SimsData.GUID = objd.OBJDData.ObjectGUID;
             }
-            else
-            {
-                packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
-                objd = new(packagereader, objdc);
-            }
-            //if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("File {0}. OBJD: {1}", fileinfo.Name, objd.ToString()));
-            objd.OBJDData.CopyEntryInfo(entry);
-            Sims2Data.OBJDDataBlock.Add(objd.OBJDData);
-            SimsData.FunctionSort.AddRange(objd.OBJDData.FunctionSort);
-            if (string.IsNullOrEmpty(SimsData.GUID)) SimsData.GUID = objd.OBJDData.ObjectGUID;
         }
         public void S2ReadXOBJ(IndexEntry entry)
         {
             S2ReadXOBJChunk xobj = new();
 
-            packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
+            using (BinaryReader reader = ReadSpecificBytes(PackageBytes, (int)entry.Offset, (int)entry.FileSize))
+            {    
+                reader.BaseStream.Position = 0;
 
-            int cFileSize = packagereader.ReadInt32();
-            if (cFileSize == -65535)
-            {
-                //not compressed (this is a note)
-            }
-            long pos = packagereader.BaseStream.Position;
-            string cTypeID = packagereader.ReadUInt16().ToString("X4");
-            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("cFileSize: {0}, cTypeID: {1}", cFileSize, cTypeID));
-            
-            if (cTypeID == "FB10")
-            {
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Entry is compressed!"));
-                byte[] tempBytes = packagereader.ReadBytes(3);
-                uint cFullSize = Sims2EntryReaders.QFSLengthToInt(tempBytes);
-                string cpfTypeID = packagereader.ReadUInt32().ToString("X8");
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("cFullSize: {0}, cpfTypeID: {1}", cFullSize, cpfTypeID));
-                if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
+                int cFileSize = reader.ReadInt32();
+                if (cFileSize == -65535)
                 {
-                    xobj = new(packagereader, false, 0);
+                    //not compressed (this is a note)
                 }
-                else
+                long pos = reader.BaseStream.Position;
+                string cTypeID = reader.ReadUInt16().ToString("X4");
+                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("cFileSize: {0}, cTypeID: {1}", cFileSize, cTypeID));
+                
+                if (cTypeID == "FB10")
                 {
-                    //packagereader.BaseStream.Position = ChunkOffset + entry.Offset + 9;
-                    packagereader.BaseStream.Position = pos;
-                                        
-                    byte[] decompressedByte = DecompressEntry(packagereader, cFileSize);
-                                
-                    BinaryReader binaryReader = new(new MemoryStream(decompressedByte));
-                    if (cpfTypeID == "E750E0E2")
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Entry is compressed!"));
+                    byte[] tempBytes = reader.ReadBytes(3);
+                    uint cFullSize = Sims2EntryReaders.QFSLengthToInt(tempBytes);
+                    string cpfTypeID = reader.ReadUInt32().ToString("X8");
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("cFullSize: {0}, cpfTypeID: {1}", cFullSize, cpfTypeID));
+                    if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
                     {
-                        // Read first four bytes
-                        cpfTypeID = binaryReader.ReadUInt32().ToString("X8");
-                        if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
-                        {
-                            xobj = new(binaryReader, false, decompressedByte.Length);
-                        }
+                        xobj = new(reader, false, 0);
                     }
                     else
                     {
-                        xobj = new(binaryReader, true, decompressedByte.Length);
+                        //reader.BaseStream.Position = ChunkOffset + entry.Offset + 9;
+                        reader.BaseStream.Position = pos;
+                                            
+                        byte[] decompressedByte = DecompressEntry(reader, cFileSize);
+                                    
+                        BinaryReader binaryReader = new(new MemoryStream(decompressedByte));
+                        BinaryReaders.Add(binaryReader);
+                        if (cpfTypeID == "E750E0E2")
+                        {
+                            // Read first four bytes
+                            cpfTypeID = binaryReader.ReadUInt32().ToString("X8");
+                            if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
+                            {
+                                xobj = new(binaryReader, false, decompressedByte.Length);
+                            }
+                        }
+                        else
+                        {
+                            xobj = new(binaryReader, true, decompressedByte.Length);
+                        }
                     }
+                } else
+                {
+                    reader.BaseStream.Position = 0;
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Entry is not compressed!"));
+                    string cpfTypeID = reader.ReadUInt32().ToString("X8");
+                    if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("CPFTypeID: {0}", cpfTypeID));
+                    if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
+                    {                    
+                        xobj = new(reader, false, 0);
+                    } else if (cpfTypeID == "6D783F3C")
+                    {
+                        reader.BaseStream.Position = 0;
+                        //string xmldata = SimsPackageReader.ReadEncodedString(reader.ReadBytes((int)entry.FileSize));
+                        xobj = new(reader, true, (int)entry.FileSize);
+                    }                
                 }
-            } else
-            {
-                packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Entry is not compressed!"));
-                string cpfTypeID = packagereader.ReadUInt32().ToString("X8");
-                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("CPFTypeID: {0}", cpfTypeID));
-                if ((cpfTypeID == "CBE7505E") || (cpfTypeID == "CBE750E0"))
-                {                    
-                    xobj = new(packagereader, false, 0);
-                } else if (cpfTypeID == "6D783F3C")
-                {
-                    packagereader.BaseStream.Position = ChunkOffset + entry.Offset;
-                    //string xmldata = SimsPackageReader.ReadEncodedString(packagereader.ReadBytes((int)entry.FileSize));
-                    xobj = new(packagereader, true, (int)entry.FileSize);
-                }                
-            }
 
-            xobj.XOBJData.CopyEntryInfo(entry);
-            Sims2Data.XOBJDataBlock.Add(xobj.XOBJData);
+                xobj.XOBJData.CopyEntryInfo(entry);
+                Sims2Data.XOBJDataBlock.Add(xobj.XOBJData);
 
-            if (xobj.XOBJData.Category != null)
-            {
-                if (Sims2PackageStatics.Sims2BuildFunctionSortList.Any(x => x.Category.Equals(xobj.XOBJData.Type, StringComparison.CurrentCultureIgnoreCase)))
+                if (xobj.XOBJData.Category != null)
                 {
-                    SimsData.FunctionSort.Add(Sims2PackageStatics.Sims2BuildFunctionSortList.First(x => x.Category.Equals(xobj.XOBJData.Type, StringComparison.CurrentCultureIgnoreCase)));
-                }
-            }
-            if (xobj.XOBJData.Title != null) SimsData.Title = xobj.XOBJData.Title;
-            if (xobj.XOBJData.Description != null) SimsData.Description = xobj.XOBJData.Description;
-            if (xobj.XOBJData.Type != null)
-            {
-                if (Sims2PackageStatics.Sims2BuildFunctionSortList.Any(x => x.Category.Equals(xobj.XOBJData.Type, StringComparison.CurrentCultureIgnoreCase) && (x.Subcategory.Equals(xobj.XOBJData.Subsort, StringComparison.CurrentCultureIgnoreCase) || x.Subcategory.Equals(xobj.XOBJData.Subtype, StringComparison.CurrentCultureIgnoreCase))))
-                {
-                    if (!Sims2Data.FunctionSort.Contains(Sims2PackageStatics.Sims2BuildFunctionSortList.First(x => x.Category.Equals(xobj.XOBJData.Type, StringComparison.CurrentCultureIgnoreCase))))
+                    if (Sims2PackageStatics.Sims2BuildFunctionSortList.Any(x => x.Category.Equals(xobj.XOBJData.Type, StringComparison.CurrentCultureIgnoreCase)))
                     {
                         SimsData.FunctionSort.Add(Sims2PackageStatics.Sims2BuildFunctionSortList.First(x => x.Category.Equals(xobj.XOBJData.Type, StringComparison.CurrentCultureIgnoreCase)));
                     }
                 }
+                if (xobj.XOBJData.Title != null) SimsData.Title = xobj.XOBJData.Title;
+                if (xobj.XOBJData.Description != null) SimsData.Description = xobj.XOBJData.Description;
+                if (xobj.XOBJData.Type != null)
+                {
+                    if (Sims2PackageStatics.Sims2BuildFunctionSortList.Any(x => x.Category.Equals(xobj.XOBJData.Type, StringComparison.CurrentCultureIgnoreCase) && (x.Subcategory.Equals(xobj.XOBJData.Subsort, StringComparison.CurrentCultureIgnoreCase) || x.Subcategory.Equals(xobj.XOBJData.Subtype, StringComparison.CurrentCultureIgnoreCase))))
+                    {
+                        if (!Sims2Data.FunctionSort.Contains(Sims2PackageStatics.Sims2BuildFunctionSortList.First(x => x.Category.Equals(xobj.XOBJData.Type, StringComparison.CurrentCultureIgnoreCase))))
+                        {
+                            SimsData.FunctionSort.Add(Sims2PackageStatics.Sims2BuildFunctionSortList.First(x => x.Category.Equals(xobj.XOBJData.Type, StringComparison.CurrentCultureIgnoreCase)));
+                        }
+                    }
+                }
+                if (xobj.XOBJData.ObjectGUID != null) SimsData.GUID = xobj.XOBJData.ObjectGUID;
             }
-            if (xobj.XOBJData.ObjectGUID != null) SimsData.GUID = xobj.XOBJData.ObjectGUID;
-
-
-
-
-
-
-
-
-
-
             //if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("File: {0}, {1}", fileinfo.Name, xobj.ToString()));            
         }
 
@@ -2777,8 +2923,17 @@ namespace SimsCCManager.PackageReaders
 
         public void Dispose()
         {
+            foreach (BinaryReader r in BinaryReaders)
+            {
+                r.Dispose();
+            }
+            foreach (MemoryStream s in MemoryStreams)
+            {
+                s.Dispose();
+            }
             msPackage.Dispose();
             packagereader.Dispose();
+            PackageBytes = [];
             Sims2Data = new();
             Sims3Data = new();
             Sims4Data = new();
@@ -2789,21 +2944,21 @@ namespace SimsCCManager.PackageReaders
             return Utilities.RemoveInvalidXmlChars(Utilities.RemoveInvalidXmlChars(Encoding.UTF8.GetString(bytes)));
         }
 
-        public byte[] DecompressEntry(BinaryReader packageReader, int cFileSize)
+        public byte[] DecompressEntry(BinaryReader reader, int cFileSize)
         {
             List<byte> bytes = new();
-            if (packagereader.BaseStream.Position + cFileSize > packagereader.BaseStream.Length)
+            if (reader.BaseStream.Position + cFileSize > reader.BaseStream.Length)
             {
-                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Compressed file size {0} but stream only has {1} left.", cFileSize, packagereader.BaseStream.Length - packagereader.BaseStream.Position));
-                while (packagereader.BaseStream.Position < packagereader.BaseStream.Length)
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Compressed file size {0} but stream only has {1} left.", cFileSize, reader.BaseStream.Length - reader.BaseStream.Position));
+                while (reader.BaseStream.Position < reader.BaseStream.Length)
                 {
-                    bytes.Add(packagereader.ReadByte());
+                    bytes.Add(reader.ReadByte());
                 }
             } else
             {
                 for (int i = 0; i < cFileSize; i++)
                 {
-                    bytes.Add(packagereader.ReadByte());
+                    bytes.Add(reader.ReadByte());
                 }
             }
 
@@ -2816,6 +2971,31 @@ namespace SimsCCManager.PackageReaders
                     return decompressedStream.ToArray();
                 }                
             }
+        }
+
+        public MemoryStream ReadBytesToFile(byte[] file)
+        {            
+            MemoryStream stream = new MemoryStream(file);
+            MemoryStreams.Add(stream);
+            return stream;
+        }
+
+        public BinaryReader ReadSpecificBytes(byte[] file, int start, int length)
+        {
+            byte[] bit = new byte[length];            
+            int w = 0;
+            int end = start + length;
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Reading {0} to {1} (length: {2}) for entry.", start, end, length));
+            for (int i = start; i < end; i++)
+            {
+                bit[w] = file[i];
+                w++;
+            }
+            MemoryStream stream = new MemoryStream(bit);
+            MemoryStreams.Add(stream);
+            BinaryReader reader = new(stream);
+            BinaryReaders.Add(reader);
+            return reader;            
         }
     }
 
@@ -3996,36 +4176,22 @@ namespace SimsCCManager.PackageReaders
             file = fileInfo;
             string ID = readFile.ReadUInt32().ToString("X4");
             if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("ID: {0}", ID));
-            uint IndexType = readFile.ReadUInt32();
-            uint NumRecords = readFile.ReadUInt32();
-            for (int i = 0; i < NumRecords; i++)
+            if (ID == "DEADBEEF")
             {
-                ResourceKey rk = new();
-                rk.TypeID = readFile.ReadUInt32().ToString("X8");
-                rk.GroupID = readFile.ReadUInt32().ToString("X8");
-                rk.InstanceID = readFile.ReadUInt32().ToString("X8");
-                if (IndexType == 2) rk.ResourceID = readFile.ReadUInt32().ToString("X8");
-                if (Sims2PackageStatics.Sims2EntryTypes.Any(x => x.TypeID == rk.TypeID)) rk.TypeName = Sims2PackageStatics.Sims2EntryTypes.First(x => x.TypeID == rk.TypeID).Tag;
-                EIDRData.ResourceKeys.Add(rk);
-            }
-        }
-        public S2Read3IDRChunk(DecryptByteStream readFile, FileInfo fileInfo)
-        {
-            file = fileInfo;
-            uint ID = readFile.ReadUInt32();
-            uint IndexType = readFile.ReadUInt32();
-            uint NumRecords = readFile.ReadUInt32();
-            for (int i = 0; i < NumRecords; i++)
-            {
-                ResourceKey rk = new();
-                rk.TypeID = readFile.ReadUInt32().ToString("X8");
-                rk.GroupID = readFile.ReadUInt32().ToString("X8");
-                rk.InstanceID = readFile.ReadUInt32().ToString("X8");
-                if (IndexType == 2) rk.ResourceID = readFile.ReadUInt32().ToString("X8");
-                if (Sims2PackageStatics.Sims2EntryTypes.Any(x => x.TypeID == rk.TypeID)) rk.TypeName = Sims2PackageStatics.Sims2EntryTypes.First(x => x.TypeID == rk.TypeID).Tag;
-                EIDRData.ResourceKeys.Add(rk);
-            }
-        }        
+                uint IndexType = readFile.ReadUInt32();
+                uint NumRecords = readFile.ReadUInt32();
+                for (int i = 0; i < NumRecords; i++)
+                {
+                    ResourceKey rk = new();
+                    rk.TypeID = readFile.ReadUInt32().ToString("X8");
+                    rk.GroupID = readFile.ReadUInt32().ToString("X8");
+                    rk.InstanceID = readFile.ReadUInt32().ToString("X8");
+                    if (IndexType == 2) rk.ResourceID = readFile.ReadUInt32().ToString("X8");
+                    if (Sims2PackageStatics.Sims2EntryTypes.Any(x => x.TypeID == rk.TypeID)) rk.TypeName = Sims2PackageStatics.Sims2EntryTypes.First(x => x.TypeID == rk.TypeID).Tag;
+                    EIDRData.ResourceKeys.Add(rk);
+                }
+            }            
+        }             
     }
 
 
@@ -4611,9 +4777,16 @@ namespace SimsCCManager.PackageReaders
 
         public void S2ReadXNGBChunkNormal(BinaryReader readFile)
         {
-            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Reading XNGB."));
-            uint NumItems = readFile.ReadUInt32();            
-            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("NumItems: {0}", NumItems));
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Reading XNGB. Start pos: {0}", readFile.BaseStream.Position));
+            long pos = 0;
+            uint NumItems = readFile.ReadUInt32();
+            if (NumItems != 24)
+            {
+                readFile.BaseStream.Position = 6;
+                NumItems = readFile.ReadUInt32();
+            }
+            if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("NumItems: {0} ({1})", NumItems, NumItems.ToString("X4")));
+            
             // Read the items
             for (int i = 0; i < NumItems; i++)
             {
@@ -5624,13 +5797,16 @@ namespace SimsCCManager.PackageReaders
             {            
                 Version = readFile.ReadUInt32();
                 if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("Version: {0}", Version));
-                GMDCData.ResourceName = readFile.ReadString();
-                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("ResourceName: {0}", GMDCData.ResourceName));
-                uint resourceID = readFile.ReadUInt32();
-                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("ResourceID: {0}", resourceID));
-                uint resourceversion = readFile.ReadUInt32();
-                if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("ResourceVersion: {0}", resourceversion));
-                GMDCData.FileName = readFile.ReadString();
+                GMDCData.ResourceName = "sCGResource";
+                GMDCData.FileName = S2RepeatedSections.cSGResource(readFile);
+                
+                
+                //if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("ResourceName: {0}", GMDCData.ResourceName));
+                //uint resourceID = readFile.ReadUInt32();
+                //if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("ResourceID: {0}", resourceID));
+                //uint resourceversion = readFile.ReadUInt32();
+                //if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("ResourceVersion: {0}", resourceversion));
+                //GMDCData.FileName = readFile.ReadString();
                 if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(string.Format("FileName: {0}", GMDCData.FileName));
 
 
@@ -5645,22 +5821,24 @@ namespace SimsCCManager.PackageReaders
 
                 for (int i = 0; i < NumRecs; i++)
                 {
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Reading element #{0}", i));
                     GMDCElement element = new();
                     element.Index = i;
                     //uint number = readFile.ReadUInt32();
                     element.Number = readFile.ReadUInt32();
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Element Number: {0}", element.Number));
                     element.Identity = readFile.ReadUInt32().ToString("X8");
+                    if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Element Identity: {0}", element.Identity));
                     if (Identities.Contains(element.Identity))
                     {
                         Types.TryGetValue(element.Identity, out string Type);
                         element.IdentityName = Type;
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Element name: {0}", element.IdentityName));
                     }
                     uint RepeatCount = readFile.ReadUInt32();
                     //readFile.ReadUInt32();
                     element.BlockFormat = readFile.ReadUInt32();
                     element.SetFormat = readFile.ReadUInt32();
-
-
 
                     element.BlockSize = readFile.ReadUInt32();
                     element.ElementLocation = readFile.BaseStream.Position;
@@ -5671,18 +5849,18 @@ namespace SimsCCManager.PackageReaders
                         IElements.Add(e);
                         if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(e.ToString());
                     }
-                    else
+                    else // omfg this is here for a reason. half the elements ARE zero. you read four bytes from those and MOVE FORWARD LOL
                     {
                         element.ItemCount = readFile.ReadUInt32();
-                        if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(element.ToString());
                         IElements.Add(element);
+                        if (GlobalVariables.DebugMode && SimsPackageReader.DebugPackageReader) Logging.WriteDebugLog(element.ToString());
                     }
-
                 }
 
                 //get linkages
 
                 uint NumLinkages = readFile.ReadUInt32();
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("NumLinkages: {0}", NumLinkages));
                 for (int i = 0; i < NumLinkages; i++)
                 {
                     GMDCLinkage linkage = new();
@@ -5732,7 +5910,7 @@ namespace SimsCCManager.PackageReaders
                     }
                     linkage.SubmodelUVCount = readFile.ReadUInt32();
 
-                    for (int c = 0; c < linkage.SubmodelNormalsCount; c++)
+                    for (int c = 0; c < linkage.SubmodelUVCount; c++)
                     {
                         if (Version == 4)
                         {
@@ -5751,6 +5929,8 @@ namespace SimsCCManager.PackageReaders
                 //get groups
 
                 uint groupCount = readFile.ReadUInt32();
+
+                if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("Groups: {0}", groupCount));
 
                 for (int g = 0; g < groupCount; g++)
                 {
@@ -5865,7 +6045,6 @@ namespace SimsCCManager.PackageReaders
                         element00.ItemCount = readFile.ReadUInt32();
                         return ReadItems(element00);
                     case "3B83078B":
-
                         GMDCElementNormals element0 = new();
                         element0 = element.ConvertTo(element0);
                         element0.Normals = ReadVector3Chunk(element);
@@ -5878,8 +6057,11 @@ namespace SimsCCManager.PackageReaders
                         element1.ItemCount = readFile.ReadUInt32();
                         return ReadItems(element1);
                     case "DB830795":
-                        //ignore
-                        break;
+                        GMDCElementUVCoordinateDeltas element11 = new();
+                        element11 = element.ConvertTo(element11);
+                        element11.UVCoordinateDeltas = ReadUIntChunk(element);
+                        element11.ItemCount = readFile.ReadUInt32();
+                        return ReadItems(element11);
                     case "7C4DEE82":
                         GMDCElementTargetIndices element2 = new();
                         element2 = element.ConvertTo(element2);
@@ -6079,6 +6261,12 @@ namespace SimsCCManager.PackageReaders
         public void S2ReadXOBJChunkNormal(BinaryReader readFile)
         {
             uint NumItems = readFile.ReadUInt32();
+            if (NumItems != 24)
+            {
+                readFile.BaseStream.Position = 6;
+                NumItems = readFile.ReadUInt32();
+            }
+            if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("NumItems: {0}", NumItems));
             // Read the items
             for (int i = 0; i < NumItems; i++)
             {
@@ -6293,7 +6481,7 @@ namespace SimsCCManager.PackageReaders
                     if (Sims2PackageStatics.Sims2BuildFunctionSortList.Any(x => x.FlagNum == BuildModeType && x.FunctionSubsortNum == BuildModeSubsort))
                     {
                         FunctionSortList l = Sims2PackageStatics.Sims2BuildFunctionSortList.First(x => x.FlagNum == BuildModeType && x.FunctionSubsortNum == BuildModeSubsort);
-                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("OBJD #{0}: Found function sort {1}/{2}", l.Category, l.Subcategory));
+                        if (GlobalVariables.DebugMode) Logging.WriteDebugLog(string.Format("OBJD #{0}: Found function sort {1}/{2}", objdc, l.Category, l.Subcategory));
                         if (BuildModeSubsort != 0 && BuildModeType != 0) OBJDData.FunctionSort.Add(l);
                     }
                     else
@@ -6763,6 +6951,8 @@ namespace SimsCCManager.PackageReaders
         {
             return string.Format("Index Entry: {0} - Location: {1}, FileSize: {2}, UncompressedSize: {3}, Compressed: {4}. Type: {5}", CompleteID, Offset, FileSize, UncompressedSize, IsCompressed, EntryType);
         }
+
+        
     }
 
     public class ByteReaders
@@ -6770,37 +6960,20 @@ namespace SimsCCManager.PackageReaders
         /// <summary>
         /// Repeatedly called methods.
         /// </summary>
-
-        public static MemoryStream ReadBytesToFile(string file)
+        /// 
+        public static byte[] ReadBytesFromFile(string file)
         {
             FileInfo f = new FileInfo(file);
             byte[] bit = new byte[f.Length];
-            int bytes;
             using (FileStream fsSource = new FileStream(file, FileMode.Open, FileAccess.Read))
             {
                 for (int w = 0; w < f.Length; w++)
                 {
                     bit[w] = (byte)fsSource.ReadByte();
-                }
-                MemoryStream stream = new MemoryStream(bit);
-                return stream;
+                }                
+                return bit;
             }
-        }
-
-        public static MemoryStream ReadBytesToFile(string file, int bytestoread)
-        {
-            byte[] bit = new byte[bytestoread];
-            int bytes;
-            using (FileStream fsSource = new FileStream(file, FileMode.Open, FileAccess.Read))
-            {
-                for (int w = 0; w < bytestoread; w++)
-                {
-                    bit[w] = (byte)fsSource.ReadByte();
-                }
-                MemoryStream stream = new MemoryStream(bit);
-                return stream;
-            }
-        }
+        }        
 
         public static Byte[] ReadEntryBytes(BinaryReader reader, int memSize)
         {
@@ -7734,6 +7907,19 @@ namespace SimsCCManager.PackageReaders
                         IdentityName = this.IdentityName,
                         Number = this.Number
                     };
+                case Type VarGMDCElementUVCoordinateDelts when VarGMDCElementUVCoordinateDelts == typeof(GMDCElementUVCoordinateDeltas):
+                    return new GMDCElementUVCoordinateDeltas()
+                    {
+                        Identity = this.Identity,
+                        BlockFormat = this.BlockFormat,
+                        SetFormat = this.SetFormat,
+                        BlockSize = this.BlockSize,
+                        ItemCount = this.ItemCount,
+                        Index = this.Index,
+                        ElementLocation = this.ElementLocation,
+                        IdentityName = this.IdentityName,
+                        Number = this.Number
+                    };
                 default:
                     return new GMDCElement();
             }
@@ -7923,7 +8109,7 @@ namespace SimsCCManager.PackageReaders
         }
         public int ListLength { get { return (int)(BlockSize / Length / 4); } }
         public uint ItemCount { get; set; }
-        public List<uint> UVCoordinateDeltas { get; set; } = new();
+        public List<float> UVCoordinateDeltas { get; set; } = new();
         public long ElementLocation { get; set; }
         public override string ToString()
         {
@@ -8366,6 +8552,35 @@ namespace SimsCCManager.PackageReaders
         public List<uint> SubmodelIndexValues { get; set; } = new();
         public List<uint> NormalsIndexValues { get; set; } = new();
         public List<uint> UVIndexValues { get; set; } = new();
+
+        public override string ToString()
+        {
+            string ivs = "";
+            foreach (uint iv in IndexValues)
+            {
+                ivs += string.Format("{0}, ", iv);
+            }
+            
+            string sivs = "";
+            foreach (uint siv in SubmodelIndexValues)
+            {
+                sivs += string.Format("{0}, ", siv);
+            }
+            
+            string nivs = "";
+            foreach (uint niv in NormalsIndexValues)
+            {
+                nivs += string.Format("{0}, ", niv);
+            }
+            
+            string uivs = "";
+            foreach (uint uiv in UVIndexValues)
+            {
+                uivs += string.Format("{0}, ", uiv);
+            }
+            return string.Format("IndexCount: {0}, IndexValues: {1}, ArraySize: {2}, ActiveElements: {3}, SubmodelVCertxCount: {4}, SubmodelUVCount: {5}, SubmodelIndexValues: {6}, NormalsIndexValues: {7}, UVIndexValues: {8}", IndexCount, ivs, ArraySize, ActiveElements, SubmodelVertexCount, SubmodelUVCount, sivs, nivs, uivs);
+            //i have a migraine lmao dont judge my sepllgin omg help
+        }
     }
 
     public class GMDCGroup
@@ -8712,6 +8927,25 @@ namespace SimsCCManager.PackageReaders
     }
     
 
+}
+
+public enum Sims2EntryTypes
+{
+    TXTR,
+    CTSS,
+    XOBJ,
+    OBJD,
+    GMDC,
+    MMAT,
+    XFLR,
+    XNGB,
+    GZPS,
+    EDIR,
+    SHPE,
+    TXMT,
+    XHTN,
+    XTOL,
+    XMOL
 }
 
 

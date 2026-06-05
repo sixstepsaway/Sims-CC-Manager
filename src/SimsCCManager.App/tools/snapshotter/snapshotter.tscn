@@ -66,7 +66,7 @@ roughness = 0.8
 Button/font_sizes/font_size = 14
 Button/fonts/font = ExtResource("7_5rvtu")
 
-[node name="Snapshotter" type="Node3D" node_paths=PackedStringArray("Box", "AabBox", "S2Af", "S2Am", "S2Pu", "S2Cu", "CameraOuter", "CameraInner", "Camera", "Forward", "Backward", "Left", "Right", "Up", "Down", "CopypasteOptionsBox", "CopyButton", "PasteButton")]
+[node name="Snapshotter" type="Node3D" node_paths=PackedStringArray("Box", "AabBox", "S2Af", "S2Am", "S2Pu", "S2Cu", "CameraOuter", "CameraInner", "Camera", "Forward", "Backward", "Left", "Right", "Up", "Down", "CopypasteOptionsBox", "CopyButton", "PasteButton", "SaveImageButton")]
 script = ExtResource("1_pa3fr")
 Box = NodePath("Node3D/Box")
 AabBox = NodePath("Node3D/AabSize")
@@ -86,6 +86,7 @@ Down = NodePath("Down")
 CopypasteOptionsBox = NodePath("Control2")
 CopyButton = NodePath("Control2/VBoxContainer/Button")
 PasteButton = NodePath("Control2/VBoxContainer/Button2")
+SaveImageButton = NodePath("Control2/VBoxContainer/Button3")
 
 [node name="Node3D" type="Node3D" parent="."]
 

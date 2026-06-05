@@ -3029,7 +3029,7 @@ public partial class MainMenu : MarginContainer
 
     private void DevClicked()
     {     
-        string file = @"M:\Sims CC Manager\Instances\The Sims 2\Packages\General_Eyes\1c2a4f60Juiceeye00022.package";
+        string file = @"M:\Sims CC Manager\Instances\The Sims 2\Packages\__CATEGORY_01_Ancient_HoodDeco\FABMediEvalDecoBuilding2.package";
         //List<string> files = Directory.EnumerateFiles(@"M:\Sims CC Manager\Instances\The Sims 2\Packages", "*.package", SearchOption.TopDirectoryOnly).ToList();
         string outfile = @"M:\Sims CC Manager\Instances\The Sims 2\Packages\13pS2FarmhouseCandleHolder1.package.info.txt";
         
